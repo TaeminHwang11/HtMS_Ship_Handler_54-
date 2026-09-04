@@ -45,7 +45,6 @@
             min-height: 0;
         }
 
-        /* 📌 반응형 레이아웃 훼손 방지 및 스크롤 추가 */
         .left-panel {
             width: 210px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
             background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px; box-sizing: border-box;
@@ -93,7 +92,7 @@
         .badge.green { border-color: var(--text-highlight); color: var(--text-highlight); background: #113311; }
         .badge.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
         
-        /* 📌 커스텀 드롭다운 CSS (완벽 이식) */
+        /* 커스텀 드롭다운 CSS */
         .custom-select-wrapper { position: relative; display: inline-block; user-select: none; }
         .custom-select-box { padding: 2px 5px; background: transparent; border: 1px solid #555; color: var(--text-muted); font-weight: bold; border-radius: 2px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: inherit; }
         .custom-select-box.green { border-color: var(--text-highlight); color: var(--text-highlight); background: #113311; }
@@ -243,7 +242,6 @@
         <div class="instrument-box">
             <div class="instrument-title" style="margin-bottom: 8px;">OPERATION</div>
             <div style="display:flex; gap:4px;">
-                <!-- 📌 배속 버튼 삭제 및 Resume, Touch Steer 버튼 병합 -->
                 <button class="btn" id="btn-op-pause" onclick="togglePause()" style="flex:1; padding:8px 0; color:#ff3333; border-color:#ff3333; font-size:12px; font-weight:bold;">RESUME</button>
                 <button class="btn" id="btn-touch-steer" onclick="toggleTouchSteering()" style="flex:1; padding:8px 0; font-size:12px; font-weight:bold;">TOUCH STEER</button>
             </div>
@@ -279,7 +277,6 @@
     </div>
 
     <div class="center-panel">
-        <!-- 📌 터치 조타 버튼 추가 -->
         <div id="btn-steer-port" class="steer-btn" style="left: 20px;">P</div>
         <div id="btn-steer-stbd" class="steer-btn" style="right: 20px;">S</div>
 
@@ -298,7 +295,6 @@
         <div class="top-right-data">
             <div class="row-group">
                 <span style="color:var(--text-highlight); font-weight:bold; font-size:12px;">RNG</span>
-                <!-- 커스텀 드롭다운: RNG -->
                 <div class="custom-select-wrapper" style="width: 70px;">
                     <div class="custom-select-box green" onclick="toggleCustomDropdown('rng', event)">
                         <span id="rng-text">3.0 NM ▼</span>
@@ -317,7 +313,6 @@
             </div>
             
             <div id="arc-zone" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding:4px; border-radius:4px; border:1px solid transparent; transition:all 0.3s;">
-                <!-- 커스텀 드롭다운: RR -->
                 <div class="custom-select-wrapper" style="width: 130px; margin-bottom: 2px;">
                     <div class="custom-select-box green" onclick="toggleCustomDropdown('rr', event)">
                         <span id="rr-text">AUTO (0.50 NM) ▼</span>
@@ -333,7 +328,6 @@
                     </div>
                 </div>
                 
-                <!-- 커스텀 드롭다운: CPA -->
                 <div class="custom-select-wrapper" style="width: 100px; margin-bottom: 2px;">
                     <div class="custom-select-box green" onclick="toggleCustomDropdown('cpa', event)">
                         <span id="cpa-text">CPA: 1.0 NM ▼</span>
@@ -350,7 +344,6 @@
                     </div>
                 </div>
                 
-                <!-- 커스텀 드롭다운: TCPA -->
                 <div class="custom-select-wrapper" style="width: 100px; margin-bottom: 2px;">
                     <div class="custom-select-box green" onclick="toggleCustomDropdown('tcpa', event)">
                         <span id="tcpa-text">TCPA: 10 min ▼</span>
@@ -364,7 +357,6 @@
                 </div>
                 
                 <div class="row-group">
-                    <!-- 커스텀 드롭다운: ARC Interval -->
                     <div class="custom-select-wrapper" style="width: 80px;">
                         <div class="custom-select-box green" onclick="toggleCustomDropdown('arc_int', event)">
                             <span id="arc_int-text">ARC: 6s ▼</span>
@@ -379,7 +371,6 @@
                 </div>
 
                 <div class="row-group" style="margin-top:2px;">
-                    <!-- 커스텀 드롭다운: W_Turn -->
                     <div class="custom-select-wrapper" style="width: 85px;">
                         <div class="custom-select-box green" onclick="toggleCustomDropdown('w_turn', event)">
                             <span id="w_turn-text">W_Turn: 2.0 ▼</span>
@@ -392,7 +383,6 @@
                             <div class="custom-select-item" onclick="selectCustomOption('w_turn', 5.0, 'W_Turn: 5.0 ▼', 'changeWTurn', event)">W_Turn: 5.0</div>
                         </div>
                     </div>
-                    <!-- 커스텀 드롭다운: W_Goal -->
                     <div class="custom-select-wrapper" style="width: 85px;">
                         <div class="custom-select-box green" onclick="toggleCustomDropdown('w_goal', event)">
                             <span id="w_goal-text">W_Goal: 1.0 ▼</span>
@@ -409,7 +399,6 @@
             </div>
 
             <div class="row-group" style="margin-top:4px;">
-                <!-- 커스텀 드롭다운: Pulse Length -->
                 <div class="custom-select-wrapper" style="width: 50px;">
                     <div class="custom-select-box green" onclick="toggleCustomDropdown('pulse', event)">
                         <span id="pulse-text">SP ▼</span>
@@ -500,7 +489,6 @@
                     <span class="badge active" id="btn-tvect" onclick="toggleVectorMode('T')">T VECT</span>
                     <span class="badge" id="btn-rvect" onclick="toggleVectorMode('R')">R VECT</span>
                     
-                    <!-- 커스텀 드롭다운: Vector Time -->
                     <div class="custom-select-wrapper" style="width:40px;">
                         <div class="btn custom-select-box btn-dropdown" style="padding:2px 5px; border-color:#111; color:var(--text-main); justify-content:center;" onclick="toggleCustomDropdown('vector_time', event)">
                             <span id="vector_time-text" style="margin-right:2px;">0</span>
@@ -522,7 +510,6 @@
                     <span class="badge active" id="btn-ttrail" onclick="toggleTrailMode('T')">T TRAIL</span>
                     <span class="badge" id="btn-rtrail" onclick="toggleTrailMode('R')">R TRAIL</span>
                     
-                    <!-- 커스텀 드롭다운: Trail Time -->
                     <div class="custom-select-wrapper" style="width:40px;">
                         <div class="btn custom-select-box btn-dropdown" style="padding:2px 5px; border-color:#111; color:var(--text-main); justify-content:center;" onclick="toggleCustomDropdown('trail_time', event)">
                             <span id="trail_time-text" style="margin-right:2px;">0</span>
@@ -627,7 +614,6 @@
 </div>
 
 <script>
-    // 📌 커스텀 드롭다운 전역 제어 로직
     let activeDropdown = null;
     function toggleCustomDropdown(id, e) {
         if(e) e.stopPropagation();
@@ -671,8 +657,7 @@
         if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
-
-        // 📌 로그인 직후 시나리오 자동 로딩
+        
         autoLoadScenario();
     }
 
@@ -823,7 +808,6 @@
         }
     }
 
-    // 📌 PAUSE/RESUME 토글 (기본 PAUSE)
     window.togglePause = function() {
         isPaused = !isPaused;
         const btn = document.getElementById('btn-op-pause');
@@ -838,7 +822,6 @@
         }
     }
 
-    // 📌 온스크린 터치 조타 기능
     let isTouchSteeringEnabled = false;
     window.toggleTouchSteering = function() {
         isTouchSteeringEnabled = !isTouchSteeringEnabled;
@@ -846,10 +829,10 @@
         const pBtn = document.getElementById('btn-steer-port');
         const sBtn = document.getElementById('btn-steer-stbd');
         if(isTouchSteeringEnabled) {
-            btn.classList.add('active'); btn.style.borderColor = '#00ffaa'; btn.style.color = '#00ffaa';
+            btn.style.borderColor = '#00ffaa'; btn.style.color = '#00ffaa';
             pBtn.style.display = 'flex'; sBtn.style.display = 'flex';
         } else {
-            btn.classList.remove('active'); btn.style.borderColor = '#111'; btn.style.color = 'var(--text-main)';
+            btn.style.borderColor = '#111'; btn.style.color = 'var(--text-main)';
             pBtn.style.display = 'none'; sBtn.style.display = 'none';
         }
     };
@@ -982,12 +965,9 @@
             });
         }
         
-        document.getElementById('scenario-status').innerText = 'Loaded';
-        document.getElementById('scenario-status').style.color = '#00ffaa';
         triggerArcUpdate();
     }
 
-    // 📌 커스텀 드롭다운 데이터 연동 함수
     window.changeRange = function(val) { currentRange = parseFloat(val); let autoSpacing = currentRange / 6; document.getElementById('rr-text').innerText = `AUTO (${autoSpacing.toFixed(2)} NM) ▼`; manualRR = 'auto'; triggerArcUpdate(); }
     window.changeRR = function(val) { manualRR = val; triggerArcUpdate(); }
     window.changeCpaLimit = function(val) { cpaLimitVal = parseFloat(val); triggerArcUpdate(); }
