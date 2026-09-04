@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>[HtMS] Scenario Generator</title>
+    <title>[HTMS] Scenario Generator</title>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -17,10 +17,7 @@
             --text-muted: #9ca3af;
         }
 
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
 
         body {
             background-color: var(--bg-color); color: var(--text-main);
@@ -30,8 +27,7 @@
 
         #canvas-wrapper {
             flex: 1; display: flex; flex-direction: column;
-            background: #0b0f19; position: relative;
-            min-height: 0; 
+            background: #0b0f19; position: relative; min-height: 0;
         }
 
         #grid-container {
@@ -45,9 +41,7 @@
             box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.05);
             border: 2px solid transparent; transition: border 0.2s;
         }
-        .viewport.active-vp {
-            border: 2px solid var(--accent-yellow);
-        }
+        .viewport.active-vp { border: 2px solid var(--accent-yellow); }
         
         .vp-canvas { width: 100%; height: 100%; display: block; }
         
@@ -67,10 +61,7 @@
         }
         .hud-cursor { color: var(--text-muted); }
         .hud-range { color: var(--accent-yellow); font-weight: bold; }
-        .hud-target {
-            color: var(--accent-red); font-weight: bold;
-            text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none;
-        }
+        .hud-target { color: var(--accent-red); font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none; }
 
         #sidebar {
             width: 380px; max-width: 100%; height: 100%;
@@ -83,9 +74,7 @@
         .panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
         .panel.active { display: flex; }
 
-        #main-title, .sim-selector, .btn-group, .origin-control, #selectedShipDisplay, .tab-menu, .instruction, .replay-controls {
-            flex-shrink: 0;
-        }
+        #main-title, .sim-selector, .btn-group, .origin-control, #selectedShipDisplay, .tab-menu, .instruction, .replay-controls { flex-shrink: 0; }
 
         #main-title {
             font-size: 20px; font-weight: 800; color: var(--accent-cyan);
@@ -93,13 +82,9 @@
             margin-bottom: 15px; font-family: 'Arial Black', sans-serif; text-align: center;
         }
 
-        .sim-selector {
-            background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 6px; margin-bottom: 10px;
-        }
+        .sim-selector { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
         .sim-selector label { font-size: 11px; color: var(--accent-cyan); font-weight: bold; display: block; margin-bottom: 6px; }
-        .sim-selector select {
-            width: 100%; background: #000; color: #fff; border: 1px solid #1f293d; padding: 8px; border-radius: 4px; outline: none; font-weight: bold; cursor: pointer;
-        }
+        .sim-selector select { width: 100%; background: #000; color: #fff; border: 1px solid #1f293d; padding: 8px; border-radius: 4px; outline: none; font-weight: bold; cursor: pointer; }
 
         .tab-menu {
             display: flex; gap: 4px; margin-bottom: 15px;
@@ -117,7 +102,6 @@
             padding: 12px; border-radius: 6px; margin-bottom: 15px; line-height: 1.6;
             border-left: 3px solid var(--accent-cyan);
         }
-        .highlight-text { color: var(--accent-yellow); font-weight: bold; }
 
         .btn-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
         .btn-row { display: flex; gap: 8px; }
@@ -159,7 +143,7 @@
             flex: 1; background-color: #080d1a; color: #38edf8;
             font-family: 'JetBrains Mono', Consolas, monospace; padding: 12px;
             border: 1px solid #1e293b; border-radius: 6px; resize: none; font-size: 11px; 
-            min-height: 60px; 
+            min-height: 60px;
         }
 
         #ecdisModal {
@@ -316,6 +300,7 @@
 </div>
 
 <script>
+    // 📌 구글 앱스 스크립트 웹 앱 URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZtLBiZAcyQEk9dUmlhpfcylqZ3RIuXpmFGOadtriT2Xnz2SXa-CvxXC-EVntIZvSVjw/exec";
 
     const HTMS_SHIP_TYPES = [
@@ -465,6 +450,7 @@
         generateJSONOutput();
     });
 
+    // 📌 에러 방지: 타선이 삭제되었을 때의 선택 예외 처리 강화
     function updateSidebarForActiveMass() {
         const mass = massList[activeMassIndex];
         if (!mass) return;
@@ -472,10 +458,16 @@
         originLatInput.value = mass.originLat.toFixed(6);
         originLonInput.value = mass.originLon.toFixed(6);
         
-        selShipName.textContent = mass.selectedShip === 'OS' ? 'OWN SHIP (MASS)' : `TARGET SHIP (T${mass.selectedShip + 1})`;
-        selShipName.style.color = mass.selectedShip === 'OS' ? 'var(--accent-green)' : 'var(--accent-red)';
-        
-        shipTypeSelect.value = mass.selectedShip === 'OS' ? mass.osData.type : mass.targets[mass.selectedShip].type;
+        if (mass.selectedShip === 'OS' || !mass.targets[mass.selectedShip]) {
+            mass.selectedShip = 'OS';
+            selShipName.textContent = 'OWN SHIP (MASS)';
+            selShipName.style.color = 'var(--accent-green)';
+            shipTypeSelect.value = mass.osData.type;
+        } else {
+            selShipName.textContent = `TARGET SHIP (T${mass.selectedShip + 1})`;
+            selShipName.style.color = 'var(--accent-red)';
+            shipTypeSelect.value = mass.targets[mass.selectedShip].type;
+        }
     }
 
     function updateShipTypeOptions() {
@@ -541,6 +533,16 @@
     }
     document.getElementById('rotLeftBtn').addEventListener('click', () => rotateScenario(-15));
     document.getElementById('rotRightBtn').addEventListener('click', () => rotateScenario(15));
+
+    function checkShipLimit(addCount = 1) {
+        if (simMode !== 'MASS') return false;
+        let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
+        if (total + addCount > 20) {
+            alert(`[경고] MASS 시뮬레이터는 전체 선박을 20척 초과하여 생성할 수 없습니다.\n현재 총 선박 수: ${total}척`);
+            return true;
+        }
+        return false;
+    }
 
     function renderGrid() {
         if (currentMode === 'replay') return; 
@@ -630,11 +632,32 @@
     });
 
     document.getElementById('addMassBtn').addEventListener('click', () => {
+        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        if (checkShipLimit(1)) return;
         const lastOrigin = massList[massList.length - 1];
         const lat = lastOrigin.originLat;
         const lon = lastOrigin.originLon + (18520 / (111111 * Math.cos(lat * Math.PI / 180)));
         massList.push(createMassState(lat, lon));
         activeMassIndex = massList.length - 1;
+        renderGrid();
+    });
+
+    document.getElementById('dupMassBtn').addEventListener('click', () => {
+        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        const activeMass = massList[activeMassIndex];
+        if (checkShipLimit(1 + activeMass.targets.length)) return;
+        const newMass = JSON.parse(JSON.stringify(activeMass));
+        newMass.originLon += (18520 / (111111 * Math.cos(newMass.originLat * Math.PI / 180)));
+        newMass.panX = null; newMass.panY = null; newMass.draggingObj = null;
+        massList.push(newMass);
+        activeMassIndex = massList.length - 1;
+        renderGrid();
+    });
+
+    document.getElementById('delMassBtn').addEventListener('click', () => {
+        if (massList.length <= 1) return alert("마지막 MASS 창은 삭제할 수 없습니다.");
+        massList.splice(activeMassIndex, 1);
+        activeMassIndex = Math.max(0, activeMassIndex - 1);
         renderGrid();
     });
 
@@ -650,6 +673,7 @@
     });
 
     document.getElementById('addShipBtn').addEventListener('click', () => {
+        if (checkShipLimit(1)) return;
         const mass = massList[activeMassIndex];
         const canvas = document.getElementById(`canvas-${activeMassIndex}`);
         const spd = 10;
@@ -829,10 +853,14 @@
                 mass.selectedShip = 'OS'; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
             }
 
+            // 📌 에러 방지: 타선 웨이포인트 삭제 후 인덱스 추적 방어 코드 추가
             for (let i = mass.targets.length - 1; i >= 0; i--) {
                 wpIdx = checkWp(mass.targets[i].waypoints);
                 if (wpIdx !== -1) {
-                    if (isDeleteMode) { mass.targets[i].waypoints.splice(wpIdx, 1); updateCanvas(idx); generateJSONOutput(); return; }
+                    if (isDeleteMode) { 
+                        mass.targets[i].waypoints.splice(wpIdx, 1); 
+                        updateCanvas(idx); generateJSONOutput(); return; 
+                    }
                     mass.draggingObj = { type: 'waypoint', owner: i, index: wpIdx };
                     mass.selectedShip = i; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
                 }
@@ -859,7 +887,12 @@
                 const cx = mass.panX + (mass.targets[i].x * mass.viewScale);
                 const cy = mass.panY + (mass.targets[i].z * mass.viewScale);
                 if (Math.hypot(mx - cx, my - cy) < hitRadius) {
-                    if (isDeleteMode) { mass.targets.splice(i, 1); updateCanvas(idx); generateJSONOutput(); return; }
+                    if (isDeleteMode) { 
+                        mass.targets.splice(i, 1); 
+                        if (mass.selectedShip === i) mass.selectedShip = 'OS';
+                        else if (typeof mass.selectedShip === 'number' && mass.selectedShip > i) mass.selectedShip--;
+                        updateCanvas(idx); updateSidebarForActiveMass(); generateJSONOutput(); return; 
+                    }
                     mass.draggingObj = { type: 'ship', index: i };
                     mass.selectedShip = i; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
                 }
@@ -1026,55 +1059,150 @@
         }
     }
 
+    // 📌 에러 방지: 객체 속성 매핑 시 기본값 처리 철저히 적용
     function generateJSONOutput() {
-        const format = simModeSelect.value;
-        
-        if (format === 'HTMS') {
-            const mass = massList[0];
-            if (!mass) return;
-            const outputData = {
-                origin: { lat: mass.originLat, lon: mass.originLon },
-                environment: {
-                    wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
-                    current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
-                },
-                os: { type: mass.osData.type, hdg: mass.osData.hdg, spd: mass.osData.spd, waypoints: mass.osData.waypoints.map(w => ({x: Math.round(w.x), z: Math.round(w.z)})) },
-                targets: mass.targets.map(t => ({
-                    type: t.type, x: Math.round(t.x), z: Math.round(t.z), hdg: Math.round(t.hdg), spd: t.spd,
-                    waypoints: t.waypoints.map(w => ({x: Math.round(w.x), z: Math.round(w.z)}))
-                }))
-            };
-            document.getElementById('jsonOutput').value = JSON.stringify(outputData, null, 2);
-        } else {
-            const out = { 
-                ScenarioName: "Exported_MASS_Scenario", 
-                map: "Hanbando", 
-                environment: {
-                    wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
-                    current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
-                },
-                ships: [], WayPointSet: [], EventInfo: [] 
-            };
-            document.getElementById('jsonOutput').value = JSON.stringify(out, null, "\t");
+        try {
+            const format = simModeSelect.value;
+            
+            if (format === 'HTMS') {
+                const mass = massList[0];
+                if (!mass) return;
+                const outputData = {
+                    origin: { lat: mass.originLat, lon: mass.originLon },
+                    environment: {
+                        wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
+                        current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
+                    },
+                    os: { type: mass.osData.type, hdg: mass.osData.hdg, spd: mass.osData.spd, waypoints: (mass.osData.waypoints || []).map(w => ({x: Math.round(w.x), z: Math.round(w.z)})) },
+                    targets: mass.targets.map(t => ({
+                        type: t.type, x: Math.round(t.x), z: Math.round(t.z), hdg: Math.round(t.hdg), spd: t.spd,
+                        waypoints: (t.waypoints || []).map(w => ({x: Math.round(w.x), z: Math.round(w.z)}))
+                    }))
+                };
+                document.getElementById('jsonOutput').value = JSON.stringify(outputData, null, 2);
+            } else {
+                const out = { 
+                    ScenarioName: "Exported_MASS_Scenario", 
+                    map: "Hanbando", 
+                    environment: {
+                        wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
+                        current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
+                    },
+                    ships: [], WayPointSet: [], EventInfo: [] 
+                };
+                const shipNames = ["ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIET","KILO","LIMA","MIKE"];
+                
+                let massShips = [];
+                let massWpSets = [];
+                let trgShips = [];
+                let trgWpSets = [];
+                let wpSetCounter = 0;
+
+                massList.forEach((mass, i) => {
+                    const toLatLon = (x, z) => {
+                        const dxM = x * (1852 / 400); const dzM = z * (1852 / 400);
+                        const lat = mass.originLat - (dzM / 111111);
+                        const lon = mass.originLon + (dxM / (111111 * Math.cos(mass.originLat * Math.PI / 180)));
+                        return { lat, lon };
+                    };
+
+                    const osID = wpSetCounter++;
+                    massShips.push({
+                        mmsi: Math.floor(Math.random() * 900000000) + 100000000,
+                        isMASS: 1, shipName: `MASS_${i+1}`, shipType: mass.osData.type || "CNTR_2700",
+                        initSpeed: mass.osData.spd, initHeading: mass.osData.hdg, waypointSetID: osID
+                    });
+                    let osWps = [{ Name: "0", Latitude: Number(mass.originLat.toFixed(6)), Longitude: Number(mass.originLon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] }];
+                    if (!mass.osData.waypoints || mass.osData.waypoints.length === 0) {
+                        const hdgRad = mass.osData.hdg * Math.PI / 180;
+                        const autoLl = toLatLon(1200 * Math.sin(hdgRad), -1200 * Math.cos(hdgRad));
+                        osWps.push({ Name: "1", Latitude: Number(autoLl.lat.toFixed(6)), Longitude: Number(autoLl.lon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] });
+                    } else {
+                        mass.osData.waypoints.forEach((wp, wIdx) => {
+                            const ll = toLatLon(wp.x, wp.z);
+                            osWps.push({ Name: String(wIdx+1), Latitude: Number(ll.lat.toFixed(6)), Longitude: Number(ll.lon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] });
+                        });
+                    }
+                    massWpSets.push({ WayPointSetID: osID, WayPoints: osWps, Env_Wave: 0, Env_Wind: 0 });
+                });
+
+                massList.forEach((mass, i) => {
+                    const toLatLon = (x, z) => {
+                        const dxM = x * (1852 / 400); const dzM = z * (1852 / 400);
+                        const lat = mass.originLat - (dzM / 111111);
+                        const lon = mass.originLon + (dxM / (111111 * Math.cos(mass.originLat * Math.PI / 180)));
+                        return { lat, lon };
+                    };
+
+                    mass.targets.forEach((t, tIdx) => {
+                        const trgID = wpSetCounter++;
+                        trgShips.push({
+                            mmsi: Math.floor(Math.random() * 900000000) + 100000000,
+                            isMASS: 0, shipName: shipNames[(i*10 + tIdx) % shipNames.length] + `_${i+1}`, shipType: t.type || "CNTR_2700",
+                            initSpeed: t.spd, initHeading: t.hdg, waypointSetID: trgID
+                        });
+                        const startLl = toLatLon(t.x, t.z);
+                        let wps = [{ Name: "0", Latitude: Number(startLl.lat.toFixed(6)), Longitude: Number(startLl.lon.toFixed(6)), TargetVel: t.spd, EventID: [] }];
+                        if (!t.waypoints || t.waypoints.length === 0) {
+                            const hdgRad = t.hdg * Math.PI / 180;
+                            const autoLl = toLatLon(t.x + 1200 * Math.sin(hdgRad), t.z - 1200 * Math.cos(hdgRad));
+                            wps.push({ Name: "1", Latitude: Number(autoLl.lat.toFixed(6)), Longitude: Number(autoLl.lon.toFixed(6)), TargetVel: t.spd, EventID: [] });
+                        } else {
+                            t.waypoints.forEach((wp, wIdx) => {
+                                const wpll = toLatLon(wp.x, wp.z);
+                                wps.push({ Name: String(wIdx+1), Latitude: Number(wpll.lat.toFixed(6)), Longitude: Number(wpll.lon.toFixed(6)), TargetVel: t.spd, EventID: [] });
+                            });
+                        }
+                        trgWpSets.push({ WayPointSetID: trgID, WayPoints: wps, Env_Wave: 0, Env_Wind: 0 });
+                    });
+                });
+                
+                out.ships = [...massShips, ...trgShips];
+                out.WayPointSet = [...massWpSets, ...trgWpSets];
+                
+                let jsonStr = JSON.stringify(out, null, "\t");
+                try {
+                    jsonStr = jsonStr.replace(/(\{\s*"Name"[\s\S]*?"EventID":\s*\[\]\s*\})/g, match => {
+                        let updatedMatch = match.replace(/"Latitude":\s*([0-9.-]+)/, (m, p1) => `"Latitude": ${Number(p1).toFixed(6)}`);
+                        updatedMatch = updatedMatch.replace(/"Longitude":\s*([0-9.-]+)/, (m, p1) => `"Longitude": ${Number(p1).toFixed(6)}`);
+                        return updatedMatch.replace(/\s*\n\s*/g, ' ').replace(/\{\s*/, '{ ').replace(/\s*\}/, ' }');
+                    });
+                } catch(e) {}
+                document.getElementById('jsonOutput').value = jsonStr;
+            }
+        } catch (e) {
+            console.error("JSON Generation Error:", e);
         }
     }
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
-        const dataStr = document.getElementById('jsonOutput').value;
-        const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
-        const fileName = `${prefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
-        if (window.showSaveFilePicker) {
-            try {
-                const handle = await window.showSaveFilePicker({ suggestedName: fileName, types: [{ accept: { 'application/json': ['.json'] } }]});
-                const writable = await handle.createWritable(); await writable.write(dataStr); await writable.close();
-            } catch (err) {}
-        } else {
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([dataStr]));
-            a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        try {
+            generateJSONOutput(); // 📌 저장 전 무조건 최신 상태 동기화
+            const dataStr = document.getElementById('jsonOutput').value;
+            if (!dataStr || dataStr.trim() === "") {
+                alert("저장할 시나리오 데이터가 없습니다. (타선 및 맵 정보 확인)");
+                return;
+            }
+            const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
+            const fileName = `${prefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
+            const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({ suggestedName: fileName, types: [{ accept: { 'application/json': ['.json'] } }]});
+                    const writable = await handle.createWritable(); 
+                    await writable.write(blob); 
+                    await writable.close();
+                } catch (err) {}
+            } else {
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
+        } catch (e) {
+            alert("저장 중 오류가 발생했습니다: " + e.message);
         }
     });
 
-    // 📌 에디터의 시나리오 JSON 불러오기 로직 (모든 포맷 호환 및 에러 방지 처리)
     document.getElementById('loadJsonBtn').addEventListener('click', () => document.getElementById('jsonInput').click());
     document.getElementById('jsonInput').addEventListener('change', (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -1262,7 +1390,6 @@
         });
     }
 
-    // 📌 로컬 리플레이 JSON 불러오기
     document.getElementById('loadLocalJsonBtn').addEventListener('click', () => document.getElementById('localJsonInput').click());
     document.getElementById('localJsonInput').addEventListener('change', (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -1273,7 +1400,6 @@
         }; reader.readAsText(file); e.target.value = ''; 
     });
 
-    // 📌 구글 드라이브 파일 목록 가져오기
     document.getElementById('fetchDriveListBtn').addEventListener('click', () => {
         const container = document.getElementById('driveFileContainer');
         const select = document.getElementById('driveFileSelect');
@@ -1305,7 +1431,6 @@
             });
     });
 
-    // 📌 선택한 구글 드라이브 파일 불러오기
     document.getElementById('loadSelectedDriveFileBtn').addEventListener('click', () => {
         const select = document.getElementById('driveFileSelect');
         const fileId = select.value;
@@ -1334,7 +1459,7 @@
             });
     });
 
-    // 📌 리플레이 JSON 해독 로직 (에러 처리 완벽 보강)
+    // 📌 리플레이 파일과 시나리오 파일을 구분하는 안전한 파서
     function parseReplayJSON(jsonStr) {
         try {
             const data = JSON.parse(jsonStr);
