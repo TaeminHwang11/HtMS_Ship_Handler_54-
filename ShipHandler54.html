@@ -59,7 +59,6 @@
         .collision-alert { animation: blink-collision 0.6s infinite !important; pointer-events: none; }
 
         #right-center-cas-panel, #bottom-left-panel { display: none; z-index: 100; position: absolute; }
-        /* 위치 우측 상단으로 이동 (transform 제거) */
         #right-center-cas-panel { right: 20px; top: 20px; width: 380px; }
         #bottom-left-panel { bottom: 20px; left: 20px; width: 570px; }
         
@@ -83,7 +82,6 @@
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box;}
         
-        /* Select Dropdown Styling */
         .form-row select { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; }
         .form-row select option { background: #111; color: #fff; }
 
@@ -99,12 +97,22 @@
         #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: #fff; }
+
+        /* 터치 조타 버튼 UI */
+        .steer-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 36px; font-weight: bold; font-family: 'Rajdhani', sans-serif; display: none; align-items: center; justify-content: center; z-index: 9999; cursor: pointer; user-select: none; backdrop-filter: blur(4px); transition: 0.1s;}
+        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: translateY(-50%) scale(0.95); }
+        #btn-steer-port { left: 30px; }
+        #btn-steer-stbd { right: 30px; }
     </style>
 </head>
 <body>
 
     <div id="scanline"></div>
     <canvas id="hud-lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.5s;"></canvas>
+
+    <!-- 터치 조타 버튼 (최상단) -->
+    <div id="btn-steer-port" class="steer-btn">P</div>
+    <div id="btn-steer-stbd" class="steer-btn">S</div>
 
     <!-- 자동 로그인 화면 -->
     <div id="login-overlay">
@@ -121,7 +129,6 @@
                 <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
             </div>
             
-            <!-- 본선 모델 선택 기능 -->
             <div class="form-row">
                 <label>본선 (Own Ship) 선택</label>
                 <select id="os-select">
@@ -142,7 +149,6 @@
         </div>
     </div>
 
-    <!-- 로딩 및 전송 팝업 -->
     <div id="loading-screen">
         <div class="spinner"></div>
         <div class="loading-text">DOWNLOADING ASSETS...</div>
@@ -206,6 +212,8 @@
         <div class="ctrl-btn-group">
             <button id="btn-pause" class="btn-ctrl" onclick="togglePause()">PAUSE</button>
             <button class="btn-ctrl" onclick="exportLogCSV()" style="background: rgba(234, 179, 8, 0.2); border-color: #eab308; color: #fef08a;">SAVE LOG</button>
+            <!-- 터치 컨트롤 활성화 버튼 추가 -->
+            <button id="btn-touch-steer" class="btn-ctrl" onclick="toggleTouchSteering()">TOUCH STEER</button>
         </div>
         <div class="ctrl-btn-group" style="margin-bottom:0;">
             <div id="btn-collision" class="btn-ctrl" style="pointer-events: none; background: rgba(0, 255, 170, 0.1); border-color: #00ffaa; color: #00ffaa; display: flex; align-items: center; justify-content: center;">COLLISION CLEAR</div>
@@ -246,9 +254,9 @@
 
     <script>
         // ==========================================
-        // 1. 핵심 서버 통신 변수 설정
+        // 1. 핵심 서버 통신 변수 설정 
         // ==========================================
-        const GITHUB_BASE_URL = "./"; // 로컬 라이브 서버 및 깃허브 호환 경로
+        const GITHUB_BASE_URL = "./"; 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJnQMZiSKk-rCcs3csNCtDGOah-aD9OblqgcezP1Lh1B-5EK3CpERdYPdnzlumQTzLhA/exec";
 
         const modelFiles = [
@@ -262,7 +270,6 @@
         const settingsFile = "Jsons/Settings.json"; 
         let MAIN_OS_FILE = "CargoShip1.glb"; 
 
-        // 글로벌 변수
         let studentInfo = { id: "", name: "" };
         let parsedModels = {}; 
         let logData = [];
@@ -271,9 +278,7 @@
         
         let manuallySelectedTarget = null;
         let isPaused = false;
-        let isCollisionEnabled = false; 
         let isHudDragged = false; 
-
         let manualRadarZoom = 1.0;
 
         const wakePool = [];
@@ -317,14 +322,13 @@
         });
 
         // ==========================================
-        // 2. 무적 에셋 자동 로딩 로직
+        // 2. 무적 에셋 자동 로딩 로직 (응답 없음 프리징 완벽 차단)
         // ==========================================
         window.startLoadingAssets = async function() {
             studentInfo.id = document.getElementById('student-id').value.trim();
             studentInfo.name = document.getElementById('student-name').value.trim();
             if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
 
-            // 드롭다운 메뉴에서 선택한 본선을 할당
             MAIN_OS_FILE = document.getElementById('os-select').value;
 
             document.getElementById('login-overlay').style.display = 'none';
@@ -349,23 +353,25 @@
                 if(setRes.ok) { const settingsData = await setRes.json(); for (const key in settingsData) localStorage.setItem(key, settingsData[key]); } 
             } catch(e) { console.warn(e); }
 
-            progressEl.innerText = "3D 선박 모델 다운로드 중... (4/4)";
+            // 📌 과부하 방지 순차 로딩 (브라우저 응답 없음 해결)
             const gltfLoader = new THREE.GLTFLoader();
-            await Promise.all(modelFiles.map(filePath => {
-                return new Promise((resolve) => {
+            for (let i = 0; i < modelFiles.length; i++) {
+                const filePath = modelFiles[i];
+                progressEl.innerText = `3D 선박 모델 다운로드 중... (${i+1}/${modelFiles.length})`;
+                await new Promise((resolve) => {
                     gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
                         const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
                         const box = new THREE.Box3().setFromObject(rawModel); const size = new THREE.Vector3(); box.getSize(size); const center = new THREE.Vector3(); box.getCenter(center);
                         if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); if (!isFinite(center.x)) center.set(0, 0, 0);
                         rawModel.position.set(-center.x, -center.y, -center.z); const maxDim = Math.max(size.x, size.y, size.z); const scale = 150 / maxDim;
                         const wrapper = new THREE.Group(); wrapper.add(rawModel); wrapper.scale.set(scale, scale, scale);
-                        
                         const fileName = filePath.split('/').pop(); 
                         parsedModels[fileName] = { group: wrapper, height: size.y * scale };
                         resolve();
                     }, undefined, () => { resolve(); });
                 });
-            }));
+                await new Promise(r => setTimeout(r, 50)); // UI 업데이트 강제 대기시간
+            }
 
             document.getElementById('loading-screen').style.display = 'none';
             startSimulation(); 
@@ -585,6 +591,20 @@
             if(state === 'calm') { env.waveForce = 0.3; document.getElementById('btn-env-calm').classList.add('active'); if (!isNight && daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } } 
             else if(state === 'mod') { env.waveForce = 1.2; document.getElementById('btn-env-mod').classList.add('active'); if (!isNight && nightSkybox) { scene.background = nightSkybox; scene.environment = nightSkybox; } }
         };
+        
+        // 📌 조타 토글 버튼 로직
+        let isTouchSteeringEnabled = false;
+        window.toggleTouchSteering = function() {
+            isTouchSteeringEnabled = !isTouchSteeringEnabled;
+            const btn = document.getElementById('btn-touch-steer');
+            const pBtn = document.getElementById('btn-steer-port');
+            const sBtn = document.getElementById('btn-steer-stbd');
+            if(isTouchSteeringEnabled) {
+                btn.classList.add('active'); pBtn.style.display = 'flex'; sBtn.style.display = 'flex';
+            } else {
+                btn.classList.remove('active'); pBtn.style.display = 'none'; sBtn.style.display = 'none';
+            }
+        };
 
         let saveTimeout;
         window.addEventListener('keydown', (e) => { 
@@ -608,19 +628,14 @@
             }
         });
 
-        // 📌 모바일 터치 조타 제어 로직 (왼쪽 화면 터치 -> 좌현, 오른쪽 화면 터치 -> 우현)
-        document.addEventListener('touchstart', (e) => { 
-            if(gameState === 'PLAYING' && e.target.tagName === 'CANVAS' && !isPaused) {
-                const touchX = e.touches[0].clientX;
-                if (touchX < window.innerWidth / 2) {
-                    shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5);
-                    shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5;
-                } else {
-                    shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5);
-                    shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5;
-                }
-            }
-        }, {passive: true});
+        // 📌 P / S 버튼 조작 기능 (마우스 클릭 & 터치 완벽 호환)
+        function steerPort(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
+        function steerStbd(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
+        
+        const portBtn = document.getElementById('btn-steer-port');
+        const stbdBtn = document.getElementById('btn-steer-stbd');
+        portBtn.addEventListener('mousedown', steerPort); portBtn.addEventListener('touchstart', steerPort, {passive: false});
+        stbdBtn.addEventListener('mousedown', steerStbd); stbdBtn.addEventListener('touchstart', steerStbd, {passive: false});
 
         document.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') isDraggingCam = true; });
         document.addEventListener('mouseup', () => { isDraggingCam = false; });
