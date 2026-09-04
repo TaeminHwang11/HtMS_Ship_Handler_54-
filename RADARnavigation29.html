@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>[HTMS] RADAR Navigation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
+        :root {
+            --bg-main: #151515; --bg-panel: #252629; --bg-box: #1c1d20; --bg-btn: #3b4252;
+            --border-color: #3a3b3e; --text-main: #d0d0d0; --text-muted: #aaa; --text-highlight: #55ff55;
+            --radar-bg: #050810; --accent-blue: #3a75c4; --radar-line: #224422;
+        }
+
+        body.theme-night {
+            --bg-main: #000000; --bg-panel: #0a0a0a; --bg-box: #050505; --bg-btn: #1a0000;
+            --border-color: #330000; --text-main: #aa3333; --text-muted: #662222; --text-highlight: #ff3333;
+            --radar-bg: #000000; --accent-blue: #aa3333; --radar-line: #331111;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-main); color: var(--text-main);
+            font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #ui-container {
+            display: flex; width: 100vw; height: 100vh; padding: 10px; box-sizing: border-box;
+            background: var(--bg-panel); border: 15px solid #111; border-radius: 10px;
+        }
+
+        .left-panel {
+            width: 210px; display: flex; flex-direction: column; gap: 8px;
+            background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px; box-sizing: border-box;
+        }
+        .instrument-box { background: var(--bg-box); border: 1px solid #333; padding: 8px; text-align: center; }
+        .instrument-title { text-align: left; font-size: 11px; color: var(--text-muted); margin-bottom: 3px; font-weight: bold; }
+        .digital-value { font-size: 18px; color: var(--text-highlight); background: #111; padding: 4px; margin-top: 6px; font-family: monospace; }
+        
+        #alarm-panel {
+            display: none; flex-direction: column; background: rgba(30, 0, 0, 0.85);
+            border: 1px solid #ff3333; border-radius: 4px; overflow: hidden;
+            font-size: 10px; margin-top: auto; max-height: 120px; flex-shrink: 0;
+        }
+        .alarm-header { background: #550000; color: #fff; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .alarm-list { flex: 1; overflow-y: auto; color: #ff5555; padding: 4px 6px; font-family: monospace; }
+        .alarm-list div { margin-bottom: 3px; }
+        .alarm-clear-btn { background: #333; color: #fff; border: 1px solid #888; cursor: pointer; font-size: 9px; padding: 2px 5px; border-radius: 2px;}
+        .alarm-clear-btn:hover { background: #ff3333; }
+
+        .center-panel {
+            flex-grow: 1; position: relative; margin: 0 5px;
+            background: var(--radar-bg); border: 1px solid var(--border-color); overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #radar-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+        
+        .overlay-text { position: absolute; z-index: 2; font-size: 11px; color: var(--text-highlight); pointer-events: none; }
+        .top-left-data { top: 10px; left: 10px; line-height: 1.4; }
+        .top-left-data span { color: var(--text-main); }
+        .bottom-left-data { bottom: 40px; left: 10px; font-size: 10px; }
+        
+        .top-right-data { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 11px; }
+        .row-group { display: flex; gap: 4px; align-items: center; }
+        
+        .badge { background: transparent; border: 1px solid #555; color: var(--text-muted); padding: 2px 5px; font-weight: bold; border-radius: 2px; cursor: pointer; }
+        .badge.green { border-color: var(--text-highlight); color: var(--text-highlight); background: #113311; }
+        .badge.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+        
+        select.badge { appearance: none; -webkit-appearance: none; outline: none; font-family: inherit; font-size: inherit; text-align: center; }
+        select.badge option { background: #222; color: #fff; text-align: left; }
+        select.btn-dropdown { appearance: none; -webkit-appearance: none; outline: none; text-align: center; cursor: pointer; }
+        select.btn-dropdown option { background: #222; color: #fff; text-align: center; }
+
+        body.theme-night .badge.green { background: #331111; }
+        
+        .bottom-tabs { position: absolute; bottom: 5px; left: 10px; z-index: 2; display: flex; gap: 2px; }
+        .bottom-tab-btn { background: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 10px; font-size: 11px; cursor: pointer; }
+        .bottom-tab-btn.active { background: #4c566a; color: #fff; font-weight: bold; }
+
+        .pi-grid-container {
+            position: absolute; bottom: 5px; right: 10px; z-index: 2;
+            font-size: 9px; color: var(--text-highlight); display: grid; grid-template-columns: auto 18px 35px 35px 18px; gap: 2px; align-items: center;
+        }
+        .pi-header { text-align: center; color: var(--text-muted); padding-bottom: 2px; }
+        .pi-btn { background: transparent; border: 1px solid var(--text-highlight); color: var(--text-highlight); text-align: center; padding: 2px 0; cursor: pointer; }
+        .pi-btn:hover { background: #113311; }
+        .pi-input { background: transparent; border: 1px solid #444; height: 12px; color: var(--text-highlight); font-family: monospace; text-align: center;}
+
+        #standby-overlay {
+            position: absolute; z-index: 10; text-align: center;
+            color: var(--text-highlight); font-size: 22px; font-weight: bold;
+            cursor: pointer; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; border: 1px solid var(--text-highlight);
+        }
+
+        .right-panel {
+            width: 260px; display: flex; flex-direction: column; gap: 4px;
+            background: var(--bg-panel); border: 1px solid var(--border-color); padding: 6px; font-size: 11px; box-sizing: border-box; overflow-y: hidden;
+        }
+        
+        .right-panel-scrollable {
+            display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-right: 4px; height: 100%;
+        }
+        .right-panel-scrollable::-webkit-scrollbar { width: 4px; }
+        .right-panel-scrollable::-webkit-scrollbar-track { background: #111; }
+        .right-panel-scrollable::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+
+        .tab-row { display: flex; justify-content: space-between; gap: 2px; flex-shrink: 0; }
+        .tab-btn { flex: 1; background: var(--bg-btn); color: var(--text-muted); border: 1px solid #222; padding: 4px; text-align: center; cursor: pointer; font-size: 10px; font-weight: bold; }
+        .tab-btn.active { background: #4c566a; color: #fff; border-bottom: 2px solid var(--text-highlight); }
+        .tab-btn.blue-active { border-bottom: 2px solid var(--accent-blue); color: #fff; }
+        
+        .control-group { background: var(--bg-box); padding: 5px; border: 1px solid #222; flex-shrink: 0; }
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+        .control-label { font-weight: bold; color: var(--text-main); font-size: 10px; }
+        
+        .btn { background: var(--bg-btn); color: var(--text-main); border: 1px solid #111; padding: 2px 5px; cursor: pointer; font-size: 10px; display: inline-flex; align-items: center; gap: 4px; }
+        .btn:hover { filter: brightness(1.2); }
+        .btn-dropdown::after { content: '▼'; font-size: 7px; color: var(--text-muted); }
+
+        input[type=range] { -webkit-appearance: none; width: 100px; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 6px; background: #eceff4; cursor: pointer; margin-top: -4px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #111; border: 1px solid #000; }
+        .slider-gain::-webkit-slider-runnable-track { background: linear-gradient(90deg, #111 0%, var(--accent-blue) 100%); }
+        .slider-sea::-webkit-slider-runnable-track { background: linear-gradient(90deg, #111 0%, #88c0d0 100%); transition: filter 0.3s; }
+        .slider-gain.disabled::-webkit-slider-runnable-track,
+        .slider-sea.disabled::-webkit-slider-runnable-track { filter: grayscale(100%) opacity(0.3); pointer-events: none; }
+
+        .target-list-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; flex-shrink: 0;
+        }
+
+        .target-card {
+            background: #111; border: 1px solid #444; padding: 4px; 
+            color: var(--text-highlight); font-family: monospace; font-size: 10px;
+            overflow: hidden;
+        }
+
+        .far-right-bar {
+            width: 45px; background: var(--bg-panel); border: 1px solid var(--border-color); margin-left: 5px;
+            display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px;
+        }
+        .icon-btn {
+            width: 32px; height: 32px; background: var(--bg-box); border: 1px solid #111; border-radius: 4px;
+            color: var(--text-muted); font-size: 9px; font-weight: bold; display: flex; justify-content: center; align-items: center; flex-direction: column;
+            cursor: pointer; text-align: center; line-height: 1.1; transition: background 0.2s;
+        }
+        .icon-btn:hover, .icon-btn.active { background: var(--accent-blue); color: #fff; }
+        .icon-btn.alert { background: #444222; color: #ffff55; border-color: #ffff55; }
+        
+        .knob-container { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; }
+        .knob { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #555 30%, #222 100%); border: 2px solid #111; position: relative; cursor: pointer; transition: transform 0.1s;}
+        .knob::after { content: ''; position: absolute; top: 2px; left: 14px; width: 2px; height: 8px; background: #fff; }
+    </style>
+</head>
+<body>
+
+<div id="ui-container">
+    <div class="left-panel">
+        <div class="instrument-box" style="position:relative;">
+            <div style="position:absolute; top:4px; right:4px; font-size:9px; color:#555; font-weight:bold; letter-spacing:1px; pointer-events:none;"></div>
+            <div class="instrument-title">GYRO (←, →)</div>
+            <canvas id="gyro-canvas" width="160" height="110"></canvas>
+            <div class="digital-value" id="val-hdg">000.0°</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:3px;" id="val-rot">0.0 °/min</div>
+        </div>
+        
+        <div class="instrument-box">
+            <div class="instrument-title">WIND</div>
+            <canvas id="wind-canvas" width="160" height="150"></canvas>
+            <div class="control-row" style="margin-top:6px;">
+                <div class="btn">True</div>
+                <div class="digital-value" style="margin-top:0; font-size:16px;">2.7 m/s</div>
+            </div>
+        </div>
+        
+        <div class="instrument-box">
+            <div class="instrument-title" style="margin-bottom:8px; width:100%; display:flex; justify-content:space-between; align-items:center;">
+                <span>SCENARIO</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <div id="btn-threat" style="width: 10px; height: 10px; border-radius: 50%; background: #440000; border: 1px solid #770000; cursor: pointer; transition: 0.3s;" onclick="toggleThreatMode()" title="Threat Mode (타선 유도탄 모드)"></div>
+                    <span id="scenario-status" style="color:#aaa;">Standby</span>
+                </div>
+            </div>
+            <input type="file" id="scenario-upload" accept=".json" style="display:none;" onchange="loadScenario(event)">
+            <div style="display:flex; gap:4px;">
+                <button class="btn" style="flex:1; justify-content:center; padding:6px 0; border-color:#00ffaa; color:#00ffaa;" onclick="document.getElementById('scenario-upload').click()">Load .json</button>
+                <button class="btn" style="flex:1; justify-content:center; padding:6px 0; border-color:#eab308; color:#fef08a; background:rgba(234, 179, 8, 0.2);" onclick="exportLogCSV()">Save Log</button>
+            </div>
+        </div>
+
+        <div class="instrument-box">
+            <div class="instrument-title" style="margin-bottom: 8px;">OPERATION</div>
+            <div style="display:flex; gap:4px;">
+                <button class="btn" id="btn-op-pause" onclick="togglePause()" style="flex:1; justify-content:center; padding:4px 0;">PAUSE</button>
+                <button class="btn btn-op-speed" id="btn-op-speed-1" onclick="setSimSpeed(1)" style="flex:1; justify-content:center; padding:4px 0; color:#00ffaa; border-color:#00ffaa;">1x</button>
+                <button class="btn btn-op-speed" id="btn-op-speed-3" onclick="setSimSpeed(3)" style="flex:1; justify-content:center; padding:4px 0;">3x</button>
+                <button class="btn btn-op-speed" id="btn-op-speed-5" onclick="setSimSpeed(5)" style="flex:1; justify-content:center; padding:4px 0;">5x</button>
+            </div>
+        </div>
+        
+        <div class="instrument-box" style="flex-grow:1; display:flex; flex-direction:column; justify-content:flex-start; text-align:left;">
+            <div class="instrument-title" style="margin-bottom: 8px;">STEERING</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:4px 6px; border:1px solid #333; margin-bottom:4px;">
+                <span style="font-size:10px; color:var(--text-muted);">HDG</span>
+                <span id="steer-hdg" style="font-family:monospace; font-size:14px; color:#fff; font-weight:bold;">000.0°</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:4px 6px; border:1px solid #333; margin-bottom:4px;">
+                <span style="font-size:10px; color:var(--text-muted);">RUD CMD</span>
+                <span id="steer-rud-cmd" style="font-family:monospace; font-size:14px; color:#fff; font-weight:bold;">0.0°</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:4px 6px; border:1px solid #333; margin-bottom:4px;">
+                <span style="font-size:10px; color:var(--text-muted);">RUD ACT</span>
+                <span id="steer-rud-act" style="font-family:monospace; font-size:14px; color:#fff; font-weight:bold;">0.0°</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:4px 6px; border:1px solid #333;">
+                <span style="font-size:10px; color:var(--text-muted);">ROT</span>
+                <span id="steer-rot" style="font-family:monospace; font-size:14px; color:#fff; font-weight:bold;">0.0 °/min</span>
+            </div>
+        </div>
+        
+        <div id="alarm-panel">
+            <div class="alarm-header">
+                <span>⚠️ SYSTEM ALARMS</span>
+                <button class="alarm-clear-btn" onclick="clearAlarms()">CLR</button>
+            </div>
+            <div id="alarm-list" class="alarm-list"></div>
+        </div>
+    </div>
+
+    <div class="center-panel">
+        <div class="overlay-text top-left-data">
+            HDG - MAG 1 &nbsp; <span id="top-hdg">000.0°</span><br>
+            STW - DLOG 1 &nbsp; <span id="os-spd-stw">10.0 kn</span><br>
+            COG - DGPS 1 &nbsp; <span id="top-cog">000.0°</span><br>
+            SOG - DGPS 1 &nbsp; <span id="top-sog">10.0 kn</span><br>
+            POSN - DGPS 1<br>
+            &nbsp; <span id="os-lat">34° 47.014 N</span><br>
+            &nbsp; <span id="os-lon">126° 21.733 E</span><br>
+            TIME (UTC)<br>
+            &nbsp; <span id="clock-utc">04:02:31</span>
+        </div>
+        
+        <div class="top-right-data">
+            <div class="row-group">
+                <span style="color:var(--text-highlight); font-weight:bold; font-size:12px;">RNG</span>
+                <select class="badge green" id="rng-select" onchange="changeRange()">
+                    <option value="0.5">0.5 NM ▼</option>
+                    <option value="1.5">1.5 NM ▼</option>
+                    <option value="3.0" selected>3.0 NM ▼</option>
+                    <option value="6.0">6.0 NM ▼</option>
+                    <option value="9.0">9.0 NM ▼</option>
+                    <option value="12.0">12.0 NM ▼</option>
+                    <option value="24.0">24.0 NM ▼</option>
+                    <option value="48.0">48.0 NM ▼</option>
+                </select>
+            </div>
+            
+            <div id="arc-zone" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding:4px; border-radius:4px; border:1px solid transparent; transition:all 0.3s;">
+                <select class="badge green" id="rr-select" onchange="changeRR();">
+                    <option value="auto" selected>AUTO ▼</option>
+                    <option value="6s">TR 6s ▼</option>
+                    <option value="12s">TR 12s ▼</option>
+                    <option value="30s">TR 30s ▼</option>
+                    <option value="1m">TR 1 min ▼</option>
+                    <option value="3m">TR 3 min ▼</option>
+                    <option value="6m">TR 6 min ▼</option>
+                </select>
+                
+                <select class="badge green" id="cpa-limit" onchange="changeCpaLimit();">
+                    <option value="0.1">CPA: 0.1 NM ▼</option>
+                    <option value="0.2">CPA: 0.2 NM ▼</option>
+                    <option value="0.3">CPA: 0.3 NM ▼</option>
+                    <option value="0.4">CPA: 0.4 NM ▼</option>
+                    <option value="0.5">CPA: 0.5 NM ▼</option>
+                    <option value="1.0" selected>CPA: 1.0 NM ▼</option>
+                    <option value="1.5">CPA: 1.5 NM ▼</option>
+                    <option value="2.0">CPA: 2.0 NM ▼</option>
+                </select>
+                
+                <select class="badge green" id="tcpa-limit" onchange="changeTcpaLimit();">
+                    <option value="5">TCPA: 5 min ▼</option>
+                    <option value="10" selected>TCPA: 10 min ▼</option>
+                    <option value="15">TCPA: 15 min ▼</option>
+                    <option value="20">TCPA: 20 min ▼</option>
+                </select>
+                
+                <div class="row-group">
+                    <select class="badge green" id="arc-interval" onchange="changeArcInterval()">
+                        <option value="3">ARC: 3s ▼</option>
+                        <option value="6" selected>ARC: 6s ▼</option>
+                        <option value="9">ARC: 9s ▼</option>
+                    </select>
+                    <div class="badge green" id="btn-arc-mode" style="cursor:pointer;" onclick="toggleArcMode()">Selected</div>
+                </div>
+
+                <div class="row-group" style="margin-top:2px;">
+                    <select class="badge green" id="w-turn-select" onchange="changeArcWeights()" title="Turn Weight">
+                        <option value="0.1">W_Turn: 0.1</option>
+                        <option value="0.5">W_Turn: 0.5</option>
+                        <option value="1.0">W_Turn: 1.0</option>
+                        <option value="2.0" selected>W_Turn: 2.0</option>
+                        <option value="5.0">W_Turn: 5.0</option>
+                    </select>
+                    <select class="badge green" id="w-goal-select" onchange="changeArcWeights()" title="Goal Weight">
+                        <option value="0.1">W_Goal: 0.1</option>
+                        <option value="0.5">W_Goal: 0.5</option>
+                        <option value="1.0" selected>W_Goal: 1.0</option>
+                        <option value="2.0">W_Goal: 2.0</option>
+                        <option value="5.0">W_Goal: 5.0</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row-group" style="margin-top:4px;">
+                <select class="badge green" id="pulse-length" onchange="changePulseLength()">
+                    <option value="SP" selected>SP ▼</option>
+                    <option value="MP">MP ▼</option>
+                    <option value="LP">LP ▼</option>
+                </select>
+                <div class="badge" style="background:#444222; color:#ffff55; border-color:#ffff55;">!</div>
+            </div>
+            <div style="color:var(--text-highlight); font-size:10px; cursor:pointer; margin-top:4px;">
+                TUNE <span class="badge green">AUTO</span>
+            </div>
+        </div>
+
+        <canvas id="radar-canvas"></canvas>
+
+        <div id="standby-overlay" onclick="toggleRadar()">
+            STANDBY<br>
+            <span style="font-size:14px; font-weight:normal;">Magnetron time: 00000 HR</span>
+        </div>
+
+        <div class="overlay-text bottom-left-data">
+            CURSOR POSITION<br>
+            <span id="cur-lat">--° --.--- N</span> &nbsp; R BRG: <span id="cur-brg">000.0°</span><br>
+            <span id="cur-lon">---° --.--- E</span> &nbsp; RNG: <span id="cur-rng">0.00 NM</span>
+        </div>
+        <div class="bottom-tabs">
+            <div class="bottom-tab-btn active">Instruments</div>
+            <div class="bottom-tab-btn">Route</div>
+            <div class="bottom-tab-btn">Docking</div>
+        </div>
+
+        <div class="pi-grid-container">
+            <div></div> <div></div>
+            <div class="pi-header">RNG<br>NM</div>
+            <div class="pi-header">R BRG<br>deg</div>
+            <div></div>
+            
+            <div style="text-align:right;"></div> 
+            <div class="pi-btn" id="btn-pi0" onclick="togglePI(0)">1</div> 
+            <input class="pi-input" id="pi-rng0" value="0.50" onchange="updatePI(0)"> 
+            <input class="pi-input" id="pi-brg0" value="000.0" onchange="updatePI(0)"> 
+            <div class="pi-btn" onclick="togglePI(0)">1</div>
+            
+            <div style="text-align:right;"></div> 
+            <div class="pi-btn" id="btn-pi1" onclick="togglePI(1)">2</div> 
+            <input class="pi-input" id="pi-rng1" value="1.00" onchange="updatePI(1)"> 
+            <input class="pi-input" id="pi-brg1" value="000.0" onchange="updatePI(1)"> 
+            <div class="pi-btn" onclick="togglePI(1)">2</div>
+            
+            <div style="text-align:right;">Show PI</div> 
+            <div class="pi-btn" id="btn-pi2" onclick="togglePI(2)">3</div> 
+            <input class="pi-input" id="pi-rng2" value="1.50" onchange="updatePI(2)"> 
+            <input class="pi-input" id="pi-brg2" value="000.0" onchange="updatePI(2)"> 
+            <div class="pi-btn" onclick="togglePI(2)">3</div>
+            
+            <div style="text-align:right;">Reset PI</div> 
+            <div class="pi-btn" id="btn-pi3" onclick="togglePI(3)">4</div> 
+            <input class="pi-input" id="pi-rng3" value="2.00" onchange="updatePI(3)"> 
+            <input class="pi-input" id="pi-brg3" value="000.0" onchange="updatePI(3)"> 
+            <div class="pi-btn" onclick="togglePI(3)">4</div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="right-panel-scrollable">
+            <div class="tab-row">
+                <div class="tab-btn">ECDIS</div>
+                <div class="tab-btn blue-active">Radar</div>
+                <div class="tab-btn">BAM</div>
+                <div class="tab-btn">NPL</div>
+            </div>
+            <!-- 🎯 프로그램 이름 각인 적용 -->
+            <div style="text-align:right; font-size:10px; color:var(--text-main); font-weight:bold; margin: 4px 0;">[HTMS] RADAR Navigation</div>
+            
+            <div class="tab-row">
+                <div class="tab-btn active" onclick="toggleSubTab(this)">ARPA</div>
+                <div class="tab-btn" onclick="toggleSubTab(this)">AIS</div>
+                <div class="tab-btn" onclick="toggleSubTab(this)">CHART</div>
+                <div class="tab-btn blue-active" onclick="toggleSubTab(this)">MAP</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-row">
+                    <span class="badge active" id="btn-tvect" onclick="toggleVectorMode('T')">T VECT</span>
+                    <span class="badge" id="btn-rvect" onclick="toggleVectorMode('R')">R VECT</span>
+                    <select class="btn btn-dropdown" id="vector-time-select" onchange="updateVectorTime()">
+                        <option value="0" selected>0</option>
+                        <option value="1">1</option>
+                        <option value="3">3</option>
+                        <option value="6">6</option>
+                        <option value="9">9</option>
+                        <option value="12">12</option>
+                        <option value="30">30</option>
+                        <option value="60">60</option>
+                    </select>
+                    <span>min</span>
+                </div>
+                <div class="control-row">
+                    <span class="badge active" id="btn-ttrail" onclick="toggleTrailMode('T')">T TRAIL</span>
+                    <span class="badge" id="btn-rtrail" onclick="toggleTrailMode('R')">R TRAIL</span>
+                    <select class="btn btn-dropdown" id="trail-time-select" onchange="updateTrailTime()">
+                        <option value="0" selected>0</option>
+                        <option value="1">1</option>
+                        <option value="3">3</option>
+                        <option value="6">6</option>
+                        <option value="9">9</option>
+                        <option value="12">12</option>
+                        <option value="30">30</option>
+                        <option value="60">60</option>
+                    </select>
+                    <span>min</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div style="color:var(--text-main); font-weight:bold; margin-bottom:4px;">Status Management</div>
+                <div class="btn" style="text-align:center; display:block; margin:4px 0;">Scanner management</div>
+                <div style="color:var(--text-muted); font-size:10px;">Station status:</div>
+                <div style="background:#222; padding:3px; text-align:center; color:#fff; border:1px solid #111; margin:2px 0;">Master S1</div>
+                <div class="btn" style="text-align:center; display:block;" onclick="handleHandover()">Hand over control</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-row">
+                    <span class="btn btn-dropdown" style="flex:1; justify-content:center;">Acc - Off</span>
+                    <div style="width:4px;"></div>
+                    <span class="btn btn-dropdown" style="flex:1; justify-content:center;">Offshore</span>
+                </div>
+                <div class="control-row" style="margin-top:6px;">
+                    <span class="control-label">GAIN</span>
+                    <input type="range" id="slider-gain" class="slider-gain" min="0" max="100" value="0">
+                </div>
+                <div class="control-row">
+                    <span class="control-label">RAIN</span>
+                    <input type="range" id="slider-rain" class="slider-gain" min="0" max="100" value="0">
+                </div>
+                <div class="control-row">
+                    <span class="control-label">SEA</span>
+                    <input type="range" id="slider-sea" class="slider-sea" min="0" max="100" value="0">
+                    <span class="btn" id="btn-sea-auto" style="font-size:9px;" onclick="toggleSeaAuto()">AUTO</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-row" style="border-bottom:1px solid #555; padding-bottom:4px; margin-bottom:4px;">
+                    <span style="font-weight:bold; color:var(--text-main);">EBL / VRM 1</span>
+                    <span style="font-weight:bold; color:var(--text-muted);">EBL / VRM 2</span>
+                </div>
+                <div class="control-row">
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <span class="badge" id="btn-ebl1" style="border-radius:10px; padding:2px 6px;" onclick="toggleEBL()">EBL 1</span>
+                        <span style="color:#ff3333; font-size:9px; font-weight:bold;">ARC</span>
+                    </div>
+                    <span id="val-ebl1" style="font-family:monospace; color:var(--text-main); font-size:12px;">088.9 ° T</span>
+                    <span class="btn">OFFSET</span>
+                </div>
+                <div class="control-row">
+                    <span class="badge" id="btn-vrm1" style="border-radius:10px; padding:2px 6px;" onclick="toggleVRM()">VRM 1</span>
+                    <span id="val-vrm1" style="font-family:monospace; color:var(--text-main); font-size:12px;">0.24 NM</span>
+                    <span class="btn btn-dropdown">Fixed</span>
+                </div>
+                <div class="control-row" style="margin-top:4px;">
+                    <span class="badge" id="btn-ebl2" style="border-radius:10px; padding:2px 6px;" onclick="toggleEBL2()">EBL 2</span>
+                    <span id="val-ebl2" style="font-family:monospace; color:var(--text-main); font-size:12px;">045.0 ° T</span>
+                    <span class="btn">OFFSET</span>
+                </div>
+                <div class="control-row">
+                    <span class="badge" id="btn-vrm2" style="border-radius:10px; padding:2px 6px;" onclick="toggleVRM2()">VRM 2</span>
+                    <span id="val-vrm2" style="font-family:monospace; color:var(--text-main); font-size:12px;">1.00 NM</span>
+                    <span class="btn btn-dropdown">Fixed</span>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:4px;">
+                <span style="color:var(--text-muted); font-size:9px; font-weight:bold;">TRACKED TARGETS</span>
+                <button class="alarm-clear-btn" style="margin:0;" onclick="clearSelectedTargets()">CLR ALL</button>
+            </div>
+            <div id="target-info-container" class="target-list-container"></div>
+        </div>
+    </div>
+
+    <div class="far-right-bar">
+        <div class="icon-btn alert">!</div>
+        <div class="icon-btn" id="btn-orient" onclick="cycleOrient()">H<br>UP</div>
+        <div class="icon-btn" id="btn-motion" onclick="toggleMotion()">RM</div>
+        <div class="icon-btn" id="btn-offcent" onclick="toggleOffCenter()">Off<br>cent</div>
+        <div class="icon-btn active" id="btn-rings" style="font-size:16px;" onclick="toggleRings()">◎</div>
+        <div class="icon-btn" id="btn-tgt">TGT</div>
+        <div class="icon-btn" id="btn-arc" onclick="toggleArc()">ARC</div>
+        <div class="icon-btn" id="btn-theme" style="font-size:14px;" onclick="toggleTheme()">◑</div>
+        
+        <div class="knob-container">
+            <div class="knob" id="brightness-knob"></div>
+            <span>Brightness</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('select, input, button, .badge').forEach(el => {
+            el.addEventListener('change', function() { this.blur(); });
+            if (el.tagName !== 'SELECT' && el.tagName !== 'INPUT') {
+                el.addEventListener('click', function() { this.blur(); });
+            }
+        });
+    });
+
+    let isTransmitting = false;
+    let radarTrueBrg = 0; 
+    let showRings = true;
+    let pulseLength = 'SP'; 
+    let manualRR = 'auto'; 
+    
+    let arcActive = false;
+    let arcIntervalMs = 6000; 
+    let arcTargetMode = 'Selected'; 
+    let manualEblOverride = false; // 🎯 EBL 수동 조작 여부 플래그 추가
+    
+    let wTurnVal = 2.0;
+    let wGoalVal = 1.0;
+
+    const rangeLevels = [0.5, 1.5, 3.0, 6.0, 9.0, 12.0, 24.0, 48.0];
+    let currentRange = 3.0;
+    
+    let cpaLimitVal = 1.0;
+    let tcpaLimitVal = 10.0;
+    
+    let gainValue = 0;
+    let rainValue = 0;
+    let seaValue = 0;
+    let lastTime = performance.now();
+    const timeMultiplier = 2.0; 
+    let globalSimTimeMins = 0;
+    let lastRecordTime = 0;
+
+    let alarmLog = [];
+    let alarmedTargets = new Set();
+
+    let uiBrightness = 1.0;
+    let isDraggingKnob = false;
+    let lastMouseY = 0;
+
+    const knob = document.getElementById('brightness-knob');
+    knob.addEventListener('mousedown', (e) => { isDraggingKnob = true; lastMouseY = e.clientY; });
+    window.addEventListener('mousemove', (e) => {
+        if (isDraggingKnob) {
+            let delta = e.clientY - lastMouseY;
+            uiBrightness -= delta * 0.01;
+            uiBrightness = Math.max(0.3, Math.min(uiBrightness, 1.5));
+            document.body.style.filter = `brightness(${uiBrightness})`;
+            lastMouseY = e.clientY;
+            knob.style.transform = `rotate(${(uiBrightness - 1.0) * 180}deg)`;
+        }
+    });
+    window.addEventListener('mouseup', () => { isDraggingKnob = false; });
+
+    let isNightMode = false;
+    let orientMode = 0; 
+    const orientText = ["H<br>UP", "N<br>UP", "C<br>UP"];
+    let lockedCourse = 0;
+    let motionMode = 0; 
+
+    let isOffCenter = false;
+    let isOffCenterSelecting = false;
+    let osOffsetX = 0; 
+    let osOffsetY = 0;
+
+    let vectorMode = 'T';
+    let vectorTimeMins = 0; 
+    let trailMode = 'T';
+    let trailTimeMins = 0;
+
+    let aisActive = false;
+    
+    let ebl1Active = false;
+    let vrm1Active = false;
+    let ebl1AngleTrue = 88.9; 
+    let vrm1Dist = 0.24; 
+    let isDraggingEBL = false;
+    let isDraggingVRM = false;
+
+    let ebl2Active = false;
+    let vrm2Active = false;
+    let ebl2AngleTrue = 45.0; 
+    let vrm2Dist = 1.00; 
+    let isDraggingEBL2 = false;
+    let isDraggingVRM2 = false;
+
+    let piActive = [false, false, false, false];
+    let piSpacing = [0.5, 1.0, 1.5, 2.0];
+    let piBrg = [0.0, 0.0, 0.0, 0.0];
+    let isDraggingPIRotate = false;
+    let isDraggingPIScale = false;
+    let activePiIdx = -1;
+    let piDragLineIdx = 1; 
+
+    let hoveredTargetId = null;
+    let selectedTargets = [];
+    let dummyAcquisitions = []; 
+    let hideTargets = false; 
+
+    let lastArcCalcTime = 0;
+    let cachedArcNumRings = 0;
+    let cachedArcRingData = [];
+    let cachedArcBestPath = [];
+    
+    // 🎯 ARC 30프레임 스로틀링을 위한 변수
+    let arcUpdatePending = false;
+    let framesSinceLastArc = 0;
+
+    let threatMode = false;
+    let isPaused = false;
+    let simSpeed = 1.0;
+    
+    let logData = [];
+    let simTimeSeconds = 0;
+    let lastLogTimeSec = 0;
+
+    const os = { 
+        x: 0, y: 0, 
+        hdg: 0.0, spd: 10.0, 
+        targetRudder: 0, actualRudder: 0, rot: 0,
+        lat: 34 + (47.014 / 60), 
+        lon: 126 + (21.733 / 60)
+    };
+    const targets = [];
+    const aisTargets = [];
+    const goalPoints = [];
+
+    const aisPrefixes = ["MAERSK", "MSC", "CMA CGM", "EVER", "HMM", "ONE", "COSCO", "OOCL"];
+    const aisSuffixes = ["SPAIN", "KOREA", "BUSAN", "VENUS", "APOLLO", "PIONEER", "STAR", "CHAMPION"];
+
+    function angleDiff(a, b) {
+        let diff = (a - b) % 360;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        return diff;
+    }
+
+    function triggerArcUpdate() {
+        arcUpdatePending = true; 
+    }
+
+    window.toggleThreatMode = function() {
+        threatMode = !threatMode;
+        const btn = document.getElementById('btn-threat');
+        if (threatMode) {
+            btn.style.background = '#ff3333';
+            btn.style.borderColor = '#ffffff';
+            btn.style.boxShadow = '0 0 8px #ff3333';
+        } else {
+            btn.style.background = '#440000';
+            btn.style.borderColor = '#770000';
+            btn.style.boxShadow = 'none';
+        }
+    }
+
+    window.togglePause = function() {
+        isPaused = !isPaused;
+        const btn = document.getElementById('btn-op-pause');
+        if (isPaused) {
+            btn.innerText = 'RESUME';
+            btn.style.color = '#ff3333';
+            btn.style.borderColor = '#ff3333';
+        } else {
+            btn.innerText = 'PAUSE';
+            btn.style.color = 'var(--text-main)';
+            btn.style.borderColor = '#111';
+        }
+    }
+
+    window.setSimSpeed = function(speed) {
+        simSpeed = speed;
+        document.querySelectorAll('.btn-op-speed').forEach(btn => {
+            btn.style.color = 'var(--text-main)';
+            btn.style.borderColor = '#111';
+        });
+        const activeBtn = document.getElementById('btn-op-speed-' + speed);
+        if(activeBtn) {
+            activeBtn.style.color = '#00ffaa';
+            activeBtn.style.borderColor = '#00ffaa';
+        }
+    }
+
+    window.exportLogCSV = function() {
+        if (logData.length === 0) { alert("아직 저장된 시뮬레이션 로그가 없습니다."); return; }
+        let csvContent = "Time(s),Name,Latitude,Longitude,X,Y,HDG,SOG,COG,ROT,RUD_CMD,RUD_ACT\n";
+        logData.forEach(row => {
+            csvContent += `${row.time},${row.name},${row.lat},${row.lon},${row.x},${row.y},${row.hdg},${row.sog},${row.cog},${row.rot},${row.rud_cmd},${row.rud_act}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `arc_simulation_log_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.loadScenario = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                targets.length = 0;
+                aisTargets.length = 0;
+                goalPoints.length = 0; 
+                alarmLog = [];
+                alarmedTargets.clear();
+                updateAlarmUI();
+                
+                logData = [];
+                simTimeSeconds = 0;
+                lastLogTimeSec = 0;
+                manualEblOverride = false; // 🎯 새 시나리오 로드 시 수동 조작 해제
+
+                if (data.origin) {
+                    os.lat = data.origin.lat;
+                    os.lon = data.origin.lon;
+                }
+                if (data.os) {
+                    os.hdg = data.os.hdg;
+                    os.spd = data.os.spd;
+                    os.targetRudder = 0;
+                    os.actualRudder = 0;
+                    os.rot = 0;
+                }
+                
+                let rad = os.hdg * Math.PI / 180;
+
+                if (data.os && data.os.waypoints) {
+                    data.os.waypoints.forEach(wp => {
+                        let rawX = wp.x / 400;
+                        let rawY = -wp.z / 400;
+                        let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
+                        let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
+                        let finalX = os.x + rotX;
+                        let finalY = os.y + rotY;
+                        goalPoints.push({ x: finalX, y: finalY });
+                    });
+                }
+
+                if (data.targets) {
+                    data.targets.forEach((t, i) => {
+                        let rawX = t.x / 400;
+                        let rawY = -t.z / 400; 
+
+                        let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
+                        let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
+                        
+                        let finalX = os.x + rotX;
+                        let finalY = os.y + rotY;
+                        let finalHdg = (t.hdg + os.hdg) % 360;
+
+                        let isAIS = Math.random() > 0.5; 
+                        
+                        let targetObj = {
+                            x: finalX,
+                            y: finalY,
+                            hdg: finalHdg,
+                            spd: t.spd,
+                            history: []
+                        };
+
+                        if (isAIS) {
+                            targetObj.id = 'AIS_S' + i;
+                            targetObj.type = 'AIS';
+                            targetObj.name = aisPrefixes[Math.floor(Math.random()*aisPrefixes.length)] + " " + aisSuffixes[Math.floor(Math.random()*aisSuffixes.length)];
+                            targetObj.mmsi = "440" + Math.floor(100000 + Math.random()*900000);
+                            aisTargets.push(targetObj);
+                        } else {
+                            targetObj.id = 'ARPA_S' + i;
+                            targetObj.type = 'ARPA';
+                            targetObj.state = 0;
+                            targetObj.acqTime = 0;
+                            targetObj.blipAlpha = 0;
+                            targets.push(targetObj);
+                        }
+                    });
+                }
+                
+                document.getElementById('scenario-status').innerText = 'Loaded';
+                document.getElementById('scenario-status').style.color = '#00ffaa';
+                
+                if (!isPaused) {
+                    togglePause();
+                }
+
+                alert(`시나리오 로드 완료: 타선 ${targets.length + aisTargets.length}척, 목표 지점 ${goalPoints.length}개가 배치되었습니다.`);
+                triggerArcUpdate();
+            } catch (err) {
+                alert("JSON 파일 형식이 올바르지 않습니다.");
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    function changeRange() {
+        currentRange = parseFloat(document.getElementById('rng-select').value);
+        let autoSpacing = currentRange / 6;
+        document.getElementById('rr-select').options[0].text = `AUTO (${autoSpacing.toFixed(2)} NM) ▼`;
+        triggerArcUpdate();
+    }
+
+    function changeCpaLimit() {
+        cpaLimitVal = parseFloat(document.getElementById('cpa-limit').value);
+        triggerArcUpdate();
+    }
+    function changeTcpaLimit() {
+        tcpaLimitVal = parseFloat(document.getElementById('tcpa-limit').value);
+        triggerArcUpdate();
+    }
+
+    function changeArcInterval() {
+        arcIntervalMs = parseInt(document.getElementById('arc-interval').value) * 1000;
+        triggerArcUpdate();
+    }
+
+    function changeArcWeights() {
+        wTurnVal = parseFloat(document.getElementById('w-turn-select').value);
+        wGoalVal = parseFloat(document.getElementById('w-goal-select').value);
+        triggerArcUpdate();
+    }
+
+    function toggleArc() {
+        arcActive = !arcActive;
+        document.getElementById('btn-arc').classList.toggle('active', arcActive);
+        
+        const zone = document.getElementById('arc-zone');
+        if(arcActive) {
+            zone.style.border = '1px solid #ff3333';
+            zone.style.backgroundColor = 'rgba(255, 51, 51, 0.1)';
+            
+            if (!ebl1Active) {
+                ebl1Active = true;
+                document.getElementById('btn-ebl1').classList.add('active');
+            }
+            ebl1AngleTrue = os.hdg;
+            document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+
+            triggerArcUpdate();
+        } else {
+            zone.style.border = '1px solid transparent';
+            zone.style.backgroundColor = 'transparent';
+            cachedArcRingData = []; cachedArcBestPath = [];
+        }
+    }
+
+    function toggleArcMode() {
+        arcTargetMode = (arcTargetMode === 'Selected') ? 'All target' : 'Selected';
+        document.getElementById('btn-arc-mode').innerText = arcTargetMode;
+        triggerArcUpdate();
+    }
+
+    function initEnvironment() {
+        for(let i=0; i<80; i++) {
+            let dist = 0.5 + Math.random() * 15.0;
+            let ang = Math.random() * Math.PI * 2;
+            targets.push({ id: 'ARPA_' + i, type: 'ARPA', x: Math.sin(ang)*dist, y: Math.cos(ang)*dist, hdg: Math.random()*360, spd: 5 + Math.random()*12, state: 0, acqTime: 0, blipAlpha: 0, history: [] });
+        }
+        
+        let fleetCenterAng = Math.random() * Math.PI * 2;
+        let fleetCenterDist = 4.0 + Math.random() * 8.0;
+        for(let i=0; i<30; i++) {
+            let cx = Math.sin(fleetCenterAng)*fleetCenterDist;
+            let cy = Math.cos(fleetCenterAng)*fleetCenterDist;
+            targets.push({ id: 'ARPA_F' + i, type: 'ARPA', x: cx + (Math.random()-0.5)*1.5, y: cy + (Math.random()-0.5)*1.5, hdg: Math.random()*360, spd: 2 + Math.random()*5, state: 0, acqTime: 0, blipAlpha: 0, history: [] });
+        }
+
+        for(let i=0; i<80; i++) {
+            let dist = 0.5 + Math.random() * 15.0; 
+            let ang = Math.random() * Math.PI * 2;
+            let tx = Math.sin(ang)*dist; let ty = Math.cos(ang)*dist;
+            let isThreat = Math.random() < 0.25; 
+            let hdg = isThreat ? (Math.atan2(-tx, -ty) * 180 / Math.PI + (Math.random()*20-10)) : (Math.random() * 360);
+            if(hdg < 0) hdg += 360;
+            let name = aisPrefixes[Math.floor(Math.random()*aisPrefixes.length)] + " " + aisSuffixes[Math.floor(Math.random()*aisSuffixes.length)];
+            aisTargets.push({ id: 'AIS_' + i, type: 'AIS', name: name, mmsi: "440" + Math.floor(100000 + Math.random()*900000), x: tx, y: ty, hdg: hdg, spd: 8 + Math.random() * 12, history: [] });
+        }
+    }
+    initEnvironment();
+
+    const radarCanvas = document.getElementById('radar-canvas');
+    const ctx = radarCanvas.getContext('2d');
+    
+    function resizeCanvas() {
+        const rect = radarCanvas.parentElement.getBoundingClientRect();
+        radarCanvas.width = rect.width; radarCanvas.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function formatLatLon(val, isLat) {
+        let dir = isLat ? (val >= 0 ? 'N' : 'S') : (val >= 0 ? 'E' : 'W');
+        let absVal = Math.abs(val);
+        let deg = Math.floor(absVal);
+        let min = ((absVal - deg) * 60).toFixed(3).padStart(6, '0');
+        let degStr = deg.toString().padStart(isLat ? 2 : 3, '0');
+        return `${degStr}° ${min} ${dir}`;
+    }
+
+    function changeRR() { 
+        let val = document.getElementById('rr-select').value;
+        manualRR = val === 'auto' ? 'auto' : val;
+        triggerArcUpdate();
+    }
+    
+    function toggleRings() {
+        showRings = !showRings;
+        document.getElementById('btn-rings').classList.toggle('active', showRings);
+    }
+
+    function clearAlarms() {
+        alarmLog = [];
+        alarmedTargets.clear();
+        updateAlarmUI();
+    }
+
+    function clearSelectedTargets() {
+        selectedTargets = [];
+        triggerArcUpdate();
+    }
+
+    function updateAlarmUI() {
+        const panel = document.getElementById('alarm-panel');
+        const list = document.getElementById('alarm-list');
+        if (alarmLog.length > 0) {
+            panel.style.display = 'flex';
+            list.innerHTML = alarmLog.map(msg => `<div>${msg}</div>`).join('');
+        } else {
+            panel.style.display = 'none';
+            list.innerHTML = '';
+        }
+    }
+
+    function changePulseLength() { pulseLength = document.getElementById('pulse-length').value; }
+    function updateVectorTime() { vectorTimeMins = parseFloat(document.getElementById('vector-time-select').value); }
+    function updateTrailTime() { trailTimeMins = parseFloat(document.getElementById('trail-time-select').value); }
+    
+    function cycleOrient() {
+        orientMode = (orientMode + 1) % 3;
+        if(orientMode === 2) lockedCourse = os.hdg; 
+        document.getElementById('btn-orient').innerHTML = orientText[orientMode];
+    }
+    function toggleMotion() {
+        motionMode = (motionMode + 1) % 2;
+        document.getElementById('btn-motion').innerText = motionMode === 0 ? "RM" : "TM";
+        if (motionMode === 0 && !isOffCenter) { osOffsetX = 0; osOffsetY = 0; } 
+    }
+    function toggleOffCenter() {
+        if (!isOffCenter) {
+            isOffCenter = true; isOffCenterSelecting = true;
+            document.getElementById('btn-offcent').classList.add('active');
+        } else {
+            if (isOffCenterSelecting) {
+                isOffCenter = false; isOffCenterSelecting = false;
+                osOffsetX = 0; osOffsetY = 0;
+                document.getElementById('btn-offcent').classList.remove('active');
+            } else {
+                isOffCenter = false; 
+                if(motionMode === 0) { osOffsetX = 0; osOffsetY = 0; }
+                document.getElementById('btn-offcent').classList.remove('active');
+            }
+        }
+    }
+
+    const btnTgt = document.getElementById('btn-tgt');
+    btnTgt.addEventListener('mousedown', () => { hideTargets = true; btnTgt.classList.add('active'); });
+    window.addEventListener('mouseup', () => { hideTargets = false; btnTgt.classList.remove('active'); });
+
+    function toggleTheme() { isNightMode = !isNightMode; document.body.classList.toggle('theme-night', isNightMode); }
+    function handleHandover() { if(confirm("Master 제어권을 가져오시겠습니까?")) alert("제어권이 이양되었습니다."); }
+    
+    function toggleVectorMode(mode) {
+        vectorMode = mode;
+        document.getElementById('btn-tvect').classList.toggle('active', mode === 'T');
+        document.getElementById('btn-rvect').classList.toggle('active', mode === 'R');
+    }
+    function toggleTrailMode(mode) {
+        trailMode = mode;
+        document.getElementById('btn-ttrail').classList.toggle('active', mode === 'T');
+        document.getElementById('btn-rtrail').classList.toggle('active', mode === 'R');
+    }
+
+    let seaAuto = false;
+    window.toggleSeaAuto = function() {
+        seaAuto = !seaAuto;
+        const btn = document.getElementById('btn-sea-auto'); 
+        const sGain = document.getElementById('slider-gain');
+        const sRain = document.getElementById('slider-rain');
+        const sSea = document.getElementById('slider-sea');
+        
+        if(seaAuto) { 
+            btn.style.background = 'var(--accent-blue)'; btn.style.color = '#fff'; 
+            sGain.classList.add('disabled'); sGain.disabled = true; 
+            sRain.classList.add('disabled'); sRain.disabled = true; 
+            sSea.classList.add('disabled'); sSea.disabled = true; 
+            
+            sGain.value = 70; gainValue = 70;
+            sRain.value = 20; rainValue = 20;
+            sSea.value = 30; seaValue = 30;
+        } else { 
+            btn.style.background = ''; btn.style.color = ''; 
+            sGain.classList.remove('disabled'); sGain.disabled = false; 
+            sRain.classList.remove('disabled'); sRain.disabled = false; 
+            sSea.classList.remove('disabled'); sSea.disabled = false; 
+        }
+    }
+    
+    function toggleEBL() { 
+        ebl1Active = !ebl1Active; 
+        document.getElementById('btn-ebl1').classList.toggle('active', ebl1Active); 
+        triggerArcUpdate(); 
+    }
+    function toggleVRM() { 
+        vrm1Active = !vrm1Active; 
+        document.getElementById('btn-vrm1').classList.toggle('active', vrm1Active); 
+    }
+    function toggleEBL2() { 
+        ebl2Active = !ebl2Active; 
+        document.getElementById('btn-ebl2').classList.toggle('active', ebl2Active); 
+    }
+    function toggleVRM2() { 
+        vrm2Active = !vrm2Active; 
+        document.getElementById('btn-vrm2').classList.toggle('active', vrm2Active); 
+    }
+    
+    function togglePI(idx) {
+        piActive[idx] = !piActive[idx];
+        const btn = document.getElementById('btn-pi' + idx);
+        if(piActive[idx]) { btn.style.background = '#113311'; btn.style.color = '#fff'; } 
+        else { btn.style.background = 'transparent'; btn.style.color = 'var(--text-highlight)'; }
+    }
+    function updatePI(idx) {
+        piSpacing[idx] = parseFloat(document.getElementById('pi-rng' + idx).value) || 0.5;
+        piBrg[idx] = parseFloat(document.getElementById('pi-brg' + idx).value) || 0.0;
+    }
+    function toggleSubTab(el) { 
+        el.classList.toggle('active'); 
+        if (el.innerText.trim() === 'AIS') aisActive = el.classList.contains('active');
+    }
+
+    document.getElementById('slider-gain').addEventListener('input', (e) => { gainValue = parseInt(e.target.value); });
+    document.getElementById('slider-rain').addEventListener('input', (e) => { rainValue = parseInt(e.target.value); });
+    document.getElementById('slider-sea').addEventListener('input', (e) => { seaValue = parseInt(e.target.value); });
+
+    function toggleRadar() {
+        isTransmitting = !isTransmitting;
+        document.getElementById('standby-overlay').style.display = isTransmitting ? 'none' : 'block';
+        if(isTransmitting) {
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        } 
+    }
+
+    const keys = { ArrowLeft: false, ArrowRight: false };
+    window.addEventListener('keydown', e => { 
+        if (keys.hasOwnProperty(e.code)) {
+            keys[e.code] = true; 
+            e.preventDefault();
+        }
+        
+        if (e.code === 'ArrowUp') {
+            os.spd = Math.min(25.0, os.spd + 1.0);
+            document.getElementById('os-spd-stw').innerText = os.spd.toFixed(1) + " kn";
+            document.getElementById('top-sog').innerText = os.spd.toFixed(1) + " kn";
+            triggerArcUpdate();
+            e.preventDefault();
+        }
+        if (e.code === 'ArrowDown') {
+            os.spd = Math.max(0, os.spd - 1.0);
+            document.getElementById('os-spd-stw').innerText = os.spd.toFixed(1) + " kn";
+            document.getElementById('top-sog').innerText = os.spd.toFixed(1) + " kn";
+            triggerArcUpdate();
+            e.preventDefault();
+        }
+        
+        if(e.code === 'ArrowLeft' && !e.repeat) { 
+            os.targetRudder = Math.max(-35, os.targetRudder - 5); 
+            os.targetRudder = Math.round(os.targetRudder/5)*5; 
+            triggerArcUpdate();
+            e.preventDefault(); 
+        }
+        if(e.code === 'ArrowRight' && !e.repeat) { 
+            os.targetRudder = Math.min(35, os.targetRudder + 5); 
+            os.targetRudder = Math.round(os.targetRudder/5)*5; 
+            triggerArcUpdate();
+            e.preventDefault(); 
+        }
+        if(e.code === 'Space') { 
+            os.targetRudder = 0; 
+            triggerArcUpdate();
+            e.preventDefault(); 
+        }
+    });
+    window.addEventListener('keyup', e => { 
+        if (keys.hasOwnProperty(e.code)) {
+            keys[e.code] = false; 
+            e.preventDefault();
+        }
+    });
+
+    function getDisplayUpBrg() {
+        if (orientMode === 0) return os.hdg; 
+        if (orientMode === 1) return 0;      
+        if (orientMode === 2) return lockedCourse; 
+        return os.hdg;
+    }
+
+    function getRadarMetrics() {
+        const canvasCx = radarCanvas.width / 2;
+        const canvasCy = radarCanvas.height / 2;
+        const displayRadius = Math.min(canvasCx, canvasCy) - 45;
+        let osPx = canvasCx + osOffsetX;
+        let osPy = canvasCy + osOffsetY;
+        return { canvasCx, canvasCy, displayRadius, osPx, osPy };
+    }
+
+    function getScreenPos(tx, ty, displayRadius, osPx, osPy) {
+        const dx = tx - os.x; const dy = ty - os.y;
+        const distNM = Math.sqrt(dx*dx + dy*dy);
+        let trueBrg = Math.atan2(dx, dy) * (180 / Math.PI);
+        if (trueBrg < 0) trueBrg += 360;
+        
+        let displayUpBrg = getDisplayUpBrg();
+        let screenAngle = trueBrg - displayUpBrg;
+        const screenRad = screenAngle * (Math.PI / 180);
+        return { 
+            x: osPx + (distNM / currentRange) * displayRadius * Math.sin(screenRad), 
+            y: osPy - (distNM / currentRange) * displayRadius * Math.cos(screenRad), 
+            distNM: distNM 
+        };
+    }
+
+    radarCanvas.addEventListener('mousedown', (e) => {
+        if (!isTransmitting) return;
+        if (isOffCenterSelecting) { isOffCenterSelecting = false; return; }
+
+        const { canvasCx, canvasCy, displayRadius, osPx, osPy } = getRadarMetrics();
+        const rect = radarCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+        
+        const dx = mx - osPx; const dy = osPy - my; 
+        const mouseDistPx = Math.sqrt(dx*dx + dy*dy);
+        let screenAngleDeg = Math.atan2(dx, dy) * (180 / Math.PI);
+        if(screenAngleDeg < 0) screenAngleDeg += 360;
+
+        let displayUpBrg = getDisplayUpBrg();
+        let trueBrg = screenAngleDeg + displayUpBrg;
+        if(trueBrg >= 360) trueBrg -= 360;
+        let relBrg = trueBrg - os.hdg;
+        if(relBrg < 0) relBrg += 360;
+
+        // 🎯 1순위: EBL1 조작 최우선 처리 (선수 방향 및 다른 요소와 겹쳐도 무조건 먼저 잡힘)
+        if (ebl1Active) {
+            let angleDiff1 = Math.abs(angleDiff(trueBrg, ebl1AngleTrue));
+            if (angleDiff1 < 5) { 
+                isDraggingEBL = true; 
+                manualEblOverride = true; // 🎯 항로 데이터를 지우지 않고 수동 모드만 활성화
+                return; 
+            }
+        }
+
+        // 🎯 2순위: 타겟 클릭 처리
+        if (hoveredTargetId !== null) {
+            const idx = selectedTargets.indexOf(hoveredTargetId);
+            if (idx === -1) {
+                selectedTargets.push(hoveredTargetId);
+                triggerArcUpdate(); 
+            }
+            return;
+        }
+
+        // 🎯 3순위: 기타 VRM 및 EBL2, PI 조작
+        if (vrm1Active && Math.abs(mouseDistPx - (vrm1Dist / currentRange) * displayRadius) < 15) { isDraggingVRM = true; return; }
+        if (vrm2Active && Math.abs(mouseDistPx - (vrm2Dist / currentRange) * displayRadius) < 15) { isDraggingVRM2 = true; return; }
+        if (ebl2Active) {
+            let angleDiff2 = Math.abs(angleDiff(trueBrg, ebl2AngleTrue));
+            if (angleDiff2 < 5) { isDraggingEBL2 = true; return; }
+        }
+
+        for(let i=0; i<4; i++) {
+            if(!piActive[i]) continue;
+            let pRelBrg = piBrg[i] - os.hdg; while(pRelBrg < 0) pRelBrg += 360;
+            let diffRad = (relBrg - pRelBrg) * Math.PI / 180;
+            let dist_perp = mouseDistPx * Math.sin(diffRad);
+            let spPx = (piSpacing[i] / currentRange) * displayRadius;
+
+            if (Math.abs(dist_perp) < 15 && mouseDistPx < displayRadius) { 
+                isDraggingPIRotate = true; activePiIdx = i; return; 
+            } else if (Math.abs(Math.abs(dist_perp) - spPx) < 15 && mouseDistPx < displayRadius) { 
+                isDraggingPIScale = true; activePiIdx = i; piDragLineIdx = 1; return; 
+            } else if (Math.abs(Math.abs(dist_perp) - 2*spPx) < 15 && mouseDistPx < displayRadius) { 
+                isDraggingPIScale = true; activePiIdx = i; piDragLineIdx = 2; return; 
+            }
+        }
+
+        let clickedEmpty = true;
+        targets.forEach(t => {
+            const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+            const distToClick = Math.sqrt(Math.pow(mx - sp.x, 2) + Math.pow(my - sp.y, 2));
+            
+            let seaSupp = (seaValue / 100) * (1 - (sp.distNM / currentRange));
+            let rainSupp = (rainValue / 100);
+            let totalSupp = Math.max(seaSupp, rainSupp) * 1.5;
+            let rangeAtten = pulseLength === 'SP' ? (sp.distNM / 15.0)*0.5 : (pulseLength === 'MP' ? (sp.distNM / 25.0)*0.3 : 0);
+            let maxAlpha = (gainValue / 30) - totalSupp - rangeAtten;
+
+            if (distToClick < 20 && maxAlpha > 0.05 && t.state === 0) { 
+                t.state = 1; t.acqTime = performance.now();
+                clickedEmpty = false;
+            }
+        });
+
+        if (clickedEmpty && gainValue >= 10 && mouseDistPx <= displayRadius) {
+            let distNM = (mouseDistPx / displayRadius) * currentRange;
+            let tx = os.x + distNM * Math.sin(trueBrg * Math.PI / 180);
+            let ty = os.y + distNM * Math.cos(trueBrg * Math.PI / 180);
+            dummyAcquisitions.push({ x: tx, y: ty, acqTime: performance.now() });
+        }
+    });
+
+    radarCanvas.addEventListener('mousemove', (e) => {
+        const { canvasCx, canvasCy, displayRadius, osPx, osPy } = getRadarMetrics();
+        const rect = radarCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+
+        if (isOffCenterSelecting) {
+            let limit = displayRadius * 0.65;
+            let mx_off = mx - canvasCx; let my_off = my - canvasCy;
+            let dist = Math.sqrt(mx_off*mx_off + my_off*my_off);
+            if(dist > limit) { mx_off = (mx_off/dist)*limit; my_off = (my_off/dist)*limit; }
+            osOffsetX = mx_off; osOffsetY = my_off;
+            return; 
+        }
+
+        const dx = mx - osPx; const dy = osPy - my;
+        const mouseDistPx = Math.sqrt(dx*dx + dy*dy);
+        let screenAngleDeg = Math.atan2(dx, dy) * (180 / Math.PI);
+        if(screenAngleDeg < 0) screenAngleDeg += 360;
+
+        let displayUpBrg = getDisplayUpBrg();
+        let trueBrg = screenAngleDeg + displayUpBrg;
+        if(trueBrg >= 360) trueBrg -= 360;
+        let relBrg = trueBrg - os.hdg;
+        if(relBrg < 0) relBrg += 360;
+
+        if (isDraggingVRM) {
+            vrm1Dist = Math.max(0, (mouseDistPx / displayRadius) * currentRange);
+            document.getElementById('val-vrm1').innerText = vrm1Dist.toFixed(2) + " NM";
+        } else if (isDraggingEBL) {
+            ebl1AngleTrue = trueBrg;
+            document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+            triggerArcUpdate(); 
+        } else if (isDraggingVRM2) {
+            vrm2Dist = Math.max(0, (mouseDistPx / displayRadius) * currentRange);
+            document.getElementById('val-vrm2').innerText = vrm2Dist.toFixed(2) + " NM";
+        } else if (isDraggingEBL2) {
+            ebl2AngleTrue = trueBrg;
+            document.getElementById('val-ebl2').innerText = ebl2AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+        } else if (isDraggingPIRotate && activePiIdx > -1) {
+            piBrg[activePiIdx] = trueBrg;
+            document.getElementById('pi-brg' + activePiIdx).value = piBrg[activePiIdx].toFixed(1).padStart(5, '0');
+        } else if (isDraggingPIScale && activePiIdx > -1) {
+            let pRelBrg = piBrg[activePiIdx] - os.hdg; while(pRelBrg < 0) pRelBrg += 360;
+            let diffRad = (relBrg - pRelBrg) * Math.PI / 180;
+            let dist_perp = mouseDistPx * Math.sin(diffRad);
+            let newSpPx = Math.abs(dist_perp) / piDragLineIdx;
+            piSpacing[activePiIdx] = Math.max(0, (newSpPx / displayRadius) * currentRange);
+            document.getElementById('pi-rng' + activePiIdx).value = piSpacing[activePiIdx].toFixed(2);
+        }
+
+        if (mouseDistPx <= displayRadius) {
+            let distNM = (mouseDistPx / displayRadius) * currentRange;
+            document.getElementById('cur-rng').innerText = distNM.toFixed(2) + " NM";
+            document.getElementById('cur-brg').innerText = relBrg.toFixed(1) + "°";
+            
+            let curLat = os.lat + (distNM * Math.cos(trueBrg * Math.PI/180)) / 60;
+            let curLon = os.lon + (distNM * Math.sin(trueBrg * Math.PI/180)) / (60 * Math.cos(os.lat * Math.PI/180));
+            document.getElementById('cur-lat').innerText = formatLatLon(curLat, true);
+            document.getElementById('cur-lon').innerText = formatLatLon(curLon, false);
+        }
+
+        hoveredTargetId = null;
+        if (!hideTargets) {
+            targets.forEach(t => {
+                if (t.state === 2) {
+                    const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+                    if (Math.sqrt(Math.pow(mx - sp.x, 2) + Math.pow(my - sp.y, 2)) < 15) hoveredTargetId = t.id;
+                }
+            });
+            if (aisActive && !hoveredTargetId) {
+                aisTargets.forEach(t => {
+                    const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+                    if (Math.sqrt(Math.pow(mx - sp.x, 2) + Math.pow(my - sp.y, 2)) < 15) hoveredTargetId = t.id;
+                });
+            }
+        }
+        radarCanvas.style.cursor = (hoveredTargetId !== null) ? 'cell' : (isOffCenterSelecting ? 'move' : 'crosshair');
+    });
+
+    radarCanvas.addEventListener('mouseup', () => { isDraggingEBL = false; isDraggingVRM = false; isDraggingEBL2 = false; isDraggingVRM2 = false; isDraggingPIRotate = false; isDraggingPIScale = false; activePiIdx = -1;});
+    radarCanvas.addEventListener('mouseleave', () => { isDraggingEBL = false; isDraggingVRM = false; isDraggingEBL2 = false; isDraggingVRM2 = false; isDraggingPIRotate = false; isDraggingPIScale = false; activePiIdx = -1;});
+
+    function keepTargetsAlive(arr) {
+        let outOfBounds = Math.max(16.0, currentRange * 2.2);
+        arr.forEach(t => {
+            const dist = Math.sqrt(Math.pow(t.x - os.x, 2) + Math.pow(t.y - os.y, 2));
+            if (dist > outOfBounds) {
+                const spawnDist = outOfBounds * 0.8 + Math.random() * (currentRange * 0.5);
+                const spawnAng = (os.hdg + (Math.random() * 120 - 60)) * Math.PI / 180;
+                t.x = os.x + Math.sin(spawnAng) * spawnDist;
+                t.y = os.y + Math.cos(spawnAng) * spawnDist;
+                if(t.state !== undefined) { t.state = 0; t.blipAlpha = 0; }
+                const sIdx = selectedTargets.indexOf(t.id);
+                if(sIdx > -1) { selectedTargets.splice(sIdx, 1); triggerArcUpdate(); }
+            }
+        });
+    }
+
+    function checkAlarms(t, isAIS) {
+        let dx = t.x - os.x; let dy = t.y - os.y;
+        let rng = Math.sqrt(dx*dx + dy*dy);
+        
+        const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
+        const tVx = t.spd * Math.sin(t.hdg * Math.PI/180); const tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+        const rVx = tVx - osVx; const rVy = tVy - osVy;
+        const vRelSq = (rVx*rVx) + (rVy*rVy);
+        
+        let tcpaHours = 0, cpa = 0;
+        if (vRelSq > 0.0001) {
+            tcpaHours = -(dx * rVx + dy * rVy) / vRelSq;
+            if (tcpaHours < 0) cpa = rng; 
+            else cpa = Math.sqrt(Math.pow(dx + rVx * tcpaHours, 2) + Math.pow(dy + rVy * tcpaHours, 2));
+        } else { cpa = rng; }
+
+        const tcpaMins = tcpaHours * 60;
+        
+        if (cpa <= cpaLimitVal && tcpaMins >= 0 && tcpaMins <= tcpaLimitVal) {
+            if (!alarmedTargets.has(t.id)) {
+                alarmedTargets.add(t.id);
+                let tName = isAIS ? `AIS ${t.mmsi}` : `ARPA TGT`;
+                alarmLog.push(`⚠️ CPA/TCPA Alarm (${tName})`);
+                updateAlarmUI();
+            }
+        } else {
+            if (alarmedTargets.has(t.id)) {
+                alarmedTargets.delete(t.id);
+            }
+        }
+    }
+
+    function isPathClear(r1, a1, r2, a2, ringData, numRings, rr_NM) {
+        let p1x = Math.sin(a1 * Math.PI/180) * r1;
+        let p1y = Math.cos(a1 * Math.PI/180) * r1;
+        let p2x = Math.sin(a2 * Math.PI/180) * r2;
+        let p2y = Math.cos(a2 * Math.PI/180) * r2;
+
+        let steps = 10;
+        for(let s=1; s<steps; s++) {
+            let t = s / steps;
+            let px = p1x + t * (p2x - p1x);
+            let py = p1y + t * (p2y - p1y);
+
+            let r = Math.sqrt(px*px + py*py);
+            let a = Math.atan2(px, py) * 180 / Math.PI;
+            if(a < 0) a += 360;
+
+            let ringIdx = Math.round(r / rr_NM) - 1; 
+            if (ringIdx < 0) ringIdx = 0;
+            if (ringIdx >= numRings) ringIdx = numRings - 1;
+
+            let aInt = Math.round(a) % 360;
+            if (ringData[ringIdx] && ringData[ringIdx].blockedAngles[aInt]) {
+                return false; 
+            }
+        }
+        return true;
+    }
+
+    function runARC(displayRadius, osPx, osPy, displayUpBrg, maxDistNM) {
+        if (!arcActive) return;
+        
+        let rr_NM, dt_hours;
+        if (manualRR === 'auto') {
+            rr_NM = currentRange / 6;
+            dt_hours = rr_NM / Math.max(0.1, os.spd);
+        } else {
+            let sec = 0;
+            if (manualRR.endsWith('s')) sec = parseInt(manualRR);
+            if (manualRR.endsWith('m')) sec = parseInt(manualRR) * 60;
+            dt_hours = sec / 3600;
+            rr_NM = Math.max(0.1, os.spd) * dt_hours;
+        }
+
+        if (rr_NM < 0.001) rr_NM = 0.001; 
+        if (dt_hours < 0.0001) dt_hours = 0.0001;
+
+        let numRings = Math.ceil(maxDistNM / rr_NM) + 2;
+        if (numRings > 150) numRings = 150; 
+        
+        let safety_NM = cpaLimitVal / 2.0; 
+        
+        let ringData = []; 
+        let allT = [];
+        if (arcTargetMode === 'Selected') {
+            allT = targets.concat(aisTargets).filter(t => selectedTargets.includes(t.id));
+        } else {
+            allT = targets.concat(aisTargets).filter(t => {
+                let dist = Math.sqrt((t.x - os.x)**2 + (t.y - os.y)**2);
+                return dist <= currentRange;
+            });
+        }
+        
+        for (let i = 1; i <= numRings; i++) {
+            let t_ring = i * dt_hours;
+            let r_NM = i * rr_NM;
+            let r_Px = (r_NM / currentRange) * displayRadius;
+            
+            let blockedAngles = new Array(360).fill(false);
+            
+            allT.forEach(t => {
+                let dx = t.x - os.x; let dy = t.y - os.y;
+                let osVx = os.spd * Math.sin(os.hdg * Math.PI/180); 
+                let osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
+                let tVx = t.spd * Math.sin(t.hdg * Math.PI/180); 
+                let tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+                let rVx = tVx - osVx; let rVy = tVy - osVy;
+                let vRelSq = (rVx*rVx) + (rVy*rVy);
+                if (vRelSq < 0.0001) return;
+                
+                let tcpaH = -(dx * rVx + dy * rVy) / vRelSq;
+                
+                if (tcpaH > (i-1)*dt_hours && tcpaH <= i*dt_hours) {
+                    let tfX = t.x + tVx * tcpaH; 
+                    let tfY = t.y + tVy * tcpaH;
+                    
+                    let brgToTf = Math.atan2(tfX - os.x, tfY - os.y) * 180 / Math.PI;
+                    if (brgToTf < 0) brgToTf += 360;
+                    
+                    let distToTf = Math.sqrt((tfX - os.x)**2 + (tfY - os.y)**2);
+                    
+                    let blockHalfAngle = 15; 
+                    if (distToTf > safety_NM) {
+                        blockHalfAngle = Math.asin(safety_NM / distToTf) * 180 / Math.PI;
+                    } else {
+                        blockHalfAngle = 90; 
+                    }
+                    
+                    for(let a=0; a<360; a++) {
+                        let diff = Math.abs(angleDiff(a, brgToTf));
+                        if (diff <= blockHalfAngle) {
+                            blockedAngles[a] = true;
+                        }
+                    }
+                }
+            });
+            
+            let blockedSectors = [];
+            let inSector = false;
+            let start = 0;
+            for(let a=0; a<360; a++) {
+                if (blockedAngles[a] && !inSector) {
+                    start = a; inSector = true;
+                } else if (!blockedAngles[a] && inSector) {
+                    blockedSectors.push({start: start, end: a - 1});
+                    inSector = false;
+                }
+            }
+            if (inSector) {
+                if (blockedSectors.length > 0 && blockedSectors[0].start === 0) {
+                    blockedSectors[0].start = start;
+                } else {
+                    blockedSectors.push({start: start, end: 359});
+                }
+            }
+            
+            ringData.push({ r_NM, r_Px, t_ring, blockedAngles, blockedSectors });
+        }
+        
+        let goal_angle = null; 
+        // 🎯 !manualEblOverride 조건 추가
+        if (goalPoints.length > 0 && !manualEblOverride) {
+            let gp = goalPoints[0];
+            let dx = gp.x - os.x;
+            let dy = gp.y - os.y;
+            goal_angle = Math.atan2(dx, dy) * (180 / Math.PI);
+            if (goal_angle < 0) goal_angle += 360;
+            
+            if (arcActive) {
+                ebl1AngleTrue = goal_angle;
+                document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+            }
+        } else if (ebl1Active) {
+            // EBL 수동 조작 시 이쪽을 타게 되어 EBL 각도를 ARC 목표점으로 사용
+            goal_angle = ebl1AngleTrue;
+        }
+
+        let foundPath = false;
+        let finalStates = [];
+        let max_turn_limit = 15; 
+
+        while (!foundPath && max_turn_limit <= 180) {
+            let dp = [];
+            let initialMap = new Map();
+            initialMap.set(os.hdg, { cost: 0, path: [os.hdg] });
+            dp[0] = initialMap;
+            
+            for (let i = 0; i < numRings; i++) {
+                let nextDp = new Map();
+                let currentRing = ringData[i];
+                let r1 = i === 0 ? 0 : ringData[i-1].r_NM;
+                let r2 = currentRing.r_NM;
+                
+                let validAngles = [];
+                for (let a = 0; a < 360; a += 3) { 
+                    let aInt = Math.round(a) % 360;
+                    if (currentRing.blockedAngles[aInt]) continue;
+                    validAngles.push(a);
+                }
+                if (validAngles.length === 0) validAngles.push(os.hdg);
+                
+                for (let a of validAngles) {
+                    let minCost = Infinity;
+                    let bestPath = [];
+
+                    for (let [prevAngle, prevData] of dp[i].entries()) {
+                        let turnCost = Math.abs(angleDiff(a, prevAngle));
+                        if (turnCost > max_turn_limit) continue; 
+                        
+                        if (i > 0 && !isPathClear(r1, prevAngle, r2, a, ringData, numRings, rr_NM)) continue;
+                        
+                        let goalCost = 0;
+                        if (goal_angle !== null) {
+                            goalCost = Math.abs(angleDiff(a, goal_angle)); 
+                        }
+
+                        let cost = prevData.cost + (turnCost * wTurnVal) + (goalCost * wGoalVal); 
+                        
+                        if (cost < minCost) {
+                            minCost = cost;
+                            bestPath = [...prevData.path, a];
+                        }
+                    }
+                    if (minCost !== Infinity) {
+                        nextDp.set(a, { cost: minCost, path: bestPath });
+                    }
+                }
+                
+                if (nextDp.size === 0) break; 
+                dp[i+1] = nextDp;
+            }
+            
+            if (dp.length === numRings + 1 && dp[numRings].size > 0) {
+                finalStates = Array.from(dp[numRings].values());
+                finalStates.sort((a, b) => a.cost - b.cost);
+                foundPath = true; 
+            } else {
+                max_turn_limit += 10; 
+            }
+        }
+
+        if (finalStates.length > 0) {
+            cachedArcBestPath = finalStates[0].path;
+        } else {
+            cachedArcBestPath = [];
+        }
+
+        cachedArcRingData = ringData;
+        cachedArcNumRings = numRings;
+    }
+
+    function gameLoop(currentTime) {
+        if (!isTransmitting) return;
+        let dt = (currentTime - lastTime) / 1000;
+        if (dt > 0.1) dt = 0.1;
+        lastTime = currentTime;
+        
+        if (!isPaused) {
+            let simDtHours = (dt * timeMultiplier * simSpeed) / 3600;
+            updatePhysics(simDtHours, dt * simSpeed);
+        }
+        
+        renderRadar(currentTime);
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function updatePhysics(simDtHours, realDt) {
+        let rDiff = os.targetRudder - os.actualRudder;
+        let rStep = 3.0 * realDt; 
+        if (Math.abs(rDiff) <= rStep) os.actualRudder = os.targetRudder;
+        else os.actualRudder += Math.sign(rDiff) * rStep;
+
+        const K_nom = 2.0; const T_nom = 25.0;
+        const targetRot = K_nom * os.actualRudder;
+        const rotDerivative = (targetRot - os.rot) / T_nom; 
+        
+        os.rot += rotDerivative * realDt; 
+        
+        os.hdg += (os.rot / 60.0) * realDt * 3;
+        if (os.hdg >= 360) os.hdg -= 360;
+        if (os.hdg < 0) os.hdg += 360;
+        
+        const osHdgRad = os.hdg * (Math.PI / 180);
+        let osMoveX = (os.spd * simDtHours) * Math.sin(osHdgRad);
+        let osMoveY = (os.spd * simDtHours) * Math.cos(osHdgRad);
+        os.x += osMoveX; os.y += osMoveY;
+
+        os.lat += (osMoveY) / 60;
+        os.lon += (osMoveX) / (60 * Math.cos(os.lat * Math.PI/180));
+
+        if (motionMode === 1) {
+            const { displayRadius } = getRadarMetrics();
+            let movePx = (Math.sqrt(osMoveX*osMoveX + osMoveY*osMoveY) / currentRange) * displayRadius;
+            let displayUpBrg = getDisplayUpBrg();
+            let screenDirRad = (os.hdg - displayUpBrg) * Math.PI / 180;
+            
+            osOffsetX += movePx * Math.sin(screenDirRad);
+            osOffsetY -= movePx * Math.cos(screenDirRad);
+            
+            if (Math.sqrt(osOffsetX*osOffsetX + osOffsetY*osOffsetY) > displayRadius * 0.65) {
+                osOffsetX = -osOffsetX * 0.8; osOffsetY = -osOffsetY * 0.8; 
+            }
+        }
+
+        if (goalPoints.length > 0) {
+            let gp = goalPoints[0];
+            let dx = gp.x - os.x;
+            let dy = gp.y - os.y;
+            let distToGoalNM = Math.sqrt(dx*dx + dy*dy);
+            if (distToGoalNM < 0.1) {
+                goalPoints.shift(); 
+            }
+        }
+
+        simTimeSeconds += simDtHours * 3600;
+        if (simTimeSeconds - lastLogTimeSec >= 1.0) {
+            lastLogTimeSec = simTimeSeconds;
+            let tStr = simTimeSeconds.toFixed(1);
+            
+            logData.push({
+                time: tStr, name: "OS",
+                lat: os.lat.toFixed(6), lon: os.lon.toFixed(6),
+                x: os.x.toFixed(2), y: os.y.toFixed(2),
+                hdg: os.hdg.toFixed(1), sog: os.spd.toFixed(1), cog: os.hdg.toFixed(1),
+                rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1)
+            });
+            
+            targets.concat(aisTargets).forEach(t => {
+                let tLat = os.lat + ((t.y - os.y) / 60);
+                let tLon = os.lon + ((t.x - os.x) / (60 * Math.cos(os.lat * Math.PI/180)));
+                
+                logData.push({
+                    time: tStr, name: t.id || t.name,
+                    lat: tLat.toFixed(6), lon: tLon.toFixed(6),
+                    x: t.x.toFixed(2), y: t.y.toFixed(2),
+                    hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1),
+                    rot: "0.00", rud_cmd: "0.0", rud_act: "0.0"
+                });
+            });
+        }
+
+        globalSimTimeMins += simDtHours * 60;
+        if (globalSimTimeMins - lastRecordTime >= 0.04) {
+            const recordHist = (arr) => {
+                arr.forEach(t => {
+                    if(!t.history) t.history = [];
+                    t.history.push({x: t.x, y: t.y, time: globalSimTimeMins, osX: os.x, osY: os.y});
+                    while(t.history.length > 0 && globalSimTimeMins - t.history[0].time > 60) {
+                        t.history.shift();
+                    }
+                });
+            };
+            recordHist(targets);
+            recordHist(aisTargets);
+            lastRecordTime = globalSimTimeMins;
+        }
+
+        targets.forEach((t, i) => {
+            if (t.state === 2) {
+                if (threatMode) {
+                    let desiredHdg = Math.atan2(os.x - t.x, os.y - t.y) * 180 / Math.PI;
+                    if (desiredHdg < 0) desiredHdg += 360;
+                    let diff = desiredHdg - t.hdg;
+                    if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
+                    t.hdg += diff * (simDtHours * 100);
+                    if (t.hdg >= 360) t.hdg -= 360; if (t.hdg < 0) t.hdg += 360;
+                }
+                checkAlarms(t, false);
+            }
+            const tHdgRad = t.hdg * (Math.PI / 180);
+            t.x += (t.spd * simDtHours) * Math.sin(tHdgRad); 
+            t.y += (t.spd * simDtHours) * Math.cos(tHdgRad);
+        });
+        
+        aisTargets.forEach((t, i) => {
+            if (threatMode) {
+                let desiredHdg = Math.atan2(os.x - t.x, os.y - t.y) * 180 / Math.PI;
+                if (desiredHdg < 0) desiredHdg += 360;
+                let diff = desiredHdg - t.hdg;
+                if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
+                t.hdg += diff * (simDtHours * 100);
+                if (t.hdg >= 360) t.hdg -= 360; if (t.hdg < 0) t.hdg += 360;
+            }
+            const tHdgRad = t.hdg * (Math.PI / 180);
+            t.x += (t.spd * simDtHours) * Math.sin(tHdgRad); 
+            t.y += (t.spd * simDtHours) * Math.cos(tHdgRad);
+            if (aisActive) checkAlarms(t, true);
+        });
+
+        keepTargetsAlive(targets);
+        keepTargetsAlive(aisTargets);
+    }
+
+    function renderRadar(currentTime) {
+        const { canvasCx, canvasCy, displayRadius, osPx, osPy } = getRadarMetrics();
+        let maxDist = displayRadius + Math.sqrt(Math.pow(osOffsetX, 2) + Math.pow(osOffsetY, 2));
+        let maxDistNM = (maxDist / displayRadius) * currentRange;
+        let displayUpBrg = getDisplayUpBrg();
+
+        // 🎯 매 프레임 증가
+        framesSinceLastArc++;
+
+        // 🎯 업데이트 조건 분리: 정기 업데이트 시간 도래(혹은 최초실행) vs 강제 호출(단 최소 30프레임 지연)
+        let needsNormalUpdate = (currentTime - lastArcCalcTime > arcIntervalMs || lastArcCalcTime === 0);
+        let needsForcedUpdate = arcUpdatePending && (framesSinceLastArc >= 30);
+
+        if (arcActive && (needsNormalUpdate || needsForcedUpdate)) {
+            lastArcCalcTime = currentTime;
+            framesSinceLastArc = 0;
+            arcUpdatePending = false;
+            runARC(displayRadius, osPx, osPy, displayUpBrg, maxDistNM);
+        }
+
+        ctx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+        
+        const lineColor = getComputedStyle(document.body).getPropertyValue('--radar-line').trim();
+        const highlightColor = getComputedStyle(document.body).getPropertyValue('--text-highlight').trim();
+
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '10px Roboto';
+        for (let i = 0; i < 360; i++) {
+            let screenAngle = i - displayUpBrg; 
+            const rad = (screenAngle - 90) * (Math.PI / 180);
+            
+            let dx = osPx - canvasCx;
+            let dy = osPy - canvasCy;
+            let A = 1;
+            let B = 2 * (dx * Math.cos(rad) + dy * Math.sin(rad));
+            let C = dx * dx + dy * dy - displayRadius * displayRadius;
+            let t_intersect = (-B + Math.sqrt(B * B - 4 * A * C)) / 2;
+
+            const isMajor = i % 10 === 0; const isMinor = i % 5 === 0;
+            let tickStart = isMajor ? t_intersect : (isMinor ? t_intersect + 3 : t_intersect + 5);
+            let tickEnd = t_intersect + 8;
+
+            ctx.strokeStyle = isMajor ? highlightColor : lineColor;
+            ctx.beginPath(); 
+            ctx.moveTo(osPx + Math.cos(rad) * tickStart, osPy + Math.sin(rad) * tickStart);
+            ctx.lineTo(osPx + Math.cos(rad) * tickEnd, osPy + Math.sin(rad) * tickEnd);
+            ctx.stroke();
+
+            if (isMajor) { 
+                ctx.fillStyle = highlightColor; 
+                ctx.fillText(i.toString(), osPx + Math.cos(rad) * (t_intersect + 18), osPy + Math.sin(rad) * (t_intersect + 18)); 
+            }
+        }
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(canvasCx, canvasCy, displayRadius, 0, Math.PI * 2);
+        ctx.clip();
+
+        if (goalPoints.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#00ffff'; 
+            ctx.lineWidth = 1.5; 
+            ctx.setLineDash([3, 3]); 
+            ctx.beginPath();
+            ctx.moveTo(osPx, osPy);
+            goalPoints.forEach(gp => {
+                const sp = getScreenPos(gp.x, gp.y, displayRadius, osPx, osPy);
+                ctx.lineTo(sp.x, sp.y);
+            });
+            ctx.stroke(); 
+            ctx.setLineDash([]);
+
+            goalPoints.forEach((gp, i) => {
+                const sp = getScreenPos(gp.x, gp.y, displayRadius, osPx, osPy);
+                if (sp.distNM <= maxDistNM) {
+                    ctx.fillStyle = (i === 0) ? '#0ff' : '#005555';
+                    ctx.beginPath(); 
+                    ctx.arc(sp.x, sp.y, (i === 0) ? 4 : 2, 0, Math.PI * 2); 
+                    ctx.fill();
+                    
+                    if (i === 0) {
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#0ff';
+                        ctx.strokeStyle = '#0ff';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.arc(sp.x, sp.y, 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            });
+            ctx.restore();
+        }
+
+        let osEchoSize = 4 + (gainValue / 100) * 4; 
+        ctx.save(); ctx.translate(osPx, osPy);
+        ctx.rotate((os.hdg - displayUpBrg) * Math.PI / 180);
+        let osGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, osEchoSize);
+        osGrad.addColorStop(0, `rgba(100, 255, 100, ${(gainValue/100) * 0.15})`);
+        osGrad.addColorStop(1, 'rgba(85, 255, 85, 0)');
+        ctx.fillStyle = osGrad; ctx.beginPath();
+        ctx.moveTo(0, -osEchoSize); ctx.lineTo(osEchoSize*0.5, 0); ctx.lineTo(0, osEchoSize); ctx.lineTo(-osEchoSize*0.5, 0); ctx.closePath(); ctx.fill();
+        ctx.restore();
+
+        if (showRings) {
+            let ringStepPx;
+            if (manualRR === 'auto') {
+                ringStepPx = displayRadius / 6;
+            } else {
+                let sec = 0;
+                if (manualRR.endsWith('s')) sec = parseInt(manualRR);
+                if (manualRR.endsWith('m')) sec = parseInt(manualRR) * 60;
+                let distNM = Math.max(0.1, os.spd) * (sec / 3600);
+                ringStepPx = (distNM / currentRange) * displayRadius;
+            }
+
+            if (ringStepPx > 1) {
+                let numRingsToDraw = Math.ceil(maxDist / ringStepPx);
+                ctx.strokeStyle = lineColor; ctx.lineWidth = 1;
+                for (let i = 1; i <= numRingsToDraw; i++) { 
+                    ctx.beginPath(); ctx.arc(osPx, osPy, ringStepPx * i, 0, Math.PI * 2); ctx.stroke(); 
+                }
+            }
+        }
+
+        let gainFactor = Math.pow(gainValue / 100, 3); 
+        let noiseCount = Math.floor(gainFactor * 10000); 
+        ctx.fillStyle = isNightMode ? 'rgba(255, 50, 50, 0.4)' : 'rgba(85, 255, 85, 0.4)';
+        ctx.beginPath();
+        for(let i=0; i<noiseCount; i++) {
+            let r = Math.random() * maxDist;
+            let ang = Math.random() * Math.PI * 2;
+            let nx = osPx + Math.cos(ang)*r; 
+            let ny = osPy + Math.sin(ang)*r;
+            
+            let dx = nx - canvasCx; let dy = ny - canvasCy;
+            if(dx*dx + dy*dy > displayRadius*displayRadius) continue; 
+
+            let dxOs = nx - osPx; let dyOs = ny - osPy;
+            let distFromOs = Math.sqrt(dxOs*dxOs + dyOs*dyOs);
+            let seaFactor = (seaValue / 100) * (1 - (distFromOs / (displayRadius * 0.5)));
+            if (Math.random() < Math.max(0, seaFactor * 2.0)) continue; 
+            let rainFactor = (rainValue / 100);
+            if (Math.random() < rainFactor) continue;
+            
+            ctx.rect(nx, ny, 2.5, 2.5);
+        }
+        ctx.fill();
+
+        radarTrueBrg += 1.5; if (radarTrueBrg >= 360) radarTrueBrg -= 360;
+        let allEntities = targets.concat(aisTargets); 
+
+        if (arcActive && cachedArcRingData.length > 0) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(126, 47, 142, 0.35)'; 
+            for (let i = 0; i < cachedArcNumRings; i++) {
+                let rd = cachedArcRingData[i];
+                if (!rd) continue;
+                let prevR = i === 0 ? 0 : cachedArcRingData[i-1].r_Px;
+                for (let b of rd.blockedSectors) {
+                    let startTrue = b.start;
+                    let endTrue = b.end;
+                    if (startTrue > endTrue) endTrue += 360;
+                    
+                    let startScreen = (startTrue - displayUpBrg - 90) * Math.PI / 180;
+                    let endScreen = (endTrue - displayUpBrg - 90) * Math.PI / 180;
+                    
+                    ctx.beginPath();
+                    ctx.arc(osPx, osPy, rd.r_Px, startScreen, endScreen, false);
+                    ctx.arc(osPx, osPy, prevR, endScreen, startScreen, true);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ff3333'; 
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(osPx, osPy);
+            
+            for (let i = 1; i <= cachedArcNumRings; i++) {
+                let a = cachedArcBestPath[i]; 
+                if (a === undefined) continue;
+                let r_Px = cachedArcRingData[i-1].r_Px;
+                let screenRad = (a - displayUpBrg - 90) * Math.PI / 180;
+                let px = osPx + Math.cos(screenRad) * r_Px;
+                let py = osPy + Math.sin(screenRad) * r_Px;
+                ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        if (trailTimeMins > 0 && !hideTargets) {
+            const drawTrails = (arr) => {
+                arr.forEach(t => {
+                    const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+                    let seaSupp = (seaValue / 100) * (1 - (sp.distNM / currentRange));
+                    let rainSupp = (rainValue / 100);
+                    let totalSupp = Math.max(seaSupp, rainSupp) * 1.5;
+                    let maxAlpha = (gainValue / 30) - totalSupp;
+                    if (maxAlpha < 0.1) return; 
+
+                    if (t.history) {
+                        t.history.forEach(h => {
+                            let age = globalSimTimeMins - h.time;
+                            if (age <= trailTimeMins) {
+                                let drawX = trailMode === 'T' ? h.x : os.x + (h.x - h.osX);
+                                let drawY = trailMode === 'T' ? h.y : os.y + (h.y - h.osY);
+                                let hSp = getScreenPos(drawX, drawY, displayRadius, osPx, osPy);
+                                if (hSp.distNM <= (maxDist / displayRadius) * currentRange) {
+                                    let trailRatio = 1.0 - (age / trailTimeMins);
+                                    ctx.fillStyle = `rgba(200, 200, 0, ${trailRatio * 0.4})`;
+                                    
+                                    let tDx = drawX - os.x; let tDy = drawY - os.y;
+                                    let tTrueBrg = Math.atan2(tDx, tDy) * 180 / Math.PI;
+                                    let tScreenRad = (tTrueBrg - displayUpBrg) * Math.PI/180;
+                                    
+                                    let pFactor = pulseLength === 'SP' ? 1 : (pulseLength === 'MP' ? 2.5 : 5.0);
+                                    let rSpread = (2 + (gainValue/100)*1) * pFactor;
+                                    let aSpread = 3 + (gainValue/100)*2;
+
+                                    ctx.beginPath();
+                                    ctx.ellipse(hSp.x, hSp.y, aSpread, rSpread, tScreenRad, 0, Math.PI*2);
+                                    ctx.fill();
+                                }
+                            }
+                        });
+                    }
+                });
+            };
+            drawTrails(targets);
+            if (aisActive) drawTrails(aisTargets);
+        }
+
+        allEntities.forEach(t => {
+            const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+            let maxDistNM = (maxDist / displayRadius) * currentRange;
+            if (sp.distNM > maxDistNM) return;
+
+            let trueBrg = Math.atan2(t.x - os.x, t.y - os.y) * (180 / Math.PI); if(trueBrg < 0) trueBrg += 360;
+            let angleDiff = radarTrueBrg - trueBrg; if (angleDiff < 0) angleDiff += 360;
+            
+            if (angleDiff >= 0 && angleDiff < 8) {
+                t.blipAlpha = 1.0;
+            } else {
+                t.blipAlpha = Math.max(0.3, t.blipAlpha * 0.95);
+            }
+
+            let seaSuppression = (seaValue / 100) * (1 - (sp.distNM / currentRange));
+            let rainSuppression = (rainValue / 100);
+            let totalSuppression = Math.max(seaSuppression, rainSuppression) * 1.5;
+
+            let rangeAtten = 0;
+            if(pulseLength === 'SP') rangeAtten = (sp.distNM / 15.0) * 0.5;
+            else if(pulseLength === 'MP') rangeAtten = (sp.distNM / 25.0) * 0.3;
+
+            let maxAlpha = (gainValue / 30) - totalSuppression - rangeAtten;
+            if (maxAlpha < 0) maxAlpha = 0;
+            
+            let currentAlpha = t.blipAlpha * maxAlpha;
+
+            if (currentAlpha > 0.02) {
+                ctx.fillStyle = isNightMode ? `rgba(255, 100, 100, ${Math.min(1, currentAlpha)})` : `rgba(100, 255, 100, ${Math.min(1, currentAlpha)})`;
+                ctx.beginPath(); 
+                
+                let pFactor = pulseLength === 'SP' ? 1 : (pulseLength === 'MP' ? 2.5 : 5.0);
+                let rangeSpread = (2 + (gainValue/100)*1) * pFactor;
+                let azimuthSpread = 3 + (gainValue/100)*2;
+                let screenRad = (trueBrg - displayUpBrg) * Math.PI/180;
+                
+                ctx.ellipse(sp.x, sp.y, azimuthSpread, rangeSpread, screenRad, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+
+        const sweepRad = (radarTrueBrg - displayUpBrg - 90) * (Math.PI / 180);
+        const sweepColorStr = isNightMode ? '255,50,50' : '85,255,85';
+        
+        ctx.strokeStyle = `rgba(${sweepColorStr}, 0.1)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(osPx, osPy);
+        ctx.lineTo(osPx + Math.cos(sweepRad)*maxDist, osPy + Math.sin(sweepRad)*maxDist);
+        ctx.stroke();
+
+        ctx.beginPath(); ctx.moveTo(osPx, osPy); 
+        ctx.arc(osPx, osPy, maxDist, sweepRad - 1.2, sweepRad, false); 
+        ctx.closePath();
+        const grad = ctx.createLinearGradient(osPx, osPy, osPx + Math.cos(sweepRad)*maxDist, osPy + Math.sin(sweepRad)*maxDist);
+        grad.addColorStop(0, `rgba(${sweepColorStr}, 0)`); 
+        grad.addColorStop(0.8, `rgba(${sweepColorStr}, 0.02)`); 
+        grad.addColorStop(1, `rgba(${sweepColorStr}, 0.08)`);
+        ctx.fillStyle = grad; ctx.fill(); 
+
+        let hdgScreenRad = (os.hdg - displayUpBrg - 90) * (Math.PI / 180);
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(osPx, osPy); 
+        ctx.lineTo(osPx + Math.cos(hdgScreenRad)*maxDist, osPy + Math.sin(hdgScreenRad)*maxDist); ctx.stroke();
+
+        for(let idx=0; idx<4; idx++) {
+            if (!piActive[idx]) continue;
+            ctx.strokeStyle = '#55ff55'; ctx.lineWidth = 1;
+            let screenPiRad = (piBrg[idx] - displayUpBrg) * Math.PI / 180; 
+            let pRad = screenPiRad; 
+            let cRad = screenPiRad - Math.PI/2; 
+            
+            for (let i = -2; i <= 2; i++) {
+                let offsetPx = (i * piSpacing[idx] / currentRange) * displayRadius;
+                let cx_off = osPx + Math.cos(pRad) * offsetPx;
+                let cy_off = osPy + Math.sin(pRad) * offsetPx;
+                ctx.beginPath();
+                ctx.moveTo(cx_off - Math.cos(cRad)*maxDist, cy_off - Math.sin(cRad)*maxDist);
+                ctx.lineTo(cx_off + Math.cos(cRad)*maxDist, cy_off + Math.sin(cRad)*maxDist);
+                ctx.stroke();
+            }
+        }
+
+        if (ebl1Active) {
+            ctx.strokeStyle = '#3a75c4'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2.5;
+            let eRad = (ebl1AngleTrue - displayUpBrg - 90) * (Math.PI/180);
+            ctx.beginPath(); ctx.moveTo(osPx, osPy); ctx.lineTo(osPx + Math.cos(eRad)*maxDist, osPy + Math.sin(eRad)*maxDist); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        if (vrm1Active) {
+            ctx.strokeStyle = '#3a75c4'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(osPx, osPy, (vrm1Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        if (ebl2Active) {
+            ctx.strokeStyle = '#eebb00'; ctx.setLineDash([10, 5, 2, 5]); ctx.lineWidth = 1.5;
+            let eRad2 = (ebl2AngleTrue - displayUpBrg - 90) * (Math.PI/180);
+            ctx.beginPath(); ctx.moveTo(osPx, osPy); ctx.lineTo(osPx + Math.cos(eRad2)*maxDist, osPy + Math.sin(eRad2)*maxDist); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        if (vrm2Active) {
+            ctx.strokeStyle = '#eebb00'; ctx.setLineDash([10, 5, 2, 5]); ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(osPx, osPy, (vrm2Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        const getTgtIndex = (id) => selectedTargets.indexOf(id) + 1;
+
+        if (!hideTargets) {
+            dummyAcquisitions = dummyAcquisitions.filter(d => (currentTime - d.acqTime) < 2500);
+            dummyAcquisitions.forEach(d => {
+                const sp = getScreenPos(d.x, d.y, displayRadius, osPx, osPy);
+                if (Math.sqrt(Math.pow(sp.x-canvasCx,2) + Math.pow(sp.y-canvasCy,2)) <= displayRadius) {
+                    if (Math.floor(currentTime / 300) % 2 === 0) {
+                        ctx.strokeStyle = highlightColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+                        ctx.beginPath(); ctx.arc(sp.x, sp.y, 14, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                }
+            });
+
+            if (aisActive) {
+                ctx.lineWidth = 1.5;
+                aisTargets.forEach(t => {
+                    const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+                    if (sp.distNM > (maxDist / displayRadius) * currentRange) return;
+
+                    const isHovered = (t.id === hoveredTargetId);
+                    const selIdx = getTgtIndex(t.id);
+                    const isAlarmed = alarmedTargets.has(t.id);
+                    const blinkRed = isAlarmed && (Math.floor(currentTime / 400) % 2 === 0);
+                    
+                    const aisColor = blinkRed ? '#ff3333' : (isNightMode ? '#7777ff' : '#33ccff');
+                    ctx.strokeStyle = aisColor;
+                    
+                    let displayRad = (t.hdg - displayUpBrg) * Math.PI / 180;
+                    ctx.save(); ctx.translate(sp.x, sp.y); ctx.rotate(displayRad);
+                    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(4, 5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(0, -12); ctx.stroke();
+                    ctx.restore();
+
+                    if (isHovered && selIdx === 0) {
+                        ctx.strokeStyle = 'white'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
+                        ctx.strokeRect(sp.x - 14, sp.y - 14, 28, 28); ctx.setLineDash([]);
+                    }
+                    if (selIdx > 0) {
+                        ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5;
+                        ctx.strokeRect(sp.x - 14, sp.y - 14, 28, 28);
+                        ctx.fillStyle = 'white'; ctx.font = '10px Roboto';
+                        ctx.fillText(`tgt ${selIdx}`, sp.x + 20, sp.y - 10);
+                    }
+
+                    if (vectorTimeMins > 0) {
+                        ctx.strokeStyle = aisColor;
+                        let vX, vY;
+                        if (vectorMode === 'T') { vX = t.spd * Math.sin(t.hdg * Math.PI/180); vY = t.spd * Math.cos(t.hdg * Math.PI/180); } 
+                        else {
+                            const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
+                            vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy;
+                        }
+                        const fSp = getScreenPos(t.x + vX*(vectorTimeMins/60), t.y + vY*(vectorTimeMins/60), displayRadius, osPx, osPy);
+                        ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(fSp.x, fSp.y); ctx.stroke();
+                    }
+                });
+            }
+
+            targets.forEach(t => {
+                const sp = getScreenPos(t.x, t.y, displayRadius, osPx, osPy);
+                const isHovered = (t.id === hoveredTargetId);
+                const selIdx = getTgtIndex(t.id);
+                const isAlarmed = alarmedTargets.has(t.id);
+                const blinkRed = isAlarmed && (Math.floor(currentTime / 400) % 2 === 0);
+                const arpaColor = blinkRed ? '#ff3333' : highlightColor;
+
+                if (t.state === 1) {
+                    if (Math.floor(currentTime / 300) % 2 === 0) {
+                        ctx.strokeStyle = highlightColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+                        ctx.beginPath(); ctx.arc(sp.x, sp.y, 14, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                    if (currentTime - t.acqTime > 2500) t.state = 2; 
+                } else if (t.state === 2) {
+                    ctx.strokeStyle = arpaColor; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(sp.x, sp.y, 14, 0, Math.PI*2); ctx.stroke();
+                    
+                    if (isHovered && selIdx === 0) {
+                        ctx.strokeStyle = 'white'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
+                        ctx.strokeRect(sp.x - 14, sp.y - 14, 28, 28); ctx.setLineDash([]);
+                    }
+                    
+                    if (selIdx > 0) {
+                        ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5;
+                        ctx.strokeRect(sp.x - 14, sp.y - 14, 28, 28);
+                        ctx.fillStyle = 'white'; ctx.font = '10px Roboto';
+                        ctx.fillText(`tgt ${selIdx}`, sp.x + 20, sp.y - 10);
+                    }
+                    
+                    if (vectorTimeMins > 0) {
+                        ctx.strokeStyle = arpaColor;
+                        let vX, vY;
+                        if (vectorMode === 'T') { vX = t.spd * Math.sin(t.hdg * Math.PI/180); vY = t.spd * Math.cos(t.hdg * Math.PI/180); } 
+                        else { 
+                            const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
+                            vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy;
+                        }
+                        const fSp = getScreenPos(t.x + vX*(vectorTimeMins/60), t.y + vY*(vectorTimeMins/60), displayRadius, osPx, osPy);
+                        ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(fSp.x, fSp.y); ctx.stroke();
+                    }
+                }
+            });
+        }
+
+        ctx.restore();
+
+        if (isOffCenterSelecting) {
+            ctx.strokeStyle = '#55ffff'; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.moveTo(radarCanvas.mouseX - 10, radarCanvas.mouseY); ctx.lineTo(radarCanvas.mouseX + 10, radarCanvas.mouseY);
+            ctx.moveTo(radarCanvas.mouseX, radarCanvas.mouseY - 10); ctx.lineTo(radarCanvas.mouseX, radarCanvas.mouseY + 10);
+            ctx.stroke();
+        }
+    }
+
+    radarCanvas.addEventListener('mousemove', e => {
+        const rect = radarCanvas.getBoundingClientRect();
+        radarCanvas.mouseX = e.clientX - rect.left; radarCanvas.mouseY = e.clientY - rect.top;
+    });
+
+    function updateUI() {
+        const hdgStr = os.hdg.toFixed(1).padStart(5, '0') + "°";
+        document.getElementById('val-hdg').innerText = hdgStr; document.getElementById('top-hdg').innerText = hdgStr; document.getElementById('top-cog').innerText = hdgStr;
+        
+        document.getElementById('os-lat').innerText = formatLatLon(os.lat, true);
+        document.getElementById('os-lon').innerText = formatLatLon(os.lon, false);
+
+        const steerHdgEl = document.getElementById('steer-hdg');
+        const steerRudCmdEl = document.getElementById('steer-rud-cmd');
+        const steerRudActEl = document.getElementById('steer-rud-act');
+        const steerRotEl = document.getElementById('steer-rot');
+
+        if(steerHdgEl) steerHdgEl.innerText = hdgStr;
+        
+        if(steerRudCmdEl) {
+            let cmd = os.targetRudder;
+            steerRudCmdEl.innerText = Math.abs(cmd).toFixed(1) + "°" + (cmd > 0.1 ? " STBD" : (cmd < -0.1 ? " PORT" : ""));
+            steerRudCmdEl.style.color = cmd > 0.1 ? '#55ff55' : (cmd < -0.1 ? '#ff3333' : '#fff');
+        }
+        
+        if(steerRudActEl) {
+            let act = os.actualRudder;
+            steerRudActEl.innerText = Math.abs(act).toFixed(1) + "°" + (act > 0.1 ? " STBD" : (act < -0.1 ? " PORT" : ""));
+            steerRudActEl.style.color = act > 0.1 ? '#55ff55' : (act < -0.1 ? '#ff3333' : '#fff');
+        }
+        
+        if(steerRotEl) {
+            let rot = os.rot;
+            steerRotEl.innerText = Math.abs(rot).toFixed(1) + " °/min" + (rot > 0.1 ? " S" : (rot < -0.1 ? " P" : ""));
+            steerRotEl.style.color = rot > 0.1 ? '#55ff55' : (rot < -0.1 ? '#ff3333' : '#fff');
+        }
+
+        const gtx = document.getElementById('gyro-canvas').getContext('2d');
+        gtx.clearRect(0,0,160,110);
+        gtx.textAlign = 'center'; gtx.textBaseline = 'bottom'; gtx.font = '10px Roboto';
+        
+        let centerDeg = os.hdg;
+        let startDeg = Math.floor((centerDeg - 35) / 5) * 5;
+        let endDeg = Math.ceil((centerDeg + 35) / 5) * 5;
+        
+        for (let d = startDeg; d <= endDeg; d++) {
+            let diff = d - centerDeg; 
+            let rad = 1.5 * Math.PI + (diff * 0.01 * Math.PI); 
+            if (rad < 1.15 * Math.PI || rad > 1.85 * Math.PI) continue;
+            
+            let isMajor = d % 10 === 0;
+            let rOuter = 80;
+            let rInner = isMajor ? 70 : 75;
+            
+            let xOuter = 80 + Math.cos(rad) * rOuter;
+            let yOuter = 100 + Math.sin(rad) * rOuter;
+            let xInner = 80 + Math.cos(rad) * rInner;
+            let yInner = 100 + Math.sin(rad) * rInner;
+            
+            gtx.strokeStyle = '#fff'; gtx.lineWidth = 1;
+            gtx.beginPath(); gtx.moveTo(xInner, yInner); gtx.lineTo(xOuter, yOuter); gtx.stroke();
+            
+            if (isMajor) {
+                let dispD = d < 0 ? d + 360 : (d >= 360 ? d - 360 : d);
+                let xText = 80 + Math.cos(rad) * 60;
+                let yText = 100 + Math.sin(rad) * 60;
+                gtx.fillStyle = '#fff';
+                gtx.fillText(dispD.toString(), xText, yText);
+            }
+        }
+        gtx.strokeStyle = '#fff'; gtx.beginPath(); gtx.arc(80, 100, 80, Math.PI*1.15, Math.PI*1.85); gtx.stroke();
+        gtx.fillStyle = 'red'; gtx.beginPath(); gtx.moveTo(80, 15); gtx.lineTo(75, 25); gtx.lineTo(85, 25); gtx.fill();
+
+        const wtx = document.getElementById('wind-canvas').getContext('2d');
+        wtx.clearRect(0,0,160,150);
+        wtx.strokeStyle = '#555'; wtx.lineWidth = 2; wtx.beginPath(); wtx.arc(80, 75, 45, 0, Math.PI*2); wtx.stroke();
+        
+        wtx.textAlign = 'center'; wtx.textBaseline = 'middle'; wtx.font = '9px Roboto';
+        for(let i=0; i<360; i+=30) {
+            let rad = (i - 90) * Math.PI / 180;
+            wtx.strokeStyle = '#aaa'; wtx.lineWidth = 1;
+            wtx.beginPath(); 
+            wtx.moveTo(80 + Math.cos(rad)*45, 75 + Math.sin(rad)*45);
+            wtx.lineTo(80 + Math.cos(rad)*40, 75 + Math.sin(rad)*40);
+            wtx.stroke();
+            
+            wtx.fillStyle = '#aaa';
+            wtx.fillText(i.toString(), 80 + Math.cos(rad)*54, 75 + Math.sin(rad)*54);
+        }
+
+        wtx.save(); wtx.translate(80, 75); wtx.rotate((os.hdg + 60) * Math.PI/180);
+        wtx.fillStyle = isNightMode ? '#ff3333' : '#55ff55'; wtx.beginPath(); wtx.moveTo(0, -35); wtx.lineTo(-7, 8); wtx.lineTo(7, 8); wtx.fill();
+        wtx.restore();
+
+        const container = document.getElementById('target-info-container');
+        container.innerHTML = '';
+        if (selectedTargets.length > 0) {
+            selectedTargets.forEach((id, index) => {
+                let t = targets.find(obj => obj.id === id);
+                let isAIS = false;
+                if(!t) {
+                    t = aisTargets.find(obj => obj.id === id);
+                    isAIS = true;
+                }
+                if (!t) return;
+
+                let dx = t.x - os.x; let dy = t.y - os.y;
+                let rng = Math.sqrt(dx*dx + dy*dy);
+                let brg = Math.atan2(dx, dy) * 180 / Math.PI;
+                if (brg < 0) brg += 360;
+
+                const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
+                const tVx = t.spd * Math.sin(t.hdg * Math.PI/180); const tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+                const rVx = tVx - osVx; const rVy = tVy - osVy;
+                const vRelSq = (rVx*rVx) + (rVy*rVy);
+                
+                let tcpaHours = 0, cpa = 0;
+                if (vRelSq > 0.0001) {
+                    tcpaHours = -(dx * rVx + dy * rVy) / vRelSq;
+                    if (tcpaHours < 0) cpa = rng; 
+                    else cpa = Math.sqrt(Math.pow(dx + rVx * tcpaHours, 2) + Math.pow(dy + rVy * tcpaHours, 2));
+                } else { cpa = rng; }
+
+                const tcpaMins = tcpaHours * 60;
+                const tcpaStr = tcpaMins < 0 ? "<span style='color:#aaa;'>Passed</span>" : tcpaMins.toFixed(1) + " min";
+
+                const card = document.createElement('div');
+                card.className = 'target-card';
+                card.title = "선택됨";
+                
+                let titleHeader = isAIS ? `⚓ tgt ${index + 1} (AIS)` : `🎯 tgt ${index + 1} (ARPA)`;
+                let nameHtml = isAIS ? `<div style="display:flex; justify-content:space-between; color:#fff;"><span>NAME:</span> <span>${t.name}</span></div><div style="display:flex; justify-content:space-between; color:#fff;"><span>MMSI:</span> <span>${t.mmsi}</span></div>` : "";
+
+                card.innerHTML = `
+                    <div style="color:#fff; font-weight:bold; margin-bottom:4px; border-bottom:1px solid #333; padding-bottom:2px;">${titleHeader}</div>
+                    ${nameHtml}
+                    <div style="display:flex; justify-content:space-between;"><span>BRG:</span> <span>${brg.toFixed(1).padStart(5, '0')}°</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>RNG:</span> <span>${rng.toFixed(2)} NM</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>COG:</span> <span>${t.hdg.toFixed(1).padStart(5, '0')}°</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>SOG:</span> <span>${t.spd.toFixed(1)} kn</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>CPA:</span> <span>${cpa.toFixed(2)} NM</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>TCPA:</span> <span>${tcpaStr}</span></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    }
+</script>
+</body>
+</html>
