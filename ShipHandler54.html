@@ -103,6 +103,11 @@
         .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: translateY(-50%) scale(0.95); }
         #btn-steer-port { left: 30px; }
         #btn-steer-stbd { right: 30px; }
+
+        /* 중앙 카메라 조작 패드 UI */
+        #cam-control-pad { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: rgba(5,10,15,0.85); padding: 20px; border: 2px solid #00ffaa; border-radius: 12px; text-align: center; backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .cam-pad-btn { width: 60px; height: 60px; background: rgba(0, 255, 170, 0.15); border: 1px solid #00ffaa; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; user-select: none; transition: 0.1s;}
+        .cam-pad-btn:active { background: #00ffaa; color: #000; transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -113,6 +118,24 @@
     <!-- 터치 조타 버튼 (최상단) -->
     <div id="btn-steer-port" class="steer-btn">P</div>
     <div id="btn-steer-stbd" class="steer-btn">S</div>
+
+    <!-- 중앙 카메라 조작 패드 -->
+    <div id="cam-control-pad">
+        <div style="color: #00ffaa; font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid rgba(0,255,170,0.3); padding-bottom: 5px;">CAMERA CONTROL</div>
+        <table style="margin: 0 auto; border-spacing: 8px;">
+            <tr>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('q')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('q'); event.preventDefault();" ontouchend="stopCamMove()">Q<br>UP</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('w')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('w'); event.preventDefault();" ontouchend="stopCamMove()">W<br>FWD</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('e')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('e'); event.preventDefault();" ontouchend="stopCamMove()">E<br>DWN</button></td>
+            </tr>
+            <tr>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('a')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('a'); event.preventDefault();" ontouchend="stopCamMove()">A<br>LFT</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('s')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('s'); event.preventDefault();" ontouchend="stopCamMove()">S<br>BWD</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('d')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('d'); event.preventDefault();" ontouchend="stopCamMove()">D<br>RGT</button></td>
+            </tr>
+        </table>
+        <button onclick="toggleCamControls()" style="margin-top: 10px; width: 100%; padding: 8px; background: rgba(255,51,51,0.2); border: 1px solid #ff3333; color: #ffcccc; cursor: pointer; border-radius: 4px; font-weight: bold;">CLOSE</button>
+    </div>
 
     <!-- 자동 로그인 화면 -->
     <div id="login-overlay">
@@ -129,7 +152,6 @@
                 <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
             </div>
             
-            <!-- 본선 모델 선택 기능 -->
             <div class="form-row">
                 <label>본선 (Own Ship) 선택</label>
                 <select id="os-select">
@@ -150,7 +172,6 @@
         </div>
     </div>
 
-    <!-- 로딩 및 전송 팝업 -->
     <div id="loading-screen">
         <div class="spinner"></div>
         <div class="loading-text">DOWNLOADING ASSETS...</div>
@@ -213,8 +234,8 @@
         <div class="ctrl-title" style="margin-top:12px;">SIMULATION CONTROL</div>
         <div class="ctrl-btn-group">
             <button id="btn-pause" class="btn-ctrl" onclick="togglePause()">PAUSE</button>
-            <button class="btn-ctrl" onclick="exportLogCSV()" style="background: rgba(234, 179, 8, 0.2); border-color: #eab308; color: #fef08a;">SAVE LOG</button>
-            <!-- 터치 컨트롤 활성화 버튼 -->
+            <!-- SAVE LOG 버튼을 CAMERA CTRL 버튼으로 교체 -->
+            <button id="btn-cam-control" class="btn-ctrl" onclick="toggleCamControls()">CAMERA CTRL</button>
             <button id="btn-touch-steer" class="btn-ctrl" onclick="toggleTouchSteering()">TOUCH STEER</button>
         </div>
         <div class="ctrl-btn-group" style="margin-bottom:0;">
@@ -283,6 +304,9 @@
         let isHudDragged = false; 
         let manualRadarZoom = 1.0;
 
+        let camMoveDir = null;
+        let isCamPadOpen = false;
+
         const wakePool = [];
         const activeWakes = [];
 
@@ -323,9 +347,6 @@
             window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = ''; } });
         });
 
-        // ==========================================
-        // 2. 무적 에셋 자동 로딩 로직
-        // ==========================================
         window.startLoadingAssets = async function() {
             studentInfo.id = document.getElementById('student-id').value.trim();
             studentInfo.name = document.getElementById('student-name').value.trim();
@@ -475,8 +496,25 @@
             if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); }
         }
 
+        window.toggleCamControls = function() {
+            isCamPadOpen = !isCamPadOpen;
+            const pad = document.getElementById('cam-control-pad');
+            const btn = document.getElementById('btn-cam-control');
+            if(isCamPadOpen) { pad.style.display = 'block'; btn.classList.add('active'); } 
+            else { pad.style.display = 'none'; btn.classList.remove('active'); }
+        };
+
+        window.setCamMove = function(dir) { camMoveDir = dir; };
+        window.stopCamMove = function() { 
+            camMoveDir = null; 
+            if (currentOSFileName !== "") { 
+                const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; 
+                localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); 
+            } 
+        };
+
         // ==========================================
-        // 3. 시뮬레이션 메인 로직 (시나리오 선박만 로드)
+        // 3. 시뮬레이션 메인 로직
         // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
@@ -542,7 +580,6 @@
 
             osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.speed = 10.0; 
 
-            // 더미 선박 로직 삭제. 시나리오 내 데이터만 생성
             if (loadedScenarioConfig) {
                 if (Array.isArray(loadedScenarioConfig)) {
                     loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); } });
@@ -654,13 +691,6 @@
 
         window.closeManualTarget = function() { manuallySelectedTarget = null; document.getElementById('manual-target-panel').style.display = 'none'; }
         function convertToLat(z) { return (34.800000 - (z / 111111)).toFixed(6); } function convertToLon(x) { return (126.400000 + (x / (111111 * Math.cos(34.8 * Math.PI / 180)))).toFixed(6); }
-
-        window.exportLogCSV = function() {
-            if (logData.length === 0) { alert("아직 저장된 시뮬레이션 로그가 없습니다."); return; }
-            let csvContent = "Time(s),Name,Latitude,Longitude,X,Y,HDG,SOG,COG,ROT,RUD_CMD,RUD_ACT\n";
-            logData.forEach(row => { csvContent += `${row.time},${row.name},${row.lat},${row.lon},${row.x},${row.y},${row.hdg},${row.sog},${row.cog},${row.rot},${row.rud_cmd},${row.rud_act}\n`; });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `arc_simulation_log_${new Date().getTime()}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        };
 
         const clock = new THREE.Clock(); function getScreenPos(vector3) { const v = vector3.clone(); v.project(camera); return { x: (v.x * .5 + .5) * window.innerWidth, y: -(v.y * .5 - .5) * window.innerHeight, z: v.z }; }
         function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { const voX = voSpd * moveScale * Math.sin(voHdg * Math.PI/180); const voZ = -voSpd * moveScale * Math.cos(voHdg * Math.PI/180); const vtX = vtSpd * moveScale * Math.sin(vtHdg * Math.PI/180); const vtZ = -vtSpd * moveScale * Math.cos(vtHdg * Math.PI/180); const dvX = vtX - voX; const dvZ = vtZ - voZ; const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; const cpa = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); const radH = voHdg * Math.PI / 180; const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); let bcr = -1; if (Math.abs(dvX_stbd) > 0.0001) { const t_cross = -relX_stbd / dvX_stbd; if (t_cross > 0) { const bcr_units = relZ_fwd + dvZ_fwd * t_cross; if (bcr_units > 0) { bcr = bcr_units / 400; } } } return { cpa: cpa / 400, tcpa: tcpa, bcr: bcr }; }
@@ -785,6 +815,17 @@
             requestAnimationFrame(animate);
             if (gameState === 'PLAYING') {
                 if (!isPaused) { const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; water.material.uniforms['time'].value += dt * 0.3; updatePhysics(dt); } else { clock.getDelta(); }
+                
+                // 터치 패드를 통한 카메라 위치 이동 처리
+                if (camMoveDir && !isPaused) {
+                    if(camMoveDir === 'w') camera.position.z -= 1;
+                    if(camMoveDir === 's') camera.position.z += 1;
+                    if(camMoveDir === 'a') camera.position.x -= 1;
+                    if(camMoveDir === 'd') camera.position.x += 1;
+                    if(camMoveDir === 'q') camera.position.y += 1;
+                    if(camMoveDir === 'e') camera.position.y -= 1;
+                }
+
                 camera.rotation.y = camAngleY; camera.rotation.x = camAngleX; updateAI(); 
             } else if (gameState === 'CALIBRATING') { if(orbitControl) orbitControl.update(); clock.getDelta(); } else { clock.getDelta(); }
             renderer.render(scene, camera);
