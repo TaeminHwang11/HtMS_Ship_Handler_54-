@@ -73,6 +73,8 @@
         .ai-insight-title { font-size: 15px; font-weight: bold; color: #fff; margin-bottom: 8px;}
         .ai-list { margin: 0; padding-left: 20px; color: #eceff1; font-size: 14px; line-height: 1.6; }
 
+        /* AR Container Fix (모바일 위치 이탈 방지) */
+        #ar-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: hidden; z-index: 50; }
         .ar-label { position: absolute; pointer-events: none; display: none; border: 1px solid rgba(0, 255, 255, 0.4); background: rgba(4, 16, 26, 0.85); min-width: 150px; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
         .ar-header { background: rgba(0, 255, 255, 0.3); color: #fff; padding: 6px 10px; font-size: 14px; font-weight: bold; border-bottom: 1px solid #0ff; text-align: center; }
         .ar-body { padding: 8px 10px; font-size: 13px; color: #b3e5fc; line-height: 1.5; font-family: monospace;}
@@ -84,6 +86,10 @@
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box;}
         
+        /* Select Dropdown Styling */
+        .form-row select { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; }
+        .form-row select option { background: #111; color: #fff; }
+
         .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s;}
         .btn-main:hover { background: #00cc88; transform: translateY(-2px);}
         
@@ -117,6 +123,24 @@
                 <label>이름 (Name)</label>
                 <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
             </div>
+            
+            <!-- 본선 모델 선택 기능 추가 -->
+            <div class="form-row">
+                <label>본선 (Own Ship) 선택</label>
+                <select id="os-select">
+                    <option value="CargoShip1.glb" selected>Cargo Ship 1 (화물선 1)</option>
+                    <option value="CargoShip2.glb">Cargo Ship 2 (화물선 2)</option>
+                    <option value="ContainerShip1.glb">Container Ship 1 (컨테이너선 1)</option>
+                    <option value="ContainerShip2.glb">Container Ship 2 (컨테이너선 2)</option>
+                    <option value="BulkCarrier.glb">Bulk Carrier (벌크선)</option>
+                    <option value="GasCarrier1.glb">Gas Carrier (가스운반선)</option>
+                    <option value="PassengerShip1.glb">Passenger Ship (여객선)</option>
+                    <option value="AircraftCarrier1.glb">Aircraft Carrier (항공모함)</option>
+                    <option value="SteamShip.glb">Steam Ship (증기선)</option>
+                    <option value="FishingBoat1.glb">Fishing Boat (어선)</option>
+                </select>
+            </div>
+
             <button class="btn-main" onclick="startLoadingAssets()">시작하기</button>
         </div>
     </div>
@@ -132,14 +156,14 @@
         <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
     </div>
 
-    <!-- 3. 메인 시뮬레이터 UI (원본 그대로 유지) -->
+    <!-- 3. 메인 시뮬레이터 UI -->
     <div id="camera-hint">
         [시야 조작] 마우스 좌클릭 드래그
         <div class="cam-controls">[본선 카메라 이동] W/S(앞뒤) A/D(좌우) Q/E(상하) - 조작 시 브라우저에 자동 저장됩니다.</div>
         <div id="save-toast">카메라 시점 저장됨</div>
     </div>
     
-    <div id="digital-hud-container" class="draggable-panel">
+    <div id="digital-hud-container" class="draggable-panel" style="display:none;">
         <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
         <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
         <div class="digital-item"><div class="digital-label">DRIFT</div><div id="val-lat" class="digital-val">0.0</div></div>
@@ -164,9 +188,9 @@
         <div class="danger-data-row"><span>BCR:</span> <b id="mt-bcr" style="color:#fff;">-</b></div>
     </div>
 
-    <div id="ecdis-container" class="hud-panel draggable-panel"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
+    <div id="ecdis-container" class="hud-panel draggable-panel" style="display:none;"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
 
-    <div id="demo-control-container" class="hud-panel draggable-panel">
+    <div id="demo-control-container" class="hud-panel draggable-panel" style="display:none;">
         <div class="ctrl-title">AI ASSISTANT SYSTEM</div>
         <div class="ctrl-btn-group"><button id="btn-mode-cas" class="btn-ctrl" onclick="setMode('CAS')">CAS (COLLISION AVOIDANCE)</button></div>
         <div class="ctrl-title">ENVIRONMENT & SIMULATION</div>
@@ -253,7 +277,7 @@
         const skyImage = "Environment/NiceSky.jpg"; 
         const scenarioFile = "Scenarios/Scenario.json"; 
         const settingsFile = "Jsons/Settings.json"; 
-        const MAIN_OS_FILE = "CargoShip1.glb"; 
+        let MAIN_OS_FILE = "CargoShip1.glb"; 
 
         // 글로벌 변수
         let studentInfo = { id: "", name: "" };
@@ -316,6 +340,9 @@
             studentInfo.id = document.getElementById('student-id').value.trim();
             studentInfo.name = document.getElementById('student-name').value.trim();
             if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
+
+            // 드롭다운 메뉴에서 선택한 본선을 할당
+            MAIN_OS_FILE = document.getElementById('os-select').value;
 
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('loading-screen').style.display = 'flex';
@@ -459,7 +486,7 @@
         }
 
         // ==========================================
-        // 3. 시뮬레이션 메인 로직 (기절 오류 완벽 수정)
+        // 3. 시뮬레이션 메인 로직
         // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
@@ -474,9 +501,12 @@
 
             logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
             
+            document.getElementById('digital-hud-container').style.display = 'flex';
+            document.getElementById('ecdis-container').style.display = 'block';
+            document.getElementById('demo-control-container').style.display = 'flex';
+            document.getElementById('camera-hint').style.display = 'block';
             document.getElementById('btn-pause').innerText = 'PAUSE'; document.getElementById('btn-pause').classList.remove('active'); document.getElementById('manual-target-panel').style.display = 'none';
 
-            // 오류 원인 1 완벽 수정: 빈 값을 읽지 않고 무조건 로드된 파일 사용
             let osData = parsedModels[osFileName];
             if (!osData) {
                 const availableFiles = Object.keys(parsedModels);
@@ -504,7 +534,6 @@
             } else { camera.position.set(0, 60, 0); }
             camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
 
-            // 오류 원인 2 완벽 수정: Object.keys를 다운로드된 진짜 모델 배열로 매칭
             const filesList = Object.keys(parsedModels);
             let targetIndex = 1;
 
@@ -596,6 +625,20 @@
                 if (camMoved && currentOSFileName !== "") { const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); const toast = document.getElementById('save-toast'); toast.style.display = 'inline-block'; clearTimeout(saveTimeout); saveTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000); }
             }
         });
+
+        // 📌 모바일 터치 조타 제어 로직 (왼쪽 화면 터치 -> 좌현, 오른쪽 화면 터치 -> 우현)
+        document.addEventListener('touchstart', (e) => { 
+            if(gameState === 'PLAYING' && e.target.tagName === 'CANVAS' && !isPaused) {
+                const touchX = e.touches[0].clientX;
+                if (touchX < window.innerWidth / 2) {
+                    shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5);
+                    shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5;
+                } else {
+                    shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5);
+                    shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5;
+                }
+            }
+        }, {passive: true});
 
         document.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') isDraggingCam = true; });
         document.addEventListener('mouseup', () => { isDraggingCam = false; });
