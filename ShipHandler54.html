@@ -80,9 +80,9 @@
         .menu-box { background: rgba(0,0,0,0.6); border: 1px solid #00ffaa; border-radius: 12px; padding: 40px; width: 400px; box-shadow: 0 10px 40px rgba(0,255,170,0.1); margin: 20px 0;}
         .form-row { margin-bottom: 20px; text-align: left;}
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
-        .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box;}
+        .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
         
-        .form-row select { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; }
+        .form-row select { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; user-select: auto; -webkit-user-select: auto; }
         .form-row select option { background: #111; color: #fff; }
 
         .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s;}
@@ -154,7 +154,7 @@
             
             <div class="form-row">
                 <label>본선 (Own Ship) 선택</label>
-                <select id="os-select">
+                <select id="os-select" onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
                     <option value="CargoShip1.glb" selected>Cargo Ship 1 (화물선 1)</option>
                     <option value="CargoShip2.glb">Cargo Ship 2 (화물선 2)</option>
                     <option value="ContainerShip1.glb">Container Ship 1 (컨테이너선 1)</option>
@@ -234,7 +234,6 @@
         <div class="ctrl-title" style="margin-top:12px;">SIMULATION CONTROL</div>
         <div class="ctrl-btn-group">
             <button id="btn-pause" class="btn-ctrl" onclick="togglePause()">PAUSE</button>
-            <!-- SAVE LOG 버튼을 CAMERA CTRL 버튼으로 교체 -->
             <button id="btn-cam-control" class="btn-ctrl" onclick="toggleCamControls()">CAMERA CTRL</button>
             <button id="btn-touch-steer" class="btn-ctrl" onclick="toggleTouchSteering()">TOUCH STEER</button>
         </div>
@@ -276,9 +275,6 @@
     <div id="ar-container"></div>
 
     <script>
-        // ==========================================
-        // 1. 핵심 서버 통신 변수 설정 
-        // ==========================================
         const GITHUB_BASE_URL = "./"; 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJnQMZiSKk-rCcs3csNCtDGOah-aD9OblqgcezP1Lh1B-5EK3CpERdYPdnzlumQTzLhA/exec";
 
@@ -513,9 +509,6 @@
             } 
         };
 
-        // ==========================================
-        // 3. 시뮬레이션 메인 로직
-        // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
 
@@ -660,7 +653,7 @@
             }
         });
 
-        // P / S 버튼 조작 기능 (마우스 & 터치 연동)
+        // P / S 버튼 조작 기능
         function steerPort(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
         function steerStbd(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
         
@@ -710,6 +703,7 @@
             shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
             osShip.rotation.set(-shipPhysics.pitch * Math.PI/180, -headingRad, -shipPhysics.roll * Math.PI/180);
             osShip.position.x += (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt; osShip.position.z -= (shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
+            
             camera.rotation.y = camAngleY; camera.rotation.x = camAngleX;
             arOverlayGroup.position.copy(osShip.position); arOverlayGroup.rotation.y = -headingRad;
 
@@ -816,7 +810,7 @@
             if (gameState === 'PLAYING') {
                 if (!isPaused) { const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; water.material.uniforms['time'].value += dt * 0.3; updatePhysics(dt); } else { clock.getDelta(); }
                 
-                // 터치 패드를 통한 카메라 위치 이동 처리
+                // 패드를 통한 카메라 위치 이동 처리
                 if (camMoveDir && !isPaused) {
                     if(camMoveDir === 'w') camera.position.z -= 1;
                     if(camMoveDir === 's') camera.position.z += 1;
