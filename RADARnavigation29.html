@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>[HTMS] RADAR Navigation</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -25,6 +26,21 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
+        /* 📌 새로 추가된 로그인 및 로딩/완료 오버레이 CSS */
+        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,12,15,0.98); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .menu-box { background: rgba(30,30,35,0.8); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 40px; width: 350px; box-shadow: 0 10px 40px rgba(58, 117, 196, 0.2); }
+        .form-row { margin-bottom: 20px; text-align: left; }
+        .form-row label { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
+        .form-row input { width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: #fff; font-family: 'Roboto', sans-serif; font-size: 16px; border-radius: 4px; box-sizing: border-box; outline: none; transition: 0.2s;}
+        .form-row input:focus { border-color: var(--accent-blue); }
+        .btn-main { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; font-family: 'Roboto', sans-serif; background: var(--accent-blue); color: #fff; transition: 0.2s; }
+        .btn-main:hover { filter: brightness(1.2); }
+        
+        #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .finish-title { font-size: 32px; font-weight: bold; color: var(--text-highlight); margin-bottom: 15px; }
+        .finish-desc { font-size: 18px; color: var(--text-main); }
+
+        /* 기존 CSS 유지 */
         #ui-container {
             display: flex; width: 100vw; height: 100vh; padding: 10px; box-sizing: border-box;
             background: var(--bg-panel); border: 15px solid #111; border-radius: 10px;
@@ -156,6 +172,30 @@
 </head>
 <body>
 
+<!-- 📌 자동 로그인 오버레이 -->
+<div id="login-overlay">
+    <h1 style="font-size: 42px; letter-spacing: 2px; margin-bottom: 10px; color:var(--text-main);">[HTMS] RADAR Navigation</h1>
+    <h2 style="color: var(--accent-blue); letter-spacing: 5px; font-size: 16px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
+    
+    <div class="menu-box">
+        <div class="form-row">
+            <label>학번 (Student ID)</label>
+            <input type="text" id="student-id" placeholder="예: 20261234" autocomplete="off" />
+        </div>
+        <div class="form-row">
+            <label>이름 (Name)</label>
+            <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
+        </div>
+        <button class="btn-main" onclick="startLogin()">시작하기</button>
+    </div>
+</div>
+
+<!-- 📌 시뮬레이션 완료 오버레이 -->
+<div id="finish-overlay">
+    <div id="finish-title" class="finish-title">데이터 전송 성공!</div>
+    <div id="finish-desc" class="finish-desc">레이더 시뮬레이션 결과가 안전하게 저장되었습니다.</div>
+</div>
+
 <div id="ui-container">
     <div class="left-panel">
         <div class="instrument-box" style="position:relative;">
@@ -171,7 +211,7 @@
             <canvas id="wind-canvas" width="160" height="150"></canvas>
             <div class="control-row" style="margin-top:6px;">
                 <div class="btn">True</div>
-                <div class="digital-value" style="margin-top:0; font-size:16px;">2.7 m/s</div>
+                <div class="digital-value" id="val-wind-spd" style="margin-top:0; font-size:16px;">12.5 m/s</div>
             </div>
         </div>
         
@@ -384,7 +424,7 @@
                 <div class="tab-btn">BAM</div>
                 <div class="tab-btn">NPL</div>
             </div>
-            <!-- 🎯 프로그램 이름 각인 적용 -->
+            
             <div style="text-align:right; font-size:10px; color:var(--text-main); font-weight:bold; margin: 4px 0;">[HTMS] RADAR Navigation</div>
             
             <div class="tab-row">
@@ -521,6 +561,19 @@
         });
     });
 
+    // 📌 전송 및 환경 기본 설정
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJnQMZiSKk-rCcs3csNCtDGOah-aD9OblqgcezP1Lh1B-5EK3CpERdYPdnzlumQTzLhA/exec";
+    let studentInfo = { id: "", name: "" };
+    const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
+
+    window.startLogin = function() {
+        studentInfo.id = document.getElementById('student-id').value.trim();
+        studentInfo.name = document.getElementById('student-name').value.trim();
+        if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
+    }
+
     let isTransmitting = false;
     let radarTrueBrg = 0; 
     let showRings = true;
@@ -530,7 +583,7 @@
     let arcActive = false;
     let arcIntervalMs = 6000; 
     let arcTargetMode = 'Selected'; 
-    let manualEblOverride = false; // 🎯 EBL 수동 조작 여부 플래그 추가
+    let manualEblOverride = false; 
     
     let wTurnVal = 2.0;
     let wGoalVal = 1.0;
@@ -620,7 +673,6 @@
     let cachedArcRingData = [];
     let cachedArcBestPath = [];
     
-    // 🎯 ARC 30프레임 스로틀링을 위한 변수
     let arcUpdatePending = false;
     let framesSinceLastArc = 0;
 
@@ -698,6 +750,7 @@
         }
     }
 
+    // 📌 전송 파일 이름에 R_ 접두사 부여
     window.exportLogCSV = function() {
         if (logData.length === 0) { alert("아직 저장된 시뮬레이션 로그가 없습니다."); return; }
         let csvContent = "Time(s),Name,Latitude,Longitude,X,Y,HDG,SOG,COG,ROT,RUD_CMD,RUD_ACT\n";
@@ -708,11 +761,33 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `arc_simulation_log_${new Date().getTime()}.csv`);
+        link.setAttribute("download", `R_arc_simulation_log_${new Date().getTime()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
+
+    // 📌 서버 데이터 전송 로직
+    function finishSimulationAndSendData() {
+        if (isPaused && document.getElementById('finish-overlay').style.display === 'flex') return;
+        isPaused = true;
+        document.getElementById('finish-overlay').style.display = 'flex';
+        
+        const payloadName = "R_" + studentInfo.name;
+        const payload = { studentId: studentInfo.id, studentName: payloadName, logData: logData };
+        
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+        .then(res => res.json()).then(res => {
+            document.getElementById('finish-title').innerText = "데이터 전송 성공!";
+            document.getElementById('finish-desc').innerText = "레이더 시뮬레이션 결과가 안전하게 저장되었습니다.";
+        })
+        .catch(err => {
+            document.getElementById('finish-title').innerText = "전송 실패";
+            document.getElementById('finish-title').style.color = "#ff3333";
+            document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다.";
+            console.error(err);
+        });
+    }
 
     window.loadScenario = function(event) {
         const file = event.target.files[0];
@@ -731,7 +806,7 @@
                 logData = [];
                 simTimeSeconds = 0;
                 lastLogTimeSec = 0;
-                manualEblOverride = false; // 🎯 새 시나리오 로드 시 수동 조작 해제
+                manualEblOverride = false; 
 
                 if (data.origin) {
                     os.lat = data.origin.lat;
@@ -744,6 +819,19 @@
                     os.actualRudder = 0;
                     os.rot = 0;
                 }
+                
+                // 📌 바람/조류 데이터 파싱 적용
+                if (data.environment) {
+                    if (data.environment.wind) {
+                        env.windDir = data.environment.wind.dir !== undefined ? data.environment.wind.dir : env.windDir;
+                        env.windSpd = data.environment.wind.spd !== undefined ? data.environment.wind.spd : env.windSpd;
+                    }
+                    if (data.environment.current) {
+                        env.currentDir = data.environment.current.dir !== undefined ? data.environment.current.dir : env.currentDir;
+                        env.currentSpd = data.environment.current.spd !== undefined ? data.environment.current.spd : env.currentSpd;
+                    }
+                }
+                document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
                 
                 let rad = os.hdg * Math.PI / 180;
 
@@ -1170,17 +1258,15 @@
         let relBrg = trueBrg - os.hdg;
         if(relBrg < 0) relBrg += 360;
 
-        // 🎯 1순위: EBL1 조작 최우선 처리 (선수 방향 및 다른 요소와 겹쳐도 무조건 먼저 잡힘)
         if (ebl1Active) {
             let angleDiff1 = Math.abs(angleDiff(trueBrg, ebl1AngleTrue));
             if (angleDiff1 < 5) { 
                 isDraggingEBL = true; 
-                manualEblOverride = true; // 🎯 항로 데이터를 지우지 않고 수동 모드만 활성화
+                manualEblOverride = true; 
                 return; 
             }
         }
 
-        // 🎯 2순위: 타겟 클릭 처리
         if (hoveredTargetId !== null) {
             const idx = selectedTargets.indexOf(hoveredTargetId);
             if (idx === -1) {
@@ -1190,7 +1276,6 @@
             return;
         }
 
-        // 🎯 3순위: 기타 VRM 및 EBL2, PI 조작
         if (vrm1Active && Math.abs(mouseDistPx - (vrm1Dist / currentRange) * displayRadius) < 15) { isDraggingVRM = true; return; }
         if (vrm2Active && Math.abs(mouseDistPx - (vrm2Dist / currentRange) * displayRadius) < 15) { isDraggingVRM2 = true; return; }
         if (ebl2Active) {
@@ -1498,7 +1583,6 @@
         }
         
         let goal_angle = null; 
-        // 🎯 !manualEblOverride 조건 추가
         if (goalPoints.length > 0 && !manualEblOverride) {
             let gp = goalPoints[0];
             let dx = gp.x - os.x;
@@ -1511,7 +1595,6 @@
                 document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
             }
         } else if (ebl1Active) {
-            // EBL 수동 조작 시 이쪽을 타게 되어 EBL 각도를 ARC 목표점으로 사용
             goal_angle = ebl1AngleTrue;
         }
 
@@ -1622,9 +1705,20 @@
         if (os.hdg < 0) os.hdg += 360;
         
         const osHdgRad = os.hdg * (Math.PI / 180);
-        let osMoveX = (os.spd * simDtHours) * Math.sin(osHdgRad);
-        let osMoveY = (os.spd * simDtHours) * Math.cos(osHdgRad);
-        os.x += osMoveX; os.y += osMoveY;
+        
+        // 📌 2D 환경 조류/바람 벡터 적용 
+        let relativeWindDir = (env.windDir - os.hdg + 360) % 360;
+        let windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin(relativeWindDir * Math.PI / 180);
+        let driftX = windDriftSpeed * -Math.cos(osHdgRad);
+        let driftY = windDriftSpeed * Math.sin(osHdgRad);
+        let currX = env.currentSpd * Math.sin(env.currentDir * Math.PI / 180);
+        let currY = env.currentSpd * Math.cos(env.currentDir * Math.PI / 180);
+
+        let osMoveX = (os.spd * Math.sin(osHdgRad) + driftX + currX) * simDtHours;
+        let osMoveY = (os.spd * Math.cos(osHdgRad) + driftY + currY) * simDtHours;
+
+        os.x += osMoveX; 
+        os.y += osMoveY;
 
         os.lat += (osMoveY) / 60;
         os.lon += (osMoveX) / (60 * Math.cos(os.lat * Math.PI/180));
@@ -1643,13 +1737,17 @@
             }
         }
 
+        // 📌 웨이포인트 통과 검사 로직
         if (goalPoints.length > 0) {
             let gp = goalPoints[0];
             let dx = gp.x - os.x;
             let dy = gp.y - os.y;
             let distToGoalNM = Math.sqrt(dx*dx + dy*dy);
-            if (distToGoalNM < 0.1) {
+            if (distToGoalNM < 0.3) {
                 goalPoints.shift(); 
+                if(goalPoints.length === 0) {
+                    finishSimulationAndSendData();
+                }
             }
         }
 
@@ -1738,10 +1836,8 @@
         let maxDistNM = (maxDist / displayRadius) * currentRange;
         let displayUpBrg = getDisplayUpBrg();
 
-        // 🎯 매 프레임 증가
         framesSinceLastArc++;
 
-        // 🎯 업데이트 조건 분리: 정기 업데이트 시간 도래(혹은 최초실행) vs 강제 호출(단 최소 30프레임 지연)
         let needsNormalUpdate = (currentTime - lastArcCalcTime > arcIntervalMs || lastArcCalcTime === 0);
         let needsForcedUpdate = arcUpdatePending && (framesSinceLastArc >= 30);
 
