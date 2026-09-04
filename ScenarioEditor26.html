@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>[HTMS] Scenario Generator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #111827;
+            --border-color: #1f293d;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-cyan: #06b6d4;
+            --accent-yellow: #eab308;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            display: flex; height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        #canvas-wrapper {
+            flex: 1; display: flex; flex-direction: column;
+            background: #0b0f19; position: relative;
+        }
+
+        #grid-container {
+            flex: 1; display: grid; gap: 2px; background: #1f293d;
+            width: 100%; height: 100%;
+        }
+
+        .viewport {
+            position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%);
+            overflow: hidden; cursor: crosshair;
+            box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.05);
+            border: 2px solid transparent; transition: border 0.2s;
+        }
+        .viewport.active-vp {
+            border: 2px solid var(--accent-yellow);
+        }
+        
+        .vp-canvas { width: 100%; height: 100%; display: block; }
+        
+        .vp-label {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6);
+            color: var(--accent-yellow); font-weight: bold; font-size: 14px;
+            padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow);
+            z-index: 10; pointer-events: none;
+        }
+
+        .coord-hud {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color);
+            padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px;
+            backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10;
+        }
+        .hud-cursor { color: var(--text-muted); }
+        .hud-range { color: var(--accent-yellow); font-weight: bold; }
+        .hud-target {
+            color: var(--accent-red); font-weight: bold;
+            text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none;
+        }
+
+        #sidebar {
+            width: 380px; background-color: var(--panel-bg); padding: 15px 20px;
+            box-sizing: border-box; display: flex; flex-direction: column;
+            border-left: 1px solid var(--border-color); box-shadow: -5px 0 25px rgba(0,0,0,0.5); z-index: 20;
+            overflow-y: auto;
+        }
+
+        #main-title {
+            font-size: 20px; font-weight: 800; color: var(--accent-cyan);
+            letter-spacing: 2px; text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            margin-bottom: 15px; font-family: 'Arial Black', sans-serif; text-align: center;
+        }
+
+        .sim-selector {
+            background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 6px; margin-bottom: 10px;
+        }
+        .sim-selector label { font-size: 11px; color: var(--accent-cyan); font-weight: bold; display: block; margin-bottom: 6px; }
+        .sim-selector select {
+            width: 100%; background: #000; color: #fff; border: 1px solid #1f293d; padding: 8px; border-radius: 4px; outline: none; font-weight: bold; cursor: pointer;
+        }
+
+        .tab-menu {
+            display: flex; gap: 4px; margin-bottom: 15px;
+            background: #0b0f19; padding: 4px; border-radius: 8px; border: 1px solid #1f293d;
+        }
+        .tab-btn {
+            flex: 1; padding: 10px; border: none; border-radius: 6px;
+            background: transparent; color: var(--text-muted); font-weight: 700; font-size: 13px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .tab-btn.active { background: var(--accent-cyan); color: #fff; box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3); }
+
+        .panel { display: none; flex-direction: column; flex: 1; }
+        .panel.active { display: flex; }
+
+        .instruction {
+            font-size: 12px; color: var(--text-muted); background: #172033;
+            padding: 12px; border-radius: 6px; margin-bottom: 15px; line-height: 1.6;
+            border-left: 3px solid var(--accent-cyan);
+        }
+        .highlight-text { color: var(--accent-yellow); font-weight: bold; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .btn-row { display: flex; gap: 8px; }
+
+        button.tool-btn {
+            flex: 1; background-color: #1f293d; color: var(--text-main);
+            border: 1px solid #334155; padding: 10px 6px; cursor: pointer;
+            font-weight: 600; font-size: 12px; border-radius: 6px; transition: all 0.2s ease;
+        }
+        button.tool-btn:hover { background-color: #2e3d59; border-color: #475569; }
+        .btn-add { background-color: #065f46 !important; border-color: #047857 !important; color: #a7f3d0 !important; }
+        .btn-add-goal { background-color: #0284c7 !important; border-color: #0369a1 !important; color: #bae6fd !important; }
+        .btn-mass { background-color: #4c1d95 !important; border-color: #5b21b6 !important; color: #ddd6fe !important; }
+        .btn-del-mass { background-color: #7f1d1d !important; border-color: #991b1b !important; color: #fca5a5 !important; }
+        .btn-load { background-color: #1e3a8a !important; border-color: #1d4ed8 !important; color: #bfdbfe !important; }
+        .btn-ecdis { background-color: #059669 !important; border-color: #047857 !important; color: #a7f3d0 !important; }
+        
+        .origin-control {
+            background: #172033; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #8b5cf6;
+        }
+        .origin-control label { font-size: 11px; font-weight: bold; color: #a78bfa; display: block; margin-bottom: 6px; }
+        .origin-inputs { display: flex; gap: 6px; }
+        .origin-inputs input {
+            flex: 1; background-color: #0b0f19; color: white; border: 1px solid #334155;
+            padding: 6px; border-radius: 4px; font-family: monospace; font-size: 12px; outline: none; text-align: center;
+        }
+        
+        #selectedShipDisplay {
+            margin-bottom: 12px; font-size: 13px; color: var(--text-muted);
+            background: #1e293b; padding: 10px; border-radius: 6px; border: 1px solid #334155;
+        }
+
+        .replay-controls { background: #172033; padding: 16px; border-radius: 8px; border: 1px solid #334155; }
+        .time-display { font-family: monospace; font-size: 16px; color: var(--accent-green); text-align: center; margin-bottom: 10px; }
+        input[type="range"] { width: 100%; margin-bottom: 16px; accent-color: var(--accent-cyan); }
+        
+        textarea {
+            flex: 1; background-color: #080d1a; color: #38edf8;
+            font-family: 'JetBrains Mono', Consolas, monospace; padding: 12px;
+            border: 1px solid #1e293b; border-radius: 6px; resize: none; font-size: 11px; min-height: 120px;
+        }
+
+        /* ECDIS Modal */
+        #ecdisModal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0f172a; padding: 20px; border: 2px solid #06b6d4; border-radius: 8px;
+            z-index: 9999; width: 420px; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9);
+        }
+        #ecdisContent {
+            font-family: monospace; color: #f3f4f6; white-space: pre; font-size: 14px; margin-bottom: 20px; line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-wrapper">
+    <div id="grid-container"></div>
+    
+    <!-- ECDIS Viewer Modal -->
+    <div id="ecdisModal">
+        <h3 style="color:#06b6d4; margin-top:0; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">ECDIS Route Viewer (Degree-Min)</h3>
+        <div id="ecdisContent"></div>
+        <div style="display:flex; gap:10px;">
+            <button class="tool-btn" id="downloadEcdisCsvBtn" style="background:#0ea5e9;">CSV 다운로드</button>
+            <button class="tool-btn" onclick="document.getElementById('ecdisModal').style.display='none'">닫기</button>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar">
+    <div id="main-title">[HTMS] SCENARIO GENERATOR</div>
+
+    <div class="sim-selector">
+        <label>TARGET SIMULATOR</label>
+        <select id="simModeSelect">
+            <option value="HTMS">[HTMS] Ship Handler</option>
+            <option value="MASS">[MASS] Remote Operation Simulator</option>
+        </select>
+    </div>
+
+    <!-- JSON Load/Save Buttons -->
+    <div class="btn-group" style="flex-direction: row; margin-bottom: 15px;">
+        <button class="tool-btn btn-load" id="loadJsonBtn" style="flex: 1;">JSON 불러오기</button>
+        <button class="tool-btn" id="saveBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">JSON 저장</button>
+    </div>
+    <input type="file" id="jsonInput" accept=".json" style="display: none;">
+
+    <div class="tab-menu" id="tabMenu">
+        <button class="tab-btn active" data-mode="editor">SCENARIO EDITOR</button>
+        <button class="tab-btn" data-mode="replay">REPLAY VIEWER</button>
+    </div>
+
+    <div class="origin-control">
+        <label>ACTIVE MASS ORIGIN (LAT / LON)</label>
+        <div class="origin-inputs">
+            <input type="number" id="originLat" step="0.000001" placeholder="Latitude">
+            <input type="number" id="originLon" step="0.000001" placeholder="Longitude">
+        </div>
+    </div>
+
+    <!-- 에디터 패널 -->
+    <div id="panel-editor" class="panel active">
+        <div class="instruction">
+            • <b>선박 조작</b>: <u>화살표 끝(회전)</u> 또는 <u>몸체(이동)</u> 드래그<br>
+            • <b>선속 조절</b>: 선박을 누른 채로 마우스 휠 스크롤<br>
+            • <b>화면 조작</b>: 빈 공간 휠(확대축소) 및 드래그(패닝)<br>
+            • <b>뷰포트</b>: 분할 창 클릭 시 <span style="color:var(--accent-yellow)">노란색</span> 활성화
+        </div>
+        
+        <div id="selectedShipDisplay">
+            <div>SELECTED: <span id="selShipName" style="font-weight:bold; color:var(--accent-yellow);">OWN SHIP (OS)</span></div>
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                <label style="font-size:11px; color:#88c0d0; font-weight:bold;">SHIP TYPE:</label>
+                <select id="shipTypeSelect" style="flex:1; background:#0b0f19; color:white; border:1px solid #334155; padding:4px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
+                </select>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <div class="btn-row" id="massBtnRow" style="display: none;">
+                <button class="tool-btn btn-mass" id="addMassBtn">새 MASS</button>
+                <button class="tool-btn btn-mass" id="dupMassBtn">MASS 복사</button>
+                <button class="tool-btn btn-del-mass" id="delMassBtn">삭제</button>
+                <button class="tool-btn btn-ecdis" id="exportEcdisBtn">ECDIS</button>
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn" id="rotLeftBtn" style="border-color:#3b82f6;">시나리오 회전 (-15°)</button>
+                <button class="tool-btn" id="rotRightBtn" style="border-color:#3b82f6;">시나리오 회전 (+15°)</button>
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn btn-add-goal" id="addGoalBtn">목표지점 추가</button>
+                <button class="tool-btn btn-add" id="addShipBtn">타선 추가</button>
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn" id="deleteToggleBtn" style="background:#7f1d1d; border-color:#991b1b; color:#fca5a5;">삭제 모드: OFF</button>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">JSON OUTPUT</span>
+        </div>
+        <textarea id="jsonOutput" readonly></textarea>
+    </div>
+
+    <!-- 리플레이 패널 -->
+    <div id="panel-replay" class="panel">
+        <div class="instruction">
+            • CSV 시뮬레이션 로그를 업로드하여 재생합니다.<br>
+            • 파일의 본선(OS) 시작 위치가 REFERENCE ORIGIN에 자동 입력됩니다.<br>
+            • 에디터에서 작성한 계획 항로와 실제 궤적(항적)이 비교 표시됩니다.
+        </div>
+        <div class="btn-group">
+            <button class="tool-btn btn-load" id="loadCsvBtn">CSV 파일 불러오기</button>
+        </div>
+        <input type="file" id="csvInput" accept=".csv" style="display: none;">
+        
+        <div class="replay-controls">
+            <div class="time-display" id="timeDisplay">TIME: 0.0 s</div>
+            <input type="range" id="timeSlider" min="0" max="100" value="0" step="1">
+            <div class="btn-row">
+                <button class="tool-btn" id="playPauseBtn">PLAY</button>
+                <button class="tool-btn" id="speed1xBtn" style="background:var(--accent-cyan); color:#000;">1x</button>
+                <button class="tool-btn" id="speed3xBtn">3x</button>
+                <button class="tool-btn" id="speed5xBtn">5x</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const HTMS_SHIP_TYPES = [
+        "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", "CargoShip1", "CargoShip2",
+        "ContainerShip1", "ContainerShip2", "FishingBoat1", "GasCarrier1",
+        "PassengerShip1", "SteamShip", "Warship"
+    ];
+
+    const MASS_SHIP_TYPES = [
+        "25M_TESTSHIP", "BULK_10KA_F", "BULK_3000_F", "CHEM_5KA_F",
+        "CNTR_18K_F", "CNTR_4K_F", "CNTR_2700", "FISHER_249GT",
+        "MMU_SEAGEARO", "UNCNTR_2KA", "UNLNG_210KA", "UNTANK_300KA"
+    ];
+
+    const OS_SPD = 10; 
+    const MAX_TARGET_SPD = 30; 
+    const SHIP_LEN_UNIT = 64.8;  
+    const SHIP_WID_UNIT = 10.8; 
+    const VECTOR_SCALE = 8; 
+
+    let simMode = 'HTMS'; 
+    let currentMode = 'editor'; 
+    let isDeleteMode = false; 
+
+    let massList = []; 
+    let activeMassIndex = 0; 
+    let globalOrigin = { lat: 34.800000, lon: 126.400000 };
+
+    let replayFrames = []; 
+    let currentReplayTime = 0;
+    let isPlaying = false;
+    let playSpeed = 1; 
+    let playInterval = null;
+
+    const gridContainer = document.getElementById('grid-container');
+    const simModeSelect = document.getElementById('simModeSelect');
+    const shipTypeSelect = document.getElementById('shipTypeSelect');
+    const selShipName = document.getElementById('selShipName');
+    const originLatInput = document.getElementById('originLat');
+    const originLonInput = document.getElementById('originLon');
+
+    window.addEventListener('mouseup', () => { 
+        massList.forEach((mass, idx) => {
+            mass.draggingObj = null;
+            const hud = document.querySelector(`#hud-${idx} .hud-target`);
+            if (hud) hud.style.display = 'none'; 
+        });
+        if (rDrag) rDrag = null;
+    });
+
+    function createMassState(lat, lon) {
+        return {
+            originLat: lat, originLon: lon,
+            radarRange: 3.0, viewScale: 1 / 3.0,
+            panX: null, panY: null,
+            osData: { type: simMode === 'HTMS' ? 'ContainerShip1' : 'CNTR_2700', hdg: 0, spd: OS_SPD, waypoints: [] },
+            targets: [],
+            selectedShip: 'OS', draggingObj: null
+        };
+    }
+
+    function initSystem() {
+        massList = [createMassState(globalOrigin.lat, globalOrigin.lon)];
+        activeMassIndex = 0;
+        
+        const tabMenu = document.getElementById('tabMenu');
+
+        if (simMode === 'HTMS') {
+            document.getElementById('massBtnRow').style.display = 'none';
+            tabMenu.style.display = 'flex';
+            
+            shipTypeSelect.disabled = false;
+            shipTypeSelect.innerHTML = '';
+            HTMS_SHIP_TYPES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t; shipTypeSelect.appendChild(opt);
+            });
+        } else {
+            document.getElementById('massBtnRow').style.display = 'flex';
+            tabMenu.style.display = 'none';
+            
+            // MASS 모드 시 무조건 에디터 모드로 강제
+            currentMode = 'editor';
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.tab-btn[data-mode="editor"]').classList.add('active');
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-editor').classList.add('active');
+            if (isPlaying) document.getElementById('playPauseBtn').click();
+
+            shipTypeSelect.innerHTML = '';
+            MASS_SHIP_TYPES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t; shipTypeSelect.appendChild(opt);
+            });
+            shipTypeSelect.disabled = false;
+        }
+        
+        renderGrid();
+    }
+
+    simModeSelect.addEventListener('change', (e) => {
+        simMode = e.target.value;
+        initSystem();
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentMode = btn.dataset.mode;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('panel-' + currentMode).classList.add('active');
+            
+            if (isDeleteMode) toggleDeleteMode(); 
+            if (currentMode === 'editor') {
+                if (isPlaying) document.getElementById('playPauseBtn').click();
+                renderGrid();
+            } else {
+                renderReplayView();
+            }
+        });
+    });
+
+    originLatInput.addEventListener('change', (e) => {
+        if (massList[activeMassIndex]) massList[activeMassIndex].originLat = parseFloat(e.target.value) || 0;
+        generateJSONOutput();
+    });
+    originLonInput.addEventListener('change', (e) => {
+        if (massList[activeMassIndex]) massList[activeMassIndex].originLon = parseFloat(e.target.value) || 0;
+        generateJSONOutput();
+    });
+
+    function updateSidebarForActiveMass() {
+        const mass = massList[activeMassIndex];
+        if (!mass) return;
+        
+        originLatInput.value = mass.originLat.toFixed(6);
+        originLonInput.value = mass.originLon.toFixed(6);
+        
+        selShipName.textContent = mass.selectedShip === 'OS' ? 'OWN SHIP (MASS)' : `TARGET SHIP (T${mass.selectedShip + 1})`;
+        selShipName.style.color = mass.selectedShip === 'OS' ? 'var(--accent-green)' : 'var(--accent-red)';
+        
+        shipTypeSelect.value = mass.selectedShip === 'OS' ? mass.osData.type : mass.targets[mass.selectedShip].type;
+    }
+
+    function updateShipTypeOptions() {
+        shipTypeSelect.innerHTML = '';
+        if (simMode === 'HTMS') {
+            HTMS_SHIP_TYPES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                shipTypeSelect.appendChild(opt);
+            });
+            shipTypeSelect.disabled = false;
+        } else {
+            MASS_SHIP_TYPES.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                shipTypeSelect.appendChild(opt);
+            });
+            shipTypeSelect.disabled = false;
+        }
+        updateSidebarForActiveMass();
+    }
+
+    shipTypeSelect.addEventListener('change', (e) => {
+        const mass = massList[activeMassIndex];
+        if (mass.selectedShip === 'OS') mass.osData.type = e.target.value;
+        else mass.targets[mass.selectedShip].type = e.target.value;
+        generateJSONOutput();
+    });
+
+    const deleteToggleBtn = document.getElementById('deleteToggleBtn');
+    deleteToggleBtn.addEventListener('click', toggleDeleteMode);
+    function toggleDeleteMode() {
+        isDeleteMode = !isDeleteMode;
+        deleteToggleBtn.textContent = isDeleteMode ? '삭제 모드: ON' : '삭제 모드: OFF';
+        deleteToggleBtn.style.background = isDeleteMode ? '#ef4444' : '#7f1d1d';
+        deleteToggleBtn.style.color = isDeleteMode ? '#ffffff' : '#fca5a5';
+        gridContainer.style.cursor = isDeleteMode ? 'crosshair' : 'default';
+    }
+
+    function rotateScenario(angleDeg) {
+        const mass = massList[activeMassIndex];
+        const rad = angleDeg * Math.PI / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        const rotatePt = (pt) => {
+            const nx = pt.x * cos - pt.z * sin;
+            const nz = pt.x * sin + pt.z * cos;
+            pt.x = nx; pt.z = nz;
+        };
+
+        mass.osData.hdg = (mass.osData.hdg + angleDeg + 360) % 360;
+        mass.osData.waypoints.forEach(rotatePt);
+
+        mass.targets.forEach(t => {
+            rotatePt(t);
+            t.hdg = (t.hdg + angleDeg + 360) % 360;
+            t.waypoints.forEach(rotatePt);
+        });
+
+        updateCanvas(activeMassIndex);
+        generateJSONOutput();
+    }
+    document.getElementById('rotLeftBtn').addEventListener('click', () => rotateScenario(-15));
+    document.getElementById('rotRightBtn').addEventListener('click', () => rotateScenario(15));
+
+    function checkShipLimit(addCount = 1) {
+        if (simMode !== 'MASS') return false;
+        let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
+        if (total + addCount > 20) {
+            alert(`[경고] MASS 시뮬레이터는 전체 선박을 20척 초과하여 생성할 수 없습니다.\n현재 총 선박 수: ${total}척`);
+            return true;
+        }
+        return false;
+    }
+
+    function renderGrid() {
+        if (currentMode === 'replay') return; 
+        gridContainer.innerHTML = '';
+        
+        let cols = 1, rows = 1;
+        const len = massList.length;
+        if (len === 2) { cols = 2; rows = 1; }
+        else if (len === 3) { cols = 3; rows = 1; } 
+        else if (len === 4) { cols = 2; rows = 2; }
+        else if (len >= 5 && len <= 6) { cols = 3; rows = 2; }
+        else if (len >= 7 && len <= 8) { cols = 4; rows = 2; }
+
+        gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        gridContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        massList.forEach((mass, i) => {
+            const vp = document.createElement('div');
+            vp.className = `viewport ${i === activeMassIndex ? 'active-vp' : ''}`;
+            vp.id = `vp-${i}`;
+            vp.innerHTML = `
+                ${simMode === 'MASS' ? `<div class="vp-label">[MASS ${i+1}]</div>` : ''}
+                <div class="coord-hud" id="hud-${i}">
+                    <div class="hud-cursor">CURSOR: X: 0 | Z: 0 (0.0 Cbl)</div>
+                    <div class="hud-range">VIEW RANGE: ${mass.radarRange.toFixed(1)} NM</div>
+                    <div class="hud-target" style="display:none;"></div>
+                </div>
+                <canvas class="vp-canvas" id="canvas-${i}"></canvas>
+            `;
+            
+            vp.addEventListener('mousedown', () => {
+                if (activeMassIndex !== i) {
+                    activeMassIndex = i;
+                    document.querySelectorAll('.viewport').forEach((el, idx) => {
+                        el.classList.toggle('active-vp', idx === i);
+                    });
+                    updateSidebarForActiveMass();
+                }
+            });
+
+            gridContainer.appendChild(vp);
+        });
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                massList.forEach((mass, i) => {
+                    const vp = document.getElementById(`vp-${i}`);
+                    const canvas = document.getElementById(`canvas-${i}`);
+                    if (!vp || !canvas) return;
+                    
+                    canvas.width = vp.clientWidth || vp.getBoundingClientRect().width; 
+                    canvas.height = vp.clientHeight || vp.getBoundingClientRect().height;
+                    
+                    if (mass.panX === null || mass.panY === null) {
+                        mass.panX = canvas.width / 2;
+                        mass.panY = canvas.height / 2;
+                    }
+                    
+                    bindCanvasEvents(canvas, i);
+                    updateCanvas(i);
+                });
+            });
+        });
+        
+        updateSidebarForActiveMass();
+        generateJSONOutput();
+    }
+
+    window.addEventListener('resize', () => {
+        if (currentMode === 'editor') {
+            massList.forEach((mass, i) => {
+                const canvas = document.getElementById(`canvas-${i}`);
+                if (canvas) {
+                    canvas.width = canvas.parentElement.clientWidth;
+                    canvas.height = canvas.parentElement.clientHeight;
+                }
+            });
+            updateAllCanvases();
+        } else {
+            const canvas = document.getElementById('replay-canvas');
+            if (canvas) {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                updateReplayCanvas();
+            }
+        }
+    });
+
+    document.getElementById('addMassBtn').addEventListener('click', () => {
+        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        if (checkShipLimit(1)) return;
+        const lastOrigin = massList[massList.length - 1];
+        const lat = lastOrigin.originLat;
+        const lon = lastOrigin.originLon + (18520 / (111111 * Math.cos(lat * Math.PI / 180)));
+        massList.push(createMassState(lat, lon));
+        activeMassIndex = massList.length - 1;
+        renderGrid();
+    });
+
+    document.getElementById('dupMassBtn').addEventListener('click', () => {
+        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        const activeMass = massList[activeMassIndex];
+        if (checkShipLimit(1 + activeMass.targets.length)) return;
+        const newMass = JSON.parse(JSON.stringify(activeMass));
+        newMass.originLon += (18520 / (111111 * Math.cos(newMass.originLat * Math.PI / 180)));
+        newMass.panX = null; newMass.panY = null; newMass.draggingObj = null;
+        massList.push(newMass);
+        activeMassIndex = massList.length - 1;
+        renderGrid();
+    });
+
+    document.getElementById('delMassBtn').addEventListener('click', () => {
+        if (massList.length <= 1) return alert("마지막 MASS 창은 삭제할 수 없습니다.");
+        massList.splice(activeMassIndex, 1);
+        activeMassIndex = Math.max(0, activeMassIndex - 1);
+        renderGrid();
+    });
+
+    document.getElementById('addGoalBtn').addEventListener('click', () => {
+        const mass = massList[activeMassIndex];
+        const canvas = document.getElementById(`canvas-${activeMassIndex}`);
+        let xPos = (canvas.width - 60 - mass.panX) / mass.viewScale;
+        let zPos = (60 - mass.panY) / mass.viewScale;
+        
+        let wpArray = mass.selectedShip === 'OS' ? mass.osData.waypoints : mass.targets[mass.selectedShip].waypoints;
+        wpArray.push({ x: xPos, z: zPos });
+        updateCanvas(activeMassIndex); generateJSONOutput();
+    });
+
+    document.getElementById('addShipBtn').addEventListener('click', () => {
+        if (checkShipLimit(1)) return;
+        const mass = massList[activeMassIndex];
+        const canvas = document.getElementById(`canvas-${activeMassIndex}`);
+        const spd = 10;
+        let xPos = (canvas.width - 60 - mass.panX) / mass.viewScale;
+        let zPos = (60 - mass.panY) / mass.viewScale;
+        mass.targets.push({ type: simMode === 'HTMS' ? 'ContainerShip1' : 'CNTR_2700', x: xPos, z: zPos, hdg: 180, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
+        mass.selectedShip = mass.targets.length - 1;
+        updateSidebarForActiveMass();
+        updateCanvas(activeMassIndex); generateJSONOutput();
+    });
+
+    // ECDIS Degree-Minute Extraction
+    let currentEcdisCsv = "";
+    document.getElementById('exportEcdisBtn').addEventListener('click', () => {
+        const result = generateEcdisRoute();
+        document.getElementById('ecdisContent').textContent = result.text;
+        currentEcdisCsv = result.csvText;
+        document.getElementById('ecdisModal').style.display = 'block';
+    });
+
+    document.getElementById('downloadEcdisCsvBtn').addEventListener('click', () => {
+        const blob = new Blob([currentEcdisCsv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `MASS_ECDIS_Route_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    function toDegMin(decimal, isLat) {
+        const abs = Math.abs(decimal);
+        const deg = Math.floor(abs);
+        const min = ((abs - deg) * 60).toFixed(1);
+        const dir = isLat ? (decimal >= 0 ? 'N' : 'S') : (decimal >= 0 ? 'E' : 'W');
+        return `${deg}-${min.padStart(4, '0')}${dir}`;
+    }
+
+    function generateEcdisRoute() {
+        let text = "";
+        let csvText = "MASS,WP,LATITUDE,LONGITUDE\n";
+        massList.forEach((mass, i) => {
+            text += `[MASS ${i+1}]\n`;
+            const toLatLon = (x, z) => {
+                const dxM = x * (1852 / 400); const dzM = z * (1852 / 400);
+                const lat = mass.originLat - (dzM / 111111);
+                const lon = mass.originLon + (dxM / (111111 * Math.cos(mass.originLat * Math.PI / 180)));
+                return { lat, lon };
+            };
+            
+            let p0 = toDegMin(mass.originLat, true) + " / " + toDegMin(mass.originLon, false);
+            text += `WP 00: ${p0}\n`;
+            csvText += `MASS ${i+1},WP 00,${toDegMin(mass.originLat, true)},${toDegMin(mass.originLon, false)}\n`;
+            
+            mass.osData.waypoints.forEach((wp, wIdx) => {
+                const ll = toLatLon(wp.x, wp.z);
+                let p = toDegMin(ll.lat, true) + " / " + toDegMin(ll.lon, false);
+                text += `WP ${(wIdx+1).toString().padStart(2, '0')}: ${p}\n`;
+                csvText += `MASS ${i+1},WP ${(wIdx+1).toString().padStart(2, '0')},${toDegMin(ll.lat, true)},${toDegMin(ll.lon, false)}\n`;
+            });
+            text += "\n";
+        });
+        return { text, csvText };
+    }
+
+    function calculateCPA(target, osSpd) {
+        const rx = target.x / 400;
+        const ry = -target.z / 400;
+        const rad = target.hdg * Math.PI / 180;
+        const v_tx = target.spd * Math.sin(rad);
+        const v_ty = target.spd * Math.cos(rad);
+        const v_rx = v_tx - 0;
+        const v_ry = v_ty - osSpd; 
+        const v_rel_sq = v_rx * v_rx + v_ry * v_ry;
+
+        if (v_rel_sq < 0.01) return { cpa: Math.hypot(rx, ry), tcpa: 0 };
+
+        const tcpa_hr = -(rx * v_rx + ry * v_ry) / v_rel_sq;
+        const cpa_x = rx + v_rx * tcpa_hr;
+        const cpa_y = ry + v_ry * tcpa_hr;
+        return { cpa: Math.hypot(cpa_x, cpa_y), tcpa: tcpa_hr * 60 }; 
+    }
+
+    function bindCanvasEvents(canvas, idx) {
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const mass = massList[idx];
+            
+            if (mass.draggingObj && mass.draggingObj.type === 'ship' && !isDeleteMode) {
+                if (mass.draggingObj.index === 'OS') {
+                    if (e.deltaY < 0) mass.osData.spd += 1;
+                    else if (e.deltaY > 0) mass.osData.spd -= 1;
+                    mass.osData.spd = Math.min(MAX_TARGET_SPD, Math.max(0, mass.osData.spd));
+                    updateTargetHudLocal(mass, idx, {type: 'ship', index: 'OS'});
+                } else {
+                    const target = mass.targets[mass.draggingObj.index];
+                    if (e.deltaY < 0) target.spd += 1;
+                    else if (e.deltaY > 0) target.spd -= 1;
+                    target.spd = Math.min(MAX_TARGET_SPD, Math.max(0, target.spd));
+                    target.wpDist = target.spd * VECTOR_SCALE; 
+                    updateTargetHudLocal(mass, idx, {type: 'ship', index: mass.draggingObj.index});
+                }
+            } else {
+                const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+                mass.radarRange = Math.min(30, Math.max(0.5, mass.radarRange * zoomFactor)); 
+                mass.viewScale = 1 / mass.radarRange;
+                document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${mass.radarRange.toFixed(1)} NM`;
+            }
+            updateCanvas(idx);
+            generateJSONOutput();
+        }, { passive: false });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const mass = massList[idx];
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+
+            const simX = Math.round((mx - mass.panX) / mass.viewScale);
+            const simZ = Math.round((my - mass.panY) / mass.viewScale);
+            document.querySelector(`#hud-${idx} .hud-cursor`).textContent = `CURSOR: X: ${simX} | Z: ${simZ} (${(Math.hypot(simX, simZ)/40).toFixed(1)} Cbl)`;
+
+            if (!mass.draggingObj) return;
+
+            if (mass.draggingObj.type === 'pan') {
+                mass.panX = mx - mass.draggingObj.startX;
+                mass.panY = my - mass.draggingObj.startY;
+                updateCanvas(idx);
+                return;
+            }
+
+            if (isDeleteMode) return;
+
+            if (mass.draggingObj.type === 'ship' || mass.draggingObj.type === 'goal') {
+                if (mass.draggingObj.index !== 'OS') {
+                    mass.targets[mass.draggingObj.index].x = simX;
+                    mass.targets[mass.draggingObj.index].z = simZ;
+                }
+            } 
+            else if (mass.draggingObj.type === 'waypoint') {
+                let wpArray = mass.draggingObj.owner === 'OS' ? mass.osData.waypoints : mass.targets[mass.draggingObj.owner].waypoints;
+                wpArray[mass.draggingObj.index].x = simX;
+                wpArray[mass.draggingObj.index].z = simZ;
+            }
+            else if (mass.draggingObj.type === 'handle') {
+                const target = mass.targets[mass.draggingObj.index];
+                const dx = mx - (mass.panX + (target.x * mass.viewScale));
+                const dz = my - (mass.panY + (target.z * mass.viewScale));
+
+                let newHdg = (Math.atan2(dz, dx) * 180 / Math.PI) + 90;
+                if (newHdg < 0) newHdg += 360;
+                target.hdg = newHdg;
+            }
+
+            updateTargetHudLocal(mass, idx, mass.draggingObj);
+            updateCanvas(idx);
+            generateJSONOutput();
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const mass = massList[idx];
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+
+            // 우선순위 1: 웨이포인트 체크
+            const checkWp = (wpArray) => {
+                for (let i = wpArray.length - 1; i >= 0; i--) {
+                    const cx = mass.panX + (wpArray[i].x * mass.viewScale);
+                    const cy = mass.panY + (wpArray[i].z * mass.viewScale);
+                    if (Math.hypot(mx - cx, cy - my) < 15) return i; 
+                }
+                return -1;
+            };
+
+            let wpIdx = checkWp(mass.osData.waypoints);
+            if (wpIdx !== -1) {
+                if (isDeleteMode) { mass.osData.waypoints.splice(wpIdx, 1); updateCanvas(idx); generateJSONOutput(); return; }
+                mass.draggingObj = { type: 'waypoint', owner: 'OS', index: wpIdx };
+                mass.selectedShip = 'OS'; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
+            }
+
+            for (let i = mass.targets.length - 1; i >= 0; i--) {
+                wpIdx = checkWp(mass.targets[i].waypoints);
+                if (wpIdx !== -1) {
+                    if (isDeleteMode) { mass.targets[i].waypoints.splice(wpIdx, 1); updateCanvas(idx); generateJSONOutput(); return; }
+                    mass.draggingObj = { type: 'waypoint', owner: i, index: wpIdx };
+                    mass.selectedShip = i; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
+                }
+            }
+
+            // 우선순위 2: 벡터 핸들(화살표 끝) 체크 (즉시 액티베이션 & 회전 적용)
+            if (!isDeleteMode) {
+                for (let i = mass.targets.length - 1; i >= 0; i--) {
+                    const target = mass.targets[i];
+                    const cx = mass.panX + (target.x * mass.viewScale);
+                    const cy = mass.panY + (target.z * mass.viewScale);
+                    const rad = (target.hdg - 90) * Math.PI / 180;
+                    const wpX = cx + Math.cos(rad) * (target.wpDist * mass.viewScale);
+                    const wpY = cy + Math.sin(rad) * (target.wpDist * mass.viewScale);
+
+                    if (Math.hypot(mx - wpX, my - wpY) < 15) {
+                        mass.draggingObj = { type: 'handle', index: i };
+                        mass.selectedShip = i; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, {type: 'ship', index: i}); updateCanvas(idx); return;
+                    }
+                }
+            }
+
+            // 우선순위 3: 선박 몸체 체크
+            const hitRadius = Math.max(20, (SHIP_LEN_UNIT / 2) * mass.viewScale);
+            for (let i = mass.targets.length - 1; i >= 0; i--) {
+                const cx = mass.panX + (mass.targets[i].x * mass.viewScale);
+                const cy = mass.panY + (mass.targets[i].z * mass.viewScale);
+                if (Math.hypot(mx - cx, my - cy) < hitRadius) {
+                    if (isDeleteMode) { mass.targets.splice(i, 1); updateCanvas(idx); generateJSONOutput(); return; }
+                    mass.draggingObj = { type: 'ship', index: i };
+                    mass.selectedShip = i; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
+                }
+            }
+
+            // 우선순위 4: 본선(OS) 몸체 체크
+            if (Math.hypot(mx - mass.panX, my - mass.panY) < hitRadius) {
+                if (!isDeleteMode) {
+                    mass.draggingObj = { type: 'ship', index: 'OS' }; 
+                    mass.selectedShip = 'OS'; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
+                }
+            }
+            
+            // 우선순위 5: 빈 공간 패닝(이동)
+            if (!isDeleteMode) {
+                mass.draggingObj = { type: 'pan', startX: mx - mass.panX, startY: my - mass.panY };
+            }
+        });
+    }
+
+    function updateTargetHudLocal(mass, idx, objInfo) {
+        const hudTarget = document.querySelector(`#hud-${idx} .hud-target`);
+        if (!hudTarget) return;
+
+        if (objInfo.type === 'waypoint') {
+            const shipData = objInfo.owner === 'OS' ? mass.osData : mass.targets[objInfo.owner];
+            const wpArray = shipData.waypoints;
+            const wp = wpArray[objInfo.index];
+            
+            let prevX = objInfo.owner === 'OS' ? 0 : shipData.x;
+            let prevZ = objInfo.owner === 'OS' ? 0 : shipData.z;
+            let prevName = objInfo.owner === 'OS' ? 'OS' : `T${objInfo.owner + 1}`;
+            let prevCourse = shipData.hdg;
+
+            if (objInfo.index > 0) {
+                prevX = wpArray[objInfo.index - 1].x;
+                prevZ = wpArray[objInfo.index - 1].z;
+                prevName = `WP${objInfo.index}`;
+
+                let pDx, pDz;
+                if (objInfo.index === 1) {
+                    pDx = wpArray[0].x - (objInfo.owner === 'OS' ? 0 : shipData.x);
+                    pDz = wpArray[0].z - (objInfo.owner === 'OS' ? 0 : shipData.z);
+                } else {
+                    pDx = wpArray[objInfo.index - 1].x - wpArray[objInfo.index - 2].x;
+                    pDz = wpArray[objInfo.index - 1].z - wpArray[objInfo.index - 2].z;
+                }
+                prevCourse = (Math.atan2(pDz, pDx) * 180 / Math.PI) + 90;
+                if (prevCourse < 0) prevCourse += 360;
+            }
+            
+            const dx = wp.x - prevX;
+            const dz = wp.z - prevZ;
+            let targetBearing = (Math.atan2(dz, dx) * 180 / Math.PI) + 90;
+            if (targetBearing < 0) targetBearing += 360;
+            const formatBrg = Math.round(targetBearing).toString().padStart(3, '0');
+            const tDistNM = (Math.hypot(dx, dz) / 400).toFixed(2);
+
+            let turnAngle = targetBearing - prevCourse;
+            while (turnAngle > 180) turnAngle -= 360;
+            while (turnAngle <= -180) turnAngle += 360;
+            const turnStr = Math.round(turnAngle) >= 0 ? `+${Math.round(turnAngle)}°` : `${Math.round(turnAngle)}°`;
+
+            hudTarget.style.display = 'block';
+            hudTarget.style.color = 'var(--accent-cyan)';
+            hudTarget.textContent = `[${objInfo.owner === 'OS'?'OS':`T${objInfo.owner+1}`} WP${objInfo.index + 1}] FROM ${prevName} - BRG:${formatBrg}° | DST:${tDistNM}NM | TURN:${turnStr}`;
+            return;
+        }
+
+        if (objInfo.type === 'ship') {
+            if (objInfo.index === 'OS') {
+                hudTarget.style.display = 'block';
+                hudTarget.style.color = 'var(--accent-green)';
+                hudTarget.textContent = `[OWN SHIP] SPD:${mass.osData.spd}kt`;
+                return;
+            }
+
+            const target = mass.targets[objInfo.index];
+            let targetBearing = (Math.atan2(target.z, target.x) * 180 / Math.PI) + 90;
+            if (targetBearing < 0) targetBearing += 360;
+            const formatBrg = Math.round(targetBearing).toString().padStart(3, '0');
+            const tDistNM = (Math.hypot(target.x, target.z) / 400).toFixed(2);
+
+            const { cpa, tcpa } = calculateCPA(target, mass.osData.spd);
+            let tcpaStr = tcpa < 0 ? 'PAST' : `${tcpa.toFixed(1)}m`;
+            
+            hudTarget.style.display = 'block';
+            hudTarget.style.color = 'var(--accent-red)';
+            hudTarget.textContent = `[T${objInfo.index + 1}] BRG:${formatBrg}° | DST:${tDistNM}NM | SPD:${target.spd}kt | CPA:${cpa.toFixed(2)}NM | TCPA:${tcpaStr}`;
+        }
+    }
+
+    function updateAllCanvases() {
+        massList.forEach((_, i) => updateCanvas(i));
+    }
+
+    function updateCanvas(idx) {
+        const mass = massList[idx];
+        const canvas = document.getElementById(`canvas-${idx}`);
+        if (!canvas) return;
+        const ctxL = canvas.getContext('2d');
+        
+        ctxL.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctxL.strokeStyle = '#1e293b'; ctxL.lineWidth = 1; ctxL.beginPath();
+        ctxL.moveTo(0, mass.panY); ctxL.lineTo(canvas.width, mass.panY);
+        ctxL.moveTo(mass.panX, 0); ctxL.lineTo(mass.panX, canvas.height); ctxL.stroke();
+
+        ctxL.fillStyle = '#475569'; ctxL.font = 'bold 12px sans-serif'; ctxL.textAlign = 'center';
+        if (mass.panY >= 0 && mass.panY <= canvas.height) {
+            ctxL.fillText('E (090°)', canvas.width - 30, mass.panY - 8); 
+            ctxL.fillText('W (270°)', 30, mass.panY - 8);
+        }
+        if (mass.panX >= 0 && mass.panX <= canvas.width) {
+            ctxL.fillText('N (000°)', mass.panX, 20); 
+            ctxL.fillText('S (180°)', mass.panX, canvas.height - 10);
+        }
+
+        let stepCbl = mass.radarRange <= 1.5 ? 1 : (mass.radarRange <= 3.5 ? 5 : (mass.radarRange <= 8.0 ? 10 : 20));   
+        let majorCbl = mass.radarRange <= 1.5 ? 5 : (mass.radarRange <= 3.5 ? 10 : (mass.radarRange <= 8.0 ? 20 : 50)); 
+        const maxDistPx = Math.max(Math.hypot(mass.panX, mass.panY), Math.hypot(canvas.width - mass.panX, mass.panY), Math.hypot(mass.panX, canvas.height - mass.panY), Math.hypot(canvas.width - mass.panX, canvas.height - mass.panY));
+        const maxCables = Math.ceil((maxDistPx / mass.viewScale) / 40);
+        
+        ctxL.setLineDash([4, 4]);
+        for (let i = stepCbl; i <= maxCables; i += stepCbl) {
+            const radius_px = (i * 40) * mass.viewScale; 
+            ctxL.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a';
+            ctxL.lineWidth = (i % majorCbl === 0) ? 1.5 : 1;
+            ctxL.beginPath(); ctxL.arc(mass.panX, mass.panY, radius_px, 0, Math.PI * 2); ctxL.stroke();
+            if (i % majorCbl === 0 && radius_px > 15 && radius_px < Math.max(canvas.width, canvas.height) * 1.5) {
+                ctxL.fillStyle = '#334155'; ctxL.font = '10px monospace';
+                ctxL.fillText(`${(i/10).toFixed(1)} NM`, mass.panX + 4, mass.panY - radius_px + 12);
+            }
+        }
+        ctxL.setLineDash([]);
+
+        ctxL.strokeStyle = '#334155'; ctxL.lineWidth = 1; ctxL.setLineDash([4, 4]);
+        ctxL.strokeRect(canvas.width - 60 - 25, 60 - 25, 50, 50);
+        ctxL.fillStyle = '#475569'; ctxL.font = '10px sans-serif'; ctxL.textAlign = 'center';
+        ctxL.fillText('SPAWN', canvas.width - 60, 60 + 35); ctxL.setLineDash([]);
+
+        drawRouteLocal(ctxL, mass, mass.osData.waypoints, 0, 0, '#0ea5e9'); 
+        mass.targets.forEach(t => drawRouteLocal(ctxL, mass, t.waypoints, t.x, t.z, '#ef4444')); 
+
+        if (mass.selectedShip === 'OS') {
+            ctxL.beginPath(); ctxL.arc(mass.panX, mass.panY, (SHIP_LEN_UNIT/2)*mass.viewScale + 10, 0, Math.PI*2);
+            ctxL.strokeStyle = '#eab308'; ctxL.lineWidth = 2; ctxL.stroke();
+        }
+        drawShipHullLocal(ctxL, mass, 0, 0, mass.osData.hdg, '#10b981', true, 'OS');
+        drawWaypointsLocal(ctxL, mass, mass.osData.waypoints, '#0ea5e9', 'OS');
+        
+        mass.targets.forEach((target, i) => {
+            if (mass.selectedShip === i) {
+                ctxL.beginPath(); ctxL.arc(mass.panX + target.x * mass.viewScale, mass.panY + target.z * mass.viewScale, (SHIP_LEN_UNIT/2)*mass.viewScale + 10, 0, Math.PI*2);
+                ctxL.strokeStyle = '#eab308'; ctxL.lineWidth = 2; ctxL.stroke();
+            }
+            drawVectorArrowLocal(ctxL, mass, target.x, target.z, target.hdg, target.wpDist, '#ef4444');
+            drawShipHullLocal(ctxL, mass, target.x, target.z, target.hdg, '#ef4444', false, `T${i + 1}`);
+            drawWaypointsLocal(ctxL, mass, target.waypoints, '#ef4444', `T${i + 1}`);
+        });
+    }
+
+    function drawRouteLocal(ctxL, mass, wpArray, startX, startZ, lineColor) {
+        if (wpArray.length === 0) return;
+        ctxL.strokeStyle = lineColor; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+        ctxL.beginPath();
+        ctxL.moveTo(mass.panX + startX * mass.viewScale, mass.panY + startZ * mass.viewScale); 
+        wpArray.forEach(g => ctxL.lineTo(mass.panX + g.x * mass.viewScale, mass.panY + g.z * mass.viewScale));
+        ctxL.stroke(); ctxL.setLineDash([]);
+
+        let prevPt = { x: startX, z: startZ };
+        wpArray.forEach((g) => {
+            const p1x = mass.panX + prevPt.x * mass.viewScale; const p1y = mass.panY + prevPt.z * mass.viewScale;
+            const p2x = mass.panX + g.x * mass.viewScale; const p2y = mass.panY + g.z * mass.viewScale;
+            const midPxX = (p1x + p2x) / 2; const midPxY = (p1y + p2y) / 2;
+            const dx = g.x - prevPt.x; const dz = g.z - prevPt.z;
+            let legCourse = (Math.atan2(dz, dx) * 180 / Math.PI) + 90;
+            if (legCourse < 0) legCourse += 360;
+            const formatCourse = Math.round(legCourse).toString().padStart(3, '0') + '°';
+            const legDist = (Math.hypot(dx, dz) / 400).toFixed(1) + 'NM';
+
+            ctxL.save(); ctxL.font = 'bold 10px monospace';
+            const labelText = `C:${formatCourse} (${legDist})`;
+            const textWidth = ctxL.measureText(labelText).width; const bgW = textWidth + 10; const bgH = 16;
+            ctxL.fillStyle = 'rgba(11, 15, 25, 0.85)'; ctxL.strokeStyle = lineColor; ctxL.lineWidth = 1;
+            ctxL.beginPath(); ctxL.rect(midPxX - bgW / 2, midPxY - bgH / 2, bgW, bgH); ctxL.fill(); ctxL.stroke();
+            ctxL.fillStyle = '#ffffff'; ctxL.textAlign = 'center'; ctxL.textBaseline = 'middle';
+            ctxL.fillText(labelText, midPxX, midPxY); ctxL.restore();
+            prevPt = g;
+        });
+    }
+
+    function drawWaypointsLocal(ctxL, mass, wpArray, color, namePrefix) {
+        wpArray.forEach((g, i) => {
+            const cx = mass.panX + (g.x * mass.viewScale); const cy = mass.panY + (g.z * mass.viewScale);
+            ctxL.shadowColor = color; ctxL.shadowBlur = 10; ctxL.fillStyle = color;
+            ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill();
+            ctxL.lineWidth = 1.5; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.shadowBlur = 0;
+            ctxL.fillStyle = '#ffffff'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
+            ctxL.fillText(`${namePrefix} WP${i + 1}`, cx, cy + 18);
+        });
+    }
+
+    function drawVectorArrowLocal(ctxL, mass, startX, startZ, heading, distUnit, color) {
+        if (distUnit <= 0) return;
+        const cx = mass.panX + startX * mass.viewScale; const cy = mass.panY + startZ * mass.viewScale;
+        const rad = (heading - 90) * Math.PI / 180;
+        const wpX = cx + Math.cos(rad) * (distUnit * mass.viewScale); const wpY = cy + Math.sin(rad) * (distUnit * mass.viewScale);
+        ctxL.strokeStyle = color; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+        ctxL.beginPath(); ctxL.moveTo(cx, cy); ctxL.lineTo(wpX, wpY); ctxL.stroke(); ctxL.setLineDash([]);
+        ctxL.save(); ctxL.translate(wpX, wpY); ctxL.rotate(heading * Math.PI / 180);
+        ctxL.fillStyle = color; ctxL.beginPath(); ctxL.moveTo(0, -6); ctxL.lineTo(4, 6); ctxL.lineTo(-4, 6); ctxL.closePath(); ctxL.fill(); ctxL.restore();
+    }
+
+    function drawShipHullLocal(ctxL, mass, x, z, heading, color, isOwnShip, label) {
+        const cx = mass.panX + x * mass.viewScale; const cy = mass.panY + z * mass.viewScale;
+        ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate(heading * Math.PI / 180); ctxL.scale(mass.viewScale, mass.viewScale); 
+        ctxL.shadowColor = color; ctxL.shadowBlur = 10; ctxL.fillStyle = color;
+        const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
+        ctxL.beginPath(); ctxL.moveTo(0, -halfLen); ctxL.lineTo(halfWid, -halfLen + 12); ctxL.lineTo(halfWid, halfLen); ctxL.lineTo(-halfWid, halfLen); ctxL.lineTo(-halfWid, -halfLen + 12); ctxL.closePath(); ctxL.fill();
+        ctxL.lineWidth = 1 / mass.viewScale; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.restore();
+        if (label) {
+            ctxL.fillStyle = isOwnShip ? '#10b981' : '#f87171'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
+            ctxL.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * mass.viewScale + 15));
+        }
+    }
+
+    function generateJSONOutput() {
+        const format = simModeSelect.value;
+        
+        if (format === 'HTMS') {
+            const mass = massList[0];
+            if (!mass) return;
+            const outputData = {
+                origin: { lat: mass.originLat, lon: mass.originLon },
+                os: { type: mass.osData.type, hdg: mass.osData.hdg, spd: mass.osData.spd, waypoints: mass.osData.waypoints.map(w => ({x: Math.round(w.x), z: Math.round(w.z)})) },
+                targets: mass.targets.map(t => ({
+                    type: t.type, x: Math.round(t.x), z: Math.round(t.z), hdg: Math.round(t.hdg), spd: t.spd,
+                    waypoints: t.waypoints.map(w => ({x: Math.round(w.x), z: Math.round(w.z)}))
+                }))
+            };
+            document.getElementById('jsonOutput').value = JSON.stringify(outputData, null, 2);
+        } else {
+            const out = { ScenarioName: "Exported_MASS_Scenario", map: "Hanbando", ships: [], WayPointSet: [], EventInfo: [] };
+            const shipNames = ["ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIET","KILO","LIMA","MIKE"];
+            
+            let massShips = [];
+            let massWpSets = [];
+            let trgShips = [];
+            let trgWpSets = [];
+            let wpSetCounter = 0;
+
+            massList.forEach((mass, i) => {
+                const toLatLon = (x, z) => {
+                    const dxM = x * (1852 / 400); const dzM = z * (1852 / 400);
+                    const lat = mass.originLat - (dzM / 111111);
+                    const lon = mass.originLon + (dxM / (111111 * Math.cos(mass.originLat * Math.PI / 180)));
+                    return { lat, lon };
+                };
+
+                const osID = wpSetCounter++;
+                massShips.push({
+                    mmsi: Math.floor(Math.random() * 900000000) + 100000000,
+                    isMASS: 1, shipName: `MASS_${i+1}`, shipType: mass.osData.type || "CNTR_2700",
+                    initSpeed: mass.osData.spd, initHeading: mass.osData.hdg, waypointSetID: osID
+                });
+                let osWps = [{ Name: "0", Latitude: Number(mass.originLat.toFixed(6)), Longitude: Number(mass.originLon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] }];
+                if (mass.osData.waypoints.length === 0) {
+                    const hdgRad = mass.osData.hdg * Math.PI / 180;
+                    const autoLl = toLatLon(1200 * Math.sin(hdgRad), -1200 * Math.cos(hdgRad));
+                    osWps.push({ Name: "1", Latitude: Number(autoLl.lat.toFixed(6)), Longitude: Number(autoLl.lon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] });
+                } else {
+                    mass.osData.waypoints.forEach((wp, wIdx) => {
+                        const ll = toLatLon(wp.x, wp.z);
+                        osWps.push({ Name: String(wIdx+1), Latitude: Number(ll.lat.toFixed(6)), Longitude: Number(ll.lon.toFixed(6)), TargetVel: mass.osData.spd, EventID: [] });
+                    });
+                }
+                massWpSets.push({ WayPointSetID: osID, WayPoints: osWps, Env_Wave: 0, Env_Wind: 0 });
+            });
+
+            massList.forEach((mass, i) => {
+                const toLatLon = (x, z) => {
+                    const dxM = x * (1852 / 400); const dzM = z * (1852 / 400);
+                    const lat = mass.originLat - (dzM / 111111);
+                    const lon = mass.originLon + (dxM / (111111 * Math.cos(mass.originLat * Math.PI / 180)));
+                    return { lat, lon };
+                };
+
+                mass.targets.forEach((t, tIdx) => {
+                    const trgID = wpSetCounter++;
+                    trgShips.push({
+                        mmsi: Math.floor(Math.random() * 900000000) + 100000000,
+                        isMASS: 0, shipName: shipNames[(i*10 + tIdx) % shipNames.length] + `_${i+1}`, shipType: t.type || "CNTR_2700",
+                        initSpeed: t.spd, initHeading: t.hdg, waypointSetID: trgID
+                    });
+                    const startLl = toLatLon(t.x, t.z);
+                    let wps = [{ Name: "0", Latitude: Number(startLl.lat.toFixed(6)), Longitude: Number(startLl.lon.toFixed(6)), TargetVel: t.spd, EventID: [] }];
+                    if (t.waypoints.length === 0) {
+                        const hdgRad = t.hdg * Math.PI / 180;
+                        const autoLl = toLatLon(t.x + 1200 * Math.sin(hdgRad), t.z - 1200 * Math.cos(hdgRad));
+                        wps.push({ Name: "1", Latitude: Number(autoLl.lat.toFixed(6)), Longitude: Number(autoLl.lon.toFixed(6)), TargetVel: t.spd, EventID: [] });
+                    } else {
+                        t.waypoints.forEach((wp, wIdx) => {
+                            const wpll = toLatLon(wp.x, wp.z);
+                            wps.push({ Name: String(wIdx+1), Latitude: Number(wpll.lat.toFixed(6)), Longitude: Number(wpll.lon.toFixed(6)), TargetVel: t.spd, EventID: [] });
+                        });
+                    }
+                    trgWpSets.push({ WayPointSetID: trgID, WayPoints: wps, Env_Wave: 0, Env_Wind: 0 });
+                });
+            });
+            
+            out.ships = [...massShips, ...trgShips];
+            out.WayPointSet = [...massWpSets, ...trgWpSets];
+            
+            // JSON 문자열 생성 후 WayPoints 객체 내부의 줄바꿈과 탭을 제거하고 좌표값을 6자리로 강제하는 정규식 적용
+            let jsonStr = JSON.stringify(out, null, "\t");
+            jsonStr = jsonStr.replace(/(\{\s*"Name"[\s\S]*?"EventID":\s*\[\]\s*\})/g, match => {
+                let updatedMatch = match.replace(/"Latitude":\s*([0-9.-]+)/, (m, p1) => `"Latitude": ${Number(p1).toFixed(6)}`);
+                updatedMatch = updatedMatch.replace(/"Longitude":\s*([0-9.-]+)/, (m, p1) => `"Longitude": ${Number(p1).toFixed(6)}`);
+                return updatedMatch.replace(/\s*\n\s*/g, ' ').replace(/\{\s*/, '{').replace(/\s*\}/, '}');
+            });
+            
+            document.getElementById('jsonOutput').value = jsonStr;
+        }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        const dataStr = document.getElementById('jsonOutput').value;
+        const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
+        const fileName = `${prefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
+        if (window.showSaveFilePicker) {
+            try {
+                const handle = await window.showSaveFilePicker({ suggestedName: fileName, types: [{ accept: { 'application/json': ['.json'] } }]});
+                const writable = await handle.createWritable(); await writable.write(dataStr); await writable.close();
+            } catch (err) {}
+        } else {
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([dataStr]));
+            a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+    });
+
+    document.getElementById('loadJsonBtn').addEventListener('click', () => document.getElementById('jsonInput').click());
+    document.getElementById('jsonInput').addEventListener('change', (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target.result);
+                const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
+                const isIncomingHTMSArray = Array.isArray(parsed);
+                const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && parsed.os;
+
+                if (simMode === 'HTMS') {
+                    const newMass = createMassState(34.800000, 126.400000);
+                    if (isIncomingMASS) {
+                        let osShipMASS = parsed.ships.find(s => s.isMASS === 1) || parsed.ships[0];
+                        let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
+                        if (osWpSet && osWpSet.WayPoints.length > 0) {
+                            newMass.originLat = osWpSet.WayPoints[0].Latitude;
+                            newMass.originLon = osWpSet.WayPoints[0].Longitude;
+                        }
+                        const fromLatLon = (lat, lon) => {
+                            const dxM = (lon - newMass.originLon) * 111111 * Math.cos(newMass.originLat * Math.PI / 180);
+                            const dzM = -(lat - newMass.originLat) * 111111;
+                            return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                        };
+                        newMass.osData = { type: osShipMASS.shipType || 'ContainerShip1', hdg: osShipMASS.initHeading || 0, spd: osShipMASS.initSpeed || 10, waypoints: [] };
+                        if (osWpSet && osWpSet.WayPoints.length > 1) {
+                            for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(osWpSet.WayPoints[i].Latitude, osWpSet.WayPoints[i].Longitude));
+                        }
+                        parsed.ships.filter(s => s.isMASS !== 1).forEach(s => {
+                            let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+                            if (!ws || ws.WayPoints.length === 0) return;
+                            let startPt = fromLatLon(ws.WayPoints[0].Latitude, ws.WayPoints[0].Longitude);
+                            let waypoints = [];
+                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(ws.WayPoints[i].Latitude, ws.WayPoints[i].Longitude));
+                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, s.initSpeed || 10));
+                            newMass.targets.push({ type: s.shipType || 'ContainerShip1', x: startPt.x, z: startPt.z, hdg: s.initHeading || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                        });
+                    } else if (isIncomingHTMSArray) {
+                        parsed.forEach(item => {
+                            if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
+                            else {
+                                const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
+                                newMass.targets.push({ type: 'ContainerShip1', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
+                            }
+                        });
+                    } else if (isIncomingHTMSObj) {
+                        if (parsed.origin) { newMass.originLat = parsed.origin.lat; newMass.originLon = parsed.origin.lon; }
+                        newMass.osData = parsed.os || { type: 'ContainerShip1', hdg: 0, spd: OS_SPD, waypoints: [] };
+                        if (!newMass.osData.type) newMass.osData.type = 'ContainerShip1';
+                        newMass.targets = (parsed.targets || []).map(t => ({...t, type: t.type || 'ContainerShip1', wpDist: t.spd * VECTOR_SCALE}));
+                    }
+                    massList = [newMass];
+                } else { 
+                    massList = [];
+                    if (isIncomingMASS) {
+                        const osShips = parsed.ships.filter(s => s.isMASS === 1);
+                        if (osShips.length === 0) throw new Error("시나리오에 isMASS=1 인 선박이 없습니다.");
+                        osShips.forEach(osShipMASS => {
+                            let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
+                            let oLat = 34.800000; let oLon = 126.400000;
+                            if (osWpSet && osWpSet.WayPoints.length > 0) { oLat = osWpSet.WayPoints[0].Latitude; oLon = osWpSet.WayPoints[0].Longitude; }
+                            const newMass = createMassState(oLat, oLon);
+                            const fromLatLon = (lat, lon) => {
+                                const dxM = (lon - oLon) * 111111 * Math.cos(oLat * Math.PI / 180);
+                                const dzM = -(lat - oLat) * 111111;
+                                return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                            };
+                            newMass.osData = { type: osShipMASS.shipType || 'CNTR_2700', hdg: osShipMASS.initHeading || 0, spd: osShipMASS.initSpeed || 10, waypoints: [] };
+                            if (osWpSet && osWpSet.WayPoints.length > 1) {
+                                for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(osWpSet.WayPoints[i].Latitude, osWpSet.WayPoints[i].Longitude));
+                            }
+                            massList.push(newMass);
+                        });
+                        const targetShips = parsed.ships.filter(s => s.isMASS !== 1);
+                        targetShips.forEach(s => {
+                            let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+                            if (!ws || ws.WayPoints.length === 0) return;
+                            const tLat = ws.WayPoints[0].Latitude; const tLon = ws.WayPoints[0].Longitude;
+                            let bestMassIdx = 0; let minDist = Infinity;
+                            massList.forEach((mass, i) => {
+                                const dist = Math.hypot(mass.originLat - tLat, mass.originLon - tLon);
+                                if (dist < minDist) { minDist = dist; bestMassIdx = i; }
+                            });
+                            const targetMass = massList[bestMassIdx];
+                            const fromLatLon = (lat, lon) => {
+                                const dxM = (lon - targetMass.originLon) * 111111 * Math.cos(targetMass.originLat * Math.PI / 180);
+                                const dzM = -(lat - targetMass.originLat) * 111111;
+                                return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                            };
+                            let startPt = fromLatLon(tLat, tLon);
+                            let waypoints = [];
+                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(ws.WayPoints[i].Latitude, ws.WayPoints[i].Longitude));
+                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, s.initSpeed || 10));
+                            targetMass.targets.push({ type: s.shipType || 'CNTR_2700', x: startPt.x, z: startPt.z, hdg: s.initHeading || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                        });
+                    } else {
+                        const newMass = createMassState(34.800000, 126.400000);
+                        if (isIncomingHTMSArray) {
+                            parsed.forEach(item => {
+                                if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
+                                else {
+                                    const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
+                                    newMass.targets.push({ type: 'CNTR_2700', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
+                                }
+                            });
+                        } else if (isIncomingHTMSObj) {
+                            if (parsed.origin) { newMass.originLat = parsed.origin.lat; newMass.originLon = parsed.origin.lon; }
+                            newMass.osData = parsed.os || { type: 'CNTR_2700', hdg: 0, spd: OS_SPD, waypoints: [] };
+                            if (!newMass.osData.type) newMass.osData.type = 'CNTR_2700'; 
+                            newMass.targets = (parsed.targets || []).map(t => ({...t, type: t.type || 'CNTR_2700', wpDist: t.spd * VECTOR_SCALE}));
+                        }
+                        massList.push(newMass);
+                    }
+                }
+                
+                activeMassIndex = 0;
+                updateShipTypeOptions();
+                
+                // 수정된 부분: 현재 모드에 따라 화면을 즉시 갱신하도록 분기
+                if (currentMode === 'editor') {
+                    renderGrid(); 
+                } else {
+                    renderReplayView();
+                }
+            } catch (err) { alert('JSON 파싱 오류: 데이터 형식이 맞지 않습니다.\n' + err.message); }
+        }; reader.readAsText(file); e.target.value = '';
+    });
+
+    let rPanX = null, rPanY = null, rViewScale = 1/3.0, rDrag = null;
+    function renderReplayView() {
+        gridContainer.innerHTML = '';
+        gridContainer.style.gridTemplateColumns = '1fr';
+        gridContainer.style.gridTemplateRows = '1fr';
+        
+        const vp = document.createElement('div');
+        vp.className = 'viewport active-vp';
+        vp.innerHTML = `<canvas class="vp-canvas" id="replay-canvas"></canvas>`;
+        gridContainer.appendChild(vp);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const canvas = document.getElementById('replay-canvas');
+                if(!canvas) return;
+                canvas.width = vp.clientWidth || vp.getBoundingClientRect().width; 
+                canvas.height = vp.clientHeight || vp.getBoundingClientRect().height;
+                if(rPanX === null || rPanY === null) { 
+                    rPanX = canvas.width/2; 
+                    rPanY = canvas.height/2; 
+                }
+
+                canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+                    rViewScale = Math.min(1/0.5, Math.max(1/30, rViewScale / zoomFactor)); 
+                    updateReplayCanvas();
+                }, { passive: false });
+
+                canvas.addEventListener('mousedown', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    rDrag = { startX: e.clientX - rect.left - rPanX, startY: e.clientY - rect.top - rPanY };
+                });
+                canvas.addEventListener('mousemove', (e) => {
+                    if(rDrag) {
+                        const rect = canvas.getBoundingClientRect();
+                        rPanX = (e.clientX - rect.left) - rDrag.startX; rPanY = (e.clientY - rect.top) - rDrag.startY;
+                        updateReplayCanvas();
+                    }
+                });
+                updateReplayCanvas();
+            });
+        });
+    }
+
+    document.getElementById('loadCsvBtn').addEventListener('click', () => document.getElementById('csvInput').click());
+    document.getElementById('csvInput').addEventListener('change', (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            parseCSV(event.target.result);
+            if (replayFrames.length > 0) { renderReplayView(); }
+        }; reader.readAsText(file); e.target.value = ''; 
+    });
+
+function parseCSV(csv) {
+        const lines = csv.trim().split('\n');
+        if (lines.length < 2) return;
+        const cleanHeader = (h) => h.replace(/["'\r]/g, '').trim().toUpperCase();
+        const headers = lines[0].split(',').map(cleanHeader);
+        const tIdx = headers.findIndex(h => h.includes('TIME'));
+        const nameIdx = headers.findIndex(h => h.includes('NAME') || h === 'ID');
+        const latIdx = headers.findIndex(h => h.includes('LAT'));
+        const lonIdx = headers.findIndex(h => h.includes('LON'));
+        
+        // CSV에서 X, Y 컬럼 인덱스 추가 탐색
+        const xIdx = headers.indexOf('X');
+        const yIdx = headers.indexOf('Y');
+        
+        const hdgIdx = headers.findIndex(h => h.includes('HDG') || h.includes('HEADING'));
+        const cogIdx = headers.findIndex(h => h.includes('COG'));
+        const sogIdx = headers.findIndex(h => h.includes('SOG') || h.includes('SPD'));
+
+        const frames = {};
+        
+        let originLat = massList[0].originLat;
+        let originLon = massList[0].originLon;
+        
+        const cosLat = Math.cos(originLat * Math.PI / 180);
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cols = lines[i].split(',').map(s => s.replace(/["'\r]/g, '').trim());
+            if (cols.length < 2) continue; 
+            const t = tIdx !== -1 ? parseFloat(cols[tIdx]) : (i - 1);
+            if (isNaN(t)) continue;
+
+            let simX = 0; let simZ = 0;
+            
+            // 1순위: CSV에 X, Y 값이 존재하면 3D 시뮬레이터의 원본 좌표계를 그대로 사용
+            if (xIdx !== -1 && yIdx !== -1 && cols[xIdx] !== undefined && cols[yIdx] !== undefined) {
+                simX = parseFloat(cols[xIdx]) || 0;
+                simZ = parseFloat(cols[yIdx]) || 0;
+            } 
+            // 2순위: 기존 위경도 기반 역산 로직 (MASS 포맷 등 X/Y가 없을 때)
+            else if (latIdx !== -1 && lonIdx !== -1 && cols[latIdx] && cols[lonIdx]) {
+                const lat = parseFloat(cols[latIdx]); const lon = parseFloat(cols[lonIdx]);
+                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+                    const dxMeters = (lon - originLon) * 111111 * cosLat;
+                    const dzMeters = -(lat - originLat) * 111111;
+                    simX = dxMeters * (400 / 1852); simZ = dzMeters * (400 / 1852);
+                }
+            } 
+            
+            const name = nameIdx !== -1 ? cols[nameIdx] : `T${i}`;
+            const hdg = hdgIdx !== -1 ? parseFloat(cols[hdgIdx]) || 0 : 0;
+            const cog = cogIdx !== -1 ? parseFloat(cols[cogIdx]) || hdg : hdg;
+            const sog = sogIdx !== -1 ? parseFloat(cols[sogIdx]) || 0 : 0;
+
+            if (!frames[t]) frames[t] = [];
+            frames[t].push({ name, x: simX, z: simZ, hdg, cog, sog });
+        }
+        
+        replayFrames = Object.keys(frames).map(Number).sort((a,b)=>a-b).map(t => ({ time: t, ships: frames[t] }));
+        if (replayFrames.length > 0) {
+            maxReplayTime = replayFrames[replayFrames.length - 1].time;
+            const slider = document.getElementById('timeSlider');
+            slider.max = replayFrames.length - 1; slider.value = 0; currentReplayTime = replayFrames[0].time;
+            document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+        }
+    }
+
+    const slider = document.getElementById('timeSlider');
+    slider.addEventListener('input', (e) => {
+        if (replayFrames.length === 0) return;
+        currentReplayTime = replayFrames[parseInt(e.target.value)].time;
+        document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+        updateReplayCanvas();
+    });
+
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    playPauseBtn.addEventListener('click', () => {
+        if (replayFrames.length === 0) return;
+        if (isPlaying) {
+            isPlaying = false; playPauseBtn.textContent = 'PLAY';
+            playPauseBtn.style.background = '#1f293d'; playPauseBtn.style.color = 'var(--text-main)';
+            clearInterval(playInterval);
+        } else {
+            isPlaying = true; playPauseBtn.textContent = 'PAUSE';
+            playPauseBtn.style.background = '#eab308'; playPauseBtn.style.color = '#000';
+            playInterval = setInterval(() => {
+                let idx = parseInt(slider.value) + 1;
+                if (idx >= replayFrames.length) { playPauseBtn.click(); return; }
+                slider.value = idx; currentReplayTime = replayFrames[idx].time;
+                document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+                updateReplayCanvas();
+            }, 1000 / playSpeed); 
+        }
+    });
+
+    function setSpeed(speed, btnId) {
+        playSpeed = speed;
+        ['speed1xBtn', 'speed3xBtn', 'speed5xBtn'].forEach(id => {
+            document.getElementById(id).style.background = '#1f293d'; document.getElementById(id).style.color = 'var(--text-main)';
+        });
+        document.getElementById(btnId).style.background = 'var(--accent-cyan)'; document.getElementById(btnId).style.color = '#000';
+        if (isPlaying) { playPauseBtn.click(); playPauseBtn.click(); }
+    }
+    document.getElementById('speed1xBtn').addEventListener('click', () => setSpeed(1, 'speed1xBtn'));
+    document.getElementById('speed3xBtn').addEventListener('click', () => setSpeed(3, 'speed3xBtn'));
+    document.getElementById('speed5xBtn').addEventListener('click', () => setSpeed(5, 'speed5xBtn'));
+
+    function updateReplayCanvas() {
+        const canvas = document.getElementById('replay-canvas');
+        if(!canvas) return;
+        const ctxL = canvas.getContext('2d');
+        ctxL.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctxL.strokeStyle = '#1e293b'; ctxL.lineWidth = 1; ctxL.beginPath();
+        ctxL.moveTo(0, rPanY); ctxL.lineTo(canvas.width, rPanY); ctxL.moveTo(rPanX, 0); ctxL.lineTo(rPanX, canvas.height); ctxL.stroke();
+        const maxDistPx = Math.max(Math.hypot(rPanX, rPanY), Math.hypot(canvas.width - rPanX, rPanY), Math.hypot(rPanX, canvas.height - rPanY), Math.hypot(canvas.width - rPanX, canvas.height - rPanY));
+        const maxCables = Math.ceil((maxDistPx / rViewScale) / 40);
+        
+        ctxL.setLineDash([4, 4]);
+        for (let i = 10; i <= maxCables; i += 10) {
+            const radius_px = (i * 40) * rViewScale; 
+            ctxL.strokeStyle = (i % 20 === 0) ? '#2d3f5a' : '#1d283a'; ctxL.lineWidth = (i % 20 === 0) ? 1.5 : 1;
+            ctxL.beginPath(); ctxL.arc(rPanX, rPanY, radius_px, 0, Math.PI * 2); ctxL.stroke();
+            if (i % 20 === 0 && radius_px > 15 && radius_px < Math.max(canvas.width, canvas.height) * 1.5) {
+                ctxL.fillStyle = '#334155'; ctxL.font = '10px monospace'; ctxL.textAlign='center';
+                ctxL.fillText(`${(i/10).toFixed(1)} NM`, rPanX + 4, rPanY - radius_px + 12);
+            }
+        }
+        ctxL.setLineDash([]);
+
+        // 본선(OS) 항로 표시
+        const mass = massList[0];
+        if (mass) {
+            if (mass.osData.waypoints.length > 0) {
+                ctxL.strokeStyle = '#0ea5e9'; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+                ctxL.beginPath(); ctxL.moveTo(rPanX, rPanY); 
+                mass.osData.waypoints.forEach(g => ctxL.lineTo(rPanX + g.x * rViewScale, rPanY + g.z * rViewScale));
+                ctxL.stroke(); ctxL.setLineDash([]);
+                mass.osData.waypoints.forEach((g) => {
+                    const cx = rPanX + (g.x * rViewScale); const cy = rPanY + (g.z * rViewScale);
+                    ctxL.shadowColor = '#0ea5e9'; ctxL.shadowBlur = 10; ctxL.fillStyle = '#0ea5e9';
+                    ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill(); ctxL.shadowBlur = 0;
+                });
+            }
+            
+            // 타선(Target) 계획 항로도 추가 표시하도록 수정
+            mass.targets.forEach(t => {
+                if (t.waypoints.length > 0) {
+                    ctxL.strokeStyle = '#ef4444'; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+                    ctxL.beginPath(); ctxL.moveTo(rPanX + t.x * rViewScale, rPanY + t.z * rViewScale);
+                    t.waypoints.forEach(g => ctxL.lineTo(rPanX + g.x * rViewScale, rPanY + g.z * rViewScale));
+                    ctxL.stroke(); ctxL.setLineDash([]);
+                    t.waypoints.forEach((g) => {
+                        const cx = rPanX + (g.x * rViewScale); const cy = rPanY + (g.z * rViewScale);
+                        ctxL.shadowColor = '#ef4444'; ctxL.shadowBlur = 10; ctxL.fillStyle = '#ef4444';
+                        ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill(); ctxL.shadowBlur = 0;
+                    });
+                }
+            });
+        }
+
+        if (replayFrames.length === 0) return;
+
+        const idx = parseInt(document.getElementById('timeSlider').value);
+        
+        ctxL.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+        ctxL.lineWidth = 3;
+        ctxL.beginPath();
+        let firstPt = true;
+        for (let i = 0; i <= idx; i++) {
+            const f = replayFrames[i];
+            const os = f.ships.find(s => s.name === 'OS' || s.name.startsWith('MASS'));
+            if (os) {
+                const cx = rPanX + os.x * rViewScale;
+                const cy = rPanY + os.z * rViewScale;
+                if (firstPt) { ctxL.moveTo(cx, cy); firstPt = false; }
+                else { ctxL.lineTo(cx, cy); }
+            }
+        }
+        ctxL.stroke();
+
+        const frame = replayFrames[idx];
+        frame.ships.forEach(ship => {
+            const cx = rPanX + (ship.x * rViewScale);
+            const cy = rPanY + (ship.z * rViewScale);
+            const isOS = ship.name === 'OS' || ship.name.startsWith('MASS');
+            const color = isOS ? '#10b981' : '#ef4444';
+            const wpDist = ship.sog * VECTOR_SCALE;
+            
+            if (wpDist > 0) {
+                const rad = (ship.cog - 90) * Math.PI / 180;
+                const wpX = cx + Math.cos(rad) * (wpDist * rViewScale); const wpY = cy + Math.sin(rad) * (wpDist * rViewScale);
+                ctxL.strokeStyle = color; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+                ctxL.beginPath(); ctxL.moveTo(cx, cy); ctxL.lineTo(wpX, wpY); ctxL.stroke(); ctxL.setLineDash([]);
+                ctxL.save(); ctxL.translate(wpX, wpY); ctxL.rotate(ship.cog * Math.PI / 180);
+                ctxL.fillStyle = color; ctxL.beginPath(); ctxL.moveTo(0, -6); ctxL.lineTo(4, 6); ctxL.lineTo(-4, 6); ctxL.fill(); ctxL.restore();
+            }
+
+            ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate(ship.hdg * Math.PI / 180); ctxL.scale(rViewScale, rViewScale); 
+            ctxL.shadowColor = color; ctxL.shadowBlur = 10; ctxL.fillStyle = color;
+            const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
+            ctxL.beginPath(); ctxL.moveTo(0, -halfLen); ctxL.lineTo(halfWid, -halfLen + 12); ctxL.lineTo(halfWid, halfLen); ctxL.lineTo(-halfWid, halfLen); ctxL.lineTo(-halfWid, -halfLen + 12); ctxL.closePath(); ctxL.fill();
+            ctxL.lineWidth = 1 / rViewScale; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.restore();
+
+            ctxL.fillStyle = isOS ? '#10b981' : '#f87171'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
+            ctxL.fillText(isOS ? 'OS' : ship.name, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * rViewScale + 15));
+        });
+    }
+
+    initSystem();
+</script>
+</body>
+</html>

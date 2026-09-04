@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magnetic Compass Simulator</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --stbd-color: #22c55e;
+            --port-color: #ef4444;
+            --mid-color: #94a3b8;
+        }
+        /* Letterboxing for 16:9 fixed aspect ratio */
+        body { margin: 0; padding: 0; background: #000; color: var(--text-main); font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.5s; }
+        #start-screen h1 { font-size: 3rem; margin-bottom: 2rem; color: #38bdf8; text-align: center; }
+        
+        /* Start Screen Compass SVG Animation */
+        @keyframes float-compass {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        #start-compass-icon { width: 150px; height: 150px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.5)); animation: float-compass 4s ease-in-out infinite; }
+        
+        .diff-title { font-size: 1.2rem; color: #94a3b8; margin-bottom: 15px; }
+        .diff-group { display: flex; gap: 15px; margin-bottom: 40px; flex-wrap: wrap; justify-content: center; }
+        .diff-btn { padding: 12px 25px; font-size: 1.1rem; background: #1e293b; color: #94a3b8; border: 2px solid #334155; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .diff-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: bold; }
+        
+        #start-btn { padding: 15px 50px; font-size: 1.5rem; background: #0284c7; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #start-btn:hover { background: #0369a1; transform: scale(1.05); }
+
+        /* Deviation Curve Modal */
+        #curve-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
+        .curve-container { background: #1e293b; padding: 20px; border-radius: 12px; border: 2px solid #334155; text-align: center; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .curve-container h2 { margin: 0 0 15px 0; color: #38bdf8; font-size: 1.5rem; }
+        #curve-canvas { background: #0f172a; border: 1px solid #475569; border-radius: 8px; margin-bottom: 15px; }
+        .close-curve-btn { padding: 10px 40px; font-size: 1.1rem; background: #0284c7; color: white; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .close-curve-btn:hover { background: #0369a1; }
+        .curve-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-size: 1rem; font-weight: bold; }
+        .legend-item { display: flex; align-items: center; gap: 8px; color: #f8fafc; }
+        .legend-color { width: 20px; height: 4px; border-radius: 2px; }
+
+        /* 16:9 Fixed Container */
+        #app-container { position: relative; width: 100vw; height: 56.25vw; max-width: 177.78vh; max-height: 100vh; background: var(--bg-dark); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 2vw rgba(255,255,255,0.05); }
+        
+        /* TOP SECTION */
+        #top-section { display: flex; flex: 1; height: 85%; }
+        
+        /* Left: Compass Display */
+        #compass-section { flex: 7.5; position: relative; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); box-sizing: border-box; overflow: hidden; }
+        
+        /* Floating Guides around Compass */
+        .compass-guide { position: absolute; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px; border: 1px solid #334155; font-size: clamp(0.7rem, 1vw, 0.9rem); color: #94a3b8; z-index: 20; white-space: nowrap; }
+        #env-info { top: 20px; left: 20px; font-family: monospace; color: #7dd3fc; }
+        #steady-timer { top: 20px; right: 20px; text-align: right; }
+        #steady-status { font-weight: bold; font-size: clamp(1rem, 1.2vw, 1.2rem); }
+        
+        /* Fixed Bottom-Left: Calculation Guide */
+        #calc-guide { bottom: 20px; left: 20px; right: auto; top: auto; border-color: #0284c7; background: rgba(2, 132, 199, 0.1); }
+        #calc-guide h3 { margin: 0 0 5px 0; font-size: clamp(0.8rem, 1.1vw, 0.95rem); color: #38bdf8; }
+
+        /* Fixed Bottom-Right: Tutorial Tooltip */
+        #tutorial-tooltip { position: absolute; bottom: 20px; right: 20px; left: auto; top: auto; background: #0284c7; color: white; padding: 15px 20px; border-radius: 8px; font-size: clamp(0.85rem, 1.1vw, 1rem); box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; pointer-events: none; transition: opacity 0.3s; opacity: 0; text-align: left; line-height: 1.4; border: 1px solid #38bdf8; white-space: normal; word-break: keep-all; width: max-content; max-width: 380px; }
+
+        .compass-ring { width: 450px; height: 450px; border-radius: 50%; border: 15px solid #334155; position: relative; background: #e2e8f0; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        .lubber-line { position: absolute; top: 0; width: 4px; height: 30px; background: red; z-index: 10; }
+        #compass-card { width: 100%; height: 100%; border-radius: 50%; }
+        
+        @keyframes blink-border {
+            0% { box-shadow: 0 0 5px #fcd34d, inset 0 0 5px #fcd34d; border-color: #fcd34d; }
+            50% { box-shadow: 0 0 20px #fcd34d, inset 0 0 10px #fcd34d; border-color: #fff; }
+            100% { box-shadow: 0 0 5px #fcd34d, inset 0 0 5px #fcd34d; border-color: #fcd34d; }
+        }
+        .highlight-blink { animation: blink-border 1.5s infinite !important; border-radius: 8px; z-index: 10; }
+
+        /* Correctors UI */
+        #corrector-section { flex: 2.5; background: var(--panel-bg); border-left: 2px solid #334155; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-sizing: border-box; min-width: 250px; }
+        .corrector-box { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #475569; display: flex; flex-direction: column; transition: 0.3s; }
+        .corrector-box h3 { margin: 0 0 8px 0; font-size: clamp(0.9rem, 1.1vw, 1rem); color: #38bdf8; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 8px; white-space: nowrap; }
+        .corrector-desc { font-size: clamp(0.6rem, 0.9vw, 0.75rem); color: #94a3b8; margin-bottom: 10px; line-height: 1.4; text-align: center; white-space: nowrap; }
+        .rack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto; padding: 5px 0; }
+        .slot { width: 100%; height: 25px; background: #020617; border: 1px inset #334155; border-radius: 3px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; position: relative; }
+        .slot:hover { background: #1e293b; }
+        .mag-B, .mag-C { box-shadow: 0 0 4px rgba(0,0,0,0.8); border-radius: 2px; }
+        .mag-B { width: 10px; height: 18px; }
+        .mag-B.pos { background: linear-gradient(to bottom, #ef4444 50%, #3b82f6 50%); } 
+        .mag-B.neg { background: linear-gradient(to top, #ef4444 50%, #3b82f6 50%); } 
+        .mag-C { width: 35px; height: 10px; }
+        .mag-C.pos { background: linear-gradient(to right, #3b82f6 50%, #ef4444 50%); } 
+        .mag-C.neg { background: linear-gradient(to left, #3b82f6 50%, #ef4444 50%); } 
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; margin-top: 10px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #1e293b; border-radius: 4px; border: 1px solid #334155; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #94a3b8; margin-top: -7px; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        /* Steering Practice UI */
+        #map-section { display: none; flex: 2.5; background: var(--panel-bg); border-left: 2px solid #334155; padding: 15px; flex-direction: column; box-sizing: border-box; min-width: 250px; }
+        .map-box { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #475569; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        #map-canvas { flex: 1; background: #020617; border-radius: 8px; border: 1px inset #334155; width: 100%; }
+        .dist-group { display: flex; gap: 5px; margin-top: 10px; }
+        .dist-btn-map { flex: 1; padding: 8px 0; font-size: 0.8rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .dist-btn-map.active { background: #38bdf8; color: #0f172a; font-weight: bold; border-color: #38bdf8; }
+
+        /* BOTTOM SECTION */
+        #bottom-section { height: 15%; background: #0f172a; border-top: 2px solid #334155; display: flex; padding: 10px 20px; gap: 15px; align-items: center; box-sizing: border-box; }
+        .data-box { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #334155; flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+        .data-label { font-size: clamp(0.6rem, 1vw, 0.8rem); color: #94a3b8; margin-bottom: 5px; white-space: nowrap; }
+        .data-value { font-family: 'Courier New', monospace; font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: bold; white-space: nowrap; }
+        
+        .rudder-display { display: flex; justify-content: space-between; background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid #475569; flex: 1.2; height: 100%; align-items: center; transition: 0.3s; position: relative; }
+        .rudder-col { flex: 1; text-align: center; min-width: 120px; }
+        .rudder-col div:first-child { font-size: clamp(0.6rem, 0.9vw, 0.8rem); color: #94a3b8; margin-bottom: 5px; white-space: nowrap; }
+        .rudder-val-text { font-family: monospace; font-size: clamp(1.1rem, 1.8vw, 1.6rem); font-weight: bold; white-space: nowrap; }
+        
+        #ap-panel { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #475569; padding-right: 15px; margin-right: 15px; min-width: 160px; }
+        #ap-title { font-size: clamp(0.6rem, 0.8vw, 0.75rem); color: #94a3b8; margin-bottom: 8px; text-align: center; font-weight: bold; }
+        .ap-controls { display: flex; gap: 8px; align-items: center; justify-content: center; }
+        .ap-spin-btn { background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; width: 35px; height: 35px; font-size: 1.2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; user-select: none; }
+        .ap-spin-btn:active { background: #475569; transform: scale(0.95); }
+        #ap-input { width: 60px; height: 35px; background: #020617; color: #38bdf8; border: 1px solid #334155; border-radius: 6px; text-align: center; font-weight: bold; font-size: 1.2rem; box-sizing: border-box; -moz-appearance: textfield; }
+        #ap-input::-webkit-outer-spin-button, #ap-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        #ap-btn { background: #0284c7; color: white; border: none; border-radius: 6px; cursor: pointer; padding: 0 15px; height: 35px; font-weight: bold; font-size: 1rem; transition: 0.2s; margin-left: 5px; }
+        #ap-btn.active { background: #22c55e; }
+
+        #ap-ff-btn { background: #eab308; color: #000; display: none; margin-left: 5px; box-shadow: 0 0 10px rgba(234,179,8,0.3); }
+        #ap-ff-btn:active { background: #ca8a04; transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <!-- Deviation Curve Modal -->
+    <div id="curve-modal">
+        <div class="curve-container">
+            <h2>자차곡선도 (Deviation Curve) 비교</h2>
+            <div class="curve-legend">
+                <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> 수정 전 (Before)</div>
+                <div class="legend-item"><div class="legend-color" style="background: #22c55e;"></div> 수정 후 (After)</div>
+            </div>
+            <canvas id="curve-canvas" width="400" height="500"></canvas>
+            <br>
+            <button class="close-curve-btn" onclick="document.getElementById('curve-modal').style.display='none'">닫기</button>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <svg id="start-compass-icon" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" stroke="#334155" stroke-width="4" fill="#0f172a"/>
+                <circle cx="50" cy="50" r="38" stroke="#38bdf8" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/>
+                <polygon points="50,15 60,50 50,85 40,50" fill="#1e293b"/>
+                <polygon points="50,15 50,85 40,50" fill="#94a3b8"/>
+                <polygon points="50,15 60,50 50,50" fill="#ef4444"/>
+                <polygon points="50,15 40,50 50,50" fill="#b91c1c"/>
+                <circle cx="50" cy="50" r="3" fill="#f8fafc"/>
+            </svg>
+            
+            <h1>Magnetic Compass Simulator</h1>
+            <div class="diff-title">모드 선택</div>
+            <div class="diff-group">
+                <button class="diff-btn active" data-mode="BEGINNER">Beginner</button>
+                <button class="diff-btn" data-mode="EXPERT">Expert</button>
+                <button class="diff-btn" data-mode="STEERING">Steering Practice</button>
+            </div>
+            <button id="start-btn">Start Simulation</button>
+        </div>
+
+        <!-- TOP: Compass & Panels -->
+        <div id="top-section">
+            <div id="compass-section">
+                <!-- 환경 변수 -->
+                <div class="compass-guide" id="env-info">
+                    <div>Variation: <span style="color:#fcd34d;">6.0° W</span></div>
+                    <div>Gyro Err: <span style="color:#fcd34d;">1.0° E</span></div>
+                </div>
+
+                <!-- Steady 타이머 -->
+                <div class="compass-guide" id="steady-timer">
+                    <div style="font-size: clamp(0.65rem, 0.9vw, 0.75rem); margin-bottom: 4px;">Gaussin Error 제거</div>
+                    <div id="steady-status" style="color: #ef4444;">Turning...</div>
+                    <progress id="steady-prog" value="0" max="100" style="width: 100px; height: 8px;"></progress>
+                </div>
+
+                <!-- 계산 가이드 -->
+                <div class="compass-guide" id="calc-guide" style="display: none;">
+                    <h3>[방위 계산 가이드]</h3>
+                    <p id="calc-guide-text" style="margin:0; line-height: 1.5;"></p>
+                </div>
+
+                <!-- 튜토리얼 툴팁 -->
+                <div id="tutorial-tooltip"></div>
+
+                <div class="compass-ring">
+                    <div class="lubber-line"></div>
+                    <canvas id="compass-card" width="500" height="500"></canvas>
+                </div>
+            </div>
+
+            <!-- Magnetic Correctors Panel -->
+            <div id="corrector-section">
+                <div class="corrector-box" id="guide-box-b">
+                    <h3>B-Magnet (선수미)</h3>
+                    <div class="corrector-desc">090°/270° 전담 수정</div>
+                    <div class="rack" id="rack-b">
+                        <div class="slot slot-B" data-weight="4.0" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="3.0" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="2.0" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="1.5" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="1.0" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                        <div class="slot slot-B" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'B')"></div>
+                    </div>
+                </div>
+                <div class="corrector-box" id="guide-box-c">
+                    <h3>C-Magnet (횡방위)</h3>
+                    <div class="corrector-desc">000°/180° 전담 수정</div>
+                    <div class="rack" id="rack-c">
+                        <div class="slot slot-C" data-weight="4.0" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="3.0" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="2.0" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="1.5" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="1.0" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                        <div class="slot slot-C" data-weight="0.5" data-state="0" onclick="toggleSlot(this, 'C')"></div>
+                    </div>
+                </div>
+                <div class="corrector-box" id="guide-box-d">
+                    <h3>연철구 (D계수)</h3>
+                    <div class="corrector-desc">4점 방위간 오차 수정</div>
+                    <input type="range" id="sphere-slider" min="-10" max="10" value="0" step="0.1">
+                </div>
+            </div>
+
+            <!-- Steering Practice Panel -->
+            <div id="map-section">
+                <div style="text-align: center; color: #38bdf8; font-weight: bold; margin-bottom: 10px;">Steering Practice Top View</div>
+                <div class="map-box">
+                    <div>Speed: <span id="map-speed" style="color: #fff; font-weight:bold;">15</span> Kts <span style="font-size:0.7rem; color:#94a3b8;">(↑/↓)</span></div>
+                    <div>XTD: <span id="map-xtd" style="color: #fcd34d; font-weight:bold;">0.0</span> m</div>
+                </div>
+                <canvas id="map-canvas"></canvas>
+                <div class="dist-group">
+                    <button class="dist-btn-map active" data-val="0">외란 없음</button>
+                    <button class="dist-btn-map" data-val="1">작은 외란</button>
+                    <button class="dist-btn-map" data-val="2">중간 외란</button>
+                    <button class="dist-btn-map" data-val="3">큰 외란</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM: Ship Controls -->
+        <div id="bottom-section">
+            <div class="data-box" style="flex: 0.8;">
+                <div class="data-label">ROT (°/min)</div>
+                <div class="data-value" id="rot-val" style="color: #fcd34d;">0.0</div>
+            </div>
+            <div class="data-box">
+                <div class="data-label">Gyro Heading</div>
+                <div class="data-value" id="heading-val" style="color: #fff;">000.0°</div>
+            </div>
+            <div class="data-box" id="mag-box">
+                <div class="data-label">Magnetic Heading</div>
+                <div class="data-value" id="mag-val" style="color: #38bdf8;">000.0°</div>
+            </div>
+            <div class="rudder-display" id="rudder-control-area">
+                <div id="ap-panel">
+                    <div id="ap-title">AUTOPILOT</div>
+                    <div class="ap-controls">
+                        <button id="ap-dec" class="ap-spin-btn">▼</button>
+                        <input type="number" id="ap-input" min="0" max="359" value="000">
+                        <button id="ap-inc" class="ap-spin-btn">▲</button>
+                        <button id="ap-btn">SET</button>
+                        <button id="ap-ff-btn" class="ap-spin-btn">⏩</button>
+                    </div>
+                </div>
+                <div class="rudder-col">
+                    <div>ORDER (←/→/Space)</div>
+                    <div class="rudder-val-text" id="order-rudder-val" style="color: var(--mid-color);">MID 0°</div>
+                </div>
+                <div class="rudder-col" style="border-left: 1px solid #475569;">
+                    <div>ACTUAL</div>
+                    <div class="rudder-val-text" id="actual-rudder-val" style="color: var(--mid-color);">MID 0°</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateTextDOM(id, text, color = null) {
+            let el = document.getElementById(id);
+            if (!el) return;
+            if (el.innerText !== text) el.innerText = text;
+            if (color && el.style.color !== color) el.style.color = color;
+        }
+
+        let currentMode = 'BEGINNER'; 
+        let mapDistLevel = 0;
+
+        const diffBtns = document.querySelectorAll('.diff-btn');
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                diffBtns.forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                currentMode = e.currentTarget.getAttribute('data-mode');
+            });
+        });
+
+        const distBtnsMap = document.querySelectorAll('.dist-btn-map');
+        distBtnsMap.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                distBtnsMap.forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                mapDistLevel = parseInt(e.currentTarget.getAttribute('data-val'));
+            });
+        });
+
+        function toggleSlot(el, type) {
+            let state = parseInt(el.getAttribute('data-state'));
+            state = state === 0 ? 1 : (state === 1 ? -1 : 0); 
+            el.setAttribute('data-state', state);
+            el.innerHTML = ''; 
+            if (state !== 0) {
+                let mag = document.createElement('div');
+                mag.className = `mag-${type}`;
+                mag.classList.add(state === 1 ? 'pos' : 'neg');
+                el.appendChild(mag);
+            }
+        }
+
+        function getMagnetSum(type) {
+            let sum = 0;
+            document.querySelectorAll(`.slot-${type}`).forEach(el => {
+                let state = parseInt(el.getAttribute('data-state'));
+                let weight = parseFloat(el.getAttribute('data-weight'));
+                sum += state * weight;
+            });
+            return sum;
+        }
+
+        const canvas = document.getElementById('compass-card');
+        const ctx = canvas.getContext('2d');
+        const cx = 250, cy = 250, radius = 230;
+
+        function drawCompass() {
+            ctx.clearRect(0, 0, 500, 500);
+            ctx.translate(cx, cy);
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            
+            for(let i = 0; i < 360; i += 5) {
+                ctx.save();
+                ctx.rotate(i * Math.PI / 180);
+                ctx.beginPath();
+                ctx.moveTo(0, -radius);
+                if (i % 30 === 0) {
+                    ctx.lineTo(0, -radius + 20); ctx.lineWidth = 3;
+                    ctx.font = 'bold 20px Arial'; ctx.fillStyle = '#0f172a';
+                    ctx.fillText(i.toString().padStart(3, '0'), 0, -radius + 35);
+                } else if (i % 10 === 0) { ctx.lineTo(0, -radius + 15); ctx.lineWidth = 2; } 
+                else { ctx.lineTo(0, -radius + 10); ctx.lineWidth = 1; }
+                ctx.strokeStyle = '#0f172a'; ctx.stroke(); ctx.restore();
+            }
+            ['N', 'E', 'S', 'W'].forEach((pts, idx) => {
+                ctx.save(); ctx.rotate(idx * 90 * Math.PI / 180);
+                ctx.font = 'bold 36px Arial'; ctx.fillStyle = pts === 'N' ? 'red' : '#0f172a';
+                ctx.fillText(pts, 0, -radius + 70); ctx.restore();
+            });
+            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a'; ctx.fill();
+            ctx.translate(-cx, -cy);
+        }
+        drawCompass();
+
+        // ---------------- AP Spin Button Logic ----------------
+        let apEnabled = false;
+        let apTarget = 0;
+        const apInput = document.getElementById('ap-input');
+        const apBtn = document.getElementById('ap-btn');
+        let apSpinInterval = null;
+
+        function changeAPVal(dir) {
+            let val = parseInt(apInput.value) || 0;
+            let newVal = (val + dir + 360) % 360;
+            apInput.value = newVal.toString().padStart(3, '0');
+            if (apEnabled) apTarget = newVal; 
+        }
+        function startAPSpin(dir) {
+            changeAPVal(dir);
+            apSpinInterval = setInterval(() => changeAPVal(dir), 100);
+        }
+        function stopAPSpin() { clearInterval(apSpinInterval); }
+
+        const btnInc = document.getElementById('ap-inc');
+        const btnDec = document.getElementById('ap-dec');
+
+        btnInc.addEventListener('mousedown', () => startAPSpin(1));
+        btnInc.addEventListener('touchstart', (e) => { e.preventDefault(); startAPSpin(1); });
+        btnInc.addEventListener('mouseup', stopAPSpin);
+        btnInc.addEventListener('mouseleave', stopAPSpin);
+        btnInc.addEventListener('touchend', stopAPSpin);
+
+        btnDec.addEventListener('mousedown', () => startAPSpin(-1));
+        btnDec.addEventListener('touchstart', (e) => { e.preventDefault(); startAPSpin(-1); });
+        btnDec.addEventListener('mouseup', stopAPSpin);
+        btnDec.addEventListener('mouseleave', stopAPSpin);
+        btnDec.addEventListener('touchend', stopAPSpin);
+
+        // ---------------- Fast Forward Logic ----------------
+        let isFastForward = false;
+        const apFfBtn = document.getElementById('ap-ff-btn');
+        
+        if (apFfBtn) {
+            const startFF = (e) => { e.preventDefault(); if(apEnabled) isFastForward = true; };
+            const stopFF = () => { isFastForward = false; };
+            
+            apFfBtn.addEventListener('mousedown', startFF);
+            apFfBtn.addEventListener('touchstart', startFF);
+            window.addEventListener('mouseup', stopFF);
+            apFfBtn.addEventListener('mouseleave', stopFF);
+            apFfBtn.addEventListener('touchend', stopFF);
+        }
+
+        function disableAP() {
+            apEnabled = false;
+            apBtn.classList.remove('active');
+            apBtn.innerText = 'SET';
+            if (apFfBtn) apFfBtn.style.display = 'none';
+            isFastForward = false;
+        }
+
+        apBtn.addEventListener('click', () => {
+            if (apEnabled) disableAP();
+            else {
+                apTarget = parseFloat(apInput.value) || 0;
+                apEnabled = true;
+                apBtn.classList.add('active');
+                apBtn.innerText = 'ON';
+                if (apFfBtn) apFfBtn.style.display = 'flex';
+            }
+        });
+
+        // ---------------- Ship Dynamics ----------------
+        let heading = 0; 
+        let magHeadingOut = 0;
+        let rot = 0; 
+        let orderRudder = 0;
+        let actualRudder = 0;
+        let isRunning = false;
+        
+        let steadyTime = 0;
+        const STEADY_TARGET = 300; 
+        
+        // 오류 유발 플래그
+        let innateB = 6.5, innateC = -4.0, innateD = 1.0; 
+        let bErrorAdded = false, cErrorAdded = false, dErrorAdded = false;
+
+        const K = 2.0, T = 25.0, dt = 1.0 / 60.0, rudderSpeed = 2.0;     
+
+        // Map Variables
+        let shipX = 0, shipY = 0;
+        let shipSpeed = 15; 
+        let wps = [];
+        let shipTrack = [];
+        let activeIdx = 0;
+        const mapCanvas = document.getElementById('map-canvas');
+        const mapCtx = mapCanvas.getContext('2d');
+
+        function generateNextWP() {
+            let p1 = wps[wps.length - 2];
+            let p2 = wps[wps.length - 1];
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let baseAngle = Math.atan2(dx, -dy);
+            
+            let turnAng = (Math.random() * 120 - 60) * Math.PI / 180;
+            let newAngle = baseAngle + turnAng;
+            let legLength = 2000 + Math.random() * 6000; 
+            
+            wps.push({
+                x: p2.x + legLength * Math.sin(newAngle),
+                y: p2.y - legLength * Math.cos(newAngle)
+            });
+        }
+
+        function initMap() {
+            wps = [{x: 0, y: 0}, {x: 0, y: -3000}];
+            activeIdx = 0;
+            generateNextWP();
+            generateNextWP();
+            generateNextWP();
+            shipX = 0; shipY = 0; heading = 0;
+            shipTrack = [];
+            updateTextDOM('map-speed', shipSpeed.toString());
+        }
+
+        function resizeMap() {
+            mapCanvas.width = mapCanvas.clientWidth;
+            mapCanvas.height = mapCanvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeMap);
+        
+        function formatRudder(val) {
+            let v = Math.round(val);
+            if (v > 0) return { text: `STBD ${v}°`, color: 'var(--stbd-color)' };
+            if (v < 0) return { text: `PORT ${Math.abs(v)}°`, color: 'var(--port-color)' };
+            return { text: `MID 0°`, color: 'var(--mid-color)' };
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!isRunning) return;
+            if (['ArrowRight', 'ArrowLeft', 'Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+
+            if (currentMode === 'STEERING') {
+                if (e.code === 'ArrowUp') { shipSpeed = Math.min(shipSpeed + 1, 30); updateTextDOM('map-speed', shipSpeed.toString()); }
+                if (e.code === 'ArrowDown') { shipSpeed = Math.max(shipSpeed - 1, 0); updateTextDOM('map-speed', shipSpeed.toString()); }
+            }
+
+            if (['ArrowRight', 'ArrowLeft', 'Space'].includes(e.code)) { 
+                disableAP(); 
+                if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
+                    if (orderRudder % 5 !== 0) orderRudder = Math.round(orderRudder / 5) * 5;
+                }
+            }
+            if (e.code === 'ArrowRight') { orderRudder = Math.min(orderRudder + 5, 35); }
+            if (e.code === 'ArrowLeft') { orderRudder = Math.max(orderRudder - 5, -35); }
+            if (e.code === 'Space') { orderRudder = 0; }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            innateB = 6.5; innateC = -4.0; innateD = 1.0;
+            bErrorAdded = false; cErrorAdded = false; dErrorAdded = false;
+            tutorialStep = 0;
+            currentTutorialStep = -1;
+            disableAP();
+
+            if (currentMode === 'BEGINNER') {
+                document.getElementById('calc-guide').style.display = 'block';
+                tutorialStep = 1; 
+            } else if (currentMode === 'STEERING') {
+                document.getElementById('corrector-section').style.display = 'none';
+                document.getElementById('map-section').style.display = 'flex';
+                document.getElementById('env-info').style.display = 'none';
+                document.getElementById('steady-timer').style.display = 'none';
+                document.getElementById('mag-box').style.display = 'none';
+                initMap();
+                setTimeout(resizeMap, 100);
+            }
+
+            document.getElementById('start-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; isRunning = true; requestAnimationFrame(loop); }, 500);
+        });
+
+        function getAngleDiff(a, b) {
+            let d = Math.abs((a - b) % 360);
+            if (d > 180) d = 360 - d;
+            return d;
+        }
+
+        // --- Deviation Curve Drawing Logic ---
+        function showDeviationCurve() {
+            const cvs = document.getElementById('curve-canvas');
+            const ctx = cvs.getContext('2d');
+            const w = cvs.width;
+            const h = cvs.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // Draw Grid
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // X-axis: -15 to +15
+            const maxDev = 15;
+            for(let dev = -15; dev <= 15; dev += 5) {
+                let x = w/2 + (dev / maxDev) * (w/2 - 40);
+                ctx.beginPath(); ctx.moveTo(x, 20); ctx.lineTo(x, h-20); ctx.stroke();
+                ctx.fillText(dev > 0 ? dev+'°E' : (dev < 0 ? Math.abs(dev)+'°W' : '0°'), x, 10);
+            }
+
+            // Y-axis: 0 to 360
+            ctx.textAlign = 'right';
+            for(let hdg = 0; hdg <= 360; hdg += 45) {
+                let y = 30 + (hdg / 360) * (h - 60);
+                ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w-40, y); ctx.stroke();
+                ctx.fillText(hdg.toString().padStart(3,'0')+'°', 35, y);
+            }
+            
+            // Center Line
+            ctx.strokeStyle = '#94a3b8';
+            ctx.beginPath(); ctx.moveTo(w/2, 20); ctx.lineTo(w/2, h-20); ctx.stroke();
+
+            // Calculate current net values
+            const curB = innateB + getMagnetSum('B');
+            const curC = innateC + getMagnetSum('C');
+            let sliderEl = document.getElementById('sphere-slider');
+            const curD = innateD + (sliderEl ? parseFloat(sliderEl.value) : 0);
+
+            // Initial uncorrected values
+            const beforeB = innateB;
+            const beforeC = innateC;
+            const beforeD = innateD;
+
+            function drawCurve(b, c, d, color, thickness) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = thickness;
+                ctx.beginPath();
+                for(let hdg = 0; hdg <= 360; hdg++) {
+                    let rad = hdg * Math.PI / 180;
+                    let dev = (b * Math.sin(rad)) + (c * Math.cos(rad)) + (d * Math.sin(2 * rad));
+                    let x = w/2 + (dev / maxDev) * (w/2 - 40);
+                    let y = 30 + (hdg / 360) * (h - 60);
+                    if (hdg === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw Before
+            drawCurve(beforeB, beforeC, beforeD, '#ef4444', 2);
+            // Draw After
+            drawCurve(curB, curC, curD, '#22c55e', 3);
+            
+            document.getElementById('curve-modal').style.display = 'flex';
+        }
+
+        // --- Tutorial State Machine ---
+        let tutorialStep = 0;
+        let currentTutorialStep = -1;
+        let tutorialTimer = 0;
+        
+        function clearHighlights() { 
+            document.querySelectorAll('.highlight-blink').forEach(el => el.classList.remove('highlight-blink')); 
+        }
+        function setCalcGuide(mag, trueH, gyroH) { 
+            let el = document.getElementById('calc-guide-text');
+            if(el) {
+                el.innerHTML = `목표 자침(Mag) <span style='font-size:1.1rem; color:#fff;'>${mag}°</span><br>진방위 = ${mag}° + 편차(6°W) = <span style='color:#fff;'>${trueH}°</span><br>목표 자이로 = ${trueH}° - 오차(1°E) = <span style='color:#fff;'>${gyroH}°</span>`;
+            }
+        }
+
+        function updateTutorial() {
+            let tooltip = document.getElementById('tutorial-tooltip');
+            if (!tooltip) return;
+
+            if (currentMode !== 'BEGINNER' || tutorialStep === 0) { 
+                if (currentTutorialStep !== 0) { 
+                    tooltip.style.opacity = '0'; 
+                    clearHighlights(); 
+                    currentTutorialStep = 0; 
+                }
+                return; 
+            }
+            
+            tooltip.style.opacity = '1';
+            tutorialTimer += (isFastForward ? 15 : 1);
+            
+            let stepChanged = (tutorialStep !== currentTutorialStep);
+            if (stepChanged) {
+                clearHighlights();
+
+                if (tutorialStep === 7 && !bErrorAdded) { innateB += 1.5; bErrorAdded = true; }
+                if (tutorialStep === 10 && !cErrorAdded) { innateC += 1.5; cErrorAdded = true; }
+                if (tutorialStep === 16 && !dErrorAdded) { innateD += 0.8; dErrorAdded = true; }
+
+                currentTutorialStep = tutorialStep;
+                tutorialTimer = 0;
+            }
+            
+            if (tutorialStep === 1) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('090', '084', '083');
+                    tooltip.innerHTML = "Autopilot으로 <b>083</b>을 세팅 후 SET을 누르거나<br>방향키로 <b>083°</b>를 조타하세요.";
+                }
+                if (getAngleDiff(heading, 83) < 2) { tutorialStep = 2; }
+            } else if (tutorialStep === 2) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 3; } 
+                else if (getAngleDiff(heading, 83) > 5) { tutorialStep = 1; }
+            } else if (tutorialStep === 3) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-b').classList.add('highlight-blink');
+                    tooltip.innerHTML = "B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>090.0°</b>가 되도록 맞추세요.";
+                }
+                if (tutorialTimer >= 400 && tutorialTimer < 420) {
+                    tooltip.innerHTML = "B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>090.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째와 세 번째 슬롯을 두 번씩 클릭해 Red가 아래로 가게 하세요)</span>";
+                }
+                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 90) <= 0.3) { tutorialStep = 4; } 
+                else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 2; }
+            } else if (tutorialStep === 4) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('180', '174', '173');
+                    tooltip.innerHTML = "훌륭합니다! 다음은 C자석입니다.<br>Gyro Heading을 <b>173°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 173) < 2) { tutorialStep = 5; }
+            } else if (tutorialStep === 5) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 6; } 
+                else if (getAngleDiff(heading, 173) > 5) { tutorialStep = 4; }
+            } else if (tutorialStep === 6) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-c').classList.add('highlight-blink');
+                    tooltip.innerHTML = "C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>180.0°</b>가 되도록 맞추세요.";
+                }
+                if (tutorialTimer >= 400 && tutorialTimer < 420) {
+                    tooltip.innerHTML = "C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>180.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째 슬롯을 한 번 클릭해 Red가 오른쪽으로 가게 하세요)</span>";
+                }
+                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 180) <= 0.3) { tutorialStep = 7; } 
+                else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 5; }
+            } else if (tutorialStep === 7) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('270', '264', '263');
+                    tooltip.innerHTML = "완벽합니다! 이제 반대 방위 오차를 반감(Halving)합니다.<br>Gyro Heading을 <b>263°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 263) < 2) { tutorialStep = 8; }
+            } else if (tutorialStep === 8) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 9; } 
+                else if (getAngleDiff(heading, 263) > 5) { tutorialStep = 7; }
+            } else if (tutorialStep === 9) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-b').classList.add('highlight-blink');
+                    tooltip.innerHTML = "270도에 도달했습니다. 발생한 자차 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>353°</b>(000도)를 향해 배를 돌리세요)</span>";
+                }
+                if (getAngleDiff(heading, 263) > 8) { tutorialStep = 10; }
+            } else if (tutorialStep === 10) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('000', '354', '353');
+                    tooltip.innerHTML = "배를 회전하는군요! 000도 자차 수정을 위해<br>Gyro Heading을 <b>353°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 353) < 2) { tutorialStep = 11; }
+            } else if (tutorialStep === 11) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 12; } 
+                else if (getAngleDiff(heading, 353) > 5) { tutorialStep = 10; }
+            } else if (tutorialStep === 12) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-c').classList.add('highlight-blink');
+                    tooltip.innerHTML = "000도에 도달했습니다. C자석의 잔여 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 <b>038°</b>(045도)를 향해 배를 돌리세요)</span>";
+                }
+                if (getAngleDiff(heading, 353) > 8) { tutorialStep = 13; }
+            } else if (tutorialStep === 13) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('045', '039', '038');
+                    tooltip.innerHTML = "연철구(D) 수정을 위해<br>Gyro Heading을 <b>038°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 38) < 2) { tutorialStep = 14; }
+            } else if (tutorialStep === 14) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 15; } 
+                else if (getAngleDiff(heading, 38) > 5) { tutorialStep = 13; }
+            } else if (tutorialStep === 15) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-d').classList.add('highlight-blink');
+                    tooltip.innerHTML = "연철구 슬라이더를 조작하여 자침(Magnetic)이 <b>045.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 슬라이더를 좌우로 움직여 정확히 045.0°를 만드세요)</span>";
+                }
+                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 45) <= 0.3) { tutorialStep = 16; }
+                else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 14; }
+            } else if (tutorialStep === 16) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('135', '129', '128');
+                    tooltip.innerHTML = "좋습니다! 마지막 반감 확인입니다.<br>Gyro Heading을 <b>128°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 128) < 2) { tutorialStep = 17; }
+            } else if (tutorialStep === 17) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 18; } 
+                else if (getAngleDiff(heading, 128) > 5) { tutorialStep = 16; }
+            } else if (tutorialStep === 18) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-d').classList.add('highlight-blink');
+                    tooltip.innerHTML = "135도에 도달했습니다. 연철구의 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>218°</b>(225도)를 향해 배를 돌리세요)</span>";
+                }
+                if (getAngleDiff(heading, 128) > 8) { tutorialStep = 19; }
+            } else if (tutorialStep === 19) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('225', '219', '218');
+                    tooltip.innerHTML = "8점 방위의 6번째, 225도(SW)를 확인합니다.<br>Gyro Heading을 <b>218°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 218) < 2) { tutorialStep = 20; }
+            } else if (tutorialStep === 20) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 21; } 
+                else if (getAngleDiff(heading, 218) > 5) { tutorialStep = 19; }
+            } else if (tutorialStep === 21) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-d').classList.add('highlight-blink');
+                    tooltip.innerHTML = "225도(SW)에 도달했습니다. 잔여 오차를 확인하고 필요시 미세조정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(확인 후 <b>308°</b>(315도)를 향해 배를 돌리세요)</span>";
+                }
+                if (getAngleDiff(heading, 218) > 8) { tutorialStep = 22; }
+            } else if (tutorialStep === 22) {
+                if (stepChanged) {
+                    document.getElementById('rudder-control-area').classList.add('highlight-blink');
+                    setCalcGuide('315', '309', '308');
+                    tooltip.innerHTML = "마지막 8점 방위, 315도(NW)입니다.<br>Gyro Heading을 <b>308°</b>로 조타하세요.";
+                }
+                if (getAngleDiff(heading, 308) < 2) { tutorialStep = 23; }
+            } else if (tutorialStep === 23) {
+                if (stepChanged) {
+                    document.getElementById('steady-timer').classList.add('highlight-blink');
+                    tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
+                }
+                if (steadyTime >= STEADY_TARGET) { tutorialStep = 24; } 
+                else if (getAngleDiff(heading, 308) > 5) { tutorialStep = 22; }
+            } else if (tutorialStep === 24) {
+                if (stepChanged) {
+                    document.getElementById('guide-box-d').classList.add('highlight-blink');
+                    tooltip.innerHTML = "315도(NW)에 도달했습니다. 모든 방위의 수정이 완료되었습니다.<br><span style='color:#fcd34d; font-size:0.85rem;'>(마무리를 위해 배를 아무 방향으로나 돌려보세요)</span>";
+                }
+                if (getAngleDiff(heading, 308) > 8) { tutorialStep = 25; }
+            } else if (tutorialStep === 25) {
+                if (stepChanged) {
+                    clearHighlights();
+                    tooltip.innerHTML = "8점 방위 자차 수정(8-point Adjustment) 튜토리얼을<br>모두 성공적으로 완료하셨습니다!";
+                    showDeviationCurve();
+                    setTimeout(() => { tutorialStep = 0; }, 6000);
+                }
+            }
+        }
+
+        // --- Render Steering Map ---
+        function renderMap() {
+            mapCtx.fillStyle = '#020617';
+            mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+            
+            mapCtx.save();
+            mapCtx.translate(mapCanvas.width/2, mapCanvas.height/2);
+            let scale = 0.2; 
+            mapCtx.scale(scale, scale);
+            mapCtx.translate(-shipX, -shipY);
+
+            // Draw Grid
+            mapCtx.strokeStyle = '#1e293b';
+            mapCtx.lineWidth = 1 / scale;
+            let startX = Math.floor((shipX - mapCanvas.width/2/scale)/1000)*1000;
+            let startY = Math.floor((shipY - mapCanvas.height/2/scale)/1000)*1000;
+            for(let i=-3; i<=3; i++) {
+                mapCtx.beginPath(); mapCtx.moveTo(startX + i*1000, shipY - 5000); mapCtx.lineTo(startX + i*1000, shipY + 5000); mapCtx.stroke();
+                mapCtx.beginPath(); mapCtx.moveTo(shipX - 5000, startY + i*1000); mapCtx.lineTo(shipX + 5000, startY + i*1000); mapCtx.stroke();
+            }
+
+            // Draw Wake (Track)
+            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            mapCtx.lineWidth = 3 / scale;
+            mapCtx.beginPath();
+            if (shipTrack.length > 0) {
+                mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
+                for (let i=1; i<shipTrack.length; i++) {
+                    mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y);
+                }
+                mapCtx.stroke();
+            }
+
+            // Draw Route & Course Texts
+            mapCtx.strokeStyle = '#fcd34d';
+            mapCtx.lineWidth = 4 / scale;
+            mapCtx.beginPath();
+            let startWpIdx = Math.max(0, activeIdx);
+            mapCtx.moveTo(wps[startWpIdx].x, wps[startWpIdx].y);
+            for(let i=startWpIdx + 1; i<wps.length; i++) mapCtx.lineTo(wps[i].x, wps[i].y);
+            mapCtx.stroke();
+            
+            for(let i=1; i<wps.length; i++) {
+                let dx = wps[i].x - wps[i-1].x;
+                let dy = wps[i].y - wps[i-1].y;
+                let ang = Math.atan2(dx, -dy) * 180 / Math.PI;
+                if(ang < 0) ang += 360;
+                
+                let midX = (wps[i].x + wps[i-1].x) / 2;
+                let midY = (wps[i].y + wps[i-1].y) / 2;
+                
+                mapCtx.save();
+                mapCtx.translate(midX, midY);
+                mapCtx.rotate(ang * Math.PI / 180);
+                mapCtx.fillStyle = '#fcd34d';
+                mapCtx.font = "bold 80px Arial";
+                mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", -40, -20);
+                mapCtx.restore();
+            }
+
+            // Draw Ship
+            mapCtx.translate(shipX, shipY);
+            mapCtx.rotate(heading * Math.PI / 180);
+            mapCtx.fillStyle = '#ef4444';
+            mapCtx.beginPath();
+            mapCtx.moveTo(0, -100); 
+            mapCtx.lineTo(30, -50);
+            mapCtx.lineTo(30, 100);
+            mapCtx.lineTo(-30, 100);
+            mapCtx.lineTo(-30, -50);
+            mapCtx.closePath();
+            mapCtx.fill();
+            mapCtx.strokeStyle = '#fff';
+            mapCtx.lineWidth = 2 / scale;
+            mapCtx.stroke();
+
+            mapCtx.restore();
+
+            // Advance WP logic & XTD
+            let p1 = wps[activeIdx];
+            let p2 = wps[activeIdx+1];
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let len = Math.sqrt(dx*dx + dy*dy);
+            
+            let xtd = 0;
+            if(len > 0) {
+                xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len;
+            }
+            
+            let dot = (shipX - p2.x) * dx + (shipY - p2.y) * dy;
+            if (dot >= 0) { 
+                activeIdx++;
+                if (activeIdx >= wps.length - 2) generateNextWP();
+            }
+            updateTextDOM('map-xtd', xtd.toFixed(1));
+        }
+
+        function loop() {
+            if (!isRunning) return;
+
+            let simSteps = (isFastForward && apEnabled) ? 15 : 1;
+
+            for (let step = 0; step < simSteps; step++) {
+                // 1. AP Logic
+                if (apEnabled) {
+                    let err = (apTarget - heading) % 360;
+                    if (err > 180) err -= 360;
+                    if (err < -180) err += 360;
+
+                    let Kp_ap = 6.5; 
+                    let Kd_ap = 2.5; 
+                    let desired_rudder = (err * Kp_ap) - (rot * Kd_ap);
+                    desired_rudder = Math.max(-35, Math.min(35, desired_rudder));
+                    orderRudder = desired_rudder;
+                }
+
+                // 2. Rudder Actuation
+                if (actualRudder !== orderRudder) {
+                    let diff = orderRudder - actualRudder;
+                    let rStep = rudderSpeed * dt; 
+                    if (Math.abs(diff) <= rStep) actualRudder = orderRudder;
+                    else actualRudder += Math.sign(diff) * rStep;
+                }
+
+                // 3. Physics & Disturbance
+                let disturbance = 0;
+                let effLevel = 0; 
+                if (currentMode === 'STEERING') {
+                    effLevel = mapDistLevel;
+                } else if (currentMode === 'EXPERT') {
+                    effLevel = 1; 
+                }
+                if (effLevel > 0) {
+                    let drift = Math.sin(Date.now() * 0.0005) * 1.5 * effLevel;
+                    let gust = (Math.random() - 0.5) * 3.0 * effLevel;
+                    disturbance = (drift + gust) * dt; 
+                }
+
+                const targetRot = K * actualRudder;
+                const rotDerivative = (targetRot - rot) / T; 
+                
+                rot += (rotDerivative * dt) + disturbance; 
+                heading = (heading + (rot / 60.0) * dt) % 360; 
+                if (heading < 0) heading += 360;
+
+                // 4. Map Updates (Steering Mode)
+                if (currentMode === 'STEERING') {
+                    let speedMs = shipSpeed * 0.514444; 
+                    shipX += speedMs * Math.sin(heading * Math.PI / 180) * dt;
+                    shipY -= speedMs * Math.cos(heading * Math.PI / 180) * dt;
+                    
+                    if (shipTrack.length === 0 || Math.hypot(shipX - shipTrack[shipTrack.length-1].x, shipY - shipTrack[shipTrack.length-1].y) > 20) {
+                        shipTrack.push({x: shipX, y: shipY});
+                        if (shipTrack.length > 300) shipTrack.shift(); 
+                    }
+                } else {
+                    // 5. Compass Tutorial Mode Updates
+                    let errAp = (apTarget - heading) % 360;
+                    if (errAp > 180) errAp -= 360;
+                    if (errAp < -180) errAp += 360;
+                    
+                    let MathAbsRot = Math.abs(rot);
+                    if (MathAbsRot < 2.0 && actualRudder === 0 && !apEnabled) {
+                        steadyTime = Math.min(steadyTime + 1, STEADY_TARGET);
+                    } else if (MathAbsRot < 2.0 && Math.abs(errAp) < 1.0 && apEnabled) {
+                        steadyTime = Math.min(steadyTime + 1, STEADY_TARGET);
+                    } else {
+                        steadyTime = Math.max(steadyTime - 2, 0);
+                    }
+                    
+                    const trueHeading = heading + 1.0; 
+                    const radH = heading * Math.PI / 180;
+                    const netB = innateB + getMagnetSum('B');
+                    const netC = innateC + getMagnetSum('C');
+                    
+                    let sliderEl = document.getElementById('sphere-slider');
+                    const netD = innateD + (sliderEl ? parseFloat(sliderEl.value) : 0);
+                    
+                    const deviation = (netB * Math.sin(radH)) + (netC * Math.cos(radH)) + (netD * Math.sin(2 * radH));
+                    
+                    magHeadingOut = (trueHeading - (-6.0) + deviation) % 360;
+                    if (magHeadingOut < 0) magHeadingOut += 360;
+                }
+            }
+
+            // --- Render UI (Once per frame to avoid DOM Thrashing) ---
+            let fmtOrd = formatRudder(orderRudder);
+            updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
+            let fmtAct = formatRudder(actualRudder);
+            updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
+
+            updateTextDOM('heading-val', heading.toFixed(1).padStart(5, '0') + '°');
+            updateTextDOM('rot-val', rot.toFixed(1));
+
+            if (currentMode === 'STEERING') {
+                renderMap();
+                canvas.style.transform = `rotate(${-heading}deg)`; 
+            } else {
+                const steadyProg = document.getElementById('steady-prog');
+                if (steadyProg) steadyProg.value = (steadyTime / STEADY_TARGET) * 100;
+                
+                if (steadyTime >= STEADY_TARGET) { 
+                    updateTextDOM('steady-status', "Steady (수정가능)", "#22c55e");
+                } else { 
+                    updateTextDOM('steady-status', "Turning...", "#ef4444"); 
+                }
+
+                updateTextDOM('mag-val', magHeadingOut.toFixed(1).padStart(5, '0') + '°');
+                canvas.style.transform = `rotate(${-magHeadingOut}deg)`;
+                
+                updateTutorial();
+            }
+
+            requestAnimationFrame(loop);
+        }
+    </script>
+</body>
+</html>
