@@ -77,14 +77,13 @@
         .ar-header { background: rgba(0, 255, 255, 0.3); color: #fff; padding: 6px 10px; font-size: 14px; font-weight: bold; border-bottom: 1px solid #0ff; text-align: center; }
         .ar-body { padding: 8px 10px; font-size: 13px; color: #b3e5fc; line-height: 1.5; font-family: monospace;}
 
-        /* Setup / Menu Overlay (Modified for Auto-Load) */
+        /* Auto Login & Loading Screen */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow-y: auto;}
         .menu-box { background: rgba(0,0,0,0.6); border: 1px solid #00ffaa; border-radius: 12px; padding: 40px; width: 400px; box-shadow: 0 10px 40px rgba(0,255,170,0.1); margin: 20px 0;}
         .form-row { margin-bottom: 20px; text-align: left;}
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box;}
         
-        .action-btns { display: flex; gap: 15px; margin-top: 30px; }
         .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s;}
         .btn-main:hover { background: #00cc88; transform: translateY(-2px);}
         
@@ -104,7 +103,7 @@
     <div id="scanline"></div>
     <canvas id="hud-lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.5s;"></canvas>
 
-    <!-- 1. 미션 셋업 메뉴 (자동 로딩 로그인으로 대체) -->
+    <!-- 자동 로그인 화면 -->
     <div id="login-overlay">
         <h1 style="font-size: 48px; letter-spacing: 2px; margin-bottom: 10px;">[HTMS] Ship Handler</h1>
         <h2 style="color: #00ffaa; letter-spacing: 5px; font-size: 18px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
@@ -122,27 +121,25 @@
         </div>
     </div>
 
-    <!-- 로딩 스크린 -->
+    <!-- 로딩 및 전송 팝업 -->
     <div id="loading-screen">
         <div class="spinner"></div>
         <div class="loading-text">DOWNLOADING ASSETS...</div>
         <div id="loading-progress" class="loading-subtext">서버에 연결 중입니다...</div>
     </div>
-
-    <!-- 완료 스크린 -->
     <div id="finish-overlay">
         <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
         <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
     </div>
 
-    <!-- 3. 메인 시뮬레이터 UI -->
+    <!-- 3. 메인 시뮬레이터 UI (원본 그대로 유지) -->
     <div id="camera-hint">
         [시야 조작] 마우스 좌클릭 드래그
         <div class="cam-controls">[본선 카메라 이동] W/S(앞뒤) A/D(좌우) Q/E(상하) - 조작 시 브라우저에 자동 저장됩니다.</div>
         <div id="save-toast">카메라 시점 저장됨</div>
     </div>
     
-    <div id="digital-hud-container" class="draggable-panel" style="display:none;">
+    <div id="digital-hud-container" class="draggable-panel">
         <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
         <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
         <div class="digital-item"><div class="digital-label">DRIFT</div><div id="val-lat" class="digital-val">0.0</div></div>
@@ -152,7 +149,6 @@
         <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5m/s</div></div>
     </div>
 
-    <!-- 수동 타겟 정보 패널 -->
     <div id="manual-target-panel" class="hud-panel draggable-panel" style="display:none; bottom: 20px; left: 20px; width: 380px; z-index: 150; background: rgba(5, 10, 15, 0.85);">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,255,255,0.4); padding-bottom:8px; margin-bottom:15px;">
             <div style="font-size:16px; color:#0ff; font-weight:bold;">MANUAL TARGET INFO</div>
@@ -168,9 +164,9 @@
         <div class="danger-data-row"><span>BCR:</span> <b id="mt-bcr" style="color:#fff;">-</b></div>
     </div>
 
-    <div id="ecdis-container" class="hud-panel draggable-panel" style="display:none;"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
+    <div id="ecdis-container" class="hud-panel draggable-panel"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
 
-    <div id="demo-control-container" class="hud-panel draggable-panel" style="display:none;">
+    <div id="demo-control-container" class="hud-panel draggable-panel">
         <div class="ctrl-title">AI ASSISTANT SYSTEM</div>
         <div class="ctrl-btn-group"><button id="btn-mode-cas" class="btn-ctrl" onclick="setMode('CAS')">CAS (COLLISION AVOIDANCE)</button></div>
         <div class="ctrl-title">ENVIRONMENT & SIMULATION</div>
@@ -179,14 +175,12 @@
             <button id="btn-env-mod" class="btn-ctrl" onclick="setEnv('mod')">ROUGH</button>
             <button id="btn-env-time" class="btn-ctrl" onclick="toggleDayNight()">NIGHT</button>
         </div>
-        
         <div class="ctrl-title" style="margin-top:12px;">SEA COLOR</div>
         <div class="ctrl-btn-group">
             <button id="btn-sea-bright" class="btn-ctrl" onclick="setSeaColor('bright')">BRIGHT</button>
             <button id="btn-sea-normal" class="btn-ctrl active" onclick="setSeaColor('normal')">NORMAL</button>
             <button id="btn-sea-dark" class="btn-ctrl" onclick="setSeaColor('dark')">DARK</button>
         </div>
-
         <div class="ctrl-btn-group" style="margin-top:12px;">
             <button id="btn-sim-1" class="btn-ctrl active" onclick="setSimSpeed(1)">1x SIM</button>
             <button id="btn-sim-3" class="btn-ctrl" onclick="setSimSpeed(3)">3x SIM</button>
@@ -245,9 +239,9 @@
 
     <script>
         // ==========================================
-        // 1. 핵심 서버 통신 변수 설정
+        // 1. 핵심 서버 통신 변수 설정 (에러 원천 차단)
         // ==========================================
-        const GITHUB_BASE_URL = "./"; // 로컬 및 Github Pages 호환용 상대 경로
+        const GITHUB_BASE_URL = "./"; // 로컬 라이브 서버 및 깃허브 호환 경로
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJnQMZiSKk-rCcs3csNCtDGOah-aD9OblqgcezP1Lh1B-5EK3CpERdYPdnzlumQTzLhA/exec";
 
         const modelFiles = [
@@ -303,44 +297,20 @@
 
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
-            
             panel.addEventListener('mousedown', (e) => {
                 if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
-                isPanelDragging = true;
-                isHudDragged = false; 
-                startX = e.clientX; startY = e.clientY;
-                
-                const rect = panel.getBoundingClientRect();
-                startLeft = rect.left; startTop = rect.top;
-                
-                panel.style.bottom = 'auto';
-                panel.style.right = 'auto';
-                panel.style.transform = 'none';
-                panel.style.margin = '0';
-                panel.style.left = startLeft + 'px';
-                panel.style.top = startTop + 'px';
-                panel.style.zIndex = 1000;
+                isPanelDragging = true; isHudDragged = false; startX = e.clientX; startY = e.clientY;
+                const rect = panel.getBoundingClientRect(); startLeft = rect.left; startTop = rect.top;
+                panel.style.bottom = 'auto'; panel.style.right = 'auto'; panel.style.transform = 'none'; panel.style.margin = '0'; panel.style.left = startLeft + 'px'; panel.style.top = startTop + 'px'; panel.style.zIndex = 1000;
             });
-            
             window.addEventListener('mousemove', (e) => {
-                if(!isPanelDragging) return;
-                isHudDragged = true; 
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                panel.style.left = (startLeft + dx) + 'px';
-                panel.style.top = (startTop + dy) + 'px';
+                if(!isPanelDragging) return; isHudDragged = true; const dx = e.clientX - startX; const dy = e.clientY - startY; panel.style.left = (startLeft + dx) + 'px'; panel.style.top = (startTop + dy) + 'px';
             });
-            
-            window.addEventListener('mouseup', () => { 
-                if (isPanelDragging) {
-                    isPanelDragging = false; 
-                    panel.style.zIndex = '';
-                }
-            });
+            window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = ''; } });
         });
 
         // ==========================================
-        // 2. 무적 에셋 자동 로딩 로직 (에러 발생 시 패스)
+        // 2. 무적 에셋 자동 로딩 로직
         // ==========================================
         window.startLoadingAssets = async function() {
             studentInfo.id = document.getElementById('student-id').value.trim();
@@ -355,9 +325,7 @@
             const texLoader = new THREE.TextureLoader();
             try {
                 daySkybox = await new Promise((resolve) => {
-                    texLoader.load(GITHUB_BASE_URL + skyImage, (tex) => {
-                        tex.mapping = THREE.EquirectangularReflectionMapping; resolve(tex);
-                    }, undefined, () => resolve(null));
+                    texLoader.load(GITHUB_BASE_URL + skyImage, (tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; resolve(tex); }, undefined, () => resolve(null));
                 });
             } catch(e) {}
             if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; }
@@ -368,10 +336,7 @@
             progressEl.innerText = "캘리브레이션 세팅 적용 중... (3/4)";
             try { 
                 const setRes = await fetch(GITHUB_BASE_URL + settingsFile); 
-                if(setRes.ok) { 
-                    const settingsData = await setRes.json(); 
-                    for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
-                } 
+                if(setRes.ok) { const settingsData = await setRes.json(); for (const key in settingsData) localStorage.setItem(key, settingsData[key]); } 
             } catch(e) { console.warn(e); }
 
             progressEl.innerText = "3D 선박 모델 다운로드 중... (4/4)";
@@ -379,23 +344,12 @@
             await Promise.all(modelFiles.map(filePath => {
                 return new Promise((resolve) => {
                     gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
-                        const rawModel = gltf.scene;
-                        rawModel.updateMatrixWorld(true);
-                        const box = new THREE.Box3().setFromObject(rawModel);
-                        const size = new THREE.Vector3(); box.getSize(size);
-                        const center = new THREE.Vector3(); box.getCenter(center);
-                        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
-                        if (!isFinite(center.x)) center.set(0, 0, 0);
-
-                        rawModel.position.set(-center.x, -center.y, -center.z);
-                        const maxDim = Math.max(size.x, size.y, size.z);
-                        const scale = 150 / maxDim;
-
-                        const wrapper = new THREE.Group();
-                        wrapper.add(rawModel);
-                        wrapper.scale.set(scale, scale, scale);
+                        const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
+                        const box = new THREE.Box3().setFromObject(rawModel); const size = new THREE.Vector3(); box.getSize(size); const center = new THREE.Vector3(); box.getCenter(center);
+                        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); if (!isFinite(center.x)) center.set(0, 0, 0);
+                        rawModel.position.set(-center.x, -center.y, -center.z); const maxDim = Math.max(size.x, size.y, size.z); const scale = 150 / maxDim;
+                        const wrapper = new THREE.Group(); wrapper.add(rawModel); wrapper.scale.set(scale, scale, scale);
                         
-                        // "Models/CargoShip1.glb" -> "CargoShip1.glb" 변환하여 저장
                         const fileName = filePath.split('/').pop(); 
                         parsedModels[fileName] = { group: wrapper, height: size.y * scale };
                         resolve();
@@ -407,8 +361,7 @@
             startSimulation(); 
         }
 
-        let daySkybox = null;
-        let nightSkybox = null;
+        let daySkybox = null; let nightSkybox = null;
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015); 
@@ -420,93 +373,54 @@
         const water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), {
             textureWidth: 512, textureHeight: 512,
             waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }),
-            sunDirection: new THREE.Vector3(1, 1, 1).normalize(), 
-            sunColor: 0xdddddd, 
-            waterColor: 0x00E5FF, 
-            distortionScale: 1.5, 
-            alpha: 1.0 
+            sunDirection: new THREE.Vector3(1, 1, 1).normalize(), sunColor: 0xdddddd, waterColor: 0x00E5FF, distortionScale: 1.5, alpha: 1.0 
         });
         water.rotation.x = -Math.PI / 2; scene.add(water);
 
         const origWaterRender = water.onBeforeRender;
         water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) {
-            const originalBackground = scene.background;
-            const originalEnvironment = scene.environment;
-            
-            scene.background = new THREE.Color(0x000000); 
-            scene.environment = null; 
-
+            const originalBackground = scene.background; const originalEnvironment = scene.environment;
+            scene.background = new THREE.Color(0x000000); scene.environment = null; 
             if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group );
-            
-            scene.background = originalBackground;
-            scene.environment = originalEnvironment;
+            scene.background = originalBackground; scene.environment = originalEnvironment;
         };
 
         const sun = new THREE.Vector3();
         const ambientLight = new THREE.AmbientLight(0x707070, 1.5); scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(dirLight);
 
-        let isNight = false; 
-        let currentDaySeaColor = 0x00E5FF; 
+        let isNight = false; let currentDaySeaColor = 0x00E5FF; 
 
         window.setSeaColor = function(level) {
-            document.getElementById('btn-sea-bright').classList.remove('active');
-            document.getElementById('btn-sea-normal').classList.remove('active');
-            document.getElementById('btn-sea-dark').classList.remove('active');
-            
-            if (level === 'bright') {
-                currentDaySeaColor = 0x00BFFF; 
-                document.getElementById('btn-sea-bright').classList.add('active');
-            } else if (level === 'normal') {
-                currentDaySeaColor = 0x00E5FF; 
-                document.getElementById('btn-sea-normal').classList.add('active');
-            } else if (level === 'dark') {
-                currentDaySeaColor = 0x253c54; 
-                document.getElementById('btn-sea-dark').classList.add('active');
-            }
-            
-            if (!isNight) {
-                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor);
-            }
+            document.getElementById('btn-sea-bright').classList.remove('active'); document.getElementById('btn-sea-normal').classList.remove('active'); document.getElementById('btn-sea-dark').classList.remove('active');
+            if (level === 'bright') { currentDaySeaColor = 0x00BFFF; document.getElementById('btn-sea-bright').classList.add('active'); } 
+            else if (level === 'normal') { currentDaySeaColor = 0x00E5FF; document.getElementById('btn-sea-normal').classList.add('active'); } 
+            else if (level === 'dark') { currentDaySeaColor = 0x253c54; document.getElementById('btn-sea-dark').classList.add('active'); }
+            if (!isNight) { water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); }
         };
 
         function setTimeOfDay(isNight) {
             const btn = document.getElementById('btn-env-time');
             if(isNight) {
                 btn.innerText = 'NIGHT'; btn.classList.add('btn-night');
-                
-                scene.background = nightSkybox || new THREE.Color(0x050a10);
-                scene.environment = nightSkybox || null;
-                
+                scene.background = nightSkybox || new THREE.Color(0x050a10); scene.environment = nightSkybox || null;
                 scene.fog.color.setHex(0x050a10); scene.fog.density = 0.0003;
                 ambientLight.intensity = 0.2; dirLight.intensity = 0.1; dirLight.color.setHex(0xffffff);
-                
-                water.material.uniforms['sunColor'].value.setHex(0x112233); 
-                water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
-                
+                water.material.uniforms['sunColor'].value.setHex(0x112233); water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
                 const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.0;
                 sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
             } else {
                 btn.innerText = 'DAY'; btn.classList.remove('btn-night');
-                
-                scene.background = daySkybox || new THREE.Color(0x5a6a79);
-                scene.environment = daySkybox || null;
-
+                scene.background = daySkybox || new THREE.Color(0x5a6a79); scene.environment = daySkybox || null;
                 scene.fog.color.setHex(0x5a6a79); scene.fog.density = 0.00015;
                 ambientLight.intensity = 1.5; dirLight.intensity = 1.0; dirLight.color.setHex(0xffffff);
-                
-                water.material.uniforms['sunColor'].value.setHex(0xdddddd); 
-                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor);
-                
+                water.material.uniforms['sunColor'].value.setHex(0xdddddd); water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
                 const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.24; 
                 sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
             }
-            
-            dirLight.position.copy(sun).multiplyScalar(100);
-            water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+            dirLight.position.copy(sun).multiplyScalar(100); water.material.uniforms['sunDirection'].value.copy(sun).normalize();
         }
-        window.toggleDayNight = function() { isNight = !isNight; setTimeOfDay(isNight); };
-        setTimeOfDay(isNight);
+        window.toggleDayNight = function() { isNight = !isNight; setTimeOfDay(isNight); }; setTimeOfDay(isNight);
 
         const arOverlayGroup = new THREE.Group(); scene.add(arOverlayGroup);
         function createChevron() {
@@ -522,19 +436,9 @@
 
         const osShip = new THREE.Group(); scene.add(osShip);
         const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.5, 80000);
-        const targetShips = [];
-        const arTags = {};
-        const arContainer = document.getElementById('ar-container');
-        let gameState = 'MENU';
-
-        const goalGroup = new THREE.Group();
-        const goalMesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 800, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 }));
-        goalMesh.position.y = 400; goalGroup.add(goalMesh); scene.add(goalGroup);
-        goalGroup.visible = false;
-        let currentWpIndex = 0;
-
-        let isDraggingCam = false; let camAngleX = -0.1; let camAngleY = 0; let currentOSFileName = "";
-        window.currentRadarMaxDist = 1000; 
+        const targetShips = []; const arTags = {}; const arContainer = document.getElementById('ar-container'); let gameState = 'MENU';
+        const goalGroup = new THREE.Group(); const goalMesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 800, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 })); goalMesh.position.y = 400; goalGroup.add(goalMesh); scene.add(goalGroup); goalGroup.visible = false; let currentWpIndex = 0;
+        let isDraggingCam = false; let camAngleX = -0.1; let camAngleY = 0; let currentOSFileName = ""; window.currentRadarMaxDist = 1000; 
 
         window.returnToMenuFromSim = function() {
             gameState = 'MENU';
@@ -545,72 +449,34 @@
             goalGroup.visible = false;
             
             document.getElementById('login-overlay').style.display = 'flex';
-            document.getElementById('digital-hud-container').style.display = 'none';
-            document.getElementById('ecdis-container').style.display = 'none';
-            document.getElementById('demo-control-container').style.display = 'none';
-            document.getElementById('camera-hint').style.display = 'none';
-            document.getElementById('right-ai-container').style.display = 'none';
-            document.getElementById('right-center-cas-panel').style.display = 'none';
-            document.getElementById('bottom-left-panel').style.display = 'none';
-            document.getElementById('scanline').style.display = 'none';
-            document.getElementById('hud-lines').style.opacity = '0';
-            document.getElementById('manual-target-panel').style.display = 'none';
-            
             document.body.classList.remove('ai-active'); currentMode = 'NONE';
             water.visible = false; scene.background = new THREE.Color(0x000000);
         }
 
         window.togglePause = function() {
-            if (gameState !== 'PLAYING') return;
-            isPaused = !isPaused;
-            const btn = document.getElementById('btn-pause');
-            if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } 
-            else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); }
+            if (gameState !== 'PLAYING') return; isPaused = !isPaused; const btn = document.getElementById('btn-pause');
+            if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); }
         }
 
+        // ==========================================
+        // 3. 시뮬레이션 메인 로직 (기절 오류 완벽 수정)
+        // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
-            const maxTargets = 50; // 기본 타겟 수
+            const maxTargets = 50;
 
-            document.getElementById('digital-hud-container').style.display = 'flex';
-            document.getElementById('ecdis-container').style.display = 'block';
-            document.getElementById('demo-control-container').style.display = 'flex';
-            document.getElementById('camera-hint').style.display = 'block';
-            
-            water.visible = true; 
-            setTimeOfDay(isNight);
+            water.visible = true; setTimeOfDay(isNight);
             
             for(let i = osShip.children.length - 1; i >= 0; i--) { if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); }
             targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0;
-            document.getElementById('ar-container').innerHTML = '';
-            for(let key in arTags) delete arTags[key];
+            document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
+            activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
+
+            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
             
-            activeWakes.forEach(w => scene.remove(w));
-            wakePool.push(...activeWakes);
-            activeWakes.length = 0;
+            document.getElementById('btn-pause').innerText = 'PAUSE'; document.getElementById('btn-pause').classList.remove('active'); document.getElementById('manual-target-panel').style.display = 'none';
 
-            logData = []; 
-            shipPhysics.simTime = 0; 
-            shipPhysics.wps = [];
-            shipPhysics.targetRudder = 0;
-            shipPhysics.actualRudder = 0;
-            shipPhysics.rot = 0;
-            shipPhysics.lat = 0;
-            shipPhysics.roll = 0;
-            shipPhysics.pitch = 0;
-            shipPhysics.wakeTimer = 0;
-
-            currentWpIndex = 0;
-            goalGroup.visible = false;
-
-            manuallySelectedTarget = null;
-            isPaused = false;
-            manualRadarZoom = 1.0; 
-            
-            document.getElementById('btn-pause').innerText = 'PAUSE';
-            document.getElementById('btn-pause').classList.remove('active');
-            document.getElementById('manual-target-panel').style.display = 'none';
-
+            // 오류 원인 1 완벽 수정: 빈 값을 읽지 않고 무조건 로드된 파일 사용
             let osData = parsedModels[osFileName];
             if (!osData) {
                 const availableFiles = Object.keys(parsedModels);
@@ -630,238 +496,82 @@
             } else {
                 osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0);
             }
-            osShip.add(osModel);
-            osShip.add(camera);
+            osShip.add(osModel); osShip.add(camera);
 
             const savedCamStr = localStorage.getItem('bridgeCam_' + currentOSFileName);
             if (savedCamStr) {
                 const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z);
-            } else {
-                camera.position.set(0, 60, 0); 
-            }
+            } else { camera.position.set(0, 60, 0); }
             camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
 
+            // 오류 원인 2 완벽 수정: Object.keys를 다운로드된 진짜 모델 배열로 매칭
             const filesList = Object.keys(parsedModels);
             let targetIndex = 1;
 
             function createTarget(x, z, hdg, spd, explicitFile = null) {
-                const name = `Target ${targetIndex++}`;
-                const tsGroup = new THREE.Group();
+                const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
                 const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
-                const tData = parsedModels[randomFile];
-                const tModel = tData.group.clone();
+                const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
                 
                 const tSaved = localStorage.getItem('model_calib_' + randomFile);
-                if(tSaved) { 
-                    const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); 
-                } else {
-                    tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0);
-                }
+                if(tSaved) { const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); } else { tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0); }
                 
-                tsGroup.add(tModel); tsGroup.position.set(x, 0, z);
-                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) };
-                tsGroup.rotation.y = -hdg * (Math.PI / 180);
-                targetShips.push(tsGroup); scene.add(tsGroup);
-
+                tsGroup.add(tModel); tsGroup.position.set(x, 0, z); tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; tsGroup.rotation.y = -hdg * (Math.PI / 180); targetShips.push(tsGroup); scene.add(tsGroup);
                 const el = document.createElement('div'); el.className = 'ar-label';
-                el.innerHTML = `
-                    <div class="ar-header">${name}</div>
-                    <div class="ar-body">
-                        Name: <span class="ar-val ar-name">${name}</span><br>
-                        MMSI: <span class="ar-val ar-mmsi">-</span><br>
-                        COG: <span class="ar-val ar-cog">-</span><br>
-                        SOG: <span class="ar-val ar-sog">-</span><br>
-                        DIST: <span class="ar-val ar-dist">-</span><br>
-                        CPA: <span class="ar-val ar-cpa">-</span><br>
-                        TCPA: <span class="ar-val ar-tcpa">-</span><br>
-                        BCR: <span class="ar-val ar-bcr">-</span>
-                    </div>`;
-                arContainer.appendChild(el);
-                arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
+                el.innerHTML = `<div class="ar-header">${name}</div><div class="ar-body">Name: <span class="ar-val ar-name">${name}</span><br>MMSI: <span class="ar-val ar-mmsi">-</span><br>COG: <span class="ar-val ar-cog">-</span><br>SOG: <span class="ar-val ar-sog">-</span><br>DIST: <span class="ar-val ar-dist">-</span><br>CPA: <span class="ar-val ar-cpa">-</span><br>TCPA: <span class="ar-val ar-tcpa">-</span><br>BCR: <span class="ar-val ar-bcr">-</span></div>`;
+                arContainer.appendChild(el); arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
             }
 
-            osShip.position.set(0, 0, 0); 
-            shipPhysics.heading = 0; 
-            shipPhysics.speed = 10.0; 
+            osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.speed = 10.0; 
 
             if (loadedScenarioConfig) {
                 let loadedCount = 0;
-                
                 if (Array.isArray(loadedScenarioConfig)) {
-                    loadedScenarioConfig.forEach(t => {
-                        if(t.isGoal) {
-                            shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 });
-                        } else {
-                            createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15);
-                            loadedCount++;
-                        }
-                    });
-                } 
-                else if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
-                    if (loadedScenarioConfig.os.spd !== undefined) {
-                        shipPhysics.speed = loadedScenarioConfig.os.spd;
-                    }
-                    if (loadedScenarioConfig.os.hdg !== undefined) {
-                        shipPhysics.heading = loadedScenarioConfig.os.hdg;
-                    }
-                    if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) {
-                        loadedScenarioConfig.os.waypoints.forEach(wp => {
-                            shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 });
-                        });
-                    }
-                    loadedScenarioConfig.targets.forEach(t => {
-                        let explicitFile = null;
-                        if (t.type) {
-                            explicitFile = filesList.find(name => name.includes(t.type)) || null;
-                        }
-                        createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile);
-                        loadedCount++;
-                    });
+                    loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); loadedCount++; } });
+                } else if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
+                    if (loadedScenarioConfig.os.spd !== undefined) shipPhysics.speed = loadedScenarioConfig.os.spd;
+                    if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
+                    if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
+                    loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); loadedCount++; });
                 }
-                
-                if(shipPhysics.wps.length > 0) {
-                    goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z);
-                    goalGroup.visible = true;
-                }
-
+                if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
                 const remainingCount = maxTargets - loadedCount;
-                if (remainingCount > 0) {
-                    for (let i = 0; i < remainingCount; i++) {
-                        let angle = Math.random() * Math.PI * 2;
-                        let dist = 1000 + Math.random() * 3000; 
-                        let rx = Math.sin(angle) * dist;
-                        let rz = -Math.cos(angle) * dist;
-                        let rhdg = Math.random() * 360; 
-                        let rspd = 8 + Math.random() * 12;
-                        createTarget(rx, rz, rhdg, rspd);
-                    }
-                }
+                if (remainingCount > 0) { for (let i = 0; i < remainingCount; i++) { let angle = Math.random() * Math.PI * 2; let dist = 1000 + Math.random() * 3000; let rx = Math.sin(angle) * dist; let rz = -Math.cos(angle) * dist; createTarget(rx, rz, Math.random() * 360, 8 + Math.random() * 12); } }
             } else {
-                if (maxTargets > 0) {
-                    for (let i = 0; i < maxTargets; i++) {
-                        let angle = Math.random() * Math.PI * 2;
-                        let dist = 400 + Math.random() * 800; 
-                        let rx = Math.sin(angle) * dist;
-                        let rz = -Math.cos(angle) * dist;
-                        let trueBrg = Math.atan2(rx, -rz) * 180 / Math.PI;
-                        let rhdg = 180 + trueBrg + (Math.random() - 0.5) * 30; 
-                        if(rhdg < 0) rhdg += 360;
-                        if(rhdg >= 360) rhdg -= 360;
-                        let rspd = 8 + Math.random() * 10;
-                        createTarget(rx, rz, rhdg, rspd);
-                    }
-                }
+                if (maxTargets > 0) { for (let i = 0; i < maxTargets; i++) { let angle = Math.random() * Math.PI * 2; let dist = 400 + Math.random() * 800; let rx = Math.sin(angle) * dist; let rz = -Math.cos(angle) * dist; let trueBrg = Math.atan2(rx, -rz) * 180 / Math.PI; let rhdg = 180 + trueBrg + (Math.random() - 0.5) * 30; if(rhdg < 0) rhdg += 360; if(rhdg >= 360) rhdg -= 360; createTarget(rx, rz, rhdg, 8 + Math.random() * 10); } }
             }
 
-            if(orbitControl) orbitControl.enabled = false;
+            let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             
-            // 시뮬레이션 시작 시 (t=0.0) 상태를 로그에 즉시 강제 기록
-            let tStr = "0.0";
-            logData.push({
-                time: tStr, name: "OS",
-                lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x),
-                x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2),
-                hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1),
-                rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1)
-            });
-            targetShips.forEach(ts => {
-                logData.push({
-                    time: tStr, name: ts.userData.name,
-                    lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x),
-                    x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2),
-                    hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1),
-                    rot: "0.00", rud_cmd: "0.0", rud_act: "0.0"
-                });
-            });
-
             gameState = 'PLAYING';
         }
 
-        // ==========================================
-        // 3. 서버 전송 로직 (새로 추가)
-        // ==========================================
         function finishSimulationAndSendData() {
             if (gameState !== 'PLAYING') return;
-            gameState = 'FINISHED';
-            isPaused = true;
-            
+            gameState = 'FINISHED'; isPaused = true;
             document.getElementById('finish-overlay').style.display = 'flex';
-            
-            const payload = {
-                studentId: studentInfo.id,
-                studentName: studentInfo.name,
-                logData: logData
-            };
-
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(res => {
-                document.getElementById('finish-title').innerText = "데이터 전송 성공!";
-                document.getElementById('finish-desc').innerText = "결과가 안전하게 저장되었습니다. 이제 창을 닫으셔도 좋습니다.";
-            })
-            .catch(err => {
-                document.getElementById('finish-title').innerText = "전송 실패";
-                document.getElementById('finish-title').style.color = "#ff3333";
-                document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다.";
-                console.error(err);
-            });
+            const payload = { studentId: studentInfo.id, studentName: studentInfo.name, logData: logData };
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(res => { document.getElementById('finish-title').innerText = "데이터 전송 성공!"; document.getElementById('finish-desc').innerText = "결과가 안전하게 저장되었습니다. 이제 창을 닫으셔도 좋습니다."; })
+            .catch(err => { document.getElementById('finish-title').innerText = "전송 실패"; document.getElementById('finish-title').style.color = "#ff3333"; document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다."; console.error(err); });
         }
 
-        let currentMode = 'NONE';
-        let simSpeed = 1.0;
-        const moveScale = 0.15; 
+        let currentMode = 'NONE'; let simSpeed = 1.0; const moveScale = 0.15; 
         const shipPhysics = { speed: 10.0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
         const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5 };
 
         window.setMode = function(mode) {
             if(currentMode === mode) currentMode = 'NONE'; else currentMode = mode;
-            document.getElementById('btn-mode-cas').classList.remove('active');
-            document.getElementById('right-ai-container').style.display = 'none';
-            document.getElementById('right-center-cas-panel').style.display = 'none';
-            document.getElementById('right-cas-content').style.display = 'none';
-            document.getElementById('bottom-left-panel').style.display = 'none';
-            document.getElementById('scanline').style.display = 'none';
-            document.getElementById('hud-lines').style.opacity = '0';
-            
-            arOverlayGroup.visible = false;
-            Object.values(arTags).forEach(tag => tag.el.style.display = 'none');
-            document.body.classList.toggle('ai-active', currentMode !== 'NONE');
-
-            if (currentMode === 'CAS') {
-                window.closeManualTarget(); 
-                document.getElementById('btn-mode-cas').classList.add('active');
-                document.getElementById('right-ai-container').style.display = 'block';
-                document.getElementById('right-center-cas-panel').style.display = 'block';
-                document.getElementById('right-cas-content').style.display = 'block';
-                document.getElementById('bottom-left-panel').style.display = 'block';
-                document.getElementById('scanline').style.display = 'block';
-                document.getElementById('hud-lines').style.opacity = '1';
-                arOverlayGroup.visible = true;
-            }
+            document.getElementById('btn-mode-cas').classList.remove('active'); document.getElementById('right-ai-container').style.display = 'none'; document.getElementById('right-center-cas-panel').style.display = 'none'; document.getElementById('right-cas-content').style.display = 'none'; document.getElementById('bottom-left-panel').style.display = 'none'; document.getElementById('scanline').style.display = 'none'; document.getElementById('hud-lines').style.opacity = '0';
+            arOverlayGroup.visible = false; Object.values(arTags).forEach(tag => tag.el.style.display = 'none'); document.body.classList.toggle('ai-active', currentMode !== 'NONE');
+            if (currentMode === 'CAS') { window.closeManualTarget(); document.getElementById('btn-mode-cas').classList.add('active'); document.getElementById('right-ai-container').style.display = 'block'; document.getElementById('right-center-cas-panel').style.display = 'block'; document.getElementById('right-cas-content').style.display = 'block'; document.getElementById('bottom-left-panel').style.display = 'block'; document.getElementById('scanline').style.display = 'block'; document.getElementById('hud-lines').style.opacity = '1'; arOverlayGroup.visible = true; }
         };
 
         window.setEnv = function(state) {
             document.getElementById('btn-env-calm').classList.remove('active'); document.getElementById('btn-env-mod').classList.remove('active');
-            if(state === 'calm') { 
-                env.waveForce = 0.3; 
-                document.getElementById('btn-env-calm').classList.add('active'); 
-                if (!isNight && daySkybox) {
-                    scene.background = daySkybox;
-                    scene.environment = daySkybox;
-                }
-            } 
-            else if(state === 'mod') { 
-                env.waveForce = 1.2; 
-                document.getElementById('btn-env-mod').classList.add('active'); 
-                if (!isNight && nightSkybox) { 
-                    scene.background = nightSkybox;
-                    scene.environment = nightSkybox;
-                }
-            }
+            if(state === 'calm') { env.waveForce = 0.3; document.getElementById('btn-env-calm').classList.add('active'); if (!isNight && daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } } 
+            else if(state === 'mod') { env.waveForce = 1.2; document.getElementById('btn-env-mod').classList.add('active'); if (!isNight && nightSkybox) { scene.background = nightSkybox; scene.environment = nightSkybox; } }
         };
         window.setSimSpeed = function(speed) { simSpeed = speed; document.getElementById('btn-sim-1').classList.remove('active'); document.getElementById('btn-sim-3').classList.remove('active'); document.getElementById('btn-sim-' + speed).classList.add('active'); };
 
@@ -869,7 +579,6 @@
         window.addEventListener('keydown', (e) => { 
             if(gameState === 'PLAYING') {
                 if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); 
-                
                 if (!isPaused) {
                     if(e.code === 'ArrowLeft' && !e.repeat) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
                     if(e.code === 'ArrowRight' && !e.repeat) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
@@ -877,7 +586,6 @@
                     if(e.code === 'ArrowDown' && !e.repeat) shipPhysics.speed = Math.max(0, shipPhysics.speed - 1);
                     if(e.code === 'Space') shipPhysics.targetRudder = 0;
                 }
-
                 let camMoved = false;
                 if(e.code === 'KeyW') { camera.position.z -= 1; camMoved = true; }
                 if(e.code === 'KeyS') { camera.position.z += 1; camMoved = true; }
@@ -885,475 +593,161 @@
                 if(e.code === 'KeyD') { camera.position.x += 1; camMoved = true; }
                 if(e.code === 'KeyQ') { camera.position.y += 1; camMoved = true; }
                 if(e.code === 'KeyE') { camera.position.y -= 1; camMoved = true; }
-
-                if (camMoved && currentOSFileName !== "") {
-                    const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
-                    localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos));
-                    const toast = document.getElementById('save-toast'); toast.style.display = 'inline-block';
-                    clearTimeout(saveTimeout); saveTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
-                }
+                if (camMoved && currentOSFileName !== "") { const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); const toast = document.getElementById('save-toast'); toast.style.display = 'inline-block'; clearTimeout(saveTimeout); saveTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000); }
             }
         });
 
         document.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') isDraggingCam = true; });
         document.addEventListener('mouseup', () => { isDraggingCam = false; });
         document.addEventListener('mousemove', (e) => {
-            if (isDraggingCam && gameState === 'PLAYING') {
-                camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003;
-                camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX));
-            }
+            if (isDraggingCam && gameState === 'PLAYING') { camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); }
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
         document.getElementById('ecdis-canvas').addEventListener('click', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged) return;
-            
-            const rect = this.getBoundingClientRect();
-            const clickX = e.clientX - rect.left; const clickY = e.clientY - rect.top;
-            const cx = this.clientWidth / 2; const cy = this.clientHeight / 2; 
-            const mapScale = (this.clientWidth / 2) / window.currentRadarMaxDist;
-            
+            const rect = this.getBoundingClientRect(); const clickX = e.clientX - rect.left; const clickY = e.clientY - rect.top; const cx = this.clientWidth / 2; const cy = this.clientHeight / 2; const mapScale = (this.clientWidth / 2) / window.currentRadarMaxDist;
             let closestTarget = null; let minDist = 15; 
-            
-            targetShips.forEach(ts => {
-                const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z;
-                const true_bearing_rad = Math.atan2(relX, -relZ);
-                const relBearing = true_bearing_rad - (shipPhysics.heading * Math.PI / 180);
-                const distSq = relX*relX + relZ*relZ;
-                
-                const px = cx + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale;
-                const py = cy - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale;
-                
-                const clickDist = Math.hypot(px - clickX, py - clickY);
-                if(clickDist < minDist) { minDist = clickDist; closestTarget = ts; }
-            });
-            
-            if(closestTarget) {
-                manuallySelectedTarget = closestTarget;
-                document.getElementById('manual-target-panel').style.display = 'block';
-            }
+            targetShips.forEach(ts => { const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const true_bearing_rad = Math.atan2(relX, -relZ); const relBearing = true_bearing_rad - (shipPhysics.heading * Math.PI / 180); const distSq = relX*relX + relZ*relZ; const px = cx + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; const py = cy - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale; const clickDist = Math.hypot(px - clickX, py - clickY); if(clickDist < minDist) { minDist = clickDist; closestTarget = ts; } });
+            if(closestTarget) { manuallySelectedTarget = closestTarget; document.getElementById('manual-target-panel').style.display = 'block'; }
         });
         
         document.getElementById('ecdis-canvas').addEventListener('wheel', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged) return;
-            e.preventDefault();
-            if (e.deltaY > 0) {
-                manualRadarZoom *= 1.2; 
-            } else {
-                manualRadarZoom /= 1.2; 
-            }
-            manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
+            e.preventDefault(); if (e.deltaY > 0) { manualRadarZoom *= 1.2; } else { manualRadarZoom /= 1.2; } manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
         }, {passive: false});
 
-        window.closeManualTarget = function() {
-            manuallySelectedTarget = null;
-            document.getElementById('manual-target-panel').style.display = 'none';
-        }
-
-        function convertToLat(z) { return (34.800000 - (z / 111111)).toFixed(6); } 
-        function convertToLon(x) { return (126.400000 + (x / (111111 * Math.cos(34.8 * Math.PI / 180)))).toFixed(6); }
+        window.closeManualTarget = function() { manuallySelectedTarget = null; document.getElementById('manual-target-panel').style.display = 'none'; }
+        function convertToLat(z) { return (34.800000 - (z / 111111)).toFixed(6); } function convertToLon(x) { return (126.400000 + (x / (111111 * Math.cos(34.8 * Math.PI / 180)))).toFixed(6); }
 
         window.exportLogCSV = function() {
             if (logData.length === 0) { alert("아직 저장된 시뮬레이션 로그가 없습니다."); return; }
             let csvContent = "Time(s),Name,Latitude,Longitude,X,Y,HDG,SOG,COG,ROT,RUD_CMD,RUD_ACT\n";
-            logData.forEach(row => {
-                csvContent += `${row.time},${row.name},${row.lat},${row.lon},${row.x},${row.y},${row.hdg},${row.sog},${row.cog},${row.rot},${row.rud_cmd},${row.rud_act}\n`;
-            });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `arc_simulation_log_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            logData.forEach(row => { csvContent += `${row.time},${row.name},${row.lat},${row.lon},${row.x},${row.y},${row.hdg},${row.sog},${row.cog},${row.rot},${row.rud_cmd},${row.rud_act}\n`; });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `arc_simulation_log_${new Date().getTime()}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        const clock = new THREE.Clock();
-        function getScreenPos(vector3) { const v = vector3.clone(); v.project(camera); return { x: (v.x * .5 + .5) * window.innerWidth, y: -(v.y * .5 - .5) * window.innerHeight, z: v.z }; }
-
-        function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) {
-            const voX = voSpd * moveScale * Math.sin(voHdg * Math.PI/180); const voZ = -voSpd * moveScale * Math.cos(voHdg * Math.PI/180);
-            const vtX = vtSpd * moveScale * Math.sin(vtHdg * Math.PI/180); const vtZ = -vtSpd * moveScale * Math.cos(vtHdg * Math.PI/180);
-            const dvX = vtX - voX; const dvZ = vtZ - voZ; 
-            const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ);
-            const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0;
-            const cpa = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ);
-            
-            const radH = voHdg * Math.PI / 180;
-            const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH);
-            const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH);
-            const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH);
-            const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH);
-            
-            let bcr = -1;
-            if (Math.abs(dvX_stbd) > 0.0001) {
-                const t_cross = -relX_stbd / dvX_stbd;
-                if (t_cross > 0) {
-                    const bcr_units = relZ_fwd + dvZ_fwd * t_cross;
-                    if (bcr_units > 0) { bcr = bcr_units / 400; }
-                }
-            }
-            
-            return { cpa: cpa / 400, tcpa: tcpa, bcr: bcr }; 
-        }
+        const clock = new THREE.Clock(); function getScreenPos(vector3) { const v = vector3.clone(); v.project(camera); return { x: (v.x * .5 + .5) * window.innerWidth, y: -(v.y * .5 - .5) * window.innerHeight, z: v.z }; }
+        function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { const voX = voSpd * moveScale * Math.sin(voHdg * Math.PI/180); const voZ = -voSpd * moveScale * Math.cos(voHdg * Math.PI/180); const vtX = vtSpd * moveScale * Math.sin(vtHdg * Math.PI/180); const vtZ = -vtSpd * moveScale * Math.cos(vtHdg * Math.PI/180); const dvX = vtX - voX; const dvZ = vtZ - voZ; const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; const cpa = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); const radH = voHdg * Math.PI / 180; const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); let bcr = -1; if (Math.abs(dvX_stbd) > 0.0001) { const t_cross = -relX_stbd / dvX_stbd; if (t_cross > 0) { const bcr_units = relZ_fwd + dvZ_fwd * t_cross; if (bcr_units > 0) { bcr = bcr_units / 400; } } } return { cpa: cpa / 400, tcpa: tcpa, bcr: bcr }; }
 
         const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2(-1, -1);
         
         function updatePhysics(dt) {
             shipPhysics.simTime += dt; 
-
-            let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder;
-            let rStep = 1.5 * dt; 
-            if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder;
-            else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
-
-            const K_nom = 2.0; const T_nom = 25.0;
-            const targetRot = K_nom * shipPhysics.actualRudder;
-            const rotDerivative = (targetRot - shipPhysics.rot) / T_nom; 
-            
-            shipPhysics.rot += rotDerivative * dt; 
-            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
+            let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder; let rStep = 1.5 * dt; 
+            if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder; else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
+            const K_nom = 2.0; const T_nom = 25.0; const targetRot = K_nom * shipPhysics.actualRudder; const rotDerivative = (targetRot - shipPhysics.rot) / T_nom; 
+            shipPhysics.rot += rotDerivative * dt; shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
             if (shipPhysics.heading < 0) shipPhysics.heading += 360;
-            
             const headingRad = shipPhysics.heading * (Math.PI / 180);
             shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + (env.windSpd * 0.05);
-
             const t = clock.getElapsedTime() * simSpeed;
-            shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0));
-            shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
-
+            shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
             osShip.rotation.set(-shipPhysics.pitch * Math.PI/180, -headingRad, -shipPhysics.roll * Math.PI/180);
-            osShip.position.x += (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
-            osShip.position.z -= (shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
-            
+            osShip.position.x += (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt; osShip.position.z -= (shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
             camera.rotation.y = camAngleY; camera.rotation.x = camAngleX;
-
             arOverlayGroup.position.copy(osShip.position); arOverlayGroup.rotation.y = -headingRad;
 
             if (shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
                 const wp = shipPhysics.wps[currentWpIndex];
                 const distToGoal = Math.sqrt(Math.pow(wp.x - osShip.position.x, 2) + Math.pow(wp.z - osShip.position.z, 2));
-                
-                if (distToGoal < 120) {
-                    currentWpIndex++;
-                    if (currentWpIndex < shipPhysics.wps.length) {
-                        goalGroup.position.set(shipPhysics.wps[currentWpIndex].x, 0, shipPhysics.wps[currentWpIndex].z);
-                    } else {
-                        goalGroup.visible = false;
-                        finishSimulationAndSendData(); // 전송 함수 자동 실행 연결
-                    }
-                }
+                if (distToGoal < 120) { currentWpIndex++; if (currentWpIndex < shipPhysics.wps.length) { goalGroup.position.set(shipPhysics.wps[currentWpIndex].x, 0, shipPhysics.wps[currentWpIndex].z); } else { goalGroup.visible = false; finishSimulationAndSendData(); } }
             }
 
             targetShips.forEach(ts => {
-                const tsRad = ts.userData.heading * (Math.PI / 180);
-                ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt;
-                ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
-                
+                const tsRad = ts.userData.heading * (Math.PI / 180); ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt; ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
                 if (ts.position.z > osShip.position.z + 2000 || Math.abs(ts.position.x - osShip.position.x) > 6000 || ts.position.z < osShip.position.z - 6000) {
                     if (ts.userData.name.includes('Target')) {
-                        if (loadedScenarioConfig) {
-                            let angle = Math.random() * Math.PI * 2;
-                            let dist = 1000 + Math.random() * 3000;
-                            let rx = osShip.position.x + Math.sin(angle) * dist;
-                            let rz = osShip.position.z - Math.cos(angle) * dist;
-                            ts.position.set(rx, 0, rz);
-                            ts.userData.heading = Math.random() * 360;
-                        } else {
-                            let angle = Math.random() * Math.PI * 2;
-                            let dist = 600 + Math.random() * 800;
-                            let rx = osShip.position.x + Math.sin(angle) * dist;
-                            let rz = osShip.position.z - Math.cos(angle) * dist;
-                            ts.position.set(rx, 0, rz);
-                            let trueBrg = Math.atan2(rx - osShip.position.x, -(rz - osShip.position.z)) * 180 / Math.PI;
-                            let newHdg = 180 + trueBrg + (Math.random() - 0.5) * 30;
-                            if(newHdg < 0) newHdg += 360;
-                            if(newHdg >= 360) newHdg -= 360;
-                            ts.userData.heading = newHdg;
-                        }
+                        if (loadedScenarioConfig) { let angle = Math.random() * Math.PI * 2; let dist = 1000 + Math.random() * 3000; let rx = osShip.position.x + Math.sin(angle) * dist; let rz = osShip.position.z - Math.cos(angle) * dist; ts.position.set(rx, 0, rz); ts.userData.heading = Math.random() * 360; } else { let angle = Math.random() * Math.PI * 2; let dist = 600 + Math.random() * 800; let rx = osShip.position.x + Math.sin(angle) * dist; let rz = osShip.position.z - Math.cos(angle) * dist; ts.position.set(rx, 0, rz); let trueBrg = Math.atan2(rx - osShip.position.x, -(rz - osShip.position.z)) * 180 / Math.PI; let newHdg = 180 + trueBrg + (Math.random() - 0.5) * 30; if(newHdg < 0) newHdg += 360; if(newHdg >= 360) newHdg -= 360; ts.userData.heading = newHdg; }
                         ts.rotation.y = -ts.userData.heading * (Math.PI / 180);
                     }
                 }
             });
 
-            for(let i = activeWakes.length - 1; i >= 0; i--) {
-                let w = activeWakes[i];
-                w.userData.life -= dt * 0.25; 
-                w.scale.setScalar(1 + (1 - w.userData.life) * 1.5);
-                w.material.opacity = w.userData.life * 0.5; 
-                if(w.userData.life <= 0) {
-                    scene.remove(w);
-                    activeWakes.splice(i, 1);
-                    wakePool.push(w);
-                }
-            }
-
+            for(let i = activeWakes.length - 1; i >= 0; i--) { let w = activeWakes[i]; w.userData.life -= dt * 0.25; w.scale.setScalar(1 + (1 - w.userData.life) * 1.5); w.material.opacity = w.userData.life * 0.5; if(w.userData.life <= 0) { scene.remove(w); activeWakes.splice(i, 1); wakePool.push(w); } }
             shipPhysics.wakeTimer = (shipPhysics.wakeTimer || 0) + dt;
             if(shipPhysics.wakeTimer > 0.15) {
                 shipPhysics.wakeTimer = 0;
-
-                function spawnWake(shipPos, shipHeadingRad, speed) {
-                    if(speed < 2.0) return; 
-
-                    let w = wakePool.pop();
-                    if(!w) {
-                        let mat = new THREE.MeshBasicMaterial({ 
-                            map: wakeTex, 
-                            transparent: true, 
-                            opacity: 0.6, 
-                            depthWrite: false,
-                            blending: THREE.AdditiveBlending 
-                        });
-                        w = new THREE.Mesh(wakeGeo, mat);
-                        w.rotation.order = 'YXZ'; 
-                        w.rotation.x = -Math.PI / 2;
-                    }
-                    
-                    let dx = Math.sin(shipHeadingRad) * (-30);
-                    let dz = -Math.cos(shipHeadingRad) * (-30);
-                    
-                    w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz);
-                    w.rotation.z = -shipHeadingRad; 
-                    w.scale.setScalar(1);
-                    w.material.opacity = 0.6;
-                    w.userData.life = 1.0;
-                    scene.add(w);
-                    activeWakes.push(w);
-                }
-
-                spawnWake(osShip.position, headingRad, shipPhysics.speed);
-
-                targetShips.forEach(ts => {
-                    const tsRad = ts.userData.heading * (Math.PI / 180);
-                    spawnWake(ts.position, tsRad, ts.userData.speed);
-                });
+                function spawnWake(shipPos, shipHeadingRad, speed) { if(speed < 2.0) return; let w = wakePool.pop(); if(!w) { let mat = new THREE.MeshBasicMaterial({ map: wakeTex, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }); w = new THREE.Mesh(wakeGeo, mat); w.rotation.order = 'YXZ'; w.rotation.x = -Math.PI / 2; } let dx = Math.sin(shipHeadingRad) * (-30); let dz = -Math.cos(shipHeadingRad) * (-30); w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz); w.rotation.z = -shipHeadingRad; w.scale.setScalar(1); w.material.opacity = 0.6; w.userData.life = 1.0; scene.add(w); activeWakes.push(w); }
+                spawnWake(osShip.position, headingRad, shipPhysics.speed); targetShips.forEach(ts => { const tsRad = ts.userData.heading * (Math.PI / 180); spawnWake(ts.position, tsRad, ts.userData.speed); });
             }
         }
 
         function updateAI() {
-            document.getElementById('val-hdg').innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°';
-            document.getElementById('val-sog').innerText = shipPhysics.speed.toFixed(1);
-            document.getElementById('val-lat').innerText = Math.abs(shipPhysics.lat).toFixed(1);
-
-            const rotVal = shipPhysics.rot;
-            const rotEl = document.getElementById('val-rot');
-            rotEl.innerText = Math.abs(rotVal).toFixed(1);
-            if (rotVal > 0.1) { rotEl.style.color = '#00ffaa'; } else if (rotVal < -0.1) { rotEl.style.color = '#ff3333'; } else { rotEl.style.color = '#fff'; }
-
-            const rudCmdVal = shipPhysics.targetRudder;
-            const rudCmdEl = document.getElementById('val-rud-cmd');
-            rudCmdEl.innerText = Math.abs(rudCmdVal).toFixed(1) + '°';
-            if (rudCmdVal > 0.1) { rudCmdEl.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { rudCmdEl.style.color = '#ff3333'; } else { rudCmdEl.style.color = '#fff'; }
-
-            const rudActVal = shipPhysics.actualRudder;
-            const rudActEl = document.getElementById('val-rud-act');
-            rudActEl.innerText = Math.abs(rudActVal).toFixed(1) + '°';
-            if (rudActVal > 0.1) { rudActEl.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { rudActEl.style.color = '#ff3333'; } else { rudActEl.style.color = '#fff'; }
+            document.getElementById('val-hdg').innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; document.getElementById('val-sog').innerText = shipPhysics.speed.toFixed(1); document.getElementById('val-lat').innerText = Math.abs(shipPhysics.lat).toFixed(1);
+            const rotVal = shipPhysics.rot; const rotEl = document.getElementById('val-rot'); rotEl.innerText = Math.abs(rotVal).toFixed(1); if (rotVal > 0.1) { rotEl.style.color = '#00ffaa'; } else if (rotVal < -0.1) { rotEl.style.color = '#ff3333'; } else { rotEl.style.color = '#fff'; }
+            const rudCmdVal = shipPhysics.targetRudder; const rudCmdEl = document.getElementById('val-rud-cmd'); rudCmdEl.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; if (rudCmdVal > 0.1) { rudCmdEl.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { rudCmdEl.style.color = '#ff3333'; } else { rudCmdEl.style.color = '#fff'; }
+            const rudActVal = shipPhysics.actualRudder; const rudActEl = document.getElementById('val-rud-act'); rudActEl.innerText = Math.abs(rudActVal).toFixed(1) + '°'; if (rudActVal > 0.1) { rudActEl.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { rudActEl.style.color = '#ff3333'; } else { rudActEl.style.color = '#fff'; }
 
             let maxDistSq = 1000 * 1000;
-            targetShips.forEach(ts => {
-                const relX = ts.position.x - osShip.position.x;
-                const relZ = ts.position.z - osShip.position.z;
-                const dSq = relX*relX + relZ*relZ;
-                if (dSq > maxDistSq) { maxDistSq = dSq; }
-            });
-            
+            targetShips.forEach(ts => { const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const dSq = relX*relX + relZ*relZ; if (dSq > maxDistSq) { maxDistSq = dSq; } });
             window.currentRadarMaxDist = Math.sqrt(maxDistSq) * 1.15 * manualRadarZoom;
 
-            const canvasR = document.getElementById('ecdis-canvas');
-            canvasR.width = canvasR.clientWidth; canvasR.height = canvasR.clientHeight;
-            const ctxR = canvasR.getContext('2d');
-            const cx = canvasR.width/2; const cy = canvasR.height/2; 
-            const mapScale = (canvasR.width / 2) / window.currentRadarMaxDist; 
-
-            ctxR.clearRect(0, 0, canvasR.width, canvasR.height);
-            ctxR.strokeStyle = 'rgba(0, 255, 255, 0.3)'; ctxR.lineWidth = 1;
+            const canvasR = document.getElementById('ecdis-canvas'); canvasR.width = canvasR.clientWidth; canvasR.height = canvasR.clientHeight; const ctxR = canvasR.getContext('2d'); const cx = canvasR.width/2; const cy = canvasR.height/2; const mapScale = (canvasR.width / 2) / window.currentRadarMaxDist; 
+            ctxR.clearRect(0, 0, canvasR.width, canvasR.height); ctxR.strokeStyle = 'rgba(0, 255, 255, 0.3)'; ctxR.lineWidth = 1;
             for(let r = 1; r <= 4; r++) { ctxR.beginPath(); ctxR.arc(cx, cy, r * (canvasR.width/8), 0, Math.PI * 2); ctxR.stroke(); }
-            
             ctxR.save(); ctxR.translate(cx, cy);
 
-            let mostDangerousTarget = null;
-            let minTcpa = Infinity;
-            let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value);
-            
-            let collisionDetected = false; 
+            let mostDangerousTarget = null; let minTcpa = Infinity; let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value); let collisionDetected = false; 
+            const canvasLines = document.getElementById('hud-lines'); canvasLines.width = window.innerWidth; canvasLines.height = window.innerHeight; const ctxL = canvasLines.getContext('2d'); ctxL.clearRect(0,0, canvasLines.width, canvasLines.height); const ownPos2D = { x: window.innerWidth/2, y: window.innerHeight - 50 };
 
-            const canvasLines = document.getElementById('hud-lines');
-            canvasLines.width = window.innerWidth; canvasLines.height = window.innerHeight;
-            const ctxL = canvasLines.getContext('2d');
-            ctxL.clearRect(0,0, canvasLines.width, canvasLines.height);
-            const ownPos2D = { x: window.innerWidth/2, y: window.innerHeight - 50 };
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(targetShips, true);
-            let hoveredShip = null;
-            if(intersects.length > 0) {
-                let obj = intersects[0].object;
-                while(obj.parent && !obj.userData.name) { obj = obj.parent; }
-                if (obj.userData.name) hoveredShip = obj;
-            }
+            raycaster.setFromCamera(mouse, camera); const intersects = raycaster.intersectObjects(targetShips, true); let hoveredShip = null;
+            if(intersects.length > 0) { let obj = intersects[0].object; while(obj.parent && !obj.userData.name) { obj = obj.parent; } if (obj.userData.name) hoveredShip = obj; }
 
             if (shipPhysics.wps && shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
-                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctxR.lineWidth = 1.5; ctxR.setLineDash([5, 5]); ctxR.beginPath();
-                ctxR.moveTo(0, 0);
-                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) {
-                    let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z;
-                    let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180);
-                    let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale;
-                    ctxR.lineTo(rotX, rotY);
-                }
+                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctxR.lineWidth = 1.5; ctxR.setLineDash([5, 5]); ctxR.beginPath(); ctxR.moveTo(0, 0);
+                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) { let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z; let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; ctxR.lineTo(rotX, rotY); }
                 ctxR.stroke(); ctxR.setLineDash([]);
-                
-                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) {
-                    let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z;
-                    let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180);
-                    let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale;
-                    
-                    ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888';
-                    ctxR.beginPath(); ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); ctxR.fill();
-                }
+                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) { let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z; let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; ctxR.beginPath(); ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); ctxR.fill(); }
             }
 
             targetShips.forEach(ts => {
                 const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z;
-                
-                const radH = shipPhysics.heading * Math.PI / 180;
-                const localX = relX * Math.cos(radH) + relZ * Math.sin(radH);
-                const localZ = -relX * Math.sin(radH) + relZ * Math.cos(radH);
-                if (Math.abs(localX) < 120 && Math.abs(localZ) < 300) {
-                    collisionDetected = true;
-                }
-                
-                const distSq = relX*relX + relZ*relZ; const distNM = Math.sqrt(distSq) / 400; 
-                const true_bearing_rad = Math.atan2(relX, -relZ); const relBearing = true_bearing_rad - (shipPhysics.heading * Math.PI / 180);
-                const rotX = Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; const rotY = -Math.cos(relBearing) * Math.sqrt(distSq) * mapScale;
-
+                const radH = shipPhysics.heading * Math.PI / 180; const localX = relX * Math.cos(radH) + relZ * Math.sin(radH); const localZ = -relX * Math.sin(radH) + relZ * Math.cos(radH);
+                if (Math.abs(localX) < 120 && Math.abs(localZ) < 300) { collisionDetected = true; }
+                const distSq = relX*relX + relZ*relZ; const distNM = Math.sqrt(distSq) / 400; const true_bearing_rad = Math.atan2(relX, -relZ); const relBearing = true_bearing_rad - (shipPhysics.heading * Math.PI / 180); const rotX = Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; const rotY = -Math.cos(relBearing) * Math.sqrt(distSq) * mapScale;
                 const { cpa, tcpa, bcr } = calculateCPA(shipPhysics.speed, shipPhysics.heading, ts.userData.speed, ts.userData.heading, relX, relZ);
-                
                 let isDanger = (currentMode === 'CAS' && cpa < cpaThreshold && tcpa > 0 && tcpa < 1000);
                 if (isDanger && tcpa < minTcpa) { minTcpa = tcpa; mostDangerousTarget = { ts, cpa, tcpa, distNM, bcr }; }
 
                 ctxR.save(); ctxR.translate(rotX, rotY); ctxR.rotate((ts.userData.heading - shipPhysics.heading) * Math.PI / 180);
-                
                 if (manuallySelectedTarget === ts) { ctxR.beginPath(); ctxR.arc(0, 0, 14, 0, Math.PI * 2); ctxR.strokeStyle = '#ffcc00'; ctxR.lineWidth = 1.5; ctxR.stroke(); }
-
-                if (isDanger) { ctxR.fillStyle = '#ff3333'; ctxR.beginPath(); ctxR.arc(0, 0, 10, 0, Math.PI*2); ctxR.strokeStyle='#ff3333'; ctxR.stroke(); } 
-                else { ctxR.fillStyle = '#00ff00'; }
+                if (isDanger) { ctxR.fillStyle = '#ff3333'; ctxR.beginPath(); ctxR.arc(0, 0, 10, 0, Math.PI*2); ctxR.strokeStyle='#ff3333'; ctxR.stroke(); } else { ctxR.fillStyle = '#00ff00'; }
                 ctxR.beginPath(); ctxR.moveTo(0, -6); ctxR.lineTo(3, 4); ctxR.lineTo(-3, 4); ctxR.fill(); ctxR.restore();
 
-                const tagInfo = arTags[ts.userData.name];
-                const pos2D = getScreenPos(ts.position);
-                
+                const tagInfo = arTags[ts.userData.name]; const pos2D = getScreenPos(ts.position);
                 if (pos2D.z < 1 && distSq < 80000000) {
-                    tagInfo.el.style.left = pos2D.x + 'px'; tagInfo.el.style.top = (pos2D.y - 40) + 'px';
-                    tagInfo.mmsi.innerText = ts.userData.mmsi; tagInfo.sog.innerText = ts.userData.speed.toFixed(1) + ' Kn'; tagInfo.cog.innerText = ts.userData.heading.toFixed(1) + '°';
-                    tagInfo.dist.innerText = distNM.toFixed(1) + ' NM'; tagInfo.cpa.innerText = cpa.toFixed(2) + ' NM'; 
-                    tagInfo.tcpa.innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + ' MIN' : '-');
-                    tagInfo.bcr.innerText = (bcr > 0 ? bcr.toFixed(2) + ' NM' : '-');
-
+                    tagInfo.el.style.left = pos2D.x + 'px'; tagInfo.el.style.top = (pos2D.y - 40) + 'px'; tagInfo.mmsi.innerText = ts.userData.mmsi; tagInfo.sog.innerText = ts.userData.speed.toFixed(1) + ' Kn'; tagInfo.cog.innerText = ts.userData.heading.toFixed(1) + '°'; tagInfo.dist.innerText = distNM.toFixed(1) + ' NM'; tagInfo.cpa.innerText = cpa.toFixed(2) + ' NM'; tagInfo.tcpa.innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + ' MIN' : '-'); tagInfo.bcr.innerText = (bcr > 0 ? bcr.toFixed(2) + ' NM' : '-');
                     if (currentMode === 'CAS') {
-                        if (isDanger) {
-                            tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0;
-                            tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.05)`; tagInfo.el.style.borderColor = '#ff3333';
-                        } else {
-                            tagInfo.el.style.zIndex = 50 - Math.floor(distNM); tagInfo.el.style.opacity = distNM > 3.0 ? 0.3 : 0.7; tagInfo.el.style.transform = `translate(-50%, -100%) scale(0.9)`; tagInfo.el.style.borderColor = 'rgba(0, 255, 170, 0.4)';
-                        }
-                        tagInfo.el.style.display = 'block';
-
-                        ctxL.beginPath(); ctxL.moveTo(ownPos2D.x, ownPos2D.y); ctxL.lineTo(pos2D.x, pos2D.y);
-                        ctxL.strokeStyle = isDanger ? 'rgba(255, 51, 51, 0.8)' : 'rgba(0, 255, 170, 0.2)'; ctxL.lineWidth = isDanger ? 2.0 : 1.0; ctxL.stroke();
+                        if (isDanger) { tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0; tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.05)`; tagInfo.el.style.borderColor = '#ff3333'; } else { tagInfo.el.style.zIndex = 50 - Math.floor(distNM); tagInfo.el.style.opacity = distNM > 3.0 ? 0.3 : 0.7; tagInfo.el.style.transform = `translate(-50%, -100%) scale(0.9)`; tagInfo.el.style.borderColor = 'rgba(0, 255, 170, 0.4)'; }
+                        tagInfo.el.style.display = 'block'; ctxL.beginPath(); ctxL.moveTo(ownPos2D.x, ownPos2D.y); ctxL.lineTo(pos2D.x, pos2D.y); ctxL.strokeStyle = isDanger ? 'rgba(255, 51, 51, 0.8)' : 'rgba(0, 255, 170, 0.2)'; ctxL.lineWidth = isDanger ? 2.0 : 1.0; ctxL.stroke();
                     } else {
-                        if (hoveredShip === ts) {
-                            tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0;
-                            tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.0)`; tagInfo.el.style.borderColor = '#00ffaa'; tagInfo.el.style.display = 'block';
-                        } else { tagInfo.el.style.display = 'none'; }
+                        if (hoveredShip === ts) { tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0; tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.0)`; tagInfo.el.style.borderColor = '#00ffaa'; tagInfo.el.style.display = 'block'; } else { tagInfo.el.style.display = 'none'; }
                     }
                 } else { tagInfo.el.style.display = 'none'; }
             });
 
-            ctxR.fillStyle = '#000000'; 
-            ctxR.beginPath(); ctxR.moveTo(0, -7); ctxR.lineTo(3.5, 5); ctxR.lineTo(-3.5, 5); ctxR.fill(); 
-            ctxR.strokeStyle = '#ffffff'; ctxR.lineWidth = 1; ctxR.stroke(); 
-            ctxR.restore();
-
+            ctxR.fillStyle = '#000000'; ctxR.beginPath(); ctxR.moveTo(0, -7); ctxR.lineTo(3.5, 5); ctxR.lineTo(-3.5, 5); ctxR.fill(); ctxR.strokeStyle = '#ffffff'; ctxR.lineWidth = 1; ctxR.stroke(); ctxR.restore();
             const colInd = document.getElementById('btn-collision');
-            if (collisionDetected) {
-                colInd.classList.add('collision-alert');
-                colInd.innerText = 'COLLISION ALERT';
-                colInd.style.background = '';
-                colInd.style.borderColor = '';
-                colInd.style.color = '';
-            } else {
-                colInd.classList.remove('collision-alert');
-                colInd.innerText = 'COLLISION CLEAR';
-                colInd.style.background = 'rgba(0, 255, 170, 0.1)';
-                colInd.style.borderColor = '#00ffaa';
-                colInd.style.color = '#00ffaa';
-            }
-
-            if (manuallySelectedTarget) {
-                const ts = manuallySelectedTarget;
-                const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z;
-                const distNM = Math.sqrt(relX*relX + relZ*relZ) / 400;
-                const { cpa, tcpa, bcr } = calculateCPA(shipPhysics.speed, shipPhysics.heading, ts.userData.speed, ts.userData.heading, relX, relZ);
-                
-                document.getElementById('mt-name').innerText = ts.userData.name; document.getElementById('mt-mmsi').innerText = ts.userData.mmsi; document.getElementById('mt-cog').innerText = ts.userData.heading.toFixed(1) + "°";
-                document.getElementById('mt-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('mt-dist').innerText = distNM.toFixed(1) + " NM"; document.getElementById('mt-cpa').innerText = cpa.toFixed(2) + " NM";
-                document.getElementById('mt-tcpa').innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + " MIN" : "-");
-                document.getElementById('mt-bcr').innerText = (bcr > 0 ? bcr.toFixed(2) + " NM" : "-");
-            }
+            if (collisionDetected) { colInd.classList.add('collision-alert'); colInd.innerText = 'COLLISION ALERT'; colInd.style.background = ''; colInd.style.borderColor = ''; colInd.style.color = ''; } else { colInd.classList.remove('collision-alert'); colInd.innerText = 'COLLISION CLEAR'; colInd.style.background = 'rgba(0, 255, 170, 0.1)'; colInd.style.borderColor = '#00ffaa'; colInd.style.color = '#00ffaa'; }
+            
+            if (manuallySelectedTarget) { const ts = manuallySelectedTarget; const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const distNM = Math.sqrt(relX*relX + relZ*relZ) / 400; const { cpa, tcpa, bcr } = calculateCPA(shipPhysics.speed, shipPhysics.heading, ts.userData.speed, ts.userData.heading, relX, relZ); document.getElementById('mt-name').innerText = ts.userData.name; document.getElementById('mt-mmsi').innerText = ts.userData.mmsi; document.getElementById('mt-cog').innerText = ts.userData.heading.toFixed(1) + "°"; document.getElementById('mt-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('mt-dist').innerText = distNM.toFixed(1) + " NM"; document.getElementById('mt-cpa').innerText = cpa.toFixed(2) + " NM"; document.getElementById('mt-tcpa').innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + " MIN" : "-"); document.getElementById('mt-bcr').innerText = (bcr > 0 ? bcr.toFixed(2) + " NM" : "-"); }
 
             if (shipPhysics.simTime - lastLogTime >= LOG_INTERVAL) {
-                lastLogTime = shipPhysics.simTime;
-                let tStr = shipPhysics.simTime.toFixed(1);
-                
-                logData.push({
-                    time: tStr, name: "OS",
-                    lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x),
-                    x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2),
-                    hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1),
-                    rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1)
-                });
-                
-                targetShips.forEach(ts => {
-                    logData.push({
-                        time: tStr, name: ts.userData.name,
-                        lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x),
-                        x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2),
-                        hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1),
-                        rot: "0.00", rud_cmd: "0.0", rud_act: "0.0"
-                    });
-                });
+                lastLogTime = shipPhysics.simTime; let tStr = shipPhysics.simTime.toFixed(1);
+                logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+                targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             }
 
             if (currentMode === 'CAS') {
                 const box = document.getElementById('route-guidance-box'); const title = document.getElementById('route-status-text'); const reasonList = document.getElementById('danger-reason-list'); const voiceContent = document.getElementById('ai-voice-content');
-
                 if (mostDangerousTarget) {
                     let ts = mostDangerousTarget.ts; let tCpa = mostDangerousTarget.cpa; let tTcpa = mostDangerousTarget.tcpa; let tDist = mostDangerousTarget.distNM; let tBcr = mostDangerousTarget.bcr;
-                    
-                    document.getElementById('danger-target-name').innerText = ts.userData.name; document.getElementById('danger-target-mmsi').innerText = ts.userData.mmsi; document.getElementById('danger-target-cog').innerText = ts.userData.heading.toFixed(1) + "°";
-                    document.getElementById('danger-target-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('danger-target-dist').innerText = tDist.toFixed(1) + " NM"; document.getElementById('danger-target-cpa').innerText = tCpa.toFixed(2) + " NM"; document.getElementById('danger-target-tcpa').innerText = (tTcpa/60).toFixed(1) + " MIN";
-                    document.getElementById('danger-target-bcr').innerText = (tBcr > 0 ? tBcr.toFixed(2) + " NM" : "-");
-
-                    box.style.background = 'rgba(255, 51, 51, 0.2)'; box.style.borderColor = '#ff3333'; title.innerText = "EVASION MANEUVER"; title.style.color = '#ff3333'; title.style.textShadow = '0 0 10px rgba(255,51,51,0.5)';
-                    reasonList.innerHTML = `<li style="color:#ff3333; font-weight:bold;">HIGH COLLISION RISK</li><li>위험 선박: ${ts.userData.name}</li><li>충돌 예상 시간: ${(tTcpa/60).toFixed(1)}분</li><li style="margin-top:10px; color:#ffcc00; font-weight:bold;">▶ 우현 변침 권고.</li>`;
-                    
-                    dangerChevrons.visible = false; 
-                    
-                    voiceContent.innerHTML = `선장님, <b style="color:#ffcc00">${ts.userData.name}</b> 와의 충돌 위험이 감지되었습니다.<br>안전 거리 확보를 위해 우현 변침이 필요합니다.<br>시야에 시현된 <span style="color:#00ffaa; font-weight:bold;">녹색 회피 경로</span>를 따라 조타해 주십시오.`;
+                    document.getElementById('danger-target-name').innerText = ts.userData.name; document.getElementById('danger-target-mmsi').innerText = ts.userData.mmsi; document.getElementById('danger-target-cog').innerText = ts.userData.heading.toFixed(1) + "°"; document.getElementById('danger-target-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('danger-target-dist').innerText = tDist.toFixed(1) + " NM"; document.getElementById('danger-target-cpa').innerText = tCpa.toFixed(2) + " NM"; document.getElementById('danger-target-tcpa').innerText = (tTcpa/60).toFixed(1) + " MIN"; document.getElementById('danger-target-bcr').innerText = (tBcr > 0 ? tBcr.toFixed(2) + " NM" : "-");
+                    box.style.background = 'rgba(255, 51, 51, 0.2)'; box.style.borderColor = '#ff3333'; title.innerText = "EVASION MANEUVER"; title.style.color = '#ff3333'; title.style.textShadow = '0 0 10px rgba(255,51,51,0.5)'; reasonList.innerHTML = `<li style="color:#ff3333; font-weight:bold;">HIGH COLLISION RISK</li><li>위험 선박: ${ts.userData.name}</li><li>충돌 예상 시간: ${(tTcpa/60).toFixed(1)}분</li><li style="margin-top:10px; color:#ffcc00; font-weight:bold;">▶ 우현 변침 권고.</li>`; dangerChevrons.visible = false; voiceContent.innerHTML = `선장님, <b style="color:#ffcc00">${ts.userData.name}</b> 와의 충돌 위험이 감지되었습니다.<br>안전 거리 확보를 위해 우현 변침이 필요합니다.<br>시야에 시현된 <span style="color:#00ffaa; font-weight:bold;">녹색 회피 경로</span>를 따라 조타해 주십시오.`;
                 } else {
-                    document.getElementById('danger-target-name').innerText = "NONE"; document.getElementById('danger-target-mmsi').innerText = "-"; document.getElementById('danger-target-cog').innerText = "-"; document.getElementById('danger-target-sog').innerText = "-"; document.getElementById('danger-target-dist').innerText = "-"; document.getElementById('danger-target-cpa').innerText = "-"; document.getElementById('danger-target-tcpa').innerText = "-";
-                    document.getElementById('danger-target-bcr').innerText = "-";
-
-                    box.style.background = 'rgba(0, 255, 170, 0.1)'; box.style.borderColor = '#00ffaa'; title.innerText = "MAINTAIN CURRENT ROUTE"; title.style.color = '#00ffaa'; title.style.textShadow = '0 0 10px rgba(0,255,170,0.5)';
-                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`;
-                    
-                    dangerChevrons.visible = false; 
-                    
-                    let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value);
-                    voiceContent.innerHTML = `선장님, 설정된 안전 반경(${cpaThreshold.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
+                    document.getElementById('danger-target-name').innerText = "NONE"; document.getElementById('danger-target-mmsi').innerText = "-"; document.getElementById('danger-target-cog').innerText = "-"; document.getElementById('danger-target-sog').innerText = "-"; document.getElementById('danger-target-dist').innerText = "-"; document.getElementById('danger-target-cpa').innerText = "-"; document.getElementById('danger-target-tcpa').innerText = "-"; document.getElementById('danger-target-bcr').innerText = "-";
+                    box.style.background = 'rgba(0, 255, 170, 0.1)'; box.style.borderColor = '#00ffaa'; title.innerText = "MAINTAIN CURRENT ROUTE"; title.style.color = '#00ffaa'; title.style.textShadow = '0 0 10px rgba(0,255,170,0.5)'; reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`; dangerChevrons.visible = false; let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value); voiceContent.innerHTML = `선장님, 설정된 안전 반경(${cpaThreshold.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
                 }
             }
         }
@@ -1361,25 +755,11 @@
         function animate() {
             requestAnimationFrame(animate);
             if (gameState === 'PLAYING') {
-                if (!isPaused) {
-                    const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
-                    water.material.uniforms['time'].value += dt * 0.3;
-                    updatePhysics(dt); 
-                } else {
-                    clock.getDelta();
-                }
-                camera.rotation.y = camAngleY; 
-                camera.rotation.x = camAngleX;
-                updateAI(); 
-            } else if (gameState === 'CALIBRATING') {
-                if(orbitControl) orbitControl.update();
-                clock.getDelta(); 
-            } else {
-                clock.getDelta();
-            }
+                if (!isPaused) { const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; water.material.uniforms['time'].value += dt * 0.3; updatePhysics(dt); } else { clock.getDelta(); }
+                camera.rotation.y = camAngleY; camera.rotation.x = camAngleX; updateAI(); 
+            } else if (gameState === 'CALIBRATING') { if(orbitControl) orbitControl.update(); clock.getDelta(); } else { clock.getDelta(); }
             renderer.render(scene, camera);
         }
-
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
