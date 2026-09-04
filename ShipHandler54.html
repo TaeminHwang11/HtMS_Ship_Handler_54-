@@ -82,7 +82,7 @@
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
         
-        /* 커스텀 드롭다운 UI (OS 및 CPA 공용) */
+        /* 커스텀 드롭다운 UI */
         .custom-select-wrapper { position: relative; width: 100%; user-select: none; }
         .custom-select-box { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .custom-select-list { position: absolute; top: 100%; left: 0; width: 100%; max-height: 220px; overflow-y: auto; background: #111; border: 1px solid #555; border-radius: 0 0 4px 4px; z-index: 1001; display: none; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
@@ -260,7 +260,6 @@
         <div style="margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
             <span style="color:#88c0d0; font-size:14px; font-weight:bold;">CPA ALARM LIMIT:</span>
             
-            <!-- 완벽하게 교체된 커스텀 CPA 한계 선택 메뉴 -->
             <div class="custom-select-wrapper" style="width: 100px;">
                 <div class="custom-select-box" style="padding: 4px 10px; font-size: 14px; background: #222;" onclick="toggleCpaDropdown(event)">
                     <span id="selected-cpa-text">1.0 NM</span>
@@ -329,7 +328,6 @@
         wakeCanvas.width = 128; wakeCanvas.height = 256;
         const wCtx = wakeCanvas.getContext('2d');
         
-        // 📌 후류(Wake) 색상 어둡게 변경 (야간 눈부심 방지)
         const gradX = wCtx.createLinearGradient(0, 0, 128, 0);
         gradX.addColorStop(0, 'rgba(140, 170, 190, 0)');
         gradX.addColorStop(0.5, 'rgba(140, 170, 190, 0.5)');
@@ -364,7 +362,6 @@
             isOsDropdownOpen = false;
         };
 
-        // 📌 CPA 커스텀 드롭다운 JS 제어
         let currentCpaLimit = 1.0;
         let isCpaDropdownOpen = false;
         window.toggleCpaDropdown = function(e) {
@@ -401,6 +398,9 @@
             });
             window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = ''; } });
         });
+
+        // 📌 시나리오 환경 설정 전역 변수
+        const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
 
         window.startLoadingAssets = async function() {
             studentInfo.id = document.getElementById('student-id').value.trim();
@@ -578,6 +578,9 @@
 
             logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
             
+            // 📌 시나리오 환경 설정 초기화 (미설정 시 기본값)
+            env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
+
             document.getElementById('digital-hud-container').style.display = 'flex';
             document.getElementById('ecdis-container').style.display = 'block';
             document.getElementById('demo-control-container').style.display = 'flex';
@@ -587,28 +590,18 @@
             let osData = parsedModels[osFileName];
             if (!osData) {
                 const availableFiles = Object.keys(parsedModels);
-                if(availableFiles.length > 0) {
-                    osFileName = availableFiles[0]; osData = parsedModels[osFileName];
-                } else {
-                    alert("로딩된 3D 선박 모델이 없어 구동 불가합니다."); return;
-                }
+                if(availableFiles.length > 0) { osFileName = availableFiles[0]; osData = parsedModels[osFileName]; } else { alert("로딩된 3D 선박 모델이 없어 구동 불가합니다."); return; }
             }
 
             currentOSFileName = osFileName;
             const osModel = osData.group.clone();
             
             const savedCalib = localStorage.getItem('model_calib_' + osFileName);
-            if(savedCalib) {
-                const calib = JSON.parse(savedCalib); osModel.position.copy(calib.pos); osModel.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z);
-            } else {
-                osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0);
-            }
+            if(savedCalib) { const calib = JSON.parse(savedCalib); osModel.position.copy(calib.pos); osModel.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z); } else { osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0); }
             osShip.add(osModel); osShip.add(camera);
 
             const savedCamStr = localStorage.getItem('bridgeCam_' + currentOSFileName);
-            if (savedCamStr) {
-                const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z);
-            } else { camera.position.set(0, 60, 0); }
+            if (savedCamStr) { const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z); } else { camera.position.set(0, 60, 0); }
             camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
 
             const filesList = Object.keys(parsedModels);
@@ -618,10 +611,8 @@
                 const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
                 const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
                 const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
-                
                 const tSaved = localStorage.getItem('model_calib_' + randomFile);
                 if(tSaved) { const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); } else { tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0); }
-                
                 tsGroup.add(tModel); tsGroup.position.set(x, 0, z); tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; tsGroup.rotation.y = -hdg * (Math.PI / 180); targetShips.push(tsGroup); scene.add(tsGroup);
                 const el = document.createElement('div'); el.className = 'ar-label';
                 el.innerHTML = `<div class="ar-header">${name}</div><div class="ar-body">Name: <span class="ar-val ar-name">${name}</span><br>MMSI: <span class="ar-val ar-mmsi">-</span><br>COG: <span class="ar-val ar-cog">-</span><br>SOG: <span class="ar-val ar-sog">-</span><br>DIST: <span class="ar-val ar-dist">-</span><br>CPA: <span class="ar-val ar-cpa">-</span><br>TCPA: <span class="ar-val ar-tcpa">-</span><br>BCR: <span class="ar-val ar-bcr">-</span></div>`;
@@ -633,14 +624,26 @@
             if (loadedScenarioConfig) {
                 if (Array.isArray(loadedScenarioConfig)) {
                     loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); } });
-                } else if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
-                    if (loadedScenarioConfig.os.spd !== undefined) {
-                        shipPhysics.cmdSpeed = loadedScenarioConfig.os.spd; 
-                        shipPhysics.speed = loadedScenarioConfig.os.spd;
+                } else {
+                    if (loadedScenarioConfig.os) {
+                        if (loadedScenarioConfig.os.spd !== undefined) { shipPhysics.cmdSpeed = loadedScenarioConfig.os.spd; shipPhysics.speed = loadedScenarioConfig.os.spd; }
+                        if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
+                        if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
                     }
-                    if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
-                    if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
-                    loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
+                    if (loadedScenarioConfig.targets) {
+                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
+                    }
+                    // 📌 바람/조류 파서
+                    if (loadedScenarioConfig.environment) {
+                        if (loadedScenarioConfig.environment.wind) {
+                            env.windDir = loadedScenarioConfig.environment.wind.dir !== undefined ? loadedScenarioConfig.environment.wind.dir : env.windDir;
+                            env.windSpd = loadedScenarioConfig.environment.wind.spd !== undefined ? loadedScenarioConfig.environment.wind.spd : env.windSpd;
+                        }
+                        if (loadedScenarioConfig.environment.current) {
+                            env.currentDir = loadedScenarioConfig.environment.current.dir !== undefined ? loadedScenarioConfig.environment.current.dir : env.currentDir;
+                            env.currentSpd = loadedScenarioConfig.environment.current.spd !== undefined ? loadedScenarioConfig.environment.current.spd : env.currentSpd;
+                        }
+                    }
                 }
                 if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
             }
@@ -663,8 +666,7 @@
 
         let currentMode = 'NONE'; let simSpeed = 1.0; const moveScale = 0.15; 
         const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
-        const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5 };
-
+        
         window.setMode = function(mode) {
             if(currentMode === mode) currentMode = 'NONE'; else currentMode = mode;
             document.getElementById('btn-mode-cas').classList.remove('active'); document.getElementById('right-center-cas-panel').style.display = 'none'; document.getElementById('bottom-left-panel').style.display = 'none'; document.getElementById('scanline').style.display = 'none'; document.getElementById('hud-lines').style.opacity = '0';
@@ -684,11 +686,8 @@
             const btn = document.getElementById('btn-touch-steer');
             const pBtn = document.getElementById('btn-steer-port');
             const sBtn = document.getElementById('btn-steer-stbd');
-            if(isTouchSteeringEnabled) {
-                btn.classList.add('active'); pBtn.style.display = 'flex'; sBtn.style.display = 'flex';
-            } else {
-                btn.classList.remove('active'); pBtn.style.display = 'none'; sBtn.style.display = 'none';
-            }
+            if(isTouchSteeringEnabled) { btn.classList.add('active'); pBtn.style.display = 'flex'; sBtn.style.display = 'flex'; } 
+            else { btn.classList.remove('active'); pBtn.style.display = 'none'; sBtn.style.display = 'none'; }
         };
 
         let saveTimeout;
@@ -761,11 +760,30 @@
             const T_surge = 15.0; 
             shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
 
-            shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + (env.windSpd * 0.05);
+            // 📌 바람/조류 물리 외력 적용
+            let moveX = (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
+            let moveZ = -(shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
+
+            // 바람 드리프트 (Leeway)
+            let relativeWindDir = (env.windDir - shipPhysics.heading + 360) % 360;
+            let windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin(relativeWindDir * Math.PI / 180);
+            moveX += (windDriftSpeed * moveScale) * Math.cos(headingRad) * dt; 
+            moveZ -= (windDriftSpeed * moveScale) * -Math.sin(headingRad) * dt;
+
+            // 조류 벡터 연산 (Set & Drift)
+            let currentRad = env.currentDir * (Math.PI / 180);
+            moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
+            moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
+
+            osShip.position.x += moveX;
+            osShip.position.z += moveZ;
+            
+            // HUD용 드리프트 게이지 (ROT 밀림 + 바람 밀림)
+            shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + windDriftSpeed;
+
             const t = clock.getElapsedTime() * simSpeed;
             shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
             osShip.rotation.set(-shipPhysics.pitch * Math.PI/180, -headingRad, -shipPhysics.roll * Math.PI/180);
-            osShip.position.x += (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt; osShip.position.z -= (shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
             
             camera.rotation.y = camAngleY; camera.rotation.x = camAngleX;
             arOverlayGroup.position.copy(osShip.position); arOverlayGroup.rotation.y = -headingRad;
@@ -784,7 +802,6 @@
             shipPhysics.wakeTimer = (shipPhysics.wakeTimer || 0) + dt;
             if(shipPhysics.wakeTimer > 0.15) {
                 shipPhysics.wakeTimer = 0;
-                // 📌 AdditiveBlending 제거하여 야간 광원(Glowing) 방지
                 function spawnWake(shipPos, shipHeadingRad, speed) { if(speed < 2.0) return; let w = wakePool.pop(); if(!w) { let mat = new THREE.MeshBasicMaterial({ map: wakeTex, transparent: true, opacity: 0.4, depthWrite: false }); w = new THREE.Mesh(wakeGeo, mat); w.rotation.order = 'YXZ'; w.rotation.x = -Math.PI / 2; } let dx = Math.sin(shipHeadingRad) * (-30); let dz = -Math.cos(shipHeadingRad) * (-30); w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz); w.rotation.z = -shipHeadingRad; w.scale.setScalar(1); w.material.opacity = 0.4; w.userData.life = 1.0; scene.add(w); activeWakes.push(w); }
                 spawnWake(osShip.position, headingRad, shipPhysics.speed); targetShips.forEach(ts => { const tsRad = ts.userData.heading * (Math.PI / 180); spawnWake(ts.position, tsRad, ts.userData.speed); });
             }
@@ -795,6 +812,9 @@
             const rotVal = shipPhysics.rot; const rotEl = document.getElementById('val-rot'); rotEl.innerText = Math.abs(rotVal).toFixed(1); if (rotVal > 0.1) { rotEl.style.color = '#00ffaa'; } else if (rotVal < -0.1) { rotEl.style.color = '#ff3333'; } else { rotEl.style.color = '#fff'; }
             const rudCmdVal = shipPhysics.targetRudder; const rudCmdEl = document.getElementById('val-rud-cmd'); rudCmdEl.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; if (rudCmdVal > 0.1) { rudCmdEl.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { rudCmdEl.style.color = '#ff3333'; } else { rudCmdEl.style.color = '#fff'; }
             const rudActVal = shipPhysics.actualRudder; const rudActEl = document.getElementById('val-rud-act'); rudActEl.innerText = Math.abs(rudActVal).toFixed(1) + '°'; if (rudActVal > 0.1) { rudActEl.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { rudActEl.style.color = '#ff3333'; } else { rudActEl.style.color = '#fff'; }
+
+            // 📌 HUD 바람 수치 연동
+            document.getElementById('val-wind').innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}m/s`;
 
             let maxDistSq = 1000 * 1000;
             targetShips.forEach(ts => { const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const dSq = relX*relX + relZ*relZ; if (dSq > maxDistSq) { maxDistSq = dSq; } });
