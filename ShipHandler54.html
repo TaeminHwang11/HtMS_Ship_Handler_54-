@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>[HtMS] Ship Handler</title>
+    <title>[HTMS] Ship Handler</title>
     <!-- Three.js 코어 및 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/objects/Water.js"></script>
@@ -82,10 +82,15 @@
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
         
-        .form-row select { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; user-select: auto; -webkit-user-select: auto; }
-        .form-row select option { background: #111; color: #fff; }
+        /* 커스텀 드롭다운 UI (에러 방지용 완벽 교체) */
+        .custom-select-wrapper { position: relative; width: 100%; user-select: none; }
+        .custom-select-box { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .custom-select-list { position: absolute; top: 100%; left: 0; width: 100%; max-height: 220px; overflow-y: auto; background: #111; border: 1px solid #555; border-radius: 0 0 4px 4px; z-index: 1001; display: none; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        .custom-select-item { padding: 12px; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; cursor: pointer; border-bottom: 1px solid #333; transition: background 0.1s;}
+        .custom-select-item:hover { background: rgba(0,255,170,0.2); color: #00ffaa; }
+        .custom-select-item:last-child { border-bottom: none; }
 
-        .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s;}
+        .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s; margin-top: 10px;}
         .btn-main:hover { background: #00cc88; transform: translateY(-2px);}
         
         #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 1000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
@@ -152,20 +157,27 @@
                 <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
             </div>
             
+            <!-- 완벽하게 교체된 커스텀 본선 선택 메뉴 -->
             <div class="form-row">
                 <label>본선 (Own Ship) 선택</label>
-                <select id="os-select" onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
-                    <option value="CargoShip1.glb" selected>Cargo Ship 1 (화물선 1)</option>
-                    <option value="CargoShip2.glb">Cargo Ship 2 (화물선 2)</option>
-                    <option value="ContainerShip1.glb">Container Ship 1 (컨테이너선 1)</option>
-                    <option value="ContainerShip2.glb">Container Ship 2 (컨테이너선 2)</option>
-                    <option value="BulkCarrier.glb">Bulk Carrier (벌크선)</option>
-                    <option value="GasCarrier1.glb">Gas Carrier (가스운반선)</option>
-                    <option value="PassengerShip1.glb">Passenger Ship (여객선)</option>
-                    <option value="AircraftCarrier1.glb">Aircraft Carrier (항공모함)</option>
-                    <option value="SteamShip.glb">Steam Ship (증기선)</option>
-                    <option value="FishingBoat1.glb">Fishing Boat (어선)</option>
-                </select>
+                <div class="custom-select-wrapper">
+                    <div class="custom-select-box" onclick="toggleOsDropdown(event)">
+                        <span id="selected-os-text">Cargo Ship 1 (화물선 1)</span>
+                        <span style="font-size: 14px;">▼</span>
+                    </div>
+                    <div class="custom-select-list" id="os-dropdown-list">
+                        <div class="custom-select-item" onclick="selectOs('CargoShip1.glb', 'Cargo Ship 1 (화물선 1)', event)">Cargo Ship 1 (화물선 1)</div>
+                        <div class="custom-select-item" onclick="selectOs('CargoShip2.glb', 'Cargo Ship 2 (화물선 2)', event)">Cargo Ship 2 (화물선 2)</div>
+                        <div class="custom-select-item" onclick="selectOs('ContainerShip1.glb', 'Container Ship 1 (컨테이너선 1)', event)">Container Ship 1 (컨테이너선 1)</div>
+                        <div class="custom-select-item" onclick="selectOs('ContainerShip2.glb', 'Container Ship 2 (컨테이너선 2)', event)">Container Ship 2 (컨테이너선 2)</div>
+                        <div class="custom-select-item" onclick="selectOs('BulkCarrier.glb', 'Bulk Carrier (벌크선)', event)">Bulk Carrier (벌크선)</div>
+                        <div class="custom-select-item" onclick="selectOs('GasCarrier1.glb', 'Gas Carrier (가스운반선)', event)">Gas Carrier (가스운반선)</div>
+                        <div class="custom-select-item" onclick="selectOs('PassengerShip1.glb', 'Passenger Ship (여객선)', event)">Passenger Ship (여객선)</div>
+                        <div class="custom-select-item" onclick="selectOs('AircraftCarrier1.glb', 'Aircraft Carrier (항공모함)', event)">Aircraft Carrier (항공모함)</div>
+                        <div class="custom-select-item" onclick="selectOs('SteamShip.glb', 'Steam Ship (증기선)', event)">Steam Ship (증기선)</div>
+                        <div class="custom-select-item" onclick="selectOs('FishingBoat1.glb', 'Fishing Boat (어선)', event)">Fishing Boat (어선)</div>
+                    </div>
+                </div>
             </div>
 
             <button class="btn-main" onclick="startLoadingAssets()">시작하기</button>
@@ -329,6 +341,26 @@
 
         let loadedScenarioConfig = null;
 
+        // 📌 커스텀 드롭다운 JS 제어
+        let isOsDropdownOpen = false;
+        window.toggleOsDropdown = function(e) {
+            if(e) e.stopPropagation();
+            const list = document.getElementById('os-dropdown-list');
+            isOsDropdownOpen = !isOsDropdownOpen;
+            list.style.display = isOsDropdownOpen ? 'flex' : 'none';
+        };
+        window.selectOs = function(val, text, e) {
+            if(e) e.stopPropagation();
+            MAIN_OS_FILE = val;
+            document.getElementById('selected-os-text').innerText = text;
+            document.getElementById('os-dropdown-list').style.display = 'none';
+            isOsDropdownOpen = false;
+        };
+        document.addEventListener('click', () => {
+            const list = document.getElementById('os-dropdown-list');
+            if(list && isOsDropdownOpen) { list.style.display = 'none'; isOsDropdownOpen = false; }
+        });
+
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
             panel.addEventListener('mousedown', (e) => {
@@ -347,8 +379,6 @@
             studentInfo.id = document.getElementById('student-id').value.trim();
             studentInfo.name = document.getElementById('student-name').value.trim();
             if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
-
-            MAIN_OS_FILE = document.getElementById('os-select').value;
 
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('loading-screen').style.display = 'flex';
@@ -522,7 +552,6 @@
             document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
             activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
 
-            // 추가된 cmdSpeed 초기화
             logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
             
             document.getElementById('digital-hud-container').style.display = 'flex';
@@ -643,7 +672,6 @@
             if(gameState === 'PLAYING') {
                 if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); 
                 if (!isPaused) {
-                    // 상하 방향키 속도 조작 차단됨
                     if(e.code === 'ArrowLeft' && !e.repeat) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
                     if(e.code === 'ArrowRight' && !e.repeat) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
                     if(e.code === 'Space') shipPhysics.targetRudder = 0;
@@ -704,12 +732,10 @@
             if (shipPhysics.heading < 0) shipPhysics.heading += 360;
             const headingRad = shipPhysics.heading * (Math.PI / 180);
 
-            // --- 추가된 경험적 Surge 1차 지연 모델 (속력 강하 및 관성 회복) ---
             const speedLossFactor = 0.008; 
             const targetSpeed = shipPhysics.cmdSpeed * (1.0 - speedLossFactor * Math.abs(shipPhysics.rot));
             const T_surge = 15.0; 
             shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
-            // -----------------------------------------------------------------
 
             shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + (env.windSpd * 0.05);
             const t = clock.getElapsedTime() * simSpeed;
