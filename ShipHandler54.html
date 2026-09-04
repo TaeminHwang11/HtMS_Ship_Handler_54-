@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>[HTMS] Ship Handler</title>
+    <title>[HtMS] Ship Handler</title>
     <!-- Three.js 코어 및 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/objects/Water.js"></script>
@@ -509,6 +509,9 @@
             } 
         };
 
+        // ==========================================
+        // 3. 시뮬레이션 메인 로직 및 물리엔진 설정
+        // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
 
@@ -519,6 +522,7 @@
             document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
             activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
 
+            // 추가된 cmdSpeed 초기화
             logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
             
             document.getElementById('digital-hud-container').style.display = 'flex';
@@ -571,13 +575,16 @@
                 arContainer.appendChild(el); arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
             }
 
-            osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.speed = 10.0; 
+            osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.cmdSpeed = 10.0; shipPhysics.speed = 10.0; 
 
             if (loadedScenarioConfig) {
                 if (Array.isArray(loadedScenarioConfig)) {
                     loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); } });
                 } else if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
-                    if (loadedScenarioConfig.os.spd !== undefined) shipPhysics.speed = loadedScenarioConfig.os.spd;
+                    if (loadedScenarioConfig.os.spd !== undefined) {
+                        shipPhysics.cmdSpeed = loadedScenarioConfig.os.spd; 
+                        shipPhysics.speed = loadedScenarioConfig.os.spd;
+                    }
                     if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
                     if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
                     loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
@@ -602,7 +609,7 @@
         }
 
         let currentMode = 'NONE'; let simSpeed = 1.0; const moveScale = 0.15; 
-        const shipPhysics = { speed: 10.0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
+        const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
         const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5 };
 
         window.setMode = function(mode) {
@@ -636,10 +643,9 @@
             if(gameState === 'PLAYING') {
                 if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); 
                 if (!isPaused) {
+                    // 상하 방향키 속도 조작 차단됨
                     if(e.code === 'ArrowLeft' && !e.repeat) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
                     if(e.code === 'ArrowRight' && !e.repeat) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
-                    if(e.code === 'ArrowUp' && !e.repeat) shipPhysics.speed = Math.min(25, shipPhysics.speed + 1);
-                    if(e.code === 'ArrowDown' && !e.repeat) shipPhysics.speed = Math.max(0, shipPhysics.speed - 1);
                     if(e.code === 'Space') shipPhysics.targetRudder = 0;
                 }
                 let camMoved = false;
@@ -653,7 +659,6 @@
             }
         });
 
-        // P / S 버튼 조작 기능
         function steerPort(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
         function steerStbd(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
         
@@ -698,6 +703,14 @@
             shipPhysics.rot += rotDerivative * dt; shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
             if (shipPhysics.heading < 0) shipPhysics.heading += 360;
             const headingRad = shipPhysics.heading * (Math.PI / 180);
+
+            // --- 추가된 경험적 Surge 1차 지연 모델 (속력 강하 및 관성 회복) ---
+            const speedLossFactor = 0.008; 
+            const targetSpeed = shipPhysics.cmdSpeed * (1.0 - speedLossFactor * Math.abs(shipPhysics.rot));
+            const T_surge = 15.0; 
+            shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
+            // -----------------------------------------------------------------
+
             shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + (env.windSpd * 0.05);
             const t = clock.getElapsedTime() * simSpeed;
             shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
