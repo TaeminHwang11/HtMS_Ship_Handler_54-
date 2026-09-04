@@ -69,7 +69,7 @@
         .ai-insight-title { font-size: 15px; font-weight: bold; color: #fff; margin-bottom: 8px;}
         .ai-list { margin: 0; padding-left: 20px; color: #eceff1; font-size: 14px; line-height: 1.6; }
 
-        /* AR Container Fix (모바일 위치 이탈 방지) */
+        /* AR Container Fix */
         #ar-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: hidden; z-index: 50; }
         .ar-label { position: absolute; pointer-events: none; display: none; border: 1px solid rgba(0, 255, 255, 0.4); background: rgba(4, 16, 26, 0.85); min-width: 150px; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
         .ar-header { background: rgba(0, 255, 255, 0.3); color: #fff; padding: 6px 10px; font-size: 14px; font-weight: bold; border-bottom: 1px solid #0ff; text-align: center; }
@@ -82,7 +82,7 @@
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
         .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
         
-        /* 커스텀 드롭다운 UI (에러 방지용 완벽 교체) */
+        /* 커스텀 드롭다운 UI (OS 및 CPA 공용) */
         .custom-select-wrapper { position: relative; width: 100%; user-select: none; }
         .custom-select-box { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .custom-select-list { position: absolute; top: 100%; left: 0; width: 100%; max-height: 220px; overflow-y: auto; background: #111; border: 1px solid #555; border-radius: 0 0 4px 4px; z-index: 1001; display: none; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
@@ -157,7 +157,6 @@
                 <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
             </div>
             
-            <!-- 완벽하게 교체된 커스텀 본선 선택 메뉴 -->
             <div class="form-row">
                 <label>본선 (Own Ship) 선택</label>
                 <div class="custom-select-wrapper">
@@ -260,13 +259,21 @@
         <div class="panel-header">THREAT ANALYSIS</div>
         <div style="margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
             <span style="color:#88c0d0; font-size:14px; font-weight:bold;">CPA ALARM LIMIT:</span>
-            <select id="cpa-threshold-select" style="background:#222; color:#00ffaa; border:1px solid #00ffaa; padding:4px 10px; font-family:'Rajdhani', sans-serif; border-radius:4px; outline:none; cursor:pointer;">
-                <option value="0.5">0.5 NM</option>
-                <option value="1.0" selected>1.0 NM</option>
-                <option value="1.5">1.5 NM</option>
-                <option value="2.0">2.0 NM</option>
-                <option value="3.0">3.0 NM</option>
-            </select>
+            
+            <!-- 완벽하게 교체된 커스텀 CPA 한계 선택 메뉴 -->
+            <div class="custom-select-wrapper" style="width: 100px;">
+                <div class="custom-select-box" style="padding: 4px 10px; font-size: 14px; background: #222;" onclick="toggleCpaDropdown(event)">
+                    <span id="selected-cpa-text">1.0 NM</span>
+                    <span style="font-size: 10px;">▼</span>
+                </div>
+                <div class="custom-select-list" id="cpa-dropdown-list" style="max-height: 150px; font-size: 14px;">
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(0.5, '0.5 NM', event)">0.5 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(1.0, '1.0 NM', event)">1.0 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(1.5, '1.5 NM', event)">1.5 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(2.0, '2.0 NM', event)">2.0 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(3.0, '3.0 NM', event)">3.0 NM</div>
+                </div>
+            </div>
         </div>
         <div class="danger-data-row"><span>NAME:</span> <b id="danger-target-name" style="color:#ffcc00;">-</b></div>
         <div class="danger-data-row"><span>MMSI:</span> <b id="danger-target-mmsi" style="color:#fff;">-</b></div>
@@ -322,10 +329,11 @@
         wakeCanvas.width = 128; wakeCanvas.height = 256;
         const wCtx = wakeCanvas.getContext('2d');
         
+        // 📌 후류(Wake) 색상 어둡게 변경 (야간 눈부심 방지)
         const gradX = wCtx.createLinearGradient(0, 0, 128, 0);
-        gradX.addColorStop(0, 'rgba(255,255,255,0)');
-        gradX.addColorStop(0.5, 'rgba(255,255,255,1)');
-        gradX.addColorStop(1, 'rgba(255,255,255,0)');
+        gradX.addColorStop(0, 'rgba(140, 170, 190, 0)');
+        gradX.addColorStop(0.5, 'rgba(140, 170, 190, 0.5)');
+        gradX.addColorStop(1, 'rgba(140, 170, 190, 0)');
         wCtx.fillStyle = gradX;
         wCtx.fillRect(0, 0, 128, 256);
         
@@ -341,7 +349,6 @@
 
         let loadedScenarioConfig = null;
 
-        // 📌 커스텀 드롭다운 JS 제어
         let isOsDropdownOpen = false;
         window.toggleOsDropdown = function(e) {
             if(e) e.stopPropagation();
@@ -356,9 +363,29 @@
             document.getElementById('os-dropdown-list').style.display = 'none';
             isOsDropdownOpen = false;
         };
+
+        // 📌 CPA 커스텀 드롭다운 JS 제어
+        let currentCpaLimit = 1.0;
+        let isCpaDropdownOpen = false;
+        window.toggleCpaDropdown = function(e) {
+            if(e) e.stopPropagation();
+            const list = document.getElementById('cpa-dropdown-list');
+            isCpaDropdownOpen = !isCpaDropdownOpen;
+            list.style.display = isCpaDropdownOpen ? 'flex' : 'none';
+        };
+        window.selectCpa = function(val, text, e) {
+            if(e) e.stopPropagation();
+            currentCpaLimit = val;
+            document.getElementById('selected-cpa-text').innerText = text;
+            document.getElementById('cpa-dropdown-list').style.display = 'none';
+            isCpaDropdownOpen = false;
+        };
+
         document.addEventListener('click', () => {
             const list = document.getElementById('os-dropdown-list');
             if(list && isOsDropdownOpen) { list.style.display = 'none'; isOsDropdownOpen = false; }
+            const cpaList = document.getElementById('cpa-dropdown-list');
+            if(cpaList && isCpaDropdownOpen) { cpaList.style.display = 'none'; isCpaDropdownOpen = false; }
         });
 
         document.querySelectorAll('.draggable-panel').forEach(panel => {
@@ -539,9 +566,6 @@
             } 
         };
 
-        // ==========================================
-        // 3. 시뮬레이션 메인 로직 및 물리엔진 설정
-        // ==========================================
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
 
@@ -756,11 +780,12 @@
                 const tsRad = ts.userData.heading * (Math.PI / 180); ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt; ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
             });
 
-            for(let i = activeWakes.length - 1; i >= 0; i--) { let w = activeWakes[i]; w.userData.life -= dt * 0.25; w.scale.setScalar(1 + (1 - w.userData.life) * 1.5); w.material.opacity = w.userData.life * 0.5; if(w.userData.life <= 0) { scene.remove(w); activeWakes.splice(i, 1); wakePool.push(w); } }
+            for(let i = activeWakes.length - 1; i >= 0; i--) { let w = activeWakes[i]; w.userData.life -= dt * 0.25; w.scale.setScalar(1 + (1 - w.userData.life) * 1.5); w.material.opacity = w.userData.life * 0.4; if(w.userData.life <= 0) { scene.remove(w); activeWakes.splice(i, 1); wakePool.push(w); } }
             shipPhysics.wakeTimer = (shipPhysics.wakeTimer || 0) + dt;
             if(shipPhysics.wakeTimer > 0.15) {
                 shipPhysics.wakeTimer = 0;
-                function spawnWake(shipPos, shipHeadingRad, speed) { if(speed < 2.0) return; let w = wakePool.pop(); if(!w) { let mat = new THREE.MeshBasicMaterial({ map: wakeTex, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }); w = new THREE.Mesh(wakeGeo, mat); w.rotation.order = 'YXZ'; w.rotation.x = -Math.PI / 2; } let dx = Math.sin(shipHeadingRad) * (-30); let dz = -Math.cos(shipHeadingRad) * (-30); w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz); w.rotation.z = -shipHeadingRad; w.scale.setScalar(1); w.material.opacity = 0.6; w.userData.life = 1.0; scene.add(w); activeWakes.push(w); }
+                // 📌 AdditiveBlending 제거하여 야간 광원(Glowing) 방지
+                function spawnWake(shipPos, shipHeadingRad, speed) { if(speed < 2.0) return; let w = wakePool.pop(); if(!w) { let mat = new THREE.MeshBasicMaterial({ map: wakeTex, transparent: true, opacity: 0.4, depthWrite: false }); w = new THREE.Mesh(wakeGeo, mat); w.rotation.order = 'YXZ'; w.rotation.x = -Math.PI / 2; } let dx = Math.sin(shipHeadingRad) * (-30); let dz = -Math.cos(shipHeadingRad) * (-30); w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz); w.rotation.z = -shipHeadingRad; w.scale.setScalar(1); w.material.opacity = 0.4; w.userData.life = 1.0; scene.add(w); activeWakes.push(w); }
                 spawnWake(osShip.position, headingRad, shipPhysics.speed); targetShips.forEach(ts => { const tsRad = ts.userData.heading * (Math.PI / 180); spawnWake(ts.position, tsRad, ts.userData.speed); });
             }
         }
@@ -780,7 +805,7 @@
             for(let r = 1; r <= 4; r++) { ctxR.beginPath(); ctxR.arc(cx, cy, r * (canvasR.width/8), 0, Math.PI * 2); ctxR.stroke(); }
             ctxR.save(); ctxR.translate(cx, cy);
 
-            let mostDangerousTarget = null; let minTcpa = Infinity; let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value); let collisionDetected = false; 
+            let mostDangerousTarget = null; let minTcpa = Infinity; let cpaThreshold = currentCpaLimit; let collisionDetected = false; 
             const canvasLines = document.getElementById('hud-lines'); canvasLines.width = window.innerWidth; canvasLines.height = window.innerHeight; const ctxL = canvasLines.getContext('2d'); ctxL.clearRect(0,0, canvasLines.width, canvasLines.height); const ownPos2D = { x: window.innerWidth/2, y: window.innerHeight - 50 };
 
             raycaster.setFromCamera(mouse, camera); const intersects = raycaster.intersectObjects(targetShips, true); let hoveredShip = null;
@@ -839,7 +864,7 @@
                     reasonList.innerHTML = `<li style="color:#ff3333; font-weight:bold;">HIGH COLLISION RISK</li><li>위험 선박: ${ts.userData.name}</li><li>충돌 예상 시간: ${(tTcpa/60).toFixed(1)}분</li><li style="margin-top:10px; color:#ffcc00; font-weight:bold;">▶ 우현 변침 권고.</li>`; dangerChevrons.visible = false; voiceContent.innerHTML = `선장님, <b style="color:#ffcc00">${ts.userData.name}</b> 와의 충돌 위험이 감지되었습니다.<br>안전 거리 확보를 위해 우현 변침이 필요합니다.<br>시야에 시현된 <span style="color:#00ffaa; font-weight:bold;">녹색 회피 경로</span>를 따라 조타해 주십시오.`;
                 } else {
                     document.getElementById('danger-target-name').innerText = "NONE"; document.getElementById('danger-target-mmsi').innerText = "-"; document.getElementById('danger-target-cog').innerText = "-"; document.getElementById('danger-target-sog').innerText = "-"; document.getElementById('danger-target-dist').innerText = "-"; document.getElementById('danger-target-cpa').innerText = "-"; document.getElementById('danger-target-tcpa').innerText = "-"; document.getElementById('danger-target-bcr').innerText = "-";
-                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`; dangerChevrons.visible = false; let cpaThreshold = parseFloat(document.getElementById('cpa-threshold-select').value); voiceContent.innerHTML = `선장님, 설정된 안전 반경(${cpaThreshold.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
+                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`; dangerChevrons.visible = false; voiceContent.innerHTML = `선장님, 설정된 안전 반경(${currentCpaLimit.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
                 }
             }
         }
