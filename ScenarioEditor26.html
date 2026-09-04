@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>[HTMS] Scenario Generator</title>
+    <title>[HtMS] Scenario Generator</title>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -133,6 +133,7 @@
         .origin-inputs input {
             flex: 1; background-color: #0b0f19; color: white; border: 1px solid #334155;
             padding: 6px; border-radius: 4px; font-family: monospace; font-size: 12px; outline: none; text-align: center;
+            user-select: auto; -webkit-user-select: auto;
         }
         
         #selectedShipDisplay {
@@ -201,10 +202,23 @@
     </div>
 
     <div class="origin-control">
-        <label>ACTIVE MASS ORIGIN (LAT / LON)</label>
+        <label>REFERENCE ORIGIN (LAT / LON)</label>
         <div class="origin-inputs">
             <input type="number" id="originLat" step="0.000001" placeholder="Latitude">
             <input type="number" id="originLon" step="0.000001" placeholder="Longitude">
+        </div>
+    </div>
+
+    <!-- 📌 환경 외력(바람/조류) 컨트롤 추가 -->
+    <div class="origin-control" style="border-left-color: #0ea5e9;">
+        <label style="color: #38bdf8;">ENVIRONMENT (WIND & CURRENT)</label>
+        <div class="origin-inputs" style="margin-bottom: 6px;">
+            <input type="number" id="envWindDir" step="1" placeholder="Wind Dir (°)" value="45" title="Wind Direction (Degree)">
+            <input type="number" id="envWindSpd" step="0.1" placeholder="Wind Spd (m/s)" value="12.5" title="Wind Speed (m/s)">
+        </div>
+        <div class="origin-inputs">
+            <input type="number" id="envCurrDir" step="1" placeholder="Curr Dir (°)" value="0" title="Current Direction (Degree)">
+            <input type="number" id="envCurrSpd" step="0.1" placeholder="Curr Spd (kn)" value="0.0" title="Current Speed (knots)">
         </div>
     </div>
 
@@ -303,6 +317,9 @@
     let massList = []; 
     let activeMassIndex = 0; 
     let globalOrigin = { lat: 34.800000, lon: 126.400000 };
+    
+    // 📌 전역 환경 변수 (바람 및 조류)
+    let globalEnv = { windDir: 45, windSpd: 12.5, currDir: 0, currSpd: 0.0 };
 
     let replayFrames = []; 
     let currentReplayTime = 0;
@@ -316,6 +333,23 @@
     const selShipName = document.getElementById('selShipName');
     const originLatInput = document.getElementById('originLat');
     const originLonInput = document.getElementById('originLon');
+
+    // 📌 환경 요소 입력 필드
+    const envWindDirInput = document.getElementById('envWindDir');
+    const envWindSpdInput = document.getElementById('envWindSpd');
+    const envCurrDirInput = document.getElementById('envCurrDir');
+    const envCurrSpdInput = document.getElementById('envCurrSpd');
+
+    [envWindDirInput, envWindSpdInput, envCurrDirInput, envCurrSpdInput].forEach(el => {
+        el.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            if (e.target.id === 'envWindDir') globalEnv.windDir = val % 360;
+            if (e.target.id === 'envWindSpd') globalEnv.windSpd = val;
+            if (e.target.id === 'envCurrDir') globalEnv.currDir = val % 360;
+            if (e.target.id === 'envCurrSpd') globalEnv.currSpd = val;
+            generateJSONOutput();
+        });
+    });
 
     window.addEventListener('mouseup', () => { 
         massList.forEach((mass, idx) => {
@@ -357,7 +391,6 @@
             document.getElementById('massBtnRow').style.display = 'flex';
             tabMenu.style.display = 'none';
             
-            // MASS 모드 시 무조건 에디터 모드로 강제
             currentMode = 'editor';
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelector('.tab-btn[data-mode="editor"]').classList.add('active');
@@ -636,7 +669,6 @@
         updateCanvas(activeMassIndex); generateJSONOutput();
     });
 
-    // ECDIS Degree-Minute Extraction
     let currentEcdisCsv = "";
     document.getElementById('exportEcdisBtn').addEventListener('click', () => {
         const result = generateEcdisRoute();
@@ -789,7 +821,6 @@
             const rect = canvas.getBoundingClientRect();
             const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
 
-            // 우선순위 1: 웨이포인트 체크
             const checkWp = (wpArray) => {
                 for (let i = wpArray.length - 1; i >= 0; i--) {
                     const cx = mass.panX + (wpArray[i].x * mass.viewScale);
@@ -815,7 +846,6 @@
                 }
             }
 
-            // 우선순위 2: 벡터 핸들(화살표 끝) 체크 (즉시 액티베이션 & 회전 적용)
             if (!isDeleteMode) {
                 for (let i = mass.targets.length - 1; i >= 0; i--) {
                     const target = mass.targets[i];
@@ -832,7 +862,6 @@
                 }
             }
 
-            // 우선순위 3: 선박 몸체 체크
             const hitRadius = Math.max(20, (SHIP_LEN_UNIT / 2) * mass.viewScale);
             for (let i = mass.targets.length - 1; i >= 0; i--) {
                 const cx = mass.panX + (mass.targets[i].x * mass.viewScale);
@@ -844,7 +873,6 @@
                 }
             }
 
-            // 우선순위 4: 본선(OS) 몸체 체크
             if (Math.hypot(mx - mass.panX, my - mass.panY) < hitRadius) {
                 if (!isDeleteMode) {
                     mass.draggingObj = { type: 'ship', index: 'OS' }; 
@@ -852,7 +880,6 @@
                 }
             }
             
-            // 우선순위 5: 빈 공간 패닝(이동)
             if (!isDeleteMode) {
                 mass.draggingObj = { type: 'pan', startX: mx - mass.panX, startY: my - mass.panY };
             }
@@ -1074,6 +1101,10 @@
             if (!mass) return;
             const outputData = {
                 origin: { lat: mass.originLat, lon: mass.originLon },
+                environment: {
+                    wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
+                    current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
+                },
                 os: { type: mass.osData.type, hdg: mass.osData.hdg, spd: mass.osData.spd, waypoints: mass.osData.waypoints.map(w => ({x: Math.round(w.x), z: Math.round(w.z)})) },
                 targets: mass.targets.map(t => ({
                     type: t.type, x: Math.round(t.x), z: Math.round(t.z), hdg: Math.round(t.hdg), spd: t.spd,
@@ -1082,7 +1113,15 @@
             };
             document.getElementById('jsonOutput').value = JSON.stringify(outputData, null, 2);
         } else {
-            const out = { ScenarioName: "Exported_MASS_Scenario", map: "Hanbando", ships: [], WayPointSet: [], EventInfo: [] };
+            const out = { 
+                ScenarioName: "Exported_MASS_Scenario", 
+                map: "Hanbando", 
+                environment: {
+                    wind: { dir: globalEnv.windDir, spd: globalEnv.windSpd },
+                    current: { dir: globalEnv.currDir, spd: globalEnv.currSpd }
+                },
+                ships: [], WayPointSet: [], EventInfo: [] 
+            };
             const shipNames = ["ALPHA","BRAVO","CHARLIE","DELTA","ECHO","FOXTROT","GOLF","HOTEL","INDIA","JULIET","KILO","LIMA","MIKE"];
             
             let massShips = [];
@@ -1153,7 +1192,6 @@
             out.ships = [...massShips, ...trgShips];
             out.WayPointSet = [...massWpSets, ...trgWpSets];
             
-            // JSON 문자열 생성 후 WayPoints 객체 내부의 줄바꿈과 탭을 제거하고 좌표값을 6자리로 강제하는 정규식 적용
             let jsonStr = JSON.stringify(out, null, "\t");
             jsonStr = jsonStr.replace(/(\{\s*"Name"[\s\S]*?"EventID":\s*\[\]\s*\})/g, match => {
                 let updatedMatch = match.replace(/"Latitude":\s*([0-9.-]+)/, (m, p1) => `"Latitude": ${Number(p1).toFixed(6)}`);
@@ -1190,6 +1228,22 @@
                 const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
                 const isIncomingHTMSArray = Array.isArray(parsed);
                 const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && parsed.os;
+
+                // 📌 환경 정보 로딩 연동
+                if (parsed.environment) {
+                    if (parsed.environment.wind) {
+                        globalEnv.windDir = parsed.environment.wind.dir ?? 45;
+                        globalEnv.windSpd = parsed.environment.wind.spd ?? 12.5;
+                    }
+                    if (parsed.environment.current) {
+                        globalEnv.currDir = parsed.environment.current.dir ?? 0;
+                        globalEnv.currSpd = parsed.environment.current.spd ?? 0.0;
+                    }
+                    document.getElementById('envWindDir').value = globalEnv.windDir;
+                    document.getElementById('envWindSpd').value = globalEnv.windSpd;
+                    document.getElementById('envCurrDir').value = globalEnv.currDir;
+                    document.getElementById('envCurrSpd').value = globalEnv.currSpd;
+                }
 
                 if (simMode === 'HTMS') {
                     const newMass = createMassState(34.800000, 126.400000);
@@ -1299,7 +1353,6 @@
                 activeMassIndex = 0;
                 updateShipTypeOptions();
                 
-                // 수정된 부분: 현재 모드에 따라 화면을 즉시 갱신하도록 분기
                 if (currentMode === 'editor') {
                     renderGrid(); 
                 } else {
@@ -1374,7 +1427,6 @@ function parseCSV(csv) {
         const latIdx = headers.findIndex(h => h.includes('LAT'));
         const lonIdx = headers.findIndex(h => h.includes('LON'));
         
-        // CSV에서 X, Y 컬럼 인덱스 추가 탐색
         const xIdx = headers.indexOf('X');
         const yIdx = headers.indexOf('Y');
         
@@ -1397,12 +1449,10 @@ function parseCSV(csv) {
 
             let simX = 0; let simZ = 0;
             
-            // 1순위: CSV에 X, Y 값이 존재하면 3D 시뮬레이터의 원본 좌표계를 그대로 사용
             if (xIdx !== -1 && yIdx !== -1 && cols[xIdx] !== undefined && cols[yIdx] !== undefined) {
                 simX = parseFloat(cols[xIdx]) || 0;
                 simZ = parseFloat(cols[yIdx]) || 0;
             } 
-            // 2순위: 기존 위경도 기반 역산 로직 (MASS 포맷 등 X/Y가 없을 때)
             else if (latIdx !== -1 && lonIdx !== -1 && cols[latIdx] && cols[lonIdx]) {
                 const lat = parseFloat(cols[latIdx]); const lon = parseFloat(cols[lonIdx]);
                 if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
@@ -1493,7 +1543,6 @@ function parseCSV(csv) {
         }
         ctxL.setLineDash([]);
 
-        // 본선(OS) 항로 표시
         const mass = massList[0];
         if (mass) {
             if (mass.osData.waypoints.length > 0) {
@@ -1508,7 +1557,6 @@ function parseCSV(csv) {
                 });
             }
             
-            // 타선(Target) 계획 항로도 추가 표시하도록 수정
             mass.targets.forEach(t => {
                 if (t.waypoints.length > 0) {
                     ctxL.strokeStyle = '#ef4444'; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
