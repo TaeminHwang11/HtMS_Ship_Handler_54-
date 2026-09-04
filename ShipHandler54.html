@@ -37,12 +37,12 @@
         .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
         #save-toast { display: none; margin-top: 5px; color: #fff; background: rgba(0,255,170,0.4); padding: 2px 10px; border-radius: 4px; font-size: 12px;}
 
-        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: none; z-index: 100;}
+        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: block; z-index: 100;}
         #ecdis-canvas { width: 100%; height: 100%; display: block; border-radius: 50%; cursor: crosshair; }
         #radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 60%, rgba(0, 255, 255, 0.25) 100%); animation: sweep 2.5s infinite linear; pointer-events: none; }
         @keyframes sweep { 100% { transform: rotate(360deg); } }
 
-        #demo-control-container { bottom: 20px; right: 20px; width: 380px; display: none; flex-direction: column; z-index: 100; }
+        #demo-control-container { bottom: 20px; right: 20px; width: 380px; display: flex; flex-direction: column; z-index: 100; }
         .ctrl-title { font-size: 15px; font-weight: 700; color: #88c0d0; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,255,0.2); padding-bottom: 6px;}
         .ctrl-btn-group { display: flex; gap: 8px; margin-bottom: 12px; }
         .btn-ctrl { flex: 1; padding: 10px 5px; background: rgba(0, 100, 200, 0.2); border: 1px solid rgba(0,255,255,0.3); color: #ccc; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; transition: 0.2s;}
@@ -77,23 +77,24 @@
         .ar-header { background: rgba(0, 255, 255, 0.3); color: #fff; padding: 6px 10px; font-size: 14px; font-weight: bold; border-bottom: 1px solid #0ff; text-align: center; }
         .ar-body { padding: 8px 10px; font-size: 13px; color: #b3e5fc; line-height: 1.5; font-family: monospace;}
 
-        /* Auto Login & Loading Screen */
-        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .menu-box { background: rgba(0,0,0,0.6); border: 1px solid #00ffaa; border-radius: 12px; padding: 40px; width: 400px; box-shadow: 0 10px 40px rgba(0,255,170,0.1); }
-        .form-row { margin-bottom: 20px; text-align: left; }
-        .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold; }
-        .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; }
-        .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s; margin-top: 10px; }
-        .btn-main:hover { background: #00cc88; transform: translateY(-2px); }
+        /* Setup / Menu Overlay (Modified for Auto-Load) */
+        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow-y: auto;}
+        .menu-box { background: rgba(0,0,0,0.6); border: 1px solid #00ffaa; border-radius: 12px; padding: 40px; width: 400px; box-shadow: 0 10px 40px rgba(0,255,170,0.1); margin: 20px 0;}
+        .form-row { margin-bottom: 20px; text-align: left;}
+        .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
+        .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box;}
         
-        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 1000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .action-btns { display: flex; gap: 15px; margin-top: 30px; }
+        .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s;}
+        .btn-main:hover { background: #00cc88; transform: translateY(-2px);}
+        
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 1000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .spinner { border: 6px solid rgba(0, 255, 170, 0.2); border-top: 6px solid #00ffaa; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-text { font-size: 24px; color: #00ffaa; letter-spacing: 2px; font-weight: bold; }
         .loading-subtext { font-size: 16px; color: #88c0d0; margin-top: 10px; }
 
-        /* Finish Overlay */
-        #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: #fff; }
     </style>
@@ -103,7 +104,7 @@
     <div id="scanline"></div>
     <canvas id="hud-lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.5s;"></canvas>
 
-    <!-- 1. 학번/이름 입력 화면 (자동 로딩) -->
+    <!-- 1. 미션 셋업 메뉴 (자동 로딩 로그인으로 대체) -->
     <div id="login-overlay">
         <h1 style="font-size: 48px; letter-spacing: 2px; margin-bottom: 10px;">[HTMS] Ship Handler</h1>
         <h2 style="color: #00ffaa; letter-spacing: 5px; font-size: 18px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
@@ -121,19 +122,20 @@
         </div>
     </div>
 
+    <!-- 로딩 스크린 -->
     <div id="loading-screen">
         <div class="spinner"></div>
         <div class="loading-text">DOWNLOADING ASSETS...</div>
         <div id="loading-progress" class="loading-subtext">서버에 연결 중입니다...</div>
     </div>
 
-    <!-- 시뮬레이션 완료 및 전송 화면 -->
+    <!-- 완료 스크린 -->
     <div id="finish-overlay">
         <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
         <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
     </div>
 
-    <!-- 3. 메인 시뮬레이터 UI (원본 그대로 유지) -->
+    <!-- 3. 메인 시뮬레이터 UI -->
     <div id="camera-hint">
         [시야 조작] 마우스 좌클릭 드래그
         <div class="cam-controls">[본선 카메라 이동] W/S(앞뒤) A/D(좌우) Q/E(상하) - 조작 시 브라우저에 자동 저장됩니다.</div>
@@ -150,7 +152,7 @@
         <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5m/s</div></div>
     </div>
 
-    <!-- 수동 타겟 정보 패널 (원본 그대로 유지) -->
+    <!-- 수동 타겟 정보 패널 -->
     <div id="manual-target-panel" class="hud-panel draggable-panel" style="display:none; bottom: 20px; left: 20px; width: 380px; z-index: 150; background: rgba(5, 10, 15, 0.85);">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,255,255,0.4); padding-bottom:8px; margin-bottom:15px;">
             <div style="font-size:16px; color:#0ff; font-weight:bold;">MANUAL TARGET INFO</div>
@@ -166,10 +168,9 @@
         <div class="danger-data-row"><span>BCR:</span> <b id="mt-bcr" style="color:#fff;">-</b></div>
     </div>
 
-    <div id="ecdis-container" class="hud-panel draggable-panel"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
+    <div id="ecdis-container" class="hud-panel draggable-panel" style="display:none;"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
 
-    <!-- 원본 버튼 레이아웃 그대로 유지 -->
-    <div id="demo-control-container" class="hud-panel draggable-panel">
+    <div id="demo-control-container" class="hud-panel draggable-panel" style="display:none;">
         <div class="ctrl-title">AI ASSISTANT SYSTEM</div>
         <div class="ctrl-btn-group"><button id="btn-mode-cas" class="btn-ctrl" onclick="setMode('CAS')">CAS (COLLISION AVOIDANCE)</button></div>
         <div class="ctrl-title">ENVIRONMENT & SIMULATION</div>
@@ -197,10 +198,11 @@
         </div>
         <div class="ctrl-btn-group" style="margin-bottom:0;">
             <div id="btn-collision" class="btn-ctrl" style="pointer-events: none; background: rgba(0, 255, 170, 0.1); border-color: #00ffaa; color: #00ffaa; display: flex; align-items: center; justify-content: center;">COLLISION CLEAR</div>
+            <button class="btn-ctrl" onclick="returnToMenuFromSim()" style="background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc;">MAIN MENU</button>
         </div>
     </div>
 
-    <!-- AI (CAS) Threat Analysis Panel (원본 그대로 유지) -->
+    <!-- AI (CAS) Threat Analysis Panel -->
     <div id="right-center-cas-panel" class="hud-panel draggable-panel">
         <div class="panel-header">THREAT ANALYSIS</div>
         <div style="margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
@@ -242,10 +244,10 @@
     <div id="ar-container"></div>
 
     <script>
-// ==========================================
-        // 1. 핵심 서버 통신 변수 (상대 경로로 변경하여 오류 원천 차단)
         // ==========================================
-        const GITHUB_BASE_URL = "./"; 
+        // 1. 핵심 서버 통신 변수 설정
+        // ==========================================
+        const GITHUB_BASE_URL = "./"; // 로컬 및 Github Pages 호환용 상대 경로
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJnQMZiSKk-rCcs3csNCtDGOah-aD9OblqgcezP1Lh1B-5EK3CpERdYPdnzlumQTzLhA/exec";
 
         const modelFiles = [
@@ -257,156 +259,526 @@
         const skyImage = "Environment/NiceSky.jpg"; 
         const scenarioFile = "Scenarios/Scenario.json"; 
         const settingsFile = "Jsons/Settings.json"; 
-        const MAIN_OS_FILE = "Models/CargoShip1.glb"; 
+        const MAIN_OS_FILE = "CargoShip1.glb"; 
 
         // 글로벌 변수
         let studentInfo = { id: "", name: "" };
         let parsedModels = {}; 
-        let logData = []; let lastLogTime = 0; const LOG_INTERVAL = 1.0; 
-        let manuallySelectedTarget = null; let isPaused = false; let isCollisionEnabled = false; let isHudDragged = false; let manualRadarZoom = 1.0;
-        const wakePool = []; const activeWakes = [];
-        const wakeCanvas = document.createElement('canvas'); wakeCanvas.width = 128; wakeCanvas.height = 256;
+        let logData = [];
+        let lastLogTime = 0;
+        const LOG_INTERVAL = 1.0; 
+        
+        let manuallySelectedTarget = null;
+        let isPaused = false;
+        let isCollisionEnabled = false; 
+        let isHudDragged = false; 
+
+        let manualRadarZoom = 1.0;
+
+        const wakePool = [];
+        const activeWakes = [];
+
+        const wakeCanvas = document.createElement('canvas');
+        wakeCanvas.width = 128; wakeCanvas.height = 256;
         const wCtx = wakeCanvas.getContext('2d');
-        const gradX = wCtx.createLinearGradient(0, 0, 128, 0); gradX.addColorStop(0, 'rgba(255,255,255,0)'); gradX.addColorStop(0.5, 'rgba(255,255,255,1)'); gradX.addColorStop(1, 'rgba(255,255,255,0)'); wCtx.fillStyle = gradX; wCtx.fillRect(0, 0, 128, 256);
+        
+        const gradX = wCtx.createLinearGradient(0, 0, 128, 0);
+        gradX.addColorStop(0, 'rgba(255,255,255,0)');
+        gradX.addColorStop(0.5, 'rgba(255,255,255,1)');
+        gradX.addColorStop(1, 'rgba(255,255,255,0)');
+        wCtx.fillStyle = gradX;
+        wCtx.fillRect(0, 0, 128, 256);
+        
         wCtx.globalCompositeOperation = 'destination-in';
-        const gradY = wCtx.createLinearGradient(0, 0, 0, 256); gradY.addColorStop(0, 'rgba(255,255,255,1)'); gradY.addColorStop(1, 'rgba(255,255,255,0)'); wCtx.fillStyle = gradY; wCtx.fillRect(0, 0, 128, 256);
-        const wakeTex = new THREE.CanvasTexture(wakeCanvas); const wakeGeo = new THREE.PlaneGeometry(18, 45); 
+        const gradY = wCtx.createLinearGradient(0, 0, 0, 256);
+        gradY.addColorStop(0, 'rgba(255,255,255,1)');
+        gradY.addColorStop(1, 'rgba(255,255,255,0)');
+        wCtx.fillStyle = gradY;
+        wCtx.fillRect(0, 0, 128, 256);
+
+        const wakeTex = new THREE.CanvasTexture(wakeCanvas);
+        const wakeGeo = new THREE.PlaneGeometry(18, 45); 
+
         let loadedScenarioConfig = null;
 
-        // 드래그 패널 로직
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
-            panel.addEventListener('mousedown', (e) => { if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return; isPanelDragging = true; isHudDragged = false; startX = e.clientX; startY = e.clientY; const rect = panel.getBoundingClientRect(); startLeft = rect.left; startTop = rect.top; panel.style.bottom = 'auto'; panel.style.right = 'auto'; panel.style.transform = 'none'; panel.style.margin = '0'; panel.style.left = startLeft + 'px'; panel.style.top = startTop + 'px'; panel.style.zIndex = 1000; });
-            window.addEventListener('mousemove', (e) => { if(!isPanelDragging) return; isHudDragged = true; panel.style.left = (startLeft + (e.clientX - startX)) + 'px'; panel.style.top = (startTop + (e.clientY - startY)) + 'px'; });
-            window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = ''; } });
+            
+            panel.addEventListener('mousedown', (e) => {
+                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
+                isPanelDragging = true;
+                isHudDragged = false; 
+                startX = e.clientX; startY = e.clientY;
+                
+                const rect = panel.getBoundingClientRect();
+                startLeft = rect.left; startTop = rect.top;
+                
+                panel.style.bottom = 'auto';
+                panel.style.right = 'auto';
+                panel.style.transform = 'none';
+                panel.style.margin = '0';
+                panel.style.left = startLeft + 'px';
+                panel.style.top = startTop + 'px';
+                panel.style.zIndex = 1000;
+            });
+            
+            window.addEventListener('mousemove', (e) => {
+                if(!isPanelDragging) return;
+                isHudDragged = true; 
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                panel.style.left = (startLeft + dx) + 'px';
+                panel.style.top = (startTop + dy) + 'px';
+            });
+            
+            window.addEventListener('mouseup', () => { 
+                if (isPanelDragging) {
+                    isPanelDragging = false; 
+                    panel.style.zIndex = '';
+                }
+            });
         });
 
         // ==========================================
-        // 2. 초기 로딩 프로세스 (무적 방어 코드 적용)
+        // 2. 무적 에셋 자동 로딩 로직 (에러 발생 시 패스)
         // ==========================================
         window.startLoadingAssets = async function() {
-            studentInfo.id = document.getElementById('student-id').value.trim(); studentInfo.name = document.getElementById('student-name').value.trim();
+            studentInfo.id = document.getElementById('student-id').value.trim();
+            studentInfo.name = document.getElementById('student-name').value.trim();
             if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
-            document.getElementById('login-overlay').style.display = 'none'; document.getElementById('loading-screen').style.display = 'flex';
+
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'flex';
             const progressEl = document.getElementById('loading-progress');
-            
-            // 1. 하늘 이미지 (에러 무시)
+
             progressEl.innerText = "스카이박스 불러오는 중... (1/4)";
             const texLoader = new THREE.TextureLoader();
-            daySkybox = await new Promise((resolve) => {
-                texLoader.load(GITHUB_BASE_URL + skyImage, (tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; resolve(tex); }, undefined, (err) => { resolve(null); });
-            });
+            try {
+                daySkybox = await new Promise((resolve) => {
+                    texLoader.load(GITHUB_BASE_URL + skyImage, (tex) => {
+                        tex.mapping = THREE.EquirectangularReflectionMapping; resolve(tex);
+                    }, undefined, () => resolve(null));
+                });
+            } catch(e) {}
             if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; }
 
-            // 2. 시나리오 파일 (에러 무시)
             progressEl.innerText = "시나리오 데이터 분석 중... (2/4)";
-            try { const scnRes = await fetch(GITHUB_BASE_URL + scenarioFile); if(scnRes.ok) loadedScenarioConfig = await scnRes.json(); } catch(e) { console.warn("시나리오 오류", e); }
+            try { const scnRes = await fetch(GITHUB_BASE_URL + scenarioFile); if(scnRes.ok) loadedScenarioConfig = await scnRes.json(); } catch(e) { console.warn(e); }
 
-            // 3. 세팅 파일 (에러 무시)
             progressEl.innerText = "캘리브레이션 세팅 적용 중... (3/4)";
-            try { const setRes = await fetch(GITHUB_BASE_URL + settingsFile); if(setRes.ok) { const settingsData = await setRes.json(); for (const key in settingsData) localStorage.setItem(key, settingsData[key]); } } catch(e) { console.warn("세팅 오류", e); }
+            try { 
+                const setRes = await fetch(GITHUB_BASE_URL + settingsFile); 
+                if(setRes.ok) { 
+                    const settingsData = await setRes.json(); 
+                    for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
+                } 
+            } catch(e) { console.warn(e); }
 
-            // 4. 모델 로드 (에러 무시)
-            progressEl.innerText = `3D 선박 모델 다운로드 중... (4/4)\n(최초 로딩 시 인터넷 속도에 따라 1~2분 소요될 수 있습니다.)`;
+            progressEl.innerText = "3D 선박 모델 다운로드 중... (4/4)";
             const gltfLoader = new THREE.GLTFLoader();
-            await Promise.all(modelFiles.map(fileName => {
+            await Promise.all(modelFiles.map(filePath => {
                 return new Promise((resolve) => {
-                    gltfLoader.load(GITHUB_BASE_URL + fileName, (gltf) => {
-                        const rawModel = gltf.scene; const box = new THREE.Box3().setFromObject(rawModel); const size = new THREE.Vector3(); box.getSize(size); const center = new THREE.Vector3(); box.getCenter(center);
-                        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); if (!isFinite(center.x)) center.set(0, 0, 0);
-                        rawModel.position.set(-center.x, -center.y, -center.z); const maxDim = Math.max(size.x, size.y, size.z); const scale = 150 / maxDim;
-                        const wrapper = new THREE.Group(); wrapper.add(rawModel); wrapper.scale.set(scale, scale, scale);
+                    gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
+                        const rawModel = gltf.scene;
+                        rawModel.updateMatrixWorld(true);
+                        const box = new THREE.Box3().setFromObject(rawModel);
+                        const size = new THREE.Vector3(); box.getSize(size);
+                        const center = new THREE.Vector3(); box.getCenter(center);
+                        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
+                        if (!isFinite(center.x)) center.set(0, 0, 0);
+
+                        rawModel.position.set(-center.x, -center.y, -center.z);
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const scale = 150 / maxDim;
+
+                        const wrapper = new THREE.Group();
+                        wrapper.add(rawModel);
+                        wrapper.scale.set(scale, scale, scale);
+                        
+                        // "Models/CargoShip1.glb" -> "CargoShip1.glb" 변환하여 저장
+                        const fileName = filePath.split('/').pop(); 
                         parsedModels[fileName] = { group: wrapper, height: size.y * scale };
                         resolve();
-                    }, undefined, (err) => { resolve(); });
+                    }, undefined, () => { resolve(); });
                 });
             }));
-            document.getElementById('loading-screen').style.display = 'none'; initSimulationScene(); 
+
+            document.getElementById('loading-screen').style.display = 'none';
+            startSimulation(); 
         }
 
-        const texLoader = new THREE.TextureLoader(); let nightSkybox = null; 
+        let daySkybox = null;
+        let nightSkybox = null;
 
-        // ==========================================
-        // 3. Three.js 기본 씬 (원본 유지)
-        // ==========================================
-        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015); 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); renderer.setSize(window.innerWidth, window.innerHeight); document.body.appendChild(renderer.domElement);
-        const water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), { textureWidth: 512, textureHeight: 512, waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }), sunDirection: new THREE.Vector3(1, 1, 1).normalize(), sunColor: 0xdddddd, waterColor: 0x00E5FF, distortionScale: 1.5, alpha: 1.0 });
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015); 
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), {
+            textureWidth: 512, textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }),
+            sunDirection: new THREE.Vector3(1, 1, 1).normalize(), 
+            sunColor: 0xdddddd, 
+            waterColor: 0x00E5FF, 
+            distortionScale: 1.5, 
+            alpha: 1.0 
+        });
         water.rotation.x = -Math.PI / 2; scene.add(water);
-        const origWaterRender = water.onBeforeRender; water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) { const originalBackground = scene.background; const originalEnvironment = scene.environment; scene.background = new THREE.Color(0x000000); scene.environment = null; if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group ); scene.background = originalBackground; scene.environment = originalEnvironment; };
-        const sun = new THREE.Vector3(); const ambientLight = new THREE.AmbientLight(0x707070, 1.5); scene.add(ambientLight); const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(dirLight);
-        let isNight = false; let currentDaySeaColor = 0x00E5FF; 
-        window.setSeaColor = function(level) { document.getElementById('btn-sea-bright').classList.remove('active'); document.getElementById('btn-sea-normal').classList.remove('active'); document.getElementById('btn-sea-dark').classList.remove('active'); if (level === 'bright') { currentDaySeaColor = 0x00BFFF; document.getElementById('btn-sea-bright').classList.add('active'); } else if (level === 'normal') { currentDaySeaColor = 0x00E5FF; document.getElementById('btn-sea-normal').classList.add('active'); } else if (level === 'dark') { currentDaySeaColor = 0x253c54; document.getElementById('btn-sea-dark').classList.add('active'); } if (!isNight) { water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); } };
-        function setTimeOfDay(isNight) { const btn = document.getElementById('btn-env-time'); if(isNight) { btn.innerText = 'NIGHT'; btn.classList.add('btn-night'); scene.background = nightSkybox || new THREE.Color(0x050a10); scene.environment = nightSkybox || null; scene.fog.color.setHex(0x050a10); scene.fog.density = 0.0003; ambientLight.intensity = 0.2; dirLight.intensity = 0.1; dirLight.color.setHex(0xffffff); water.material.uniforms['sunColor'].value.setHex(0x112233); water.material.uniforms['waterColor'].value.setHex(0x0f182b); const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.0; sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta); } else { btn.innerText = 'DAY'; btn.classList.remove('btn-night'); scene.background = daySkybox || new THREE.Color(0x5a6a79); scene.environment = daySkybox || null; scene.fog.color.setHex(0x5a6a79); scene.fog.density = 0.00015; ambientLight.intensity = 1.5; dirLight.intensity = 1.0; dirLight.color.setHex(0xffffff); water.material.uniforms['sunColor'].value.setHex(0xdddddd); water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.24; sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta); } dirLight.position.copy(sun).multiplyScalar(100); water.material.uniforms['sunDirection'].value.copy(sun).normalize(); } window.toggleDayNight = function() { isNight = !isNight; setTimeOfDay(isNight); }; setTimeOfDay(isNight);
-        const arOverlayGroup = new THREE.Group(); scene.add(arOverlayGroup); function createChevron() { const shape = new THREE.Shape(); shape.moveTo(0, 15); shape.lineTo(15, -15); shape.lineTo(10, -15); shape.lineTo(0, 5); shape.lineTo(-10, -15); shape.lineTo(-15, -15); shape.lineTo(0, 15); const geo = new THREE.ShapeGeometry(shape); const mat = new THREE.MeshBasicMaterial({color: 0x00ffaa, transparent: true, opacity: 0.9, side: THREE.DoubleSide}); const mesh = new THREE.Mesh(geo, mat); mesh.rotation.x = -Math.PI / 2; return mesh; } const dangerChevrons = new THREE.Group(); const curve = new THREE.CatmullRomCurve3([ new THREE.Vector3(0, 1.0, -150), new THREE.Vector3(250, 1.0, -400), new THREE.Vector3(400, 1.0, -800), new THREE.Vector3(450, 1.0, -1200), new THREE.Vector3(400, 1.0, -1700), new THREE.Vector3(200, 1.0, -2100), new THREE.Vector3(0, 1.0, -2500) ]); const points = curve.getPoints(25); for(let i=0; i<points.length-1; i++) { const arr = createChevron(); arr.position.copy(points[i]); const dir = new THREE.Vector3().subVectors(points[i+1], points[i]).normalize(); arr.rotation.z = -Math.atan2(dir.x, -dir.z); dangerChevrons.add(arr); } arOverlayGroup.add(dangerChevrons); arOverlayGroup.visible = false;
-        const osShip = new THREE.Group(); scene.add(osShip); const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.5, 80000); const targetShips = []; const arTags = {}; const arContainer = document.getElementById('ar-container'); let gameState = 'MENU';
-        const goalGroup = new THREE.Group(); const goalMesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 800, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 })); goalMesh.position.y = 400; goalGroup.add(goalMesh); scene.add(goalGroup); goalGroup.visible = false; let currentWpIndex = 0; let isDraggingCam = false; let camAngleX = -0.1; let camAngleY = 0; let currentOSFileName = ""; window.currentRadarMaxDist = 1000; 
-        window.togglePause = function() { if (gameState !== 'PLAYING') return; isPaused = !isPaused; const btn = document.getElementById('btn-pause'); if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); } }
 
-        // ==========================================
-        // 4. 시뮬레이션 초기화 (세팅 파일 매칭 버그 수정)
-        // ==========================================
-        function initSimulationScene() {
-            document.getElementById('digital-hud-container').style.display = 'flex'; document.getElementById('ecdis-container').style.display = 'block'; document.getElementById('demo-control-container').style.display = 'flex'; document.getElementById('camera-hint').style.display = 'block';
-            water.visible = true; setTimeOfDay(isNight);
+        const origWaterRender = water.onBeforeRender;
+        water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) {
+            const originalBackground = scene.background;
+            const originalEnvironment = scene.environment;
+            
+            scene.background = new THREE.Color(0x000000); 
+            scene.environment = null; 
+
+            if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group );
+            
+            scene.background = originalBackground;
+            scene.environment = originalEnvironment;
+        };
+
+        const sun = new THREE.Vector3();
+        const ambientLight = new THREE.AmbientLight(0x707070, 1.5); scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(dirLight);
+
+        let isNight = false; 
+        let currentDaySeaColor = 0x00E5FF; 
+
+        window.setSeaColor = function(level) {
+            document.getElementById('btn-sea-bright').classList.remove('active');
+            document.getElementById('btn-sea-normal').classList.remove('active');
+            document.getElementById('btn-sea-dark').classList.remove('active');
+            
+            if (level === 'bright') {
+                currentDaySeaColor = 0x00BFFF; 
+                document.getElementById('btn-sea-bright').classList.add('active');
+            } else if (level === 'normal') {
+                currentDaySeaColor = 0x00E5FF; 
+                document.getElementById('btn-sea-normal').classList.add('active');
+            } else if (level === 'dark') {
+                currentDaySeaColor = 0x253c54; 
+                document.getElementById('btn-sea-dark').classList.add('active');
+            }
+            
+            if (!isNight) {
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor);
+            }
+        };
+
+        function setTimeOfDay(isNight) {
+            const btn = document.getElementById('btn-env-time');
+            if(isNight) {
+                btn.innerText = 'NIGHT'; btn.classList.add('btn-night');
+                
+                scene.background = nightSkybox || new THREE.Color(0x050a10);
+                scene.environment = nightSkybox || null;
+                
+                scene.fog.color.setHex(0x050a10); scene.fog.density = 0.0003;
+                ambientLight.intensity = 0.2; dirLight.intensity = 0.1; dirLight.color.setHex(0xffffff);
+                
+                water.material.uniforms['sunColor'].value.setHex(0x112233); 
+                water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
+                
+                const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.0;
+                sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
+            } else {
+                btn.innerText = 'DAY'; btn.classList.remove('btn-night');
+                
+                scene.background = daySkybox || new THREE.Color(0x5a6a79);
+                scene.environment = daySkybox || null;
+
+                scene.fog.color.setHex(0x5a6a79); scene.fog.density = 0.00015;
+                ambientLight.intensity = 1.5; dirLight.intensity = 1.0; dirLight.color.setHex(0xffffff);
+                
+                water.material.uniforms['sunColor'].value.setHex(0xdddddd); 
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor);
+                
+                const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.24; 
+                sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
+            }
+            
+            dirLight.position.copy(sun).multiplyScalar(100);
+            water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+        }
+        window.toggleDayNight = function() { isNight = !isNight; setTimeOfDay(isNight); };
+        setTimeOfDay(isNight);
+
+        const arOverlayGroup = new THREE.Group(); scene.add(arOverlayGroup);
+        function createChevron() {
+            const shape = new THREE.Shape(); shape.moveTo(0, 15); shape.lineTo(15, -15); shape.lineTo(10, -15); shape.lineTo(0, 5); shape.lineTo(-10, -15); shape.lineTo(-15, -15); shape.lineTo(0, 15);
+            const geo = new THREE.ShapeGeometry(shape); const mat = new THREE.MeshBasicMaterial({color: 0x00ffaa, transparent: true, opacity: 0.9, side: THREE.DoubleSide}); 
+            const mesh = new THREE.Mesh(geo, mat); mesh.rotation.x = -Math.PI / 2; return mesh;
+        }
+        const dangerChevrons = new THREE.Group();
+        const curve = new THREE.CatmullRomCurve3([ new THREE.Vector3(0, 1.0, -150), new THREE.Vector3(250, 1.0, -400), new THREE.Vector3(400, 1.0, -800), new THREE.Vector3(450, 1.0, -1200), new THREE.Vector3(400, 1.0, -1700), new THREE.Vector3(200, 1.0, -2100), new THREE.Vector3(0, 1.0, -2500) ]);
+        const points = curve.getPoints(25);
+        for(let i=0; i<points.length-1; i++) { const arr = createChevron(); arr.position.copy(points[i]); const dir = new THREE.Vector3().subVectors(points[i+1], points[i]).normalize(); arr.rotation.z = -Math.atan2(dir.x, -dir.z); dangerChevrons.add(arr); }
+        arOverlayGroup.add(dangerChevrons); arOverlayGroup.visible = false;
+
+        const osShip = new THREE.Group(); scene.add(osShip);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.5, 80000);
+        const targetShips = [];
+        const arTags = {};
+        const arContainer = document.getElementById('ar-container');
+        let gameState = 'MENU';
+
+        const goalGroup = new THREE.Group();
+        const goalMesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 800, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 }));
+        goalMesh.position.y = 400; goalGroup.add(goalMesh); scene.add(goalGroup);
+        goalGroup.visible = false;
+        let currentWpIndex = 0;
+
+        let isDraggingCam = false; let camAngleX = -0.1; let camAngleY = 0; let currentOSFileName = "";
+        window.currentRadarMaxDist = 1000; 
+
+        window.returnToMenuFromSim = function() {
+            gameState = 'MENU';
             for(let i = osShip.children.length - 1; i >= 0; i--) { if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); }
-            targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0; document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
+            targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0;
+            document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
             activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
-            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
-            document.getElementById('btn-pause').innerText = 'PAUSE'; document.getElementById('btn-pause').classList.remove('active'); document.getElementById('manual-target-panel').style.display = 'none';
-
-            let osData = parsedModels[MAIN_OS_FILE];
-            if (!osData) { const availableFiles = Object.keys(parsedModels); if(availableFiles.length > 0) osData = parsedModels[availableFiles[0]]; else { alert("로딩된 3D 모델이 없어 구동 불가합니다."); return; } }
+            goalGroup.visible = false;
             
-            currentOSFileName = MAIN_OS_FILE;
-            const pureFileName = currentOSFileName.split('/').pop(); // "Models/" 폴더명 제거하여 Settings.json과 이름 일치시킴
-            const osModel = osData.group.clone();
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('digital-hud-container').style.display = 'none';
+            document.getElementById('ecdis-container').style.display = 'none';
+            document.getElementById('demo-control-container').style.display = 'none';
+            document.getElementById('camera-hint').style.display = 'none';
+            document.getElementById('right-ai-container').style.display = 'none';
+            document.getElementById('right-center-cas-panel').style.display = 'none';
+            document.getElementById('bottom-left-panel').style.display = 'none';
+            document.getElementById('scanline').style.display = 'none';
+            document.getElementById('hud-lines').style.opacity = '0';
+            document.getElementById('manual-target-panel').style.display = 'none';
             
-            const savedCalib = localStorage.getItem('model_calib_' + pureFileName);
-            if(savedCalib) { const calib = JSON.parse(savedCalib); osModel.position.copy(calib.pos); osModel.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z); } else { osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0); }
-            osShip.add(osModel); osShip.add(camera);
+            document.body.classList.remove('ai-active'); currentMode = 'NONE';
+            water.visible = false; scene.background = new THREE.Color(0x000000);
+        }
 
-            const savedCamStr = localStorage.getItem('bridgeCam_' + pureFileName);
-            if (savedCamStr) { const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z); } else { camera.position.set(0, 60, 0); }
-            camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
+        window.togglePause = function() {
+            if (gameState !== 'PLAYING') return;
+            isPaused = !isPaused;
+            const btn = document.getElementById('btn-pause');
+            if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } 
+            else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); }
+        }
 
-            const filesList = Object.keys(parsedModels); let targetIndex = 1;
+        window.startSimulation = async function() {
+            let osFileName = MAIN_OS_FILE;
+            const maxTargets = 50; // 기본 타겟 수
 
-            function createTarget(x, z, hdg, spd, explicitFile = null) {
-                const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
-                const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
-                const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
-                
-                const pureTName = randomFile.split('/').pop();
-                const tSaved = localStorage.getItem('model_calib_' + pureTName);
-                if(tSaved) { const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); } else { tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0); }
-                
-                tsGroup.add(tModel); tsGroup.position.set(x, 0, z); tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; tsGroup.rotation.y = -hdg * (Math.PI / 180); targetShips.push(tsGroup); scene.add(tsGroup);
-                const el = document.createElement('div'); el.className = 'ar-label';
-                el.innerHTML = `<div class="ar-header">${name}</div><div class="ar-body">Name: <span class="ar-val ar-name">${name}</span><br>MMSI: <span class="ar-val ar-mmsi">-</span><br>COG: <span class="ar-val ar-cog">-</span><br>SOG: <span class="ar-val ar-sog">-</span><br>DIST: <span class="ar-val ar-dist">-</span><br>CPA: <span class="ar-val ar-cpa">-</span><br>TCPA: <span class="ar-val ar-tcpa">-</span><br>BCR: <span class="ar-val ar-bcr">-</span></div>`;
-                arContainer.appendChild(el); arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
+            document.getElementById('digital-hud-container').style.display = 'flex';
+            document.getElementById('ecdis-container').style.display = 'block';
+            document.getElementById('demo-control-container').style.display = 'flex';
+            document.getElementById('camera-hint').style.display = 'block';
+            
+            water.visible = true; 
+            setTimeOfDay(isNight);
+            
+            for(let i = osShip.children.length - 1; i >= 0; i--) { if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); }
+            targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0;
+            document.getElementById('ar-container').innerHTML = '';
+            for(let key in arTags) delete arTags[key];
+            
+            activeWakes.forEach(w => scene.remove(w));
+            wakePool.push(...activeWakes);
+            activeWakes.length = 0;
+
+            logData = []; 
+            shipPhysics.simTime = 0; 
+            shipPhysics.wps = [];
+            shipPhysics.targetRudder = 0;
+            shipPhysics.actualRudder = 0;
+            shipPhysics.rot = 0;
+            shipPhysics.lat = 0;
+            shipPhysics.roll = 0;
+            shipPhysics.pitch = 0;
+            shipPhysics.wakeTimer = 0;
+
+            currentWpIndex = 0;
+            goalGroup.visible = false;
+
+            manuallySelectedTarget = null;
+            isPaused = false;
+            manualRadarZoom = 1.0; 
+            
+            document.getElementById('btn-pause').innerText = 'PAUSE';
+            document.getElementById('btn-pause').classList.remove('active');
+            document.getElementById('manual-target-panel').style.display = 'none';
+
+            let osData = parsedModels[osFileName];
+            if (!osData) {
+                const availableFiles = Object.keys(parsedModels);
+                if(availableFiles.length > 0) {
+                    osFileName = availableFiles[0]; osData = parsedModels[osFileName];
+                } else {
+                    alert("로딩된 3D 선박 모델이 없어 구동 불가합니다."); return;
+                }
             }
 
-            osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.speed = 10.0; 
+            currentOSFileName = osFileName;
+            const osModel = osData.group.clone();
+            
+            const savedCalib = localStorage.getItem('model_calib_' + osFileName);
+            if(savedCalib) {
+                const calib = JSON.parse(savedCalib); osModel.position.copy(calib.pos); osModel.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z);
+            } else {
+                osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0);
+            }
+            osShip.add(osModel);
+            osShip.add(camera);
+
+            const savedCamStr = localStorage.getItem('bridgeCam_' + currentOSFileName);
+            if (savedCamStr) {
+                const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z);
+            } else {
+                camera.position.set(0, 60, 0); 
+            }
+            camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
+
+            const filesList = Object.keys(parsedModels);
+            let targetIndex = 1;
+
+            function createTarget(x, z, hdg, spd, explicitFile = null) {
+                const name = `Target ${targetIndex++}`;
+                const tsGroup = new THREE.Group();
+                const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
+                const tData = parsedModels[randomFile];
+                const tModel = tData.group.clone();
+                
+                const tSaved = localStorage.getItem('model_calib_' + randomFile);
+                if(tSaved) { 
+                    const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); 
+                } else {
+                    tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0);
+                }
+                
+                tsGroup.add(tModel); tsGroup.position.set(x, 0, z);
+                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) };
+                tsGroup.rotation.y = -hdg * (Math.PI / 180);
+                targetShips.push(tsGroup); scene.add(tsGroup);
+
+                const el = document.createElement('div'); el.className = 'ar-label';
+                el.innerHTML = `
+                    <div class="ar-header">${name}</div>
+                    <div class="ar-body">
+                        Name: <span class="ar-val ar-name">${name}</span><br>
+                        MMSI: <span class="ar-val ar-mmsi">-</span><br>
+                        COG: <span class="ar-val ar-cog">-</span><br>
+                        SOG: <span class="ar-val ar-sog">-</span><br>
+                        DIST: <span class="ar-val ar-dist">-</span><br>
+                        CPA: <span class="ar-val ar-cpa">-</span><br>
+                        TCPA: <span class="ar-val ar-tcpa">-</span><br>
+                        BCR: <span class="ar-val ar-bcr">-</span>
+                    </div>`;
+                arContainer.appendChild(el);
+                arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
+            }
+
+            osShip.position.set(0, 0, 0); 
+            shipPhysics.heading = 0; 
+            shipPhysics.speed = 10.0; 
 
             if (loadedScenarioConfig) {
                 let loadedCount = 0;
-                if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
-                    if (loadedScenarioConfig.os.spd !== undefined) shipPhysics.speed = loadedScenarioConfig.os.spd;
-                    if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
-                    if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
-                    loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) { explicitFile = filesList.find(name => name.includes(t.type)) || null; } createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); loadedCount++; });
+                
+                if (Array.isArray(loadedScenarioConfig)) {
+                    loadedScenarioConfig.forEach(t => {
+                        if(t.isGoal) {
+                            shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 });
+                        } else {
+                            createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15);
+                            loadedCount++;
+                        }
+                    });
+                } 
+                else if (loadedScenarioConfig.os && loadedScenarioConfig.targets) {
+                    if (loadedScenarioConfig.os.spd !== undefined) {
+                        shipPhysics.speed = loadedScenarioConfig.os.spd;
+                    }
+                    if (loadedScenarioConfig.os.hdg !== undefined) {
+                        shipPhysics.heading = loadedScenarioConfig.os.hdg;
+                    }
+                    if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) {
+                        loadedScenarioConfig.os.waypoints.forEach(wp => {
+                            shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 });
+                        });
+                    }
+                    loadedScenarioConfig.targets.forEach(t => {
+                        let explicitFile = null;
+                        if (t.type) {
+                            explicitFile = filesList.find(name => name.includes(t.type)) || null;
+                        }
+                        createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile);
+                        loadedCount++;
+                    });
                 }
-                if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
+                
+                if(shipPhysics.wps.length > 0) {
+                    goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z);
+                    goalGroup.visible = true;
+                }
+
+                const remainingCount = maxTargets - loadedCount;
+                if (remainingCount > 0) {
+                    for (let i = 0; i < remainingCount; i++) {
+                        let angle = Math.random() * Math.PI * 2;
+                        let dist = 1000 + Math.random() * 3000; 
+                        let rx = Math.sin(angle) * dist;
+                        let rz = -Math.cos(angle) * dist;
+                        let rhdg = Math.random() * 360; 
+                        let rspd = 8 + Math.random() * 12;
+                        createTarget(rx, rz, rhdg, rspd);
+                    }
+                }
+            } else {
+                if (maxTargets > 0) {
+                    for (let i = 0; i < maxTargets; i++) {
+                        let angle = Math.random() * Math.PI * 2;
+                        let dist = 400 + Math.random() * 800; 
+                        let rx = Math.sin(angle) * dist;
+                        let rz = -Math.cos(angle) * dist;
+                        let trueBrg = Math.atan2(rx, -rz) * 180 / Math.PI;
+                        let rhdg = 180 + trueBrg + (Math.random() - 0.5) * 30; 
+                        if(rhdg < 0) rhdg += 360;
+                        if(rhdg >= 360) rhdg -= 360;
+                        let rspd = 8 + Math.random() * 10;
+                        createTarget(rx, rz, rhdg, rspd);
+                    }
+                }
             }
 
-            let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
-            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
+            if(orbitControl) orbitControl.enabled = false;
+            
+            // 시뮬레이션 시작 시 (t=0.0) 상태를 로그에 즉시 강제 기록
+            let tStr = "0.0";
+            logData.push({
+                time: tStr, name: "OS",
+                lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x),
+                x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2),
+                hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1),
+                rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1)
+            });
+            targetShips.forEach(ts => {
+                logData.push({
+                    time: tStr, name: ts.userData.name,
+                    lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x),
+                    x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2),
+                    hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1),
+                    rot: "0.00", rud_cmd: "0.0", rud_act: "0.0"
+                });
+            });
+
             gameState = 'PLAYING';
         }
 
         // ==========================================
-        // 5. 서버 전송 로직 (추가된 부분)
+        // 3. 서버 전송 로직 (새로 추가)
         // ==========================================
         function finishSimulationAndSendData() {
             if (gameState !== 'PLAYING') return;
@@ -439,9 +811,6 @@
             });
         }
 
-        // ==========================================
-        // 원본 로직들 (절대 수정 금지)
-        // ==========================================
         let currentMode = 'NONE';
         let simSpeed = 1.0;
         const moveScale = 0.15; 
@@ -662,7 +1031,6 @@
 
             arOverlayGroup.position.copy(osShip.position); arOverlayGroup.rotation.y = -headingRad;
 
-            // 📌 웨이포인트(목표 지점) 도달 시 서버 전송
             if (shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
                 const wp = shipPhysics.wps[currentWpIndex];
                 const distToGoal = Math.sqrt(Math.pow(wp.x - osShip.position.x, 2) + Math.pow(wp.z - osShip.position.z, 2));
@@ -673,7 +1041,7 @@
                         goalGroup.position.set(shipPhysics.wps[currentWpIndex].x, 0, shipPhysics.wps[currentWpIndex].z);
                     } else {
                         goalGroup.visible = false;
-                        finishSimulationAndSendData(); // 전송 함수 호출
+                        finishSimulationAndSendData(); // 전송 함수 자동 실행 연결
                     }
                 }
             }
