@@ -26,7 +26,6 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* 📌 새로 추가된 로그인 및 로딩/완료 오버레이 CSS */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,12,15,0.98); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .menu-box { background: rgba(30,30,35,0.8); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 40px; width: 350px; box-shadow: 0 10px 40px rgba(58, 117, 196, 0.2); }
         .form-row { margin-bottom: 20px; text-align: left; }
@@ -40,17 +39,22 @@
         .finish-title { font-size: 32px; font-weight: bold; color: var(--text-highlight); margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: var(--text-main); }
 
-        /* 기존 CSS 유지 */
         #ui-container {
             display: flex; width: 100vw; height: 100vh; padding: 10px; box-sizing: border-box;
             background: var(--bg-panel); border: 15px solid #111; border-radius: 10px;
         }
 
+        /* 📌 반응형 적용: 높이가 줄어들어도 잘리지 않도록 flex-shrink:0 및 overflow-y 적용 */
         .left-panel {
-            width: 210px; display: flex; flex-direction: column; gap: 8px;
+            width: 210px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
             background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px; box-sizing: border-box;
+            overflow-y: auto;
         }
-        .instrument-box { background: var(--bg-box); border: 1px solid #333; padding: 8px; text-align: center; }
+        .left-panel::-webkit-scrollbar { width: 4px; }
+        .left-panel::-webkit-scrollbar-track { background: #111; }
+        .left-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+
+        .instrument-box { background: var(--bg-box); border: 1px solid #333; padding: 8px; text-align: center; flex-shrink: 0;}
         .instrument-title { text-align: left; font-size: 11px; color: var(--text-muted); margin-bottom: 3px; font-weight: bold; }
         .digital-value { font-size: 18px; color: var(--text-highlight); background: #111; padding: 4px; margin-top: 6px; font-family: monospace; }
         
@@ -66,7 +70,7 @@
         .alarm-clear-btn:hover { background: #ff3333; }
 
         .center-panel {
-            flex-grow: 1; position: relative; margin: 0 5px;
+            flex-grow: 1; position: relative; margin: 0 5px; min-width: 300px;
             background: var(--radar-bg); border: 1px solid var(--border-color); overflow: hidden;
             display: flex; justify-content: center; align-items: center;
         }
@@ -111,7 +115,7 @@
         }
 
         .right-panel {
-            width: 260px; display: flex; flex-direction: column; gap: 4px;
+            width: 260px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
             background: var(--bg-panel); border: 1px solid var(--border-color); padding: 6px; font-size: 11px; box-sizing: border-box; overflow-y: hidden;
         }
         
@@ -154,25 +158,26 @@
         }
 
         .far-right-bar {
-            width: 45px; background: var(--bg-panel); border: 1px solid var(--border-color); margin-left: 5px;
-            display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px;
+            width: 45px; background: var(--bg-panel); border: 1px solid var(--border-color); margin-left: 5px; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px; overflow-y: auto;
         }
+        .far-right-bar::-webkit-scrollbar { width: 0; }
+        
         .icon-btn {
             width: 32px; height: 32px; background: var(--bg-box); border: 1px solid #111; border-radius: 4px;
             color: var(--text-muted); font-size: 9px; font-weight: bold; display: flex; justify-content: center; align-items: center; flex-direction: column;
-            cursor: pointer; text-align: center; line-height: 1.1; transition: background 0.2s;
+            cursor: pointer; text-align: center; line-height: 1.1; transition: background 0.2s; flex-shrink: 0;
         }
         .icon-btn:hover, .icon-btn.active { background: var(--accent-blue); color: #fff; }
         .icon-btn.alert { background: #444222; color: #ffff55; border-color: #ffff55; }
         
-        .knob-container { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; }
+        .knob-container { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; flex-shrink: 0; padding-top: 10px;}
         .knob { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, #555 30%, #222 100%); border: 2px solid #111; position: relative; cursor: pointer; transition: transform 0.1s;}
         .knob::after { content: ''; position: absolute; top: 2px; left: 14px; width: 2px; height: 8px; background: #fff; }
     </style>
 </head>
 <body>
 
-<!-- 📌 자동 로그인 오버레이 -->
 <div id="login-overlay">
     <h1 style="font-size: 42px; letter-spacing: 2px; margin-bottom: 10px; color:var(--text-main);">[HTMS] RADAR Navigation</h1>
     <h2 style="color: var(--accent-blue); letter-spacing: 5px; font-size: 16px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
@@ -190,7 +195,6 @@
     </div>
 </div>
 
-<!-- 📌 시뮬레이션 완료 오버레이 -->
 <div id="finish-overlay">
     <div id="finish-title" class="finish-title">데이터 전송 성공!</div>
     <div id="finish-desc" class="finish-desc">레이더 시뮬레이션 결과가 안전하게 저장되었습니다.</div>
@@ -215,25 +219,25 @@
             </div>
         </div>
         
+        <!-- 📌 수동 불러오기 UI 삭제 및 저장 버튼 확장 -->
         <div class="instrument-box">
             <div class="instrument-title" style="margin-bottom:8px; width:100%; display:flex; justify-content:space-between; align-items:center;">
-                <span>SCENARIO</span>
+                <span>SCENARIO / LOG</span>
                 <div style="display:flex; align-items:center; gap:6px;">
                     <div id="btn-threat" style="width: 10px; height: 10px; border-radius: 50%; background: #440000; border: 1px solid #770000; cursor: pointer; transition: 0.3s;" onclick="toggleThreatMode()" title="Threat Mode (타선 유도탄 모드)"></div>
                     <span id="scenario-status" style="color:#aaa;">Standby</span>
                 </div>
             </div>
-            <input type="file" id="scenario-upload" accept=".json" style="display:none;" onchange="loadScenario(event)">
             <div style="display:flex; gap:4px;">
-                <button class="btn" style="flex:1; justify-content:center; padding:6px 0; border-color:#00ffaa; color:#00ffaa;" onclick="document.getElementById('scenario-upload').click()">Load .json</button>
-                <button class="btn" style="flex:1; justify-content:center; padding:6px 0; border-color:#eab308; color:#fef08a; background:rgba(234, 179, 8, 0.2);" onclick="exportLogCSV()">Save Log</button>
+                <button class="btn" style="width:100%; justify-content:center; padding:6px 0; border-color:#eab308; color:#fef08a; background:rgba(234, 179, 8, 0.2);" onclick="exportLogCSV()">Save Log (CSV)</button>
             </div>
         </div>
 
         <div class="instrument-box">
             <div class="instrument-title" style="margin-bottom: 8px;">OPERATION</div>
             <div style="display:flex; gap:4px;">
-                <button class="btn" id="btn-op-pause" onclick="togglePause()" style="flex:1; justify-content:center; padding:4px 0;">PAUSE</button>
+                <!-- 📌 초기 정지 상태에 맞게 버튼 디자인을 RESUME(적색)으로 세팅 -->
+                <button class="btn" id="btn-op-pause" onclick="togglePause()" style="flex:1; justify-content:center; padding:4px 0; color:#ff3333; border-color:#ff3333;">RESUME</button>
                 <button class="btn btn-op-speed" id="btn-op-speed-1" onclick="setSimSpeed(1)" style="flex:1; justify-content:center; padding:4px 0; color:#00ffaa; border-color:#00ffaa;">1x</button>
                 <button class="btn btn-op-speed" id="btn-op-speed-3" onclick="setSimSpeed(3)" style="flex:1; justify-content:center; padding:4px 0;">3x</button>
                 <button class="btn btn-op-speed" id="btn-op-speed-5" onclick="setSimSpeed(5)" style="flex:1; justify-content:center; padding:4px 0;">5x</button>
@@ -561,7 +565,6 @@
         });
     });
 
-    // 📌 전송 및 환경 기본 설정
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZtLBiZAcyQEk9dUmlhpfcylqZ3RIuXpmFGOadtriT2Xnz2SXa-CvxXC-EVntIZvSVjw/exec";
     let studentInfo = { id: "", name: "" };
     const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
@@ -572,6 +575,9 @@
         if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
+
+        // 📌 로그인 직후 시나리오 자동 로딩
+        autoLoadScenario();
     }
 
     let isTransmitting = false;
@@ -677,7 +683,8 @@
     let framesSinceLastArc = 0;
 
     let threatMode = false;
-    let isPaused = false;
+    // 📌 시뮬레이션 기본 대기 상태 (PAUSE 상태로 시작)
+    let isPaused = true;
     let simSpeed = 1.0;
     
     let logData = [];
@@ -723,6 +730,7 @@
         }
     }
 
+    // 📌 PAUSE/RESUME 토글 (기본이 PAUSE 상태이므로 누르면 RESUME)
     window.togglePause = function() {
         isPaused = !isPaused;
         const btn = document.getElementById('btn-op-pause');
@@ -750,7 +758,6 @@
         }
     }
 
-    // 📌 전송 파일 이름에 R_ 접두사 부여
     window.exportLogCSV = function() {
         if (logData.length === 0) { alert("아직 저장된 시뮬레이션 로그가 없습니다."); return; }
         let csvContent = "Time(s),Name,Latitude,Longitude,X,Y,HDG,SOG,COG,ROT,RUD_CMD,RUD_ACT\n";
@@ -767,7 +774,6 @@
         document.body.removeChild(link);
     };
 
-    // 📌 서버 데이터 전송 로직
     function finishSimulationAndSendData() {
         if (isPaused && document.getElementById('finish-overlay').style.display === 'flex') return;
         isPaused = true;
@@ -789,118 +795,119 @@
         });
     }
 
-    window.loadScenario = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                targets.length = 0;
-                aisTargets.length = 0;
-                goalPoints.length = 0; 
-                alarmLog = [];
-                alarmedTargets.clear();
-                updateAlarmUI();
-                
-                logData = [];
-                simTimeSeconds = 0;
-                lastLogTimeSec = 0;
-                manualEblOverride = false; 
-
-                if (data.origin) {
-                    os.lat = data.origin.lat;
-                    os.lon = data.origin.lon;
-                }
-                if (data.os) {
-                    os.hdg = data.os.hdg;
-                    os.spd = data.os.spd;
-                    os.targetRudder = 0;
-                    os.actualRudder = 0;
-                    os.rot = 0;
-                }
-                
-                // 📌 바람/조류 데이터 파싱 적용
-                if (data.environment) {
-                    if (data.environment.wind) {
-                        env.windDir = data.environment.wind.dir !== undefined ? data.environment.wind.dir : env.windDir;
-                        env.windSpd = data.environment.wind.spd !== undefined ? data.environment.wind.spd : env.windSpd;
-                    }
-                    if (data.environment.current) {
-                        env.currentDir = data.environment.current.dir !== undefined ? data.environment.current.dir : env.currentDir;
-                        env.currentSpd = data.environment.current.spd !== undefined ? data.environment.current.spd : env.currentSpd;
-                    }
-                }
-                document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
-                
-                let rad = os.hdg * Math.PI / 180;
-
-                if (data.os && data.os.waypoints) {
-                    data.os.waypoints.forEach(wp => {
-                        let rawX = wp.x / 400;
-                        let rawY = -wp.z / 400;
-                        let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
-                        let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
-                        let finalX = os.x + rotX;
-                        let finalY = os.y + rotY;
-                        goalPoints.push({ x: finalX, y: finalY });
-                    });
-                }
-
-                if (data.targets) {
-                    data.targets.forEach((t, i) => {
-                        let rawX = t.x / 400;
-                        let rawY = -t.z / 400; 
-
-                        let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
-                        let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
-                        
-                        let finalX = os.x + rotX;
-                        let finalY = os.y + rotY;
-                        let finalHdg = (t.hdg + os.hdg) % 360;
-
-                        let isAIS = Math.random() > 0.5; 
-                        
-                        let targetObj = {
-                            x: finalX,
-                            y: finalY,
-                            hdg: finalHdg,
-                            spd: t.spd,
-                            history: []
-                        };
-
-                        if (isAIS) {
-                            targetObj.id = 'AIS_S' + i;
-                            targetObj.type = 'AIS';
-                            targetObj.name = aisPrefixes[Math.floor(Math.random()*aisPrefixes.length)] + " " + aisSuffixes[Math.floor(Math.random()*aisSuffixes.length)];
-                            targetObj.mmsi = "440" + Math.floor(100000 + Math.random()*900000);
-                            aisTargets.push(targetObj);
-                        } else {
-                            targetObj.id = 'ARPA_S' + i;
-                            targetObj.type = 'ARPA';
-                            targetObj.state = 0;
-                            targetObj.acqTime = 0;
-                            targetObj.blipAlpha = 0;
-                            targets.push(targetObj);
-                        }
-                    });
-                }
-                
-                document.getElementById('scenario-status').innerText = 'Loaded';
-                document.getElementById('scenario-status').style.color = '#00ffaa';
-                
-                if (!isPaused) {
-                    togglePause();
-                }
-
-                alert(`시나리오 로드 완료: 타선 ${targets.length + aisTargets.length}척, 목표 지점 ${goalPoints.length}개가 배치되었습니다.`);
-                triggerArcUpdate();
-            } catch (err) {
-                alert("JSON 파일 형식이 올바르지 않습니다.");
+    // 📌 시나리오 데이터 자동 로딩 및 파싱 전담 함수
+    async function autoLoadScenario() {
+        const scenarioFile = "Scenarios/Scenario.json";
+        try {
+            const res = await fetch(scenarioFile);
+            if (res.ok) {
+                const data = await res.json();
+                parseScenarioData(data);
+            } else {
+                console.warn("시나리오 파일이 존재하지 않아 무작위 타선을 배치합니다.");
+                initEnvironment();
             }
-        };
-        reader.readAsText(file);
-    };
+        } catch (err) {
+            console.warn("시나리오 자동 로딩 실패, 무작위 타선을 배치합니다.", err);
+            initEnvironment();
+        }
+    }
+
+    function parseScenarioData(data) {
+        targets.length = 0;
+        aisTargets.length = 0;
+        goalPoints.length = 0; 
+        alarmLog = [];
+        alarmedTargets.clear();
+        updateAlarmUI();
+        
+        logData = [];
+        simTimeSeconds = 0;
+        lastLogTimeSec = 0;
+        manualEblOverride = false; 
+
+        if (data.origin) {
+            os.lat = data.origin.lat;
+            os.lon = data.origin.lon;
+        }
+        if (data.os) {
+            os.hdg = data.os.hdg;
+            os.spd = data.os.spd;
+            os.targetRudder = 0;
+            os.actualRudder = 0;
+            os.rot = 0;
+        }
+        
+        if (data.environment) {
+            if (data.environment.wind) {
+                env.windDir = data.environment.wind.dir !== undefined ? data.environment.wind.dir : env.windDir;
+                env.windSpd = data.environment.wind.spd !== undefined ? data.environment.wind.spd : env.windSpd;
+            }
+            if (data.environment.current) {
+                env.currentDir = data.environment.current.dir !== undefined ? data.environment.current.dir : env.currentDir;
+                env.currentSpd = data.environment.current.spd !== undefined ? data.environment.current.spd : env.currentSpd;
+            }
+        }
+        document.getElementById('val-wind-spd').innerText = env.windSpd.toFixed(1) + " m/s";
+        
+        let rad = os.hdg * Math.PI / 180;
+
+        if (data.os && data.os.waypoints) {
+            data.os.waypoints.forEach(wp => {
+                let rawX = wp.x / 400;
+                let rawY = -wp.z / 400;
+                let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
+                let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
+                let finalX = os.x + rotX;
+                let finalY = os.y + rotY;
+                goalPoints.push({ x: finalX, y: finalY });
+            });
+        }
+
+        if (data.targets) {
+            data.targets.forEach((t, i) => {
+                let rawX = t.x / 400;
+                let rawY = -t.z / 400; 
+
+                let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
+                let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
+                
+                let finalX = os.x + rotX;
+                let finalY = os.y + rotY;
+                let finalHdg = (t.hdg + os.hdg) % 360;
+
+                let isAIS = Math.random() > 0.5; 
+                
+                let targetObj = {
+                    x: finalX,
+                    y: finalY,
+                    hdg: finalHdg,
+                    spd: t.spd,
+                    history: []
+                };
+
+                if (isAIS) {
+                    targetObj.id = 'AIS_S' + i;
+                    targetObj.type = 'AIS';
+                    targetObj.name = aisPrefixes[Math.floor(Math.random()*aisPrefixes.length)] + " " + aisSuffixes[Math.floor(Math.random()*aisSuffixes.length)];
+                    targetObj.mmsi = "440" + Math.floor(100000 + Math.random()*900000);
+                    aisTargets.push(targetObj);
+                } else {
+                    targetObj.id = 'ARPA_S' + i;
+                    targetObj.type = 'ARPA';
+                    targetObj.state = 0;
+                    targetObj.acqTime = 0;
+                    targetObj.blipAlpha = 0;
+                    targets.push(targetObj);
+                }
+            });
+        }
+        
+        document.getElementById('scenario-status').innerText = 'Loaded';
+        document.getElementById('scenario-status').style.color = '#00ffaa';
+        
+        triggerArcUpdate();
+    }
 
     function changeRange() {
         currentRange = parseFloat(document.getElementById('rng-select').value);
@@ -909,25 +916,10 @@
         triggerArcUpdate();
     }
 
-    function changeCpaLimit() {
-        cpaLimitVal = parseFloat(document.getElementById('cpa-limit').value);
-        triggerArcUpdate();
-    }
-    function changeTcpaLimit() {
-        tcpaLimitVal = parseFloat(document.getElementById('tcpa-limit').value);
-        triggerArcUpdate();
-    }
-
-    function changeArcInterval() {
-        arcIntervalMs = parseInt(document.getElementById('arc-interval').value) * 1000;
-        triggerArcUpdate();
-    }
-
-    function changeArcWeights() {
-        wTurnVal = parseFloat(document.getElementById('w-turn-select').value);
-        wGoalVal = parseFloat(document.getElementById('w-goal-select').value);
-        triggerArcUpdate();
-    }
+    function changeCpaLimit() { cpaLimitVal = parseFloat(document.getElementById('cpa-limit').value); triggerArcUpdate(); }
+    function changeTcpaLimit() { tcpaLimitVal = parseFloat(document.getElementById('tcpa-limit').value); triggerArcUpdate(); }
+    function changeArcInterval() { arcIntervalMs = parseInt(document.getElementById('arc-interval').value) * 1000; triggerArcUpdate(); }
+    function changeArcWeights() { wTurnVal = parseFloat(document.getElementById('w-turn-select').value); wGoalVal = parseFloat(document.getElementById('w-goal-select').value); triggerArcUpdate(); }
 
     function toggleArc() {
         arcActive = !arcActive;
@@ -985,7 +977,6 @@
             aisTargets.push({ id: 'AIS_' + i, type: 'AIS', name: name, mmsi: "440" + Math.floor(100000 + Math.random()*900000), x: tx, y: ty, hdg: hdg, spd: 8 + Math.random() * 12, history: [] });
         }
     }
-    initEnvironment();
 
     const radarCanvas = document.getElementById('radar-canvas');
     const ctx = radarCanvas.getContext('2d');
@@ -1706,7 +1697,6 @@
         
         const osHdgRad = os.hdg * (Math.PI / 180);
         
-        // 📌 2D 환경 조류/바람 벡터 적용 
         let relativeWindDir = (env.windDir - os.hdg + 360) % 360;
         let windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin(relativeWindDir * Math.PI / 180);
         let driftX = windDriftSpeed * -Math.cos(osHdgRad);
@@ -1737,7 +1727,6 @@
             }
         }
 
-        // 📌 웨이포인트 통과 검사 로직
         if (goalPoints.length > 0) {
             let gp = goalPoints[0];
             let dx = gp.x - os.x;
