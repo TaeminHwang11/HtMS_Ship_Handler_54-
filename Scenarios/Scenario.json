@@ -1,0 +1,155 @@
+{
+  "origin": {
+    "lat": 34.8,
+    "lon": 126.4
+  },
+  "os": {
+    "type": "ContainerShip1",
+    "hdg": 0,
+    "spd": 10,
+    "waypoints": [
+      {
+        "x": 0,
+        "z": -217
+      },
+      {
+        "x": -192,
+        "z": -603
+      },
+      {
+        "x": 213,
+        "z": -1140
+      },
+      {
+        "x": -177,
+        "z": -1899
+      },
+      {
+        "x": 213,
+        "z": -2910
+      }
+    ]
+  },
+  "targets": [
+    {
+      "type": "ContainerShip1",
+      "x": -252,
+      "z": -1240,
+      "hdg": 180,
+      "spd": 16,
+      "waypoints": []
+    },
+    {
+      "type": "ContainerShip1",
+      "x": -60,
+      "z": -2586,
+      "hdg": 181,
+      "spd": 21,
+      "waypoints": []
+    },
+    {
+      "type": "FishingBoat1",
+      "x": 198,
+      "z": -721,
+      "hdg": 181,
+      "spd": 30,
+      "waypoints": []
+    },
+    {
+      "type": "CargoShip1",
+      "x": 39,
+      "z": -2128,
+      "hdg": 200,
+      "spd": 30,
+      "waypoints": []
+    },
+    {
+      "type": "Warship",
+      "x": 81,
+      "z": -2905,
+      "hdg": 180,
+      "spd": 21,
+      "waypoints": []
+    },
+    {
+      "type": "BulkCarrier",
+      "x": -129,
+      "z": -943,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "ContainerShip1",
+      "x": -324,
+      "z": -528,
+      "hdg": 146,
+      "spd": 30,
+      "waypoints": []
+    },
+    {
+      "type": "ContainerShip1",
+      "x": 36,
+      "z": -1510,
+      "hdg": 181,
+      "spd": 30,
+      "waypoints": []
+    },
+    {
+      "type": "Warship",
+      "x": 228,
+      "z": -1265,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "ContainerShip1",
+      "x": 522,
+      "z": -1660,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "BulkCarrier",
+      "x": -69,
+      "z": -4234,
+      "hdg": 179,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "AircraftCarrier1",
+      "x": -261,
+      "z": -3786,
+      "hdg": 178,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "BulkCarrier",
+      "x": 141,
+      "z": -3916,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "CargoShip2",
+      "x": -144,
+      "z": -3406,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    },
+    {
+      "type": "ContainerShip2",
+      "x": 144,
+      "z": -3244,
+      "hdg": 180,
+      "spd": 10,
+      "waypoints": []
+    }
+  ]
+}
