@@ -450,7 +450,6 @@
         generateJSONOutput();
     });
 
-    // 📌 에러 방지: 타선이 삭제되었을 때의 선택 예외 처리 강화
     function updateSidebarForActiveMass() {
         const mass = massList[activeMassIndex];
         if (!mass) return;
@@ -853,7 +852,6 @@
                 mass.selectedShip = 'OS'; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
             }
 
-            // 📌 에러 방지: 타선 웨이포인트 삭제 후 인덱스 추적 방어 코드 추가
             for (let i = mass.targets.length - 1; i >= 0; i--) {
                 wpIdx = checkWp(mass.targets[i].waypoints);
                 if (wpIdx !== -1) {
@@ -1059,7 +1057,6 @@
         }
     }
 
-    // 📌 에러 방지: 객체 속성 매핑 시 기본값 처리 철저히 적용
     function generateJSONOutput() {
         try {
             const format = simModeSelect.value;
@@ -1177,7 +1174,7 @@
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
         try {
-            generateJSONOutput(); // 📌 저장 전 무조건 최신 상태 동기화
+            generateJSONOutput(); 
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === "") {
                 alert("저장할 시나리오 데이터가 없습니다. (타선 및 맵 정보 확인)");
@@ -1204,6 +1201,8 @@
     });
 
     document.getElementById('loadJsonBtn').addEventListener('click', () => document.getElementById('jsonInput').click());
+    
+    // 💡 [수정된 부분] 안전한 JSON 파서 로직 적용 (Number 타입 강제 캐스팅 & 깊은 복사 처리)
     document.getElementById('jsonInput').addEventListener('change', (e) => {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
@@ -1216,12 +1215,12 @@
 
                 if (parsed.environment) {
                     if (parsed.environment.wind) {
-                        globalEnv.windDir = parsed.environment.wind.dir ?? 45;
-                        globalEnv.windSpd = parsed.environment.wind.spd ?? 12.5;
+                        globalEnv.windDir = Number(parsed.environment.wind.dir ?? 45);
+                        globalEnv.windSpd = Number(parsed.environment.wind.spd ?? 12.5);
                     }
                     if (parsed.environment.current) {
-                        globalEnv.currDir = parsed.environment.current.dir ?? 0;
-                        globalEnv.currSpd = parsed.environment.current.spd ?? 0.0;
+                        globalEnv.currDir = Number(parsed.environment.current.dir ?? 0);
+                        globalEnv.currSpd = Number(parsed.environment.current.spd ?? 0.0);
                     }
                     document.getElementById('envWindDir').value = globalEnv.windDir;
                     document.getElementById('envWindSpd').value = globalEnv.windSpd;
@@ -1235,26 +1234,26 @@
                         let osShipMASS = parsed.ships.find(s => s.isMASS === 1) || parsed.ships[0];
                         let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
                         if (osWpSet && osWpSet.WayPoints.length > 0) {
-                            newMass.originLat = osWpSet.WayPoints[0].Latitude;
-                            newMass.originLon = osWpSet.WayPoints[0].Longitude;
+                            newMass.originLat = Number(osWpSet.WayPoints[0].Latitude) || 34.8;
+                            newMass.originLon = Number(osWpSet.WayPoints[0].Longitude) || 126.4;
                         }
                         const fromLatLon = (lat, lon) => {
                             const dxM = (lon - newMass.originLon) * 111111 * Math.cos(newMass.originLat * Math.PI / 180);
                             const dzM = -(lat - newMass.originLat) * 111111;
                             return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
                         };
-                        newMass.osData = { type: osShipMASS.shipType || 'ContainerShip1', hdg: osShipMASS.initHeading || 0, spd: osShipMASS.initSpeed || 10, waypoints: [] };
+                        newMass.osData = { type: osShipMASS.shipType || 'ContainerShip1', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
                         if (osWpSet && osWpSet.WayPoints.length > 1) {
-                            for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(osWpSet.WayPoints[i].Latitude, osWpSet.WayPoints[i].Longitude));
+                            for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
                         }
                         parsed.ships.filter(s => s.isMASS !== 1).forEach(s => {
                             let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
                             if (!ws || ws.WayPoints.length === 0) return;
-                            let startPt = fromLatLon(ws.WayPoints[0].Latitude, ws.WayPoints[0].Longitude);
+                            let startPt = fromLatLon(Number(ws.WayPoints[0].Latitude), Number(ws.WayPoints[0].Longitude));
                             let waypoints = [];
-                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(ws.WayPoints[i].Latitude, ws.WayPoints[i].Longitude));
-                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, s.initSpeed || 10));
-                            newMass.targets.push({ type: s.shipType || 'ContainerShip1', x: startPt.x, z: startPt.z, hdg: s.initHeading || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
+                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
+                            newMass.targets.push({ type: s.shipType || 'ContainerShip1', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
                         });
                     } else if (isIncomingHTMSArray) {
                         parsed.forEach(item => {
@@ -1265,11 +1264,27 @@
                             }
                         });
                     } else if (isIncomingHTMSObj) {
-                        if (parsed.origin) { newMass.originLat = parsed.origin.lat; newMass.originLon = parsed.origin.lon; }
-                        newMass.osData = parsed.os || { type: 'ContainerShip1', hdg: 0, spd: OS_SPD, waypoints: [] };
-                        if (!newMass.osData.waypoints) newMass.osData.waypoints = [];
-                        if (!newMass.osData.type) newMass.osData.type = 'ContainerShip1'; 
-                        newMass.targets = (parsed.targets || []).map(t => ({...t, type: t.type || 'ContainerShip1', wpDist: t.spd * VECTOR_SCALE, waypoints: t.waypoints || []}));
+                        if (parsed.origin) { 
+                            newMass.originLat = Number(parsed.origin.lat) || 34.8; 
+                            newMass.originLon = Number(parsed.origin.lon) || 126.4; 
+                        }
+                        const safeOs = parsed.os || {};
+                        newMass.osData = { 
+                            type: safeOs.type || 'ContainerShip1', 
+                            hdg: Number(safeOs.hdg) || 0, 
+                            spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
+                            waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                        };
+                        newMass.targets = (parsed.targets || []).map(t => {
+                            const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
+                            return {
+                                type: t.type || 'ContainerShip1',
+                                x: Number(t.x) || 0, z: Number(t.z) || 0,
+                                hdg: Number(t.hdg) || 0,
+                                spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
+                                waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                            };
+                        });
                     }
                     massList = [newMass];
                 } else { 
@@ -1280,16 +1295,16 @@
                         osShips.forEach(osShipMASS => {
                             let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
                             let oLat = 34.800000; let oLon = 126.400000;
-                            if (osWpSet && osWpSet.WayPoints.length > 0) { oLat = osWpSet.WayPoints[0].Latitude; oLon = osWpSet.WayPoints[0].Longitude; }
+                            if (osWpSet && osWpSet.WayPoints.length > 0) { oLat = Number(osWpSet.WayPoints[0].Latitude) || oLat; oLon = Number(osWpSet.WayPoints[0].Longitude) || oLon; }
                             const newMass = createMassState(oLat, oLon);
                             const fromLatLon = (lat, lon) => {
                                 const dxM = (lon - oLon) * 111111 * Math.cos(oLat * Math.PI / 180);
                                 const dzM = -(lat - oLat) * 111111;
                                 return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
                             };
-                            newMass.osData = { type: osShipMASS.shipType || 'CNTR_2700', hdg: osShipMASS.initHeading || 0, spd: osShipMASS.initSpeed || 10, waypoints: [] };
+                            newMass.osData = { type: osShipMASS.shipType || 'CNTR_2700', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
                             if (osWpSet && osWpSet.WayPoints.length > 1) {
-                                for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(osWpSet.WayPoints[i].Latitude, osWpSet.WayPoints[i].Longitude));
+                                for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
                             }
                             massList.push(newMass);
                         });
@@ -1297,7 +1312,7 @@
                         targetShips.forEach(s => {
                             let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
                             if (!ws || ws.WayPoints.length === 0) return;
-                            const tLat = ws.WayPoints[0].Latitude; const tLon = ws.WayPoints[0].Longitude;
+                            const tLat = Number(ws.WayPoints[0].Latitude); const tLon = Number(ws.WayPoints[0].Longitude);
                             let bestMassIdx = 0; let minDist = Infinity;
                             massList.forEach((mass, i) => {
                                 const dist = Math.hypot(mass.originLat - tLat, mass.originLon - tLon);
@@ -1311,9 +1326,9 @@
                             };
                             let startPt = fromLatLon(tLat, tLon);
                             let waypoints = [];
-                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(ws.WayPoints[i].Latitude, ws.WayPoints[i].Longitude));
-                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, s.initSpeed || 10));
-                            targetMass.targets.push({ type: s.shipType || 'CNTR_2700', x: startPt.x, z: startPt.z, hdg: s.initHeading || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
+                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
+                            targetMass.targets.push({ type: s.shipType || 'CNTR_2700', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
                         });
                     } else {
                         const newMass = createMassState(34.800000, 126.400000);
@@ -1326,11 +1341,27 @@
                                 }
                             });
                         } else if (isIncomingHTMSObj) {
-                            if (parsed.origin) { newMass.originLat = parsed.origin.lat; newMass.originLon = parsed.origin.lon; }
-                            newMass.osData = parsed.os || { type: 'CNTR_2700', hdg: 0, spd: OS_SPD, waypoints: [] };
-                            if (!newMass.osData.waypoints) newMass.osData.waypoints = [];
-                            if (!newMass.osData.type) newMass.osData.type = 'CNTR_2700'; 
-                            newMass.targets = (parsed.targets || []).map(t => ({...t, type: t.type || 'CNTR_2700', wpDist: t.spd * VECTOR_SCALE, waypoints: t.waypoints || []}));
+                            if (parsed.origin) { 
+                                newMass.originLat = Number(parsed.origin.lat) || 34.8; 
+                                newMass.originLon = Number(parsed.origin.lon) || 126.4; 
+                            }
+                            const safeOs = parsed.os || {};
+                            newMass.osData = { 
+                                type: safeOs.type || 'CNTR_2700', 
+                                hdg: Number(safeOs.hdg) || 0, 
+                                spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
+                                waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                            };
+                            newMass.targets = (parsed.targets || []).map(t => {
+                                const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
+                                return {
+                                    type: t.type || 'CNTR_2700',
+                                    x: Number(t.x) || 0, z: Number(t.z) || 0,
+                                    hdg: Number(t.hdg) || 0,
+                                    spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
+                                    waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                                };
+                            });
                         }
                         massList.push(newMass);
                     }
@@ -1459,7 +1490,6 @@
             });
     });
 
-    // 📌 리플레이 파일과 시나리오 파일을 구분하는 안전한 파서
     function parseReplayJSON(jsonStr) {
         try {
             const data = JSON.parse(jsonStr);
