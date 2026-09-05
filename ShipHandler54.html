@@ -616,20 +616,38 @@
             }
         };
 
+        // ========== 터치 조타 수정된 부분 ==========
         let steerInterval = null;
-        function startSteer(dir) { steerInterval = setInterval(() => { if(!isPaused) { shipPhysics.targetRudder = Math.max(-35, Math.min(35, shipPhysics.targetRudder + (dir === 'P' ? -5 : 5))); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }, 150); }
-        function stopSteer() { clearInterval(steerInterval); }
-        document.getElementById('btn-steer-port').addEventListener('mousedown', () => startSteer('P'));
-        document.getElementById('btn-steer-port').addEventListener('mouseup', stopSteer);
-        document.getElementById('btn-steer-port').addEventListener('mouseleave', stopSteer);
-        document.getElementById('btn-steer-port').addEventListener('touchstart', (e) => { e.preventDefault(); startSteer('P'); });
-        document.getElementById('btn-steer-port').addEventListener('touchend', stopSteer);
-        document.getElementById('btn-steer-stbd').addEventListener('mousedown', () => startSteer('S'));
-        document.getElementById('btn-steer-stbd').addEventListener('mouseup', stopSteer);
-        document.getElementById('btn-steer-stbd').addEventListener('mouseleave', stopSteer);
-        document.getElementById('btn-steer-stbd').addEventListener('touchstart', (e) => { e.preventDefault(); startSteer('S'); });
-        document.getElementById('btn-steer-stbd').addEventListener('touchend', stopSteer);
+        function applySteer(dir) {
+            if(!isPaused) { 
+                shipPhysics.targetRudder = Math.max(-35, Math.min(35, shipPhysics.targetRudder + (dir === 'P' ? -5 : 5))); 
+                shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; 
+            }
+        }
+        function startSteer(dir) { 
+            clearInterval(steerInterval); 
+            applySteer(dir); 
+            steerInterval = setInterval(() => { applySteer(dir); }, 150); 
+        }
+        function stopSteer() { 
+            clearInterval(steerInterval); 
+            steerInterval = null;
+        }
 
+        const btnPort = document.getElementById('btn-steer-port');
+        btnPort.style.touchAction = 'none'; // 브라우저 제스처 개입 완벽 차단
+        btnPort.addEventListener('pointerdown', (e) => { e.preventDefault(); startSteer('P'); });
+        btnPort.addEventListener('pointerup', stopSteer);
+        btnPort.addEventListener('pointerout', stopSteer);
+        btnPort.addEventListener('pointercancel', stopSteer);
+
+        const btnStbd = document.getElementById('btn-steer-stbd');
+        btnStbd.style.touchAction = 'none'; // 브라우저 제스처 개입 완벽 차단
+        btnStbd.addEventListener('pointerdown', (e) => { e.preventDefault(); startSteer('S'); });
+        btnStbd.addEventListener('pointerup', stopSteer);
+        btnStbd.addEventListener('pointerout', stopSteer);
+        btnStbd.addEventListener('pointercancel', stopSteer);
+        // ===========================================
 
         window.setCamMove = function(dir) { camMoveDir = dir; };
         window.stopCamMove = function() { 
@@ -976,4 +994,4 @@
         animate();
     </script>
 </body>
-    </html>
+</html>
