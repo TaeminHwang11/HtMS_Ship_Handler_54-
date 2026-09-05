@@ -782,7 +782,7 @@
 
     const os = { 
         x: 0, y: 0, 
-        hdg: 0.0, spd: 10.0, sog: 10.0, cog: 0.0, 
+        hdg: 0.0, spd: 10.0, cmdSpd: 10.0, sog: 10.0, cog: 0.0, 
         targetRudder: 0, actualRudder: 0, rot: 0, latMove: 0,
         lat: 34 + (47.014 / 60), 
         lon: 126 + (21.733 / 60)
@@ -852,7 +852,6 @@
     document.getElementById('btn-steer-stbd').addEventListener('mousedown', steerStbd);
     document.getElementById('btn-steer-stbd').addEventListener('touchstart', steerStbd, {passive: false});
 
-    // 💡 1. 결과 파일명 형식 일치화 (YYYYMMDD_HHMMSS_학번_이름.json)
     function finishSimulationAndSendData() {
         if (isPaused && document.getElementById('finish-overlay').style.display === 'flex') return;
         isPaused = true;
@@ -867,7 +866,7 @@
         const ss = String(now.getSeconds()).padStart(2, '0');
         const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
         
-        const customFileName = `RADAR_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+        const customFileName = `${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
         const payload = { 
             studentId: studentInfo.id, 
@@ -906,7 +905,6 @@
         }
     }
 
-    // 💡 2. 파싱 시 스케일 문제 및 좌표계 회전 불일치 오류 수정
     function parseScenarioData(data) {
         targets.length = 0;
         aisTargets.length = 0;
@@ -927,6 +925,7 @@
         if (data.os) {
             os.hdg = Number(data.os.hdg) || os.hdg;
             os.spd = Number(data.os.spd) || os.spd;
+            os.cmdSpd = os.spd; // 시나리오 기준 선속 저장
             os.targetRudder = 0;
             os.actualRudder = 0;
             os.rot = 0;
@@ -945,11 +944,10 @@
         document.getElementById('val-wind-spd').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3, '0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
         
-        // 💡 수정됨: os.hdg로 한 번 더 회전시키는 부분을 삭제하여 절대 좌표계 일치화
         if (data.os && data.os.waypoints) {
             data.os.waypoints.forEach(wp => {
                 let rawX = Number(wp.x) / 400;
-                let rawY = -Number(wp.z) / 400; // z는 남쪽이 양수이므로 부호 반전
+                let rawY = -Number(wp.z) / 400; 
                 let finalX = os.x + rawX;
                 let finalY = os.y + rawY;
                 goalPoints.push({ x: finalX, y: finalY });
@@ -963,7 +961,7 @@
 
                 let finalX = os.x + rawX;
                 let finalY = os.y + rawY;
-                let finalHdg = Number(t.hdg) % 360; // 💡수정됨: 상대 방위로 오인된 os.hdg 누적 제거
+                let finalHdg = Number(t.hdg) % 360; 
 
                 let isAIS = Math.random() > 0.5; 
                 
@@ -986,7 +984,6 @@
             });
         }
         
-        // 초기 로깅 정보 추가 (0초)
         logData.push({ time: "0.0", name: "OS", lat: os.lat.toFixed(6), lon: os.lon.toFixed(6), x: (os.x * 400).toFixed(2), y: (-os.y * 400).toFixed(2), hdg: os.hdg.toFixed(1), sog: (os.sog||os.spd).toFixed(1), cog: (os.cog||os.hdg).toFixed(1), rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1) });
         targets.concat(aisTargets).forEach(t => {
             let tLat = os.lat + ((t.y - os.y) / 60); let tLon = os.lon + ((t.x - os.x) / (60 * Math.cos(os.lat * Math.PI/180)));
@@ -1237,8 +1234,7 @@
     const keys = { ArrowLeft: false, ArrowRight: false };
     window.addEventListener('keydown', e => { 
         if (keys.hasOwnProperty(e.code)) { keys[e.code] = true; e.preventDefault(); }
-        if (e.code === 'ArrowUp') { os.spd = Math.min(25.0, os.spd + 1.0); triggerArcUpdate(); e.preventDefault(); }
-        if (e.code === 'ArrowDown') { os.spd = Math.max(0, os.spd - 1.0); triggerArcUpdate(); e.preventDefault(); }
+        
         if(e.code === 'ArrowLeft' && !e.repeat) { os.targetRudder = Math.max(-35, os.targetRudder - 5); os.targetRudder = Math.round(os.targetRudder/5)*5; triggerArcUpdate(); e.preventDefault(); }
         if(e.code === 'ArrowRight' && !e.repeat) { os.targetRudder = Math.min(35, os.targetRudder + 5); os.targetRudder = Math.round(os.targetRudder/5)*5; triggerArcUpdate(); e.preventDefault(); }
         if(e.code === 'Space') { os.targetRudder = 0; triggerArcUpdate(); e.preventDefault(); }
@@ -1605,10 +1601,17 @@
         
         os.rot += rotDerivative * realDt; 
         os.hdg += (os.rot / 60.0) * realDt * 3;
-        if (os.hdg >= 360) os.hdg -= 360; if (os.hdg < 0) os.hdg += 360;
+        if (os.hdg >= 360) os.hdg -= 360; 
+        if (os.hdg < 0) os.hdg += 360;
         
         const osHdgRad = os.hdg * (Math.PI / 180);
-        
+
+        // --- 3D 시뮬레이터 조종/운동 모델 적용 (선속 감속) ---
+        const speedLossFactor = 0.008; 
+        const targetSpeed = os.cmdSpd * (1.0 - speedLossFactor * Math.abs(os.rot));
+        const T_surge = 15.0; 
+        os.spd += (targetSpeed - os.spd) * (realDt / T_surge);
+
         // 1. 기초 선수 방향 이동
         let moveX = os.spd * Math.sin(osHdgRad) * simDtHours;
         let moveY = os.spd * Math.cos(osHdgRad) * simDtHours;
@@ -1620,12 +1623,11 @@
             moveY += globalEnv.currentSpd * Math.cos(currentRad) * simDtHours;
         }
 
-        // 3. 바람 (Wind - Leeway) 적용
+        // 3. 바람 (Wind - Leeway) 적용 (3D 환경 모델 적용)
         if (globalEnv.windSpd > 0) {
-            let windForceRad = (globalEnv.windDir + 180) * (Math.PI / 180); // 바람이 향하는 방향
-            let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005; 
-            moveX += windDriftSpeed * Math.sin(windForceRad) * simDtHours;
-            moveY += windDriftSpeed * Math.cos(windForceRad) * simDtHours;
+            let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - os.hdg + 360) % 360 * Math.PI / 180);
+            moveX += windDriftSpeed * Math.cos(osHdgRad) * simDtHours;
+            moveY -= windDriftSpeed * Math.sin(osHdgRad) * simDtHours;
         }
 
         // 4. SOG / COG 산출
@@ -1662,7 +1664,7 @@
 
         simTimeSeconds += simDtHours * 3600;
         
-        // 💡 3. 로깅 시 X, Y를 시나리오 스케일(미터 400배)로 복원 저장
+        // 로깅 처리 (기존 코드와 동일)
         if (simTimeSeconds - lastLogTimeSec >= 1.0) {
             lastLogTimeSec = simTimeSeconds; let tStr = simTimeSeconds.toFixed(1);
             logData.push({ time: tStr, name: "OS", lat: os.lat.toFixed(6), lon: os.lon.toFixed(6), x: (os.x * 400).toFixed(2), y: (-os.y * 400).toFixed(2), hdg: os.hdg.toFixed(1), sog: os.sog.toFixed(1), cog: os.cog.toFixed(1), rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1) });
