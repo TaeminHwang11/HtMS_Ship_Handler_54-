@@ -617,36 +617,22 @@
         };
 
         // ========== 터치 조타 수정된 부분 ==========
-        let steerInterval = null;
         function applySteer(dir) {
             if(!isPaused) { 
                 shipPhysics.targetRudder = Math.max(-35, Math.min(35, shipPhysics.targetRudder + (dir === 'P' ? -5 : 5))); 
                 shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; 
             }
         }
-        function startSteer(dir) { 
-            clearInterval(steerInterval); 
-            applySteer(dir); 
-            steerInterval = setInterval(() => { applySteer(dir); }, 150); 
-        }
-        function stopSteer() { 
-            clearInterval(steerInterval); 
-            steerInterval = null;
-        }
 
         const btnPort = document.getElementById('btn-steer-port');
-        btnPort.style.touchAction = 'none'; // 브라우저 제스처 개입 완벽 차단
-        btnPort.addEventListener('pointerdown', (e) => { e.preventDefault(); startSteer('P'); });
-        btnPort.addEventListener('pointerup', stopSteer);
-        btnPort.addEventListener('pointerout', stopSteer);
-        btnPort.addEventListener('pointercancel', stopSteer);
+        btnPort.style.touchAction = 'none';
+        btnPort.addEventListener('touchstart', (e) => { e.preventDefault(); applySteer('P'); }, {passive: false});
+        btnPort.addEventListener('mousedown', (e) => { e.preventDefault(); applySteer('P'); });
 
         const btnStbd = document.getElementById('btn-steer-stbd');
-        btnStbd.style.touchAction = 'none'; // 브라우저 제스처 개입 완벽 차단
-        btnStbd.addEventListener('pointerdown', (e) => { e.preventDefault(); startSteer('S'); });
-        btnStbd.addEventListener('pointerup', stopSteer);
-        btnStbd.addEventListener('pointerout', stopSteer);
-        btnStbd.addEventListener('pointercancel', stopSteer);
+        btnStbd.style.touchAction = 'none';
+        btnStbd.addEventListener('touchstart', (e) => { e.preventDefault(); applySteer('S'); }, {passive: false});
+        btnStbd.addEventListener('mousedown', (e) => { e.preventDefault(); applySteer('S'); });
         // ===========================================
 
         window.setCamMove = function(dir) { camMoveDir = dir; };
@@ -790,6 +776,36 @@
             if (isDraggingCam && gameState === 'PLAYING') { camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); }
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
+
+        // 모바일 터치 시야 회전 추가
+        let lastTouchX = 0, lastTouchY = 0;
+        document.addEventListener('touchstart', (e) => {
+            if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') {
+                isDraggingCam = true;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        document.addEventListener('touchend', () => { isDraggingCam = false; });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDraggingCam && gameState === 'PLAYING') {
+                e.preventDefault(); // 화면 스크롤 방지
+                let touchX = e.touches[0].clientX;
+                let touchY = e.touches[0].clientY;
+                
+                let movementX = touchX - lastTouchX;
+                let movementY = touchY - lastTouchY;
+
+                camAngleY -= movementX * 0.003;
+                camAngleX -= movementY * 0.003;
+                camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX));
+
+                lastTouchX = touchX;
+                lastTouchY = touchY;
+            }
+        }, {passive: false});
 
         document.getElementById('ecdis-canvas').addEventListener('click', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged) return;
