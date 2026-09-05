@@ -5,7 +5,7 @@
   },
   "environment": {
     "wind": {
-      "dir": 40,
+      "dir": 32,
       "spd": 12.5
     },
     "current": {
