@@ -208,7 +208,6 @@
         <div class="digital-item"><div class="digital-label">RUD CMD</div><div id="val-rud-cmd" class="digital-val">00.0°</div></div>
         <div class="digital-item"><div class="digital-label">RUD ACT</div><div id="val-rud-act" class="digital-val">00.0°</div></div>
         <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5m/s</div></div>
-        <!-- 💡 조류(CURRENT) 정보 추가 -->
         <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0kn</div></div>
     </div>
 
@@ -546,6 +545,45 @@
             water.visible = false; scene.background = new THREE.Color(0x000000);
         }
 
+        // 💡 1번 이슈 수정: 명시적 파일명 적용
+        function finishSimulationAndSendData() {
+            if (gameState !== 'PLAYING') return;
+            gameState = 'FINISHED'; isPaused = true;
+            document.getElementById('finish-overlay').style.display = 'flex';
+            
+            // 날짜 및 시간 포맷 (YYYYMMDD_HHMMSS) 생성
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+            
+            // 파일명 규칙: 날짜_시간_학번_이름.json
+            const customFileName = `${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+
+            const payload = { 
+                studentId: studentInfo.id, 
+                studentName: studentInfo.name, 
+                fileName: customFileName, 
+                logData: logData 
+            };
+
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(res => { 
+                document.getElementById('finish-title').innerText = "데이터 전송 성공!"; 
+                document.getElementById('finish-desc').innerText = "결과가 안전하게 저장되었습니다. 이제 창을 닫으셔도 좋습니다."; 
+            })
+            .catch(err => { 
+                document.getElementById('finish-title').innerText = "전송 실패"; 
+                document.getElementById('finish-title').style.color = "#ff3333"; 
+                document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다."; 
+                console.error(err); 
+            });
+        }
+
         window.togglePause = function() {
             if (gameState !== 'PLAYING') return; isPaused = !isPaused; const btn = document.getElementById('btn-pause');
             if(isPaused) { btn.innerText = 'RESUME'; btn.classList.add('active'); } else { btn.innerText = 'PAUSE'; btn.classList.remove('active'); }
@@ -578,7 +616,7 @@
             document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
             activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
 
-            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; isPaused = false; manualRadarZoom = 1.0; 
+            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; manualRadarZoom = 1.0; 
             
             // 📌 시나리오 환경 설정 초기화 (미설정 시 기본값)
             env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
@@ -587,7 +625,7 @@
             document.getElementById('ecdis-container').style.display = 'block';
             document.getElementById('demo-control-container').style.display = 'flex';
             document.getElementById('camera-hint').style.display = 'block';
-            document.getElementById('btn-pause').innerText = 'PAUSE'; document.getElementById('btn-pause').classList.remove('active'); document.getElementById('manual-target-panel').style.display = 'none';
+            document.getElementById('manual-target-panel').style.display = 'none';
 
             let osData = parsedModels[osFileName];
             if (!osData) {
@@ -653,17 +691,13 @@
             let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
             targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             
-            gameState = 'PLAYING';
-        }
+            // 💡 시작 시 PAUSE 자동 해제
+            isPaused = false;
+            const btnPause = document.getElementById('btn-pause');
+            btnPause.innerText = 'PAUSE';
+            btnPause.classList.remove('active');
 
-        function finishSimulationAndSendData() {
-            if (gameState !== 'PLAYING') return;
-            gameState = 'FINISHED'; isPaused = true;
-            document.getElementById('finish-overlay').style.display = 'flex';
-            const payload = { studentId: studentInfo.id, studentName: studentInfo.name, logData: logData };
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
-            .then(res => res.json()).then(res => { document.getElementById('finish-title').innerText = "데이터 전송 성공!"; document.getElementById('finish-desc').innerText = "결과가 안전하게 저장되었습니다. 이제 창을 닫으셔도 좋습니다."; })
-            .catch(err => { document.getElementById('finish-title').innerText = "전송 실패"; document.getElementById('finish-title').style.color = "#ff3333"; document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다."; console.error(err); });
+            gameState = 'PLAYING';
         }
 
         let currentMode = 'NONE'; let simSpeed = 1.0; const moveScale = 0.15; 
@@ -682,16 +716,6 @@
             else if(state === 'mod') { env.waveForce = 1.2; document.getElementById('btn-env-mod').classList.add('active'); if (!isNight && nightSkybox) { scene.background = nightSkybox; scene.environment = nightSkybox; } }
         };
         
-        let isTouchSteeringEnabled = false;
-        window.toggleTouchSteering = function() {
-            isTouchSteeringEnabled = !isTouchSteeringEnabled;
-            const btn = document.getElementById('btn-touch-steer');
-            const pBtn = document.getElementById('btn-steer-port');
-            const sBtn = document.getElementById('btn-steer-stbd');
-            if(isTouchSteeringEnabled) { btn.classList.add('active'); pBtn.style.display = 'flex'; sBtn.style.display = 'flex'; } 
-            else { btn.classList.remove('active'); pBtn.style.display = 'none'; sBtn.style.display = 'none'; }
-        };
-
         let saveTimeout;
         window.addEventListener('keydown', (e) => { 
             if(gameState === 'PLAYING') {
@@ -711,14 +735,6 @@
                 if (camMoved && currentOSFileName !== "") { const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); const toast = document.getElementById('save-toast'); toast.style.display = 'inline-block'; clearTimeout(saveTimeout); saveTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000); }
             }
         });
-
-        function steerPort(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
-        function steerStbd(e) { e.preventDefault(); e.stopPropagation(); if(gameState === 'PLAYING' && !isPaused) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }
-        
-        const portBtn = document.getElementById('btn-steer-port');
-        const stbdBtn = document.getElementById('btn-steer-stbd');
-        portBtn.addEventListener('mousedown', steerPort); portBtn.addEventListener('touchstart', steerPort, {passive: false});
-        stbdBtn.addEventListener('mousedown', steerStbd); stbdBtn.addEventListener('touchstart', steerStbd, {passive: false});
 
         document.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') isDraggingCam = true; });
         document.addEventListener('mouseup', () => { isDraggingCam = false; });
@@ -763,33 +779,33 @@
             const T_surge = 15.0; 
             shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
 
-            // 💡 1. 기초 선수 방향 이동 벡터 연산
+            // 1. 기초 선수 방향 이동 벡터 연산
             let moveX = (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
             let moveZ = -(shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
 
-            // 💡 2. 조류 (Current - Set & Drift) 적용
+            // 2. 조류 (Current - Set & Drift) 적용
             if (env.currentSpd > 0) {
                 let currentRad = env.currentDir * (Math.PI / 180);
                 moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
                 moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
             }
 
-            // 💡 3. 바람 (Wind - Leeway) 적용
+            // 3. 바람 (Wind - Leeway) 적용
             let windDriftSpeed = 0;
             if (env.windSpd > 0) {
-                let windForceRad = (env.windDir + 180) * (Math.PI / 180); // 밀려가는 방향
-                windDriftSpeed = (env.windSpd * env.windSpd) * 0.005; // 바람으로 인한 표류 속도 계수
-                moveX += (windDriftSpeed * moveScale) * Math.sin(windForceRad) * dt;
-                moveZ -= (windDriftSpeed * moveScale) * Math.cos(windForceRad) * dt;
+                let windForceRad = (env.windDir + 180) * (Math.PI / 180); 
+                windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin((env.windDir - shipPhysics.heading + 360) % 360 * Math.PI / 180);
+                moveX += (windDriftSpeed * moveScale) * Math.cos(headingRad) * dt; 
+                moveZ -= (windDriftSpeed * moveScale) * -Math.sin(headingRad) * dt;
             }
 
-            // 💡 4. SOG (대지 속력) 및 COG (대지 침로) 산출
+            // 4. SOG (대지 속력) 및 COG (대지 침로) 산출
             let actualVx = moveX / (moveScale * dt);
-            let actualVz = -moveZ / (moveScale * dt); // 북쪽(North) 기준 음수 변환
+            let actualVz = -moveZ / (moveScale * dt);
             shipPhysics.sog = Math.sqrt(actualVx*actualVx + actualVz*actualVz);
             shipPhysics.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
 
-            // 💡 5. 위치 최종 업데이트 및 횡방향 밀림(Drift) HUD 표시 
+            // 5. 위치 최종 업데이트 및 횡방향 밀림(Drift) HUD 표시 
             osShip.position.x += moveX;
             osShip.position.z += moveZ;
             shipPhysics.lat = actualVx * Math.cos(headingRad) - actualVz * Math.sin(headingRad);
