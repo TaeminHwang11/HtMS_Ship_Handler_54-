@@ -29,7 +29,7 @@
         .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px;}
         .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace;}
         
-        body.ai-active #val-hdg, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind { 
+        body.ai-active #val-hdg, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind, body.ai-active #val-current { 
             color: #00bfff !important; text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); 
         }
 
@@ -208,6 +208,8 @@
         <div class="digital-item"><div class="digital-label">RUD CMD</div><div id="val-rud-cmd" class="digital-val">00.0°</div></div>
         <div class="digital-item"><div class="digital-label">RUD ACT</div><div id="val-rud-act" class="digital-val">00.0°</div></div>
         <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5m/s</div></div>
+        <!-- 💡 조류(CURRENT) 정보 추가 -->
+        <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0kn</div></div>
     </div>
 
     <div id="manual-target-panel" class="hud-panel draggable-panel" style="display:none; bottom: 20px; left: 20px; width: 380px; z-index: 150; background: rgba(5, 10, 15, 0.85);">
@@ -633,22 +635,22 @@
                     if (loadedScenarioConfig.targets) {
                         loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
                     }
-                    // 📌 바람/조류 파서
+                    // 💡 바람/조류 안전한 타입 캐스팅을 포함한 파싱
                     if (loadedScenarioConfig.environment) {
                         if (loadedScenarioConfig.environment.wind) {
-                            env.windDir = loadedScenarioConfig.environment.wind.dir !== undefined ? loadedScenarioConfig.environment.wind.dir : env.windDir;
-                            env.windSpd = loadedScenarioConfig.environment.wind.spd !== undefined ? loadedScenarioConfig.environment.wind.spd : env.windSpd;
+                            env.windDir = loadedScenarioConfig.environment.wind.dir !== undefined ? Number(loadedScenarioConfig.environment.wind.dir) : env.windDir;
+                            env.windSpd = loadedScenarioConfig.environment.wind.spd !== undefined ? Number(loadedScenarioConfig.environment.wind.spd) : env.windSpd;
                         }
                         if (loadedScenarioConfig.environment.current) {
-                            env.currentDir = loadedScenarioConfig.environment.current.dir !== undefined ? loadedScenarioConfig.environment.current.dir : env.currentDir;
-                            env.currentSpd = loadedScenarioConfig.environment.current.spd !== undefined ? loadedScenarioConfig.environment.current.spd : env.currentSpd;
+                            env.currentDir = loadedScenarioConfig.environment.current.dir !== undefined ? Number(loadedScenarioConfig.environment.current.dir) : env.currentDir;
+                            env.currentSpd = loadedScenarioConfig.environment.current.spd !== undefined ? Number(loadedScenarioConfig.environment.current.spd) : env.currentSpd;
                         }
                     }
                 }
                 if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
             }
 
-            let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+            let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
             targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             
             gameState = 'PLAYING';
@@ -665,7 +667,7 @@
         }
 
         let currentMode = 'NONE'; let simSpeed = 1.0; const moveScale = 0.15; 
-        const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
+        const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, sog: 10.0, cog: 0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
         
         window.setMode = function(mode) {
             if(currentMode === mode) currentMode = 'NONE'; else currentMode = mode;
@@ -747,6 +749,7 @@
         const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2(-1, -1);
         
         function updatePhysics(dt) {
+            if (dt <= 0) return;
             shipPhysics.simTime += dt; 
             let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder; let rStep = 1.5 * dt; 
             if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder; else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
@@ -760,26 +763,36 @@
             const T_surge = 15.0; 
             shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
 
-            // 📌 바람/조류 물리 외력 적용
+            // 💡 1. 기초 선수 방향 이동 벡터 연산
             let moveX = (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
             let moveZ = -(shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
 
-            // 바람 드리프트 (Leeway)
-            let relativeWindDir = (env.windDir - shipPhysics.heading + 360) % 360;
-            let windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin(relativeWindDir * Math.PI / 180);
-            moveX += (windDriftSpeed * moveScale) * Math.cos(headingRad) * dt; 
-            moveZ -= (windDriftSpeed * moveScale) * -Math.sin(headingRad) * dt;
+            // 💡 2. 조류 (Current - Set & Drift) 적용
+            if (env.currentSpd > 0) {
+                let currentRad = env.currentDir * (Math.PI / 180);
+                moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
+                moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
+            }
 
-            // 조류 벡터 연산 (Set & Drift)
-            let currentRad = env.currentDir * (Math.PI / 180);
-            moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
-            moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
+            // 💡 3. 바람 (Wind - Leeway) 적용
+            let windDriftSpeed = 0;
+            if (env.windSpd > 0) {
+                let windForceRad = (env.windDir + 180) * (Math.PI / 180); // 밀려가는 방향
+                windDriftSpeed = (env.windSpd * env.windSpd) * 0.005; // 바람으로 인한 표류 속도 계수
+                moveX += (windDriftSpeed * moveScale) * Math.sin(windForceRad) * dt;
+                moveZ -= (windDriftSpeed * moveScale) * Math.cos(windForceRad) * dt;
+            }
 
+            // 💡 4. SOG (대지 속력) 및 COG (대지 침로) 산출
+            let actualVx = moveX / (moveScale * dt);
+            let actualVz = -moveZ / (moveScale * dt); // 북쪽(North) 기준 음수 변환
+            shipPhysics.sog = Math.sqrt(actualVx*actualVx + actualVz*actualVz);
+            shipPhysics.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
+
+            // 💡 5. 위치 최종 업데이트 및 횡방향 밀림(Drift) HUD 표시 
             osShip.position.x += moveX;
             osShip.position.z += moveZ;
-            
-            // HUD용 드리프트 게이지 (ROT 밀림 + 바람 밀림)
-            shipPhysics.lat = (shipPhysics.speed * Math.sin(shipPhysics.rot * Math.PI/180)) + windDriftSpeed;
+            shipPhysics.lat = actualVx * Math.cos(headingRad) - actualVz * Math.sin(headingRad);
 
             const t = clock.getElapsedTime() * simSpeed;
             shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
@@ -808,13 +821,17 @@
         }
 
         function updateAI() {
-            document.getElementById('val-hdg').innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; document.getElementById('val-sog').innerText = shipPhysics.speed.toFixed(1); document.getElementById('val-lat').innerText = Math.abs(shipPhysics.lat).toFixed(1);
+            document.getElementById('val-hdg').innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; 
+            document.getElementById('val-sog').innerText = (shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed).toFixed(1); 
+            document.getElementById('val-lat').innerText = Math.abs(shipPhysics.lat).toFixed(1);
+            
             const rotVal = shipPhysics.rot; const rotEl = document.getElementById('val-rot'); rotEl.innerText = Math.abs(rotVal).toFixed(1); if (rotVal > 0.1) { rotEl.style.color = '#00ffaa'; } else if (rotVal < -0.1) { rotEl.style.color = '#ff3333'; } else { rotEl.style.color = '#fff'; }
             const rudCmdVal = shipPhysics.targetRudder; const rudCmdEl = document.getElementById('val-rud-cmd'); rudCmdEl.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; if (rudCmdVal > 0.1) { rudCmdEl.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { rudCmdEl.style.color = '#ff3333'; } else { rudCmdEl.style.color = '#fff'; }
             const rudActVal = shipPhysics.actualRudder; const rudActEl = document.getElementById('val-rud-act'); rudActEl.innerText = Math.abs(rudActVal).toFixed(1) + '°'; if (rudActVal > 0.1) { rudActEl.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { rudActEl.style.color = '#ff3333'; } else { rudActEl.style.color = '#fff'; }
 
-            // 📌 HUD 바람 수치 연동
+            // 💡 HUD 조류 및 바람 데이터 연동
             document.getElementById('val-wind').innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}m/s`;
+            document.getElementById('val-current').innerText = `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}kn`;
 
             let maxDistSq = 1000 * 1000;
             targetShips.forEach(ts => { const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const dSq = relX*relX + relZ*relZ; if (dSq > maxDistSq) { maxDistSq = dSq; } });
@@ -838,12 +855,15 @@
                 for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) { let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z; let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; ctxR.beginPath(); ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); ctxR.fill(); }
             }
 
+            const osSog = shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed;
+            const osCog = shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading;
+
             targetShips.forEach(ts => {
                 const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z;
                 const radH = shipPhysics.heading * Math.PI / 180; const localX = relX * Math.cos(radH) + relZ * Math.sin(radH); const localZ = -relX * Math.sin(radH) + relZ * Math.cos(radH);
                 if (Math.abs(localX) < 120 && Math.abs(localZ) < 300) { collisionDetected = true; }
                 const distSq = relX*relX + relZ*relZ; const distNM = Math.sqrt(distSq) / 400; const true_bearing_rad = Math.atan2(relX, -relZ); const relBearing = true_bearing_rad - (shipPhysics.heading * Math.PI / 180); const rotX = Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; const rotY = -Math.cos(relBearing) * Math.sqrt(distSq) * mapScale;
-                const { cpa, tcpa, bcr } = calculateCPA(shipPhysics.speed, shipPhysics.heading, ts.userData.speed, ts.userData.heading, relX, relZ);
+                const { cpa, tcpa, bcr } = calculateCPA(osSog, osCog, ts.userData.speed, ts.userData.heading, relX, relZ);
                 let isDanger = (currentMode === 'CAS' && cpa < cpaThreshold && tcpa > 0 && tcpa < 1000);
                 if (isDanger && tcpa < minTcpa) { minTcpa = tcpa; mostDangerousTarget = { ts, cpa, tcpa, distNM, bcr }; }
 
@@ -868,11 +888,11 @@
             const colInd = document.getElementById('btn-collision');
             if (collisionDetected) { colInd.classList.add('collision-alert'); colInd.innerText = 'COLLISION ALERT'; colInd.style.background = ''; colInd.style.borderColor = ''; colInd.style.color = ''; } else { colInd.classList.remove('collision-alert'); colInd.innerText = 'COLLISION CLEAR'; colInd.style.background = 'rgba(0, 255, 170, 0.1)'; colInd.style.borderColor = '#00ffaa'; colInd.style.color = '#00ffaa'; }
             
-            if (manuallySelectedTarget) { const ts = manuallySelectedTarget; const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const distNM = Math.sqrt(relX*relX + relZ*relZ) / 400; const { cpa, tcpa, bcr } = calculateCPA(shipPhysics.speed, shipPhysics.heading, ts.userData.speed, ts.userData.heading, relX, relZ); document.getElementById('mt-name').innerText = ts.userData.name; document.getElementById('mt-mmsi').innerText = ts.userData.mmsi; document.getElementById('mt-cog').innerText = ts.userData.heading.toFixed(1) + "°"; document.getElementById('mt-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('mt-dist').innerText = distNM.toFixed(1) + " NM"; document.getElementById('mt-cpa').innerText = cpa.toFixed(2) + " NM"; document.getElementById('mt-tcpa').innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + " MIN" : "-"); document.getElementById('mt-bcr').innerText = (bcr > 0 ? bcr.toFixed(2) + " NM" : "-"); }
+            if (manuallySelectedTarget) { const ts = manuallySelectedTarget; const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const distNM = Math.sqrt(relX*relX + relZ*relZ) / 400; const { cpa, tcpa, bcr } = calculateCPA(osSog, osCog, ts.userData.speed, ts.userData.heading, relX, relZ); document.getElementById('mt-name').innerText = ts.userData.name; document.getElementById('mt-mmsi').innerText = ts.userData.mmsi; document.getElementById('mt-cog').innerText = ts.userData.heading.toFixed(1) + "°"; document.getElementById('mt-sog').innerText = ts.userData.speed.toFixed(1) + " Kn"; document.getElementById('mt-dist').innerText = distNM.toFixed(1) + " NM"; document.getElementById('mt-cpa').innerText = cpa.toFixed(2) + " NM"; document.getElementById('mt-tcpa').innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + " MIN" : "-"); document.getElementById('mt-bcr').innerText = (bcr > 0 ? bcr.toFixed(2) + " NM" : "-"); }
 
             if (shipPhysics.simTime - lastLogTime >= LOG_INTERVAL) {
                 lastLogTime = shipPhysics.simTime; let tStr = shipPhysics.simTime.toFixed(1);
-                logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: shipPhysics.speed.toFixed(1), cog: shipPhysics.heading.toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+                logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
                 targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             }
 
