@@ -22,32 +22,26 @@
         /* HUD Panels */
         .hud-panel { position: absolute; background: rgba(5, 10, 15, 0.45); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 20px; z-index: 10; transition: background 0.5s, border 0.5s; cursor: grab;}
         .hud-panel:active { cursor: grabbing; }
-        #digital-hud-container { top: 0; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; gap: 30px; padding: 10px 30px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 20; position: absolute; cursor: grab;}
+        
+        /* 💡 메인 디지털 HUD (버튼 포함) */
+        #digital-hud-container { top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 9999; position: absolute; cursor: grab; white-space: nowrap;}
         #digital-hud-container:active { cursor: grabbing; }
         body.ai-active #digital-hud-container { border-bottom: 2px solid #00ffff; box-shadow: 0 8px 25px rgba(0,255,255,0.15); }
-        .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 60px;}
+        .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 55px;}
         .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px;}
         .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace;}
         
-        body.ai-active #val-hdg, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind, body.ai-active #val-current { 
+        body.ai-active #val-hdg, body.ai-active #val-crs, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind, body.ai-active #val-current { 
             color: #00bfff !important; text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); 
         }
 
-        #camera-hint { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); font-size: 15px; color: #00ffaa; pointer-events: none; z-index: 20; text-shadow: 0 2px 5px #000; font-weight: bold; text-align: center; display: none;}
-        .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
-        #save-toast { display: none; margin-top: 5px; color: #fff; background: rgba(0,255,170,0.4); padding: 2px 10px; border-radius: 4px; font-size: 12px;}
-
-        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: block; z-index: 100;}
-        #ecdis-canvas { width: 100%; height: 100%; display: block; border-radius: 50%; cursor: crosshair; }
-        #radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 60%, rgba(0, 255, 255, 0.25) 100%); animation: sweep 2.5s infinite linear; pointer-events: none; }
-        @keyframes sweep { 100% { transform: rotate(360deg); } }
-
-        #demo-control-container { bottom: 20px; right: 20px; width: 380px; display: flex; flex-direction: column; z-index: 100; }
-        .ctrl-title { font-size: 15px; font-weight: 700; color: #88c0d0; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,255,0.2); padding-bottom: 6px;}
-        .ctrl-btn-group { display: flex; gap: 8px; margin-bottom: 12px; }
-        .btn-ctrl { flex: 1; padding: 10px 5px; background: rgba(0, 100, 200, 0.2); border: 1px solid rgba(0,255,255,0.3); color: #ccc; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; transition: 0.2s;}
-        .btn-ctrl:hover { background: rgba(0, 255, 255, 0.1); }
-        .btn-ctrl.active { background: rgba(0, 255, 255, 0.25); border-color: #00ffff; color: #00ffff;}
+        /* 💡 양옆에 붙는 얇은 버튼 스타일 */
+        .hud-side-controls { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+        .btn-group-small { display: flex; gap: 5px; justify-content: center;}
+        .btn-ctrl-small { background: rgba(0, 100, 200, 0.2); border: 1px solid rgba(0,255,255,0.3); color: #ccc; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; padding: 4px 8px; transition: 0.2s; height: 24px; display: flex; align-items: center; justify-content: center;}
+        .btn-ctrl-small:hover { background: rgba(0, 255, 255, 0.1); }
+        .btn-ctrl-small.active { background: rgba(0, 255, 255, 0.25); border-color: #00ffff; color: #00ffff;}
+        .btn-exit { background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc; }
         .btn-night { border-color: #bb86fc; color: #bb86fc;}
 
         /* Collision Indicator Animation */
@@ -57,6 +51,17 @@
             100% { background: rgba(255, 51, 51, 0.8); border-color: #ff3333; color: #fff; }
         }
         .collision-alert { animation: blink-collision 0.6s infinite !important; pointer-events: none; }
+        #btn-collision { padding: 0 10px; font-size: 11px; font-weight: bold; border-radius: 4px; border: 1px solid #00ffaa; background: rgba(0,255,170,0.1); color: #00ffaa; display: flex; align-items: center; justify-content: center; height: 24px; }
+
+
+        #camera-hint { position: absolute; top: 85px; left: 50%; transform: translateX(-50%); font-size: 15px; color: #00ffaa; pointer-events: none; z-index: 20; text-shadow: 0 2px 5px #000; font-weight: bold; text-align: center; display: none;}
+        .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        #save-toast { display: none; margin-top: 5px; color: #fff; background: rgba(0,255,170,0.4); padding: 2px 10px; border-radius: 4px; font-size: 12px;}
+
+        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: block; z-index: 100;}
+        #ecdis-canvas { width: 100%; height: 100%; display: block; border-radius: 50%; cursor: crosshair; }
+        #radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 60%, rgba(0, 255, 255, 0.25) 100%); animation: sweep 2.5s infinite linear; pointer-events: none; }
+        @keyframes sweep { 100% { transform: rotate(360deg); } }
 
         #right-center-cas-panel, #bottom-left-panel { display: none; z-index: 100; position: absolute; }
         #right-center-cas-panel { right: 20px; top: 20px; width: 380px; }
@@ -193,7 +198,7 @@
         <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
     </div>
 
-    <!-- 3. 메인 시뮬레이터 UI -->
+    <!-- 3. 메인 시뮬레이터 UI (HUD 및 날개 버튼 통합) -->
     <div id="camera-hint">
         [시야 조작] 마우스 좌클릭 드래그
         <div class="cam-controls">[본선 카메라 이동] W/S(앞뒤) A/D(좌우) Q/E(상하) - 조작 시 브라우저에 자동 저장됩니다.</div>
@@ -201,14 +206,46 @@
     </div>
     
     <div id="digital-hud-container" class="draggable-panel" style="display:none;">
+        
+        <!-- 💡 왼쪽 컨트롤 패널 (HUD 통합) -->
+        <div class="hud-side-controls" style="border-right: 1px solid rgba(0,255,255,0.3); padding-right: 15px;">
+            <div class="btn-group-small">
+                <button id="btn-mode-cas" class="btn-ctrl-small" onclick="setMode('CAS')">CAS AI</button>
+                <div id="btn-collision">COLLISION CLEAR</div>
+            </div>
+            <div class="btn-group-small">
+                <button id="btn-pause" class="btn-ctrl-small" onclick="togglePause()">PAUSE</button>
+                <button id="btn-cam-control" class="btn-ctrl-small" onclick="toggleCamControls()">CAM</button>
+                <button id="btn-touch-steer" class="btn-ctrl-small" onclick="toggleTouchSteering()">TOUCH STR</button>
+            </div>
+        </div>
+
+        <!-- 원래 HUD 값들 -->
         <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
+        <div class="digital-item"><div class="digital-label">CRS</div><div id="val-crs" class="digital-val">000.0°</div></div>
         <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
         <div class="digital-item"><div class="digital-label">DRIFT</div><div id="val-lat" class="digital-val">0.0</div></div>
         <div class="digital-item"><div class="digital-label">ROT</div><div id="val-rot" class="digital-val">00.0</div></div>
         <div class="digital-item"><div class="digital-label">RUD CMD</div><div id="val-rud-cmd" class="digital-val">00.0°</div></div>
         <div class="digital-item"><div class="digital-label">RUD ACT</div><div id="val-rud-act" class="digital-val">00.0°</div></div>
-        <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5m/s</div></div>
-        <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0kn</div></div>
+        <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5</div></div>
+        <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0</div></div>
+
+        <!-- 💡 오른쪽 컨트롤 패널 (HUD 통합) -->
+        <div class="hud-side-controls" style="border-left: 1px solid rgba(0,255,255,0.3); padding-left: 15px;">
+            <div class="btn-group-small">
+                <button id="btn-env-calm" class="btn-ctrl-small active" onclick="setEnv('calm')">CALM</button>
+                <button id="btn-env-mod" class="btn-ctrl-small" onclick="setEnv('mod')">ROUGH</button>
+                <button id="btn-env-time" class="btn-ctrl-small" onclick="toggleDayNight()">NIGHT</button>
+                <button class="btn-ctrl-small btn-exit" onclick="returnToMenuFromSim()">MAIN MENU</button>
+            </div>
+            <div class="btn-group-small">
+                <button id="btn-sea-bright" class="btn-ctrl-small" onclick="setSeaColor('bright')">BRIGHT SEA</button>
+                <button id="btn-sea-normal" class="btn-ctrl-small active" onclick="setSeaColor('normal')">NORM SEA</button>
+                <button id="btn-sea-dark" class="btn-ctrl-small" onclick="setSeaColor('dark')">DARK SEA</button>
+            </div>
+        </div>
+
     </div>
 
     <div id="manual-target-panel" class="hud-panel draggable-panel" style="display:none; bottom: 20px; left: 20px; width: 380px; z-index: 150; background: rgba(5, 10, 15, 0.85);">
@@ -227,33 +264,6 @@
     </div>
 
     <div id="ecdis-container" class="hud-panel draggable-panel" style="display:none;"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
-
-    <div id="demo-control-container" class="hud-panel draggable-panel" style="display:none;">
-        <div class="ctrl-title">AI ASSISTANT SYSTEM</div>
-        <div class="ctrl-btn-group"><button id="btn-mode-cas" class="btn-ctrl" onclick="setMode('CAS')">CAS (COLLISION AVOIDANCE)</button></div>
-        <div class="ctrl-title">ENVIRONMENT & SIMULATION</div>
-        <div class="ctrl-btn-group">
-            <button id="btn-env-calm" class="btn-ctrl active" onclick="setEnv('calm')">CALM</button>
-            <button id="btn-env-mod" class="btn-ctrl" onclick="setEnv('mod')">ROUGH</button>
-            <button id="btn-env-time" class="btn-ctrl" onclick="toggleDayNight()">NIGHT</button>
-        </div>
-        <div class="ctrl-title" style="margin-top:12px;">SEA COLOR</div>
-        <div class="ctrl-btn-group">
-            <button id="btn-sea-bright" class="btn-ctrl" onclick="setSeaColor('bright')">BRIGHT</button>
-            <button id="btn-sea-normal" class="btn-ctrl active" onclick="setSeaColor('normal')">NORMAL</button>
-            <button id="btn-sea-dark" class="btn-ctrl" onclick="setSeaColor('dark')">DARK</button>
-        </div>
-        <div class="ctrl-title" style="margin-top:12px;">SIMULATION CONTROL</div>
-        <div class="ctrl-btn-group">
-            <button id="btn-pause" class="btn-ctrl" onclick="togglePause()">PAUSE</button>
-            <button id="btn-cam-control" class="btn-ctrl" onclick="toggleCamControls()">CAMERA CTRL</button>
-            <button id="btn-touch-steer" class="btn-ctrl" onclick="toggleTouchSteering()">TOUCH STEER</button>
-        </div>
-        <div class="ctrl-btn-group" style="margin-bottom:0;">
-            <div id="btn-collision" class="btn-ctrl" style="pointer-events: none; background: rgba(0, 255, 170, 0.1); border-color: #00ffaa; color: #00ffaa; display: flex; align-items: center; justify-content: center;">COLLISION CLEAR</div>
-            <button class="btn-ctrl" onclick="returnToMenuFromSim()" style="background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc;">MAIN MENU</button>
-        </div>
-    </div>
 
     <!-- AI (CAS) Threat Analysis Panel -->
     <div id="right-center-cas-panel" class="hud-panel draggable-panel">
@@ -392,15 +402,14 @@
                 if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
                 isPanelDragging = true; isHudDragged = false; startX = e.clientX; startY = e.clientY;
                 const rect = panel.getBoundingClientRect(); startLeft = rect.left; startTop = rect.top;
-                panel.style.bottom = 'auto'; panel.style.right = 'auto'; panel.style.transform = 'none'; panel.style.margin = '0'; panel.style.left = startLeft + 'px'; panel.style.top = startTop + 'px'; panel.style.zIndex = 1000;
+                panel.style.bottom = 'auto'; panel.style.right = 'auto'; panel.style.transform = 'none'; panel.style.margin = '0'; panel.style.left = startLeft + 'px'; panel.style.top = startTop + 'px'; panel.style.zIndex = 10000;
             });
             window.addEventListener('mousemove', (e) => {
                 if(!isPanelDragging) return; isHudDragged = true; const dx = e.clientX - startX; const dy = e.clientY - startY; panel.style.left = (startLeft + dx) + 'px'; panel.style.top = (startTop + dy) + 'px';
             });
-            window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = ''; } });
+            window.addEventListener('mouseup', () => { if (isPanelDragging) { isPanelDragging = false; panel.style.zIndex = panel.id==='digital-hud-container' ? '9999' : ''; } });
         });
 
-        // 📌 시나리오 환경 설정 전역 변수
         const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
 
         window.startLoadingAssets = async function() {
@@ -494,7 +503,7 @@
         function setTimeOfDay(isNight) {
             const btn = document.getElementById('btn-env-time');
             if(isNight) {
-                btn.innerText = 'NIGHT'; btn.classList.add('btn-night');
+                btn.innerText = 'DAY'; btn.classList.add('btn-night');
                 scene.background = nightSkybox || new THREE.Color(0x050a10); scene.environment = nightSkybox || null;
                 scene.fog.color.setHex(0x050a10); scene.fog.density = 0.0003;
                 ambientLight.intensity = 0.2; dirLight.intensity = 0.1; dirLight.color.setHex(0xffffff);
@@ -502,7 +511,7 @@
                 const theta = Math.PI * 0.5; const phi = 2 * Math.PI * 0.0;
                 sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
             } else {
-                btn.innerText = 'DAY'; btn.classList.remove('btn-night');
+                btn.innerText = 'NIGHT'; btn.classList.remove('btn-night');
                 scene.background = daySkybox || new THREE.Color(0x5a6a79); scene.environment = daySkybox || null;
                 scene.fog.color.setHex(0x5a6a79); scene.fog.density = 0.00015;
                 ambientLight.intensity = 1.5; dirLight.intensity = 1.0; dirLight.color.setHex(0xffffff);
@@ -545,7 +554,6 @@
             water.visible = false; scene.background = new THREE.Color(0x000000);
         }
 
-        // 💡 1번 이슈 수정: 명시적 파일명 적용
         function finishSimulationAndSendData() {
             if (gameState !== 'PLAYING') return;
             gameState = 'FINISHED'; isPaused = true;
@@ -561,7 +569,7 @@
             const ss = String(now.getSeconds()).padStart(2, '0');
             const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
             
-            // 파일명 규칙: 날짜_시간_학번_이름.json
+            // 파일명 규칙: 날짜_시간_학번_이름.json (이미 정확히 구현됨)
             const customFileName = `${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
             const payload = { 
@@ -597,6 +605,32 @@
             else { pad.style.display = 'none'; btn.classList.remove('active'); }
         };
 
+        window.toggleTouchSteering = function() {
+            const port = document.getElementById('btn-steer-port');
+            const stbd = document.getElementById('btn-steer-stbd');
+            const btn = document.getElementById('btn-touch-steer');
+            if(port.style.display === 'flex') {
+                port.style.display = 'none'; stbd.style.display = 'none'; btn.classList.remove('active');
+            } else {
+                port.style.display = 'flex'; stbd.style.display = 'flex'; btn.classList.add('active');
+            }
+        };
+
+        let steerInterval = null;
+        function startSteer(dir) { steerInterval = setInterval(() => { if(!isPaused) { shipPhysics.targetRudder = Math.max(-35, Math.min(35, shipPhysics.targetRudder + (dir === 'P' ? -5 : 5))); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; } }, 150); }
+        function stopSteer() { clearInterval(steerInterval); }
+        document.getElementById('btn-steer-port').addEventListener('mousedown', () => startSteer('P'));
+        document.getElementById('btn-steer-port').addEventListener('mouseup', stopSteer);
+        document.getElementById('btn-steer-port').addEventListener('mouseleave', stopSteer);
+        document.getElementById('btn-steer-port').addEventListener('touchstart', (e) => { e.preventDefault(); startSteer('P'); });
+        document.getElementById('btn-steer-port').addEventListener('touchend', stopSteer);
+        document.getElementById('btn-steer-stbd').addEventListener('mousedown', () => startSteer('S'));
+        document.getElementById('btn-steer-stbd').addEventListener('mouseup', stopSteer);
+        document.getElementById('btn-steer-stbd').addEventListener('mouseleave', stopSteer);
+        document.getElementById('btn-steer-stbd').addEventListener('touchstart', (e) => { e.preventDefault(); startSteer('S'); });
+        document.getElementById('btn-steer-stbd').addEventListener('touchend', stopSteer);
+
+
         window.setCamMove = function(dir) { camMoveDir = dir; };
         window.stopCamMove = function() { 
             camMoveDir = null; 
@@ -618,12 +652,10 @@
 
             logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; manualRadarZoom = 1.0; 
             
-            // 📌 시나리오 환경 설정 초기화 (미설정 시 기본값)
             env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
 
             document.getElementById('digital-hud-container').style.display = 'flex';
             document.getElementById('ecdis-container').style.display = 'block';
-            document.getElementById('demo-control-container').style.display = 'flex';
             document.getElementById('camera-hint').style.display = 'block';
             document.getElementById('manual-target-panel').style.display = 'none';
 
@@ -673,7 +705,6 @@
                     if (loadedScenarioConfig.targets) {
                         loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
                     }
-                    // 💡 바람/조류 안전한 타입 캐스팅을 포함한 파싱
                     if (loadedScenarioConfig.environment) {
                         if (loadedScenarioConfig.environment.wind) {
                             env.windDir = loadedScenarioConfig.environment.wind.dir !== undefined ? Number(loadedScenarioConfig.environment.wind.dir) : env.windDir;
@@ -691,7 +722,6 @@
             let tStr = "0.0"; logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
             targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
             
-            // 💡 시작 시 PAUSE 자동 해제
             isPaused = false;
             const btnPause = document.getElementById('btn-pause');
             btnPause.innerText = 'PAUSE';
@@ -779,18 +809,15 @@
             const T_surge = 15.0; 
             shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
 
-            // 1. 기초 선수 방향 이동 벡터 연산
             let moveX = (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
             let moveZ = -(shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
 
-            // 2. 조류 (Current - Set & Drift) 적용
             if (env.currentSpd > 0) {
                 let currentRad = env.currentDir * (Math.PI / 180);
                 moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
                 moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
             }
 
-            // 3. 바람 (Wind - Leeway) 적용
             let windDriftSpeed = 0;
             if (env.windSpd > 0) {
                 let windForceRad = (env.windDir + 180) * (Math.PI / 180); 
@@ -799,13 +826,11 @@
                 moveZ -= (windDriftSpeed * moveScale) * -Math.sin(headingRad) * dt;
             }
 
-            // 4. SOG (대지 속력) 및 COG (대지 침로) 산출
             let actualVx = moveX / (moveScale * dt);
             let actualVz = -moveZ / (moveScale * dt);
             shipPhysics.sog = Math.sqrt(actualVx*actualVx + actualVz*actualVz);
             shipPhysics.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
 
-            // 5. 위치 최종 업데이트 및 횡방향 밀림(Drift) HUD 표시 
             osShip.position.x += moveX;
             osShip.position.z += moveZ;
             shipPhysics.lat = actualVx * Math.cos(headingRad) - actualVz * Math.sin(headingRad);
@@ -838,6 +863,9 @@
 
         function updateAI() {
             document.getElementById('val-hdg').innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; 
+            // 💡 CRS 추가 연동
+            document.getElementById('val-crs').innerText = (shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading).toFixed(1).padStart(5, '0') + '°'; 
+
             document.getElementById('val-sog').innerText = (shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed).toFixed(1); 
             document.getElementById('val-lat').innerText = Math.abs(shipPhysics.lat).toFixed(1);
             
@@ -845,9 +873,9 @@
             const rudCmdVal = shipPhysics.targetRudder; const rudCmdEl = document.getElementById('val-rud-cmd'); rudCmdEl.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; if (rudCmdVal > 0.1) { rudCmdEl.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { rudCmdEl.style.color = '#ff3333'; } else { rudCmdEl.style.color = '#fff'; }
             const rudActVal = shipPhysics.actualRudder; const rudActEl = document.getElementById('val-rud-act'); rudActEl.innerText = Math.abs(rudActVal).toFixed(1) + '°'; if (rudActVal > 0.1) { rudActEl.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { rudActEl.style.color = '#ff3333'; } else { rudActEl.style.color = '#fff'; }
 
-            // 💡 HUD 조류 및 바람 데이터 연동
-            document.getElementById('val-wind').innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}m/s`;
-            document.getElementById('val-current').innerText = `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}kn`;
+            // 💡 HUD 조류 및 바람 단위(m/s, kn) 제거
+            document.getElementById('val-wind').innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}`;
+            document.getElementById('val-current').innerText = `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}`;
 
             let maxDistSq = 1000 * 1000;
             targetShips.forEach(ts => { const relX = ts.position.x - osShip.position.x; const relZ = ts.position.z - osShip.position.z; const dSq = relX*relX + relZ*relZ; if (dSq > maxDistSq) { maxDistSq = dSq; } });
