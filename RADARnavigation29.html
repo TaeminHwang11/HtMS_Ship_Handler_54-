@@ -19,6 +19,7 @@
             --radar-bg: #000000; --accent-blue: #aa3333; --radar-line: #331111;
         }
 
+        /* 💡 수정됨: 하단 잘림 현상을 방지하는 flex-direction 추가 */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg-main); color: var(--text-main);
@@ -40,10 +41,11 @@
         .finish-title { font-size: 32px; font-weight: bold; color: var(--text-highlight); margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: var(--text-main); }
 
+        /* 💡 수정됨: min-height 0 할당으로 flex 영역 축소 보장 */
         #ui-container {
             flex: 1; display: flex; width: 100vw; padding: 10px; box-sizing: border-box;
             background: var(--bg-panel); border: 15px solid #111; border-radius: 10px;
-            min-height: 0;
+            min-height: 0; 
         }
 
         .left-panel {
@@ -159,7 +161,7 @@
         .slider-sea.disabled::-webkit-slider-runnable-track { filter: grayscale(100%) opacity(0.3); pointer-events: none; }
 
         .target-list-container {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; flex-shrink: 0; padding-bottom: 15px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; flex-shrink: 0;
         }
 
         .target-card {
@@ -227,11 +229,13 @@
             <div class="control-row" style="margin-top:6px; flex-direction:column; gap:4px; align-items:flex-start;">
                 <div style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #333; padding-bottom:4px;">
                     <span style="font-size:10px; color:var(--text-muted);">WIND</span>
-                    <span id="val-wind-spd" style="font-family:monospace; font-size:13px; color:#fff; font-weight:bold;">12.5 m/s</span>
+                    <!-- 💡 방향도 함께 출력 -->
+                    <span id="val-wind-spd" style="font-family:monospace; font-size:13px; color:#fff; font-weight:bold;">045° / 12.5m/s</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; width:100%;">
                     <span style="font-size:10px; color:var(--text-muted);">CURRENT</span>
-                    <span id="val-curr-spd" style="font-family:monospace; font-size:13px; color:#fff; font-weight:bold;">0.0 kn</span>
+                    <!-- 💡 조류 수치 출력 공간 명확화 -->
+                    <span id="val-curr-spd" style="font-family:monospace; font-size:13px; color:#fff; font-weight:bold;">000° / 0.0kn</span>
                 </div>
             </div>
         </div>
@@ -550,9 +554,10 @@
                     <div style="width:4px;"></div>
                     <span class="btn btn-dropdown" style="flex:1; justify-content:center;">Offshore</span>
                 </div>
+                <!-- 💡 에코를 띄우기 위해 GAIN 초기값을 70으로 수정 -->
                 <div class="control-row" style="margin-top:6px;">
                     <span class="control-label">GAIN</span>
-                    <input type="range" id="slider-gain" class="slider-gain" min="0" max="100" value="0">
+                    <input type="range" id="slider-gain" class="slider-gain" min="0" max="100" value="70">
                 </div>
                 <div class="control-row">
                     <span class="control-label">RAIN</span>
@@ -656,7 +661,7 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZtLBiZAcyQEk9dUmlhpfcylqZ3RIuXpmFGOadtriT2Xnz2SXa-CvxXC-EVntIZvSVjw/exec";
     let studentInfo = { id: "", name: "" };
-    // 💡 환경 데이터 전역 선언부
+    // 전역 환경 설정값 추가
     const globalEnv = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
 
     window.startLogin = function() {
@@ -664,6 +669,10 @@
         studentInfo.name = document.getElementById('student-name').value.trim();
         if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
         document.getElementById('login-overlay').style.display = 'none';
+        
+        // 초기 UI에 환경 변수 반영
+        document.getElementById('val-wind-spd').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3, '0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
+        document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
         
         autoLoadScenario();
     }
@@ -688,7 +697,8 @@
     let cpaLimitVal = 1.0;
     let tcpaLimitVal = 10.0;
     
-    let gainValue = 0;
+    // 💡 에코를 바로 보기 위해 gain 기본값을 70으로 수정
+    let gainValue = 70;
     let rainValue = 0;
     let seaValue = 0;
     let lastTime = performance.now();
@@ -771,6 +781,7 @@
     let framesSinceLastArc = 0;
 
     let threatMode = false;
+    // 💡 시작 시 자동으로 PAUSE 해제 및 HUD 버튼 UI 업데이트용
     let isPaused = true;
     let simSpeed = 1.0;
     
@@ -780,8 +791,8 @@
 
     const os = { 
         x: 0, y: 0, 
-        hdg: 0.0, spd: 10.0, sog: 10.0, cog: 0.0, 
-        targetRudder: 0, actualRudder: 0, rot: 0, latMove: 0,
+        hdg: 0.0, spd: 10.0, 
+        targetRudder: 0, actualRudder: 0, rot: 0,
         lat: 34 + (47.014 / 60), 
         lon: 126 + (21.733 / 60)
     };
@@ -902,37 +913,37 @@
         manualEblOverride = false; 
 
         if (data.origin) {
-            os.lat = Number(data.origin.lat) || os.lat;
-            os.lon = Number(data.origin.lon) || os.lon;
+            os.lat = data.origin.lat;
+            os.lon = data.origin.lon;
         }
         if (data.os) {
-            os.hdg = Number(data.os.hdg) || os.hdg;
-            os.spd = Number(data.os.spd) || os.spd;
+            os.hdg = data.os.hdg;
+            os.spd = data.os.spd;
             os.targetRudder = 0;
             os.actualRudder = 0;
             os.rot = 0;
         }
         
-        // 💡 환경 데이터(외력) 파서 추가 적용
+        // 💡 시나리오 외력(바람, 조류) 환경 파서 적용
         if (data.environment) {
             if (data.environment.wind) {
-                globalEnv.windDir = data.environment.wind.dir !== undefined ? Number(data.environment.wind.dir) : globalEnv.windDir;
-                globalEnv.windSpd = data.environment.wind.spd !== undefined ? Number(data.environment.wind.spd) : globalEnv.windSpd;
+                globalEnv.windDir = data.environment.wind.dir !== undefined ? data.environment.wind.dir : globalEnv.windDir;
+                globalEnv.windSpd = data.environment.wind.spd !== undefined ? data.environment.wind.spd : globalEnv.windSpd;
             }
             if (data.environment.current) {
-                globalEnv.currentDir = data.environment.current.dir !== undefined ? Number(data.environment.current.dir) : globalEnv.currentDir;
-                globalEnv.currentSpd = data.environment.current.spd !== undefined ? Number(data.environment.current.spd) : globalEnv.currentSpd;
+                globalEnv.currentDir = data.environment.current.dir !== undefined ? data.environment.current.dir : globalEnv.currentDir;
+                globalEnv.currentSpd = data.environment.current.spd !== undefined ? data.environment.current.spd : globalEnv.currentSpd;
             }
         }
-        document.getElementById('val-wind-spd').innerText = globalEnv.windSpd.toFixed(1) + " m/s";
-        document.getElementById('val-curr-spd').innerText = globalEnv.currentSpd.toFixed(1) + " kn";
+        document.getElementById('val-wind-spd').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3, '0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
+        document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
         
         let rad = os.hdg * Math.PI / 180;
 
         if (data.os && data.os.waypoints) {
             data.os.waypoints.forEach(wp => {
-                let rawX = Number(wp.x) / 400;
-                let rawY = -Number(wp.z) / 400;
+                let rawX = wp.x / 400;
+                let rawY = -wp.z / 400;
                 let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
                 let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
                 let finalX = os.x + rotX;
@@ -943,19 +954,19 @@
 
         if (data.targets) {
             data.targets.forEach((t, i) => {
-                let rawX = Number(t.x) / 400;
-                let rawY = -Number(t.z) / 400; 
+                let rawX = t.x / 400;
+                let rawY = -t.z / 400; 
 
                 let rotX = rawX * Math.cos(rad) + rawY * Math.sin(rad);
                 let rotY = -rawX * Math.sin(rad) + rawY * Math.cos(rad);
                 
                 let finalX = os.x + rotX;
                 let finalY = os.y + rotY;
-                let finalHdg = (Number(t.hdg) + os.hdg) % 360;
+                let finalHdg = (t.hdg + os.hdg) % 360;
 
                 let isAIS = Math.random() > 0.5; 
                 
-                let targetObj = { x: finalX, y: finalY, hdg: finalHdg, spd: Number(t.spd), history: [] };
+                let targetObj = { x: finalX, y: finalY, hdg: finalHdg, spd: t.spd, history: [] };
 
                 if (isAIS) {
                     targetObj.id = 'AIS_S' + i;
@@ -974,6 +985,13 @@
             });
         }
         
+        // 💡 시나리오 로딩이 끝나면 자동으로 PAUSE 모드 해제
+        isPaused = false;
+        const btnPause = document.getElementById('btn-op-pause');
+        btnPause.innerText = 'PAUSE';
+        btnPause.style.color = 'var(--text-main)';
+        btnPause.style.borderColor = '#111';
+
         triggerArcUpdate();
     }
 
@@ -1043,6 +1061,7 @@
             let name = aisPrefixes[Math.floor(Math.random()*aisPrefixes.length)] + " " + aisSuffixes[Math.floor(Math.random()*aisSuffixes.length)];
             aisTargets.push({ id: 'AIS_' + i, type: 'AIS', name: name, mmsi: "440" + Math.floor(100000 + Math.random()*900000), x: tx, y: ty, hdg: hdg, spd: 8 + Math.random() * 12, history: [] });
         }
+        isPaused = false;
     }
 
     const radarCanvas = document.getElementById('radar-canvas');
@@ -1402,8 +1421,13 @@
     function checkAlarms(t, isAIS) {
         let dx = t.x - os.x; let dy = t.y - os.y;
         let rng = Math.sqrt(dx*dx + dy*dy);
-        const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
-        const tVx = t.spd * Math.sin(t.hdg * Math.PI/180); const tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+        
+        // 💡 SOG/COG가 반영된 OS 속도 벡터 사용
+        const osVx = os.sog * Math.sin(os.cog * Math.PI/180); 
+        const osVy = os.sog * Math.cos(os.cog * Math.PI/180);
+        const tVx = t.spd * Math.sin(t.hdg * Math.PI/180); 
+        const tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+        
         const rVx = tVx - osVx; const rVy = tVy - osVy;
         const vRelSq = (rVx*rVx) + (rVy*rVy);
         
@@ -1475,8 +1499,10 @@
             
             allT.forEach(t => {
                 let dx = t.x - os.x; let dy = t.y - os.y;
-                let osVx = os.spd * Math.sin(os.hdg * Math.PI/180); let osVy = os.spd * Math.cos(os.hdg * Math.PI/180);
-                let tVx = t.spd * Math.sin(t.hdg * Math.PI/180); let tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
+                let osVx = os.sog * Math.sin(os.cog * Math.PI/180); 
+                let osVy = os.sog * Math.cos(os.cog * Math.PI/180);
+                let tVx = t.spd * Math.sin(t.hdg * Math.PI/180); 
+                let tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
                 let rVx = tVx - osVx; let rVy = tVy - osVy; let vRelSq = (rVx*rVx) + (rVy*rVy);
                 if (vRelSq < 0.0001) return;
                 
@@ -1561,7 +1587,23 @@
         cachedArcRingData = ringData; cachedArcNumRings = numRings;
     }
 
-    // 💡 물리 연산 업데이트 (외력 반영 고도화)
+    function gameLoop(currentTime) {
+        if (!isTransmitting) return;
+        let dt = (currentTime - lastTime) / 1000;
+        if (dt > 0.1) dt = 0.1;
+        lastTime = currentTime;
+        
+        if (!isPaused) {
+            let simDtHours = (dt * timeMultiplier * simSpeed) / 3600;
+            updatePhysics(simDtHours, dt * simSpeed);
+        }
+        
+        renderRadar(currentTime);
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // 💡 물리 연산 업데이트 (조류 및 바람의 Leeway & Drift 반영)
     function updatePhysics(simDtHours, realDt) {
         let rDiff = os.targetRudder - os.actualRudder;
         let rStep = 3.0 * realDt; 
@@ -1590,10 +1632,9 @@
         }
 
         // 3. 바람 (Wind - Leeway) 적용
-        let windDriftSpeed = 0;
         if (globalEnv.windSpd > 0) {
-            let windForceRad = (globalEnv.windDir + 180) * (Math.PI / 180); // 밀려가는 방향
-            windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005; 
+            let windForceRad = (globalEnv.windDir + 180) * (Math.PI / 180); // 바람이 향하는 방향
+            let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005; 
             moveX += windDriftSpeed * Math.sin(windForceRad) * simDtHours;
             moveY += windDriftSpeed * Math.cos(windForceRad) * simDtHours;
         }
@@ -1604,12 +1645,11 @@
         os.sog = Math.sqrt(actualVx*actualVx + actualVy*actualVy);
         os.cog = (Math.atan2(actualVx, actualVy) * 180 / Math.PI + 360) % 360;
 
-        // 5. 위치 최종 업데이트 및 횡방향 밀림(Drift) 산출
+        // 5. 위치 업데이트
         os.x += moveX; 
         os.y += moveY;
         os.lat += moveY / 60; 
         os.lon += moveX / (60 * Math.cos(os.lat * Math.PI/180));
-        os.latMove = actualVx * Math.cos(osHdgRad) - actualVy * Math.sin(osHdgRad); // 선체 기준 측면 밀림 (HUD용)
 
         if (motionMode === 1) {
             const { displayRadius } = getRadarMetrics();
@@ -1674,22 +1714,6 @@
         });
 
         keepTargetsAlive(targets); keepTargetsAlive(aisTargets);
-    }
-
-    function gameLoop(currentTime) {
-        if (!isTransmitting) return;
-        let dt = (currentTime - lastTime) / 1000;
-        if (dt > 0.1) dt = 0.1;
-        lastTime = currentTime;
-        
-        if (!isPaused) {
-            let simDtHours = (dt * timeMultiplier * simSpeed) / 3600;
-            updatePhysics(simDtHours, dt * simSpeed);
-        }
-        
-        renderRadar(currentTime);
-        updateUI();
-        requestAnimationFrame(gameLoop);
     }
 
     function renderRadar(currentTime) {
@@ -1920,7 +1944,7 @@
                     if (vectorTimeMins > 0) {
                         ctx.strokeStyle = aisColor; let vX, vY;
                         if (vectorMode === 'T') { vX = t.spd * Math.sin(t.hdg * Math.PI/180); vY = t.spd * Math.cos(t.hdg * Math.PI/180); } 
-                        else { const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180); vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy; }
+                        else { const osVx = os.sog * Math.sin(os.cog * Math.PI/180); const osVy = os.sog * Math.cos(os.cog * Math.PI/180); vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy; }
                         const fSp = getScreenPos(t.x + vX*(vectorTimeMins/60), t.y + vY*(vectorTimeMins/60), displayRadius, osPx, osPy);
                         ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(fSp.x, fSp.y); ctx.stroke();
                     }
@@ -1942,7 +1966,7 @@
                     if (vectorTimeMins > 0) {
                         ctx.strokeStyle = arpaColor; let vX, vY;
                         if (vectorMode === 'T') { vX = t.spd * Math.sin(t.hdg * Math.PI/180); vY = t.spd * Math.cos(t.hdg * Math.PI/180); } 
-                        else { const osVx = os.spd * Math.sin(os.hdg * Math.PI/180); const osVy = os.spd * Math.cos(os.hdg * Math.PI/180); vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy; }
+                        else { const osVx = os.sog * Math.sin(os.cog * Math.PI/180); const osVy = os.sog * Math.cos(os.cog * Math.PI/180); vX = t.spd * Math.sin(t.hdg * Math.PI/180) - osVx; vY = t.spd * Math.cos(t.hdg * Math.PI/180) - osVy; }
                         const fSp = getScreenPos(t.x + vX*(vectorTimeMins/60), t.y + vY*(vectorTimeMins/60), displayRadius, osPx, osPy);
                         ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(fSp.x, fSp.y); ctx.stroke();
                     }
@@ -1957,7 +1981,7 @@
         }
     }
 
-    // 💡 UI 업데이트 시 SOG, COG 정보 반영
+    // 💡 UI 업데이트
     function updateUI() {
         const hdgStr = os.hdg.toFixed(1).padStart(5, '0') + "°";
         const cogStr = (os.cog !== undefined ? os.cog : os.hdg).toFixed(1).padStart(5, '0') + "°";
@@ -1994,6 +2018,7 @@
         gtx.strokeStyle = '#fff'; gtx.beginPath(); gtx.arc(80, 100, 80, Math.PI*1.15, Math.PI*1.85); gtx.stroke();
         gtx.fillStyle = 'red'; gtx.beginPath(); gtx.moveTo(80, 15); gtx.lineTo(75, 25); gtx.lineTo(85, 25); gtx.fill();
 
+        // 💡 캔버스에 바람 & 조류 화살표 렌더링
         const wtx = document.getElementById('wind-canvas').getContext('2d');
         wtx.clearRect(0,0,160,150); wtx.strokeStyle = '#555'; wtx.lineWidth = 2; wtx.beginPath(); wtx.arc(80, 75, 45, 0, Math.PI*2); wtx.stroke();
         wtx.textAlign = 'center'; wtx.textBaseline = 'middle'; wtx.font = '9px Roboto';
@@ -2002,8 +2027,16 @@
             wtx.strokeStyle = '#aaa'; wtx.lineWidth = 1; wtx.beginPath(); wtx.moveTo(80 + Math.cos(rad)*45, 75 + Math.sin(rad)*45); wtx.lineTo(80 + Math.cos(rad)*40, 75 + Math.sin(rad)*40); wtx.stroke();
             wtx.fillStyle = '#aaa'; wtx.fillText(i.toString(), 80 + Math.cos(rad)*54, 75 + Math.sin(rad)*54);
         }
+        
+        // 바람 (초록색 화살표)
         wtx.save(); wtx.translate(80, 75); wtx.rotate((os.hdg + globalEnv.windDir) * Math.PI/180);
         wtx.fillStyle = isNightMode ? '#ff3333' : '#55ff55'; wtx.beginPath(); wtx.moveTo(0, -35); wtx.lineTo(-7, 8); wtx.lineTo(7, 8); wtx.fill(); wtx.restore();
+
+        // 조류 (파란색 화살표)
+        if (globalEnv.currentSpd > 0) {
+            wtx.save(); wtx.translate(80, 75); wtx.rotate((os.hdg + globalEnv.currentDir) * Math.PI/180);
+            wtx.fillStyle = '#33ccff'; wtx.beginPath(); wtx.moveTo(0, -25); wtx.lineTo(-5, 0); wtx.lineTo(5, 0); wtx.fill(); wtx.restore();
+        }
 
         const container = document.getElementById('target-info-container'); container.innerHTML = '';
         if (selectedTargets.length > 0) {
@@ -2015,7 +2048,6 @@
                 let dx = t.x - os.x; let dy = t.y - os.y;
                 let rng = Math.sqrt(dx*dx + dy*dy); let brg = Math.atan2(dx, dy) * 180 / Math.PI; if (brg < 0) brg += 360;
                 
-                // 💡 타선 계산에도 OS 대지 속력(SOG, COG)을 반영하여 CPA, TCPA 산출을 정확히 함
                 const osVx = os.sog * Math.sin(os.cog * Math.PI/180); const osVy = os.sog * Math.cos(os.cog * Math.PI/180);
                 const tVx = t.spd * Math.sin(t.hdg * Math.PI/180); const tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
                 const rVx = tVx - osVx; const rVy = tVy - osVy; const vRelSq = (rVx*rVx) + (rVy*rVy);
