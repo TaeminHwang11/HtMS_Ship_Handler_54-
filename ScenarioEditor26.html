@@ -572,6 +572,7 @@
         return false;
     }
 
+    // 에디터의 그리드는 기존 8개 제한 로직을 그대로 유지
     function renderGrid() {
         if (currentMode === 'replay') return; 
         gridContainer.innerHTML = '';
@@ -1359,9 +1360,6 @@
     }
 
 
-    // ==========================================
-    // 시나리오 불러오기 로직 (구글 드라이브)
-    // ==========================================
     document.getElementById('loadScenarioBtn').addEventListener('click', () => {
         const container = document.getElementById('scenarioDriveLoadContainer');
         const select = document.getElementById('scenarioDriveSelect');
@@ -1457,9 +1455,6 @@
         }
     });
 
-    // ==========================================
-    // 시나리오 저장하기 로직 (구글 드라이브 & 자동 채번 / 인라인 알림 처리)
-    // ==========================================
     document.getElementById('saveScenarioBtn').addEventListener('click', async () => {
         const btn = document.getElementById('saveScenarioBtn');
         const originalText = btn.textContent;
@@ -1635,6 +1630,7 @@
         ctxL.setLineDash([]);
     }
 
+    // ★ 리플레이 전용 최적화 그리드 분할 자동 계산 공식 적용
     function renderReplayGrid() {
         if (currentMode !== 'replay') return;
         gridContainer.innerHTML = '';
@@ -1665,11 +1661,32 @@
             return;
         }
 
-        if (len === 2) { cols = 2; rows = 1; }
-        else if (len === 3) { cols = 3; rows = 1; } 
-        else if (len === 4) { cols = 2; rows = 2; }
-        else if (len >= 5 && len <= 6) { cols = 3; rows = 2; }
-        else if (len >= 7 && len <= 8) { cols = 4; rows = 2; }
+        // 모니터 비율(가로가 넓은 직사각형)을 고려하여 빈칸을 최소화하는 알고리즘
+        let minEmpty = Infinity;
+        let bestCols = 1, bestRows = 1;
+        for (let c = Math.ceil(Math.sqrt(len)); c <= len; c++) {
+            let r = Math.ceil(len / c);
+            let empty = (c * r) - len;
+            let ratio = c / r;
+            // 일반적인 모니터 비율(1.0 ~ 3.0) 안에서 최적값 찾기
+            if (ratio >= 1.0 && ratio <= 3.0) {
+                if (empty < minEmpty) {
+                    minEmpty = empty;
+                    bestCols = c;
+                    bestRows = r;
+                } else if (empty === minEmpty) {
+                    // 빈칸 수가 같다면 16:9 (약 1.77) 비율에 가장 가까운 것을 선택
+                    let currentDiff = Math.abs(ratio - 1.77);
+                    let bestDiff = Math.abs((bestCols/bestRows) - 1.77);
+                    if (currentDiff < bestDiff) {
+                        bestCols = c;
+                        bestRows = r;
+                    }
+                }
+            }
+        }
+        cols = bestCols;
+        rows = bestRows;
 
         gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         gridContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
@@ -1747,7 +1764,7 @@
     document.getElementById('localJsonInput').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files); 
         if (files.length === 0) return;
-        if (files.length > 8) { alert("최대 8개까지만 동시 재생 가능합니다."); return; }
+        if (files.length > 50) { alert("최대 50개까지만 동시 재생 가능합니다."); return; }
 
         if (isPlaying) document.getElementById('playPauseBtn').click();
         replayList = [];
@@ -1816,8 +1833,8 @@
             setTimeout(() => { btn.textContent = orig; btn.style.background = '#10b981'; }, 1500);
             return;
         }
-        if (selectedOptions.length > 8) {
-            alert("최대 8개까지만 동시 재생 가능합니다.");
+        if (selectedOptions.length > 50) {
+            alert("최대 50개까지만 동시 재생 가능합니다.");
             return;
         }
 
