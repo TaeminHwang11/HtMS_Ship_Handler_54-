@@ -790,6 +790,7 @@
     const targets = [];
     const aisTargets = [];
     const goalPoints = [];
+    let lastWaypoint = null; // 수정된 부분
 
     const aisPrefixes = ["MAERSK", "MSC", "CMA CGM", "EVER", "HMM", "ONE", "COSCO", "OOCL"];
     const aisSuffixes = ["SPAIN", "KOREA", "BUSAN", "VENUS", "APOLLO", "PIONEER", "STAR", "CHAMPION"];
@@ -909,6 +910,7 @@
         targets.length = 0;
         aisTargets.length = 0;
         goalPoints.length = 0; 
+        lastWaypoint = null; // 수정된 부분
         alarmLog = [];
         alarmedTargets.clear();
         updateAlarmUI();
@@ -945,6 +947,7 @@
         document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
         
         if (data.os && data.os.waypoints) {
+            lastWaypoint = { x: os.x, y: os.y }; // 수정된 부분
             data.os.waypoints.forEach(wp => {
                 let rawX = Number(wp.x) / 400;
                 let rawY = -Number(wp.z) / 400; 
@@ -1662,7 +1665,7 @@
             let dx = gp.x - os.x; let dy = gp.y - os.y;
             let distToGoalNM = Math.sqrt(dx*dx + dy*dy);
             if (distToGoalNM < 0.3) {
-                goalPoints.shift(); 
+                lastWaypoint = goalPoints.shift(); // 수정된 부분
                 if(goalPoints.length === 0) { finishSimulationAndSendData(); }
             }
         }
@@ -1772,7 +1775,16 @@
         ctx.save(); ctx.beginPath(); ctx.arc(canvasCx, canvasCy, displayRadius, 0, Math.PI * 2); ctx.clip();
 
         if (goalPoints.length > 0) {
-            ctx.save(); ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(osPx, osPy);
+            ctx.save(); ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); 
+            
+            // 수정된 부분: 기준점을 본선이 아닌 이전 웨이포인트(lastWaypoint)로 고정
+            if (lastWaypoint) {
+                const startSp = getScreenPos(lastWaypoint.x, lastWaypoint.y, displayRadius, osPx, osPy);
+                ctx.moveTo(startSp.x, startSp.y);
+            } else {
+                ctx.moveTo(osPx, osPy);
+            }
+
             goalPoints.forEach(gp => { const sp = getScreenPos(gp.x, gp.y, displayRadius, osPx, osPy); ctx.lineTo(sp.x, sp.y); });
             ctx.stroke(); ctx.setLineDash([]);
             goalPoints.forEach((gp, i) => {
