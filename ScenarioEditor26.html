@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>[HTMS] Scenario Generator</title>
     <style>
         :root {
@@ -17,7 +18,8 @@
             --text-muted: #9ca3af;
         }
 
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
+        /* 💡 모바일 브라우저의 상하단 UI(주소창, 홈바)로 인한 잘림 현상 방지를 위해 100dvh 적용 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; height: 100dvh; }
 
         body {
             background-color: var(--bg-color); color: var(--text-main);
@@ -63,12 +65,17 @@
         .hud-range { color: var(--accent-yellow); font-weight: bold; }
         .hud-target { color: var(--accent-red); font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none; }
 
+        /* 💡 사이드바 영역: env(safe-area-inset-...)를 통해 아이폰 노치 및 하단 홈 인디케이터 침범 방지 */
         #sidebar {
             width: 380px; max-width: 100%; height: 100%;
-            background-color: var(--panel-bg); padding: 15px 20px;
+            background-color: var(--panel-bg); 
+            padding: 15px 20px calc(15px + env(safe-area-inset-bottom));
+            padding-left: calc(20px + env(safe-area-inset-left));
+            padding-right: calc(20px + env(safe-area-inset-right));
             box-sizing: border-box; display: flex; flex-direction: column;
             border-left: 1px solid var(--border-color); box-shadow: -5px 0 25px rgba(0,0,0,0.5); z-index: 20;
             overflow-y: auto;
+            min-height: 0; /* Flex 자식 요소 넘침 방지 */
         }
 
         .panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
@@ -128,6 +135,7 @@
             flex: 1; background-color: #0b0f19; color: white; border: 1px solid #334155;
             padding: 6px; border-radius: 4px; font-family: monospace; font-size: 12px; outline: none; text-align: center;
             user-select: auto; -webkit-user-select: auto;
+            width: 100%; box-sizing: border-box; /* 작은 화면 겹침 방지 */
         }
         
         #selectedShipDisplay {
@@ -143,20 +151,26 @@
             flex: 1; background-color: #080d1a; color: #38edf8;
             font-family: 'JetBrains Mono', Consolas, monospace; padding: 12px;
             border: 1px solid #1e293b; border-radius: 6px; resize: none; font-size: 11px; 
-            min-height: 60px;
+            min-height: 80px; box-sizing: border-box;
         }
 
+        /* 💡 모달 창 화면 잘림 완벽 방지 */
         #ecdisModal {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0f172a; padding: 20px; border: 2px solid #06b6d4; border-radius: 8px;
-            z-index: 9999; width: 420px; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            z-index: 9999; width: 420px; max-width: 90vw; max-height: 85dvh; overflow-y: auto; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.9); box-sizing: border-box;
         }
         #ecdisContent { font-family: monospace; color: #f3f4f6; white-space: pre; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
 
+        /* 💡 모바일 최적화: 유동적인 화면 비율 적용 및 캔버스 압착 방지 */
         @media (max-width: 768px), (max-aspect-ratio: 4/5) {
             body { flex-direction: column; }
-            #sidebar { width: 100%; height: 50%; border-left: none; border-top: 1px solid var(--border-color); flex: 1; }
-            #canvas-wrapper { height: 50%; flex: 1; }
+            #canvas-wrapper { flex: 0 0 45%; height: 45%; min-height: 250px; }
+            #sidebar { 
+                flex: 1 1 55%; height: 55%; width: 100%; 
+                border-left: none; border-top: 1px solid var(--border-color); 
+            }
         }
     </style>
 </head>
@@ -1202,7 +1216,6 @@
 
     document.getElementById('loadJsonBtn').addEventListener('click', () => document.getElementById('jsonInput').click());
     
-    // 💡 [수정된 부분] 안전한 JSON 파서 로직 적용 (Number 타입 강제 캐스팅 & 깊은 복사 처리)
     document.getElementById('jsonInput').addEventListener('change', (e) => {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
