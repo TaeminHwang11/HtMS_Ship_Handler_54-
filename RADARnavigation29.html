@@ -1599,7 +1599,7 @@
 
     function updatePhysics(simDtHours, realDt) {
         let rDiff = os.targetRudder - os.actualRudder;
-        let rStep = 3.0 * realDt; 
+        let rStep = 1.5 * realDt; 
         if (Math.abs(rDiff) <= rStep) os.actualRudder = os.targetRudder;
         else os.actualRudder += Math.sign(rDiff) * rStep;
 
