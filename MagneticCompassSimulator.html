@@ -980,12 +980,12 @@
             let simSteps = (isFastForward && apEnabled) ? 15 : 1;
 
             for (let step = 0; step < simSteps; step++) {
-                // 1. AP Logic (게인값 최적화 수정)
+                // 1. AP Logic 
                 if (apEnabled) {
                     let err = (apTarget - heading) % 360;
                     if (err > 180) err -= 360; if (err < -180) err += 360;
 
-                    let Kp_ap = 1.2; let Kd_ap = 0.5; // 변경됨 (러더 속도 2.5에 맞춘 오버슈트 방지 임계 제동)
+                    let Kp_ap = 1.2; let Kd_ap = 0.5; 
                     let desired_rudder = (err * Kp_ap) - (rot * Kd_ap);
                     desired_rudder = Math.max(-35, Math.min(35, desired_rudder));
                     orderRudder = desired_rudder;
@@ -1006,15 +1006,17 @@
                     effLevel = 1; 
                 }
                 if (effLevel > 0) {
+                    // 외란(바람/조류)을 계산 (Math.random() 비중을 줄여 고주파 헌팅 방지)
                     let drift = Math.sin(Date.now() * 0.0005) * 1.5 * effLevel;
-                    let gust = (Math.random() - 0.5) * 3.0 * effLevel;
-                    disturbance = (drift + gust) * dt; 
+                    let gust = (Math.random() - 0.5) * 0.5 * effLevel; 
+                    disturbance = drift + gust; 
                 }
 
-                const targetRot = K * actualRudder;
+                // 외란을 rot에 직접 더하지 않고 targetRot에 적용하여 선박 관성(T)에 의해 부드럽게 필터링되도록 수정 (헌팅 현상 해결)
+                const targetRot = (K * actualRudder) + disturbance;
                 const rotDerivative = (targetRot - rot) / T; 
                 
-                rot += (rotDerivative * dt) + disturbance; 
+                rot += (rotDerivative * dt); 
                 heading = (heading + (rot / 60.0) * dt) % 360; 
                 if (heading < 0) heading += 360;
 
