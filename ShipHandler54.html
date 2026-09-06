@@ -59,13 +59,13 @@
         .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
         #save-toast { display: none; margin-top: 5px; color: #fff; background: rgba(0,255,170,0.4); padding: 2px 10px; border-radius: 4px; font-size: 12px;}
 
-        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: block; z-index: 100;}
+        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: none; z-index: 100;}
         #ecdis-canvas { width: 100%; height: 100%; display: block; border-radius: 50%; cursor: crosshair; }
         #radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 60%, rgba(0, 255, 255, 0.25) 100%); animation: sweep 2.5s infinite linear; pointer-events: none; }
         @keyframes sweep { 100% { transform: rotate(360deg); } }
 
         #right-center-cas-panel, #bottom-left-panel { display: none; z-index: 100; position: absolute; }
-        #right-center-cas-panel { right: 20px; top: 20px; width: 380px; }
+        #right-center-cas-panel { right: 20px; bottom: 20px; width: 380px; }
         #bottom-left-panel { bottom: 20px; left: 20px; width: 570px; }
         
         .panel-header { font-size: 18px; color: #0ff; font-weight: bold; border-bottom: 1px solid rgba(0,255,255,0.4); padding-bottom: 8px; margin-bottom: 15px;}
@@ -211,6 +211,7 @@
         <div class="hud-side-controls" style="border-right: 1px solid rgba(0,255,255,0.3); padding-right: 15px;">
             <div class="btn-group-small">
                 <button id="btn-mode-cas" class="btn-ctrl-small" onclick="setMode('CAS')">CAS AI</button>
+                <button id="btn-radar" class="btn-ctrl-small" onclick="toggleRadar()">RADAR</button>
                 <div id="btn-collision">COLLISION CLEAR</div>
             </div>
             <div class="btn-group-small">
@@ -264,7 +265,7 @@
         <div class="danger-data-row"><span>BCR:</span> <b id="mt-bcr" style="color:#fff;">-</b></div>
     </div>
 
-    <div id="ecdis-container" class="hud-panel draggable-panel" style="display:none;"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
+    <div id="ecdis-container" class="hud-panel draggable-panel"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
 
     <!-- AI (CAS) Threat Analysis Panel -->
     <div id="right-center-cas-panel" class="hud-panel draggable-panel">
@@ -336,14 +337,21 @@
         let isPaused = false;
         let isHudDragged = false; 
         let manualRadarZoom = 1.0;
-        // --- 레이더 패닝(Panning) 관련 변수 ---
+        
+        // --- 레이더 패닝(Panning) & 드래그 관련 변수 ---
         let radarOffsetX = 0; 
         let radarOffsetY = 0; 
         let isRadarDragging = false; 
         let radarDragStartX = 0; 
         let radarDragStartY = 0; 
         let hasRadarDragged = false;
+        
+        let radarHoldTimer = null;
+        let isRadarWindowDragging = false;
+        let radarWinStartX = 0, radarWinStartY = 0;
+        let radarWinStartLeft = 0, radarWinStartTop = 0;
         // ------------------------------------
+        
         let camMoveDir = null;
         let isCamPadOpen = false;
         let loadedScenarioConfig = null;
@@ -419,6 +427,7 @@
             UI_ELEMENTS.btnCollision = document.getElementById('btn-collision');
             UI_ELEMENTS.btnPause = document.getElementById('btn-pause');
             UI_ELEMENTS.ecdisCanvas = document.getElementById('ecdis-canvas');
+            UI_ELEMENTS.ecdisContainer = document.getElementById('ecdis-container');
             UI_ELEMENTS.hudLines = document.getElementById('hud-lines');
         });
 
@@ -628,6 +637,36 @@
         // ==========================================
         // 6. UI & EVENT HANDLERS
         // ==========================================
+        
+        // --- 레이더 토글 함수 ---
+        let isRadarOpen = false;
+        window.toggleRadar = function(forceState) {
+            const container = UI_ELEMENTS.ecdisContainer || document.getElementById('ecdis-container');
+            const btn = document.getElementById('btn-radar');
+            if (!container || !btn) return;
+
+            if (forceState !== undefined) {
+                isRadarOpen = forceState;
+            } else {
+                isRadarOpen = !isRadarOpen;
+            }
+
+            if (isRadarOpen) {
+                // 패널을 항상 중앙 아래로 리셋하여 띄웁니다.
+                container.style.display = 'block';
+                container.style.left = '50%';
+                container.style.top = 'auto';
+                container.style.bottom = '20px';
+                container.style.right = 'auto';
+                container.style.transform = 'translateX(-50%)';
+                container.style.margin = '0';
+                btn.classList.add('active');
+            } else {
+                container.style.display = 'none';
+                btn.classList.remove('active');
+            }
+        };
+
         window.toggleOsDropdown = function(e) {
             if(e) e.stopPropagation();
             const list = document.getElementById('os-dropdown-list');
@@ -668,7 +707,7 @@
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
             panel.addEventListener('mousedown', (e) => {
-                // 레이더 캔버스는 드래그에서 제외
+                // 레이더 캔버스는 기본 드래그에서 제외하고 별도 롱프레스 이벤트로 처리
                 if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName) || e.target.id === 'ecdis-canvas') return;
                 isPanelDragging = true; isHudDragged = false; 
                 startX = e.clientX; startY = e.clientY;
@@ -764,6 +803,7 @@
             water.visible = false; 
             simpleWater.visible = false;
             scene.background = new THREE.Color(0x000000);
+            toggleRadar(false);
         }
 
         window.togglePause = function() {
@@ -851,6 +891,9 @@
                 document.getElementById('scanline').style.display = 'block'; 
                 document.getElementById('hud-lines').style.opacity = '1'; 
                 arOverlayGroup.visible = true; 
+                
+                // AI CAS 기능 활성화시 레이더도 함께 켜짐
+                toggleRadar(true);
             }
         };
 
@@ -939,22 +982,30 @@
             }
         }, {passive: false});
 
-        // --- 레이더 패닝(드래그) 및 클릭 통합 로직 ---
+        // --- 레이더 패닝 및 윈도우 드래그(Long Press) 통합 로직 ---
         const ecdisEl = document.getElementById('ecdis-canvas');
 
         function handleRadarDragStart(clientX, clientY) {
-            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
+            if(gameState !== 'PLAYING' || isPaused) return false;
+            // 일반 패닝은 CAS 모드가 아닐때만 허용 (기존 로직 유지)
+            if(currentMode === 'CAS') return false; 
+            
             isRadarDragging = true;
             hasRadarDragged = false;
             radarDragStartX = clientX;
             radarDragStartY = clientY;
+            return true;
         }
 
         function handleRadarDragMove(clientX, clientY) {
+            if (isRadarWindowDragging) return; // 윈도우 드래그 중엔 패닝 무시
             if (!isRadarDragging) return;
             const dx = clientX - radarDragStartX;
             const dy = clientY - radarDragStartY;
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasRadarDragged = true;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasRadarDragged = true;
+                if(radarHoldTimer) clearTimeout(radarHoldTimer); // 조금이라도 움직이면 윈도우 드래그 타이머 취소
+            }
             
             if (hasRadarDragged) {
                 radarOffsetX += dx;
@@ -966,28 +1017,113 @@
 
         ecdisEl.addEventListener('mousedown', (e) => {
             e.stopPropagation();
+            if(gameState !== 'PLAYING' || isPaused) return;
+
             handleRadarDragStart(e.clientX, e.clientY);
+
+            // 꾸욱 눌렀을 때(400ms) 창 자체를 이동시킬 수 있도록 처리
+            radarHoldTimer = setTimeout(() => {
+                if (!hasRadarDragged) {
+                    isRadarWindowDragging = true;
+                    isRadarDragging = false;
+                    hasRadarDragged = true; // 이후의 클릭 이벤트를 방지
+                    radarWinStartX = e.clientX;
+                    radarWinStartY = e.clientY;
+                    const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
+                    radarWinStartLeft = rect.left;
+                    radarWinStartTop = rect.top;
+
+                    // Absolute 위치 초기화
+                    UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.right = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.transform = 'none';
+                    UI_ELEMENTS.ecdisContainer.style.margin = '0';
+                    UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
+                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00'; // 드래그 모드 시각적 피드백
+                }
+            }, 400);
         });
+
         window.addEventListener('mousemove', (e) => {
+            if (isRadarWindowDragging) {
+                const dx = e.clientX - radarWinStartX;
+                const dy = e.clientY - radarWinStartY;
+                UI_ELEMENTS.ecdisContainer.style.left = (radarWinStartLeft + dx) + 'px';
+                UI_ELEMENTS.ecdisContainer.style.top = (radarWinStartTop + dy) + 'px';
+                return;
+            }
             if(isRadarDragging) handleRadarDragMove(e.clientX, e.clientY);
         });
-        window.addEventListener('mouseup', () => { isRadarDragging = false; });
+
+        window.addEventListener('mouseup', () => { 
+            if(radarHoldTimer) clearTimeout(radarHoldTimer);
+            if(isRadarWindowDragging) {
+                isRadarWindowDragging = false;
+                UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
+                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)'; // 원래대로
+            }
+            isRadarDragging = false; 
+        });
 
         ecdisEl.addEventListener('touchstart', (e) => {
             e.stopPropagation();
+            if(gameState !== 'PLAYING' || isPaused) return;
+
             handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
+
+            radarHoldTimer = setTimeout(() => {
+                if (!hasRadarDragged) {
+                    isRadarWindowDragging = true;
+                    isRadarDragging = false;
+                    hasRadarDragged = true;
+                    radarWinStartX = e.touches[0].clientX;
+                    radarWinStartY = e.touches[0].clientY;
+                    const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
+                    radarWinStartLeft = rect.left;
+                    radarWinStartTop = rect.top;
+
+                    UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.right = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.transform = 'none';
+                    UI_ELEMENTS.ecdisContainer.style.margin = '0';
+                    UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
+                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00';
+                }
+            }, 400);
         }, {passive: false});
+
         window.addEventListener('touchmove', (e) => {
+            if (isRadarWindowDragging) {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - radarWinStartX;
+                const dy = e.touches[0].clientY - radarWinStartY;
+                UI_ELEMENTS.ecdisContainer.style.left = (radarWinStartLeft + dx) + 'px';
+                UI_ELEMENTS.ecdisContainer.style.top = (radarWinStartTop + dy) + 'px';
+                return;
+            }
             if(isRadarDragging) {
                 e.preventDefault();
                 handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
             }
         }, {passive: false});
-        window.addEventListener('touchend', () => { isRadarDragging = false; });
+
+        window.addEventListener('touchend', () => { 
+            if(radarHoldTimer) clearTimeout(radarHoldTimer);
+            if(isRadarWindowDragging) {
+                isRadarWindowDragging = false;
+                UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
+                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)';
+            }
+            isRadarDragging = false; 
+        });
 
         ecdisEl.addEventListener('click', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
-            if(hasRadarDragged) return; // 드래그를 한 경우 타겟 클릭 취소
+            if(hasRadarDragged || isRadarWindowDragging) return; // 드래그를 한 경우 타겟 클릭 취소
 
             const rect = this.getBoundingClientRect(); 
             const clickX = e.clientX - rect.left; 
@@ -1022,7 +1158,7 @@
         });
         
         document.getElementById('ecdis-canvas').addEventListener('wheel', function(e) {
-            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged) return;
+            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged || isRadarWindowDragging) return;
             e.preventDefault(); 
             if (e.deltaY > 0) { manualRadarZoom *= 1.2; } else { manualRadarZoom /= 1.2; } 
             manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
@@ -1121,7 +1257,10 @@
             env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
 
             document.getElementById('digital-hud-container').style.display = 'flex';
-            document.getElementById('ecdis-container').style.display = 'block';
+            
+            // 레이더 초기 상태는 OFF로 설정
+            toggleRadar(false);
+
             document.getElementById('camera-hint').style.display = 'block';
             document.getElementById('manual-target-panel').style.display = 'none';
 
