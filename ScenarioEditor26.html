@@ -18,7 +18,6 @@
             --text-muted: #9ca3af;
         }
 
-        /* 💡 모바일 브라우저의 상하단 UI(주소창, 홈바)로 인한 잘림 현상 방지를 위해 100dvh 적용 */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; height: 100dvh; }
 
         body {
@@ -65,7 +64,6 @@
         .hud-range { color: var(--accent-yellow); font-weight: bold; }
         .hud-target { color: var(--accent-red); font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none; }
 
-        /* 💡 사이드바 영역: env(safe-area-inset-...)를 통해 아이폰 노치 및 하단 홈 인디케이터 침범 방지 */
         #sidebar {
             width: 380px; max-width: 100%; height: 100%;
             background-color: var(--panel-bg); 
@@ -74,8 +72,7 @@
             padding-right: calc(20px + env(safe-area-inset-right));
             box-sizing: border-box; display: flex; flex-direction: column;
             border-left: 1px solid var(--border-color); box-shadow: -5px 0 25px rgba(0,0,0,0.5); z-index: 20;
-            overflow-y: auto;
-            min-height: 0; /* Flex 자식 요소 넘침 방지 */
+            overflow-y: auto; min-height: 0;
         }
 
         .panel { display: none; flex-direction: column; flex: 1; min-height: 0; }
@@ -135,7 +132,7 @@
             flex: 1; background-color: #0b0f19; color: white; border: 1px solid #334155;
             padding: 6px; border-radius: 4px; font-family: monospace; font-size: 12px; outline: none; text-align: center;
             user-select: auto; -webkit-user-select: auto;
-            width: 100%; box-sizing: border-box; /* 작은 화면 겹침 방지 */
+            width: 100%; box-sizing: border-box; 
         }
         
         #selectedShipDisplay {
@@ -154,7 +151,6 @@
             min-height: 80px; box-sizing: border-box;
         }
 
-        /* 💡 모달 창 화면 잘림 완벽 방지 */
         #ecdisModal {
             display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0f172a; padding: 20px; border: 2px solid #06b6d4; border-radius: 8px;
@@ -163,7 +159,6 @@
         }
         #ecdisContent { font-family: monospace; color: #f3f4f6; white-space: pre; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
 
-        /* 💡 모바일 최적화: 유동적인 화면 비율 적용 및 캔버스 압착 방지 */
         @media (max-width: 768px), (max-aspect-ratio: 4/5) {
             body { flex-direction: column; }
             #canvas-wrapper { flex: 0 0 45%; height: 45%; min-height: 250px; }
@@ -172,6 +167,14 @@
                 border-left: none; border-top: 1px solid var(--border-color); 
             }
         }
+
+        /* 드라이브 리스트 선택 UI 강화 */
+        #driveFileSelect {
+            height: 140px; 
+            overflow-y: auto;
+        }
+        #driveFileSelect option { padding: 4px; }
+        #driveFileSelect option:checked { background: var(--accent-cyan); color: #000; }
     </style>
 </head>
 <body>
@@ -278,25 +281,26 @@
     <!-- 리플레이 패널 -->
     <div id="panel-replay" class="panel">
         <div class="instruction">
-            • 시뮬레이터에서 서버로 전송된 JSON 로그 데이터를 드라이브에서 직접 불러오거나 로컬에서 업로드하여 재생합니다.<br>
-            • 파일의 본선(OS) 시작 위치가 REFERENCE ORIGIN에 자동 입력됩니다.<br>
-            • 에디터에서 작성한 계획 항로와 실제 궤적(항적)이 비교 표시됩니다.
+            • <b>다중 선택 가능:</b> <code>Ctrl</code> 또는 <code>Shift</code>를 누른 채 여러 파일을 선택해 동시 비교 재생이 가능합니다.<br>
+            • 각 뷰포트 창마다 개별적으로 <b>드래그(패닝)</b> 및 <b>휠(확대/축소)</b>을 지원합니다.
         </div>
         
         <div class="btn-group">
             <div class="btn-row">
-                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">로컬 파일 열기</button>
+                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">로컬 로그 여러개 열기</button>
                 <button class="tool-btn" id="fetchDriveListBtn" style="flex: 1; background:#0ea5e9; border-color:#0284c7; color:#fff;">구글 드라이브 열기</button>
             </div>
         </div>
-        <input type="file" id="localJsonInput" accept=".json" style="display: none;">
+        <!-- 💡 다중 파일 선택 속성(multiple) 추가 -->
+        <input type="file" id="localJsonInput" accept=".json" multiple style="display: none;">
 
         <div id="driveFileContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE FILE LIST</label>
-            <select id="driveFileSelect" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
+            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE FILE LIST (다중 선택 가능)</label>
+            <!-- 💡 다중 선택 속성(multiple) 추가 -->
+            <select id="driveFileSelect" multiple style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
                 <option value="">파일을 선택하세요...</option>
             </select>
-            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">선택 파일 재생하기</button>
+            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">선택 파일(들) 재생하기</button>
             <div id="driveLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">통신 중... 잠시만 기다려주세요.</div>
         </div>
         
@@ -339,13 +343,15 @@
     let currentMode = 'editor'; 
     let isDeleteMode = false; 
 
+    // Editor Variables
     let massList = []; 
     let activeMassIndex = 0; 
     let globalOrigin = { lat: 34.800000, lon: 126.400000 };
-    
     let globalEnv = { windDir: 45, windSpd: 12.5, currDir: 0, currSpd: 0.0 };
 
-    let replayFrames = []; 
+    // Replay Variables (Multi-screen support)
+    let replayList = []; // 배열 요소: { name, frames, panX, panY, viewScale, dragObj }
+    let maxReplayFrames = 0;
     let currentReplayTime = 0;
     let isPlaying = false;
     let playSpeed = 1; 
@@ -375,12 +381,15 @@
     });
 
     window.addEventListener('mouseup', () => { 
+        // Editor mode drags
         massList.forEach((mass, idx) => {
             mass.draggingObj = null;
             const hud = document.querySelector(`#hud-${idx} .hud-target`);
             if (hud) hud.style.display = 'none'; 
         });
-        if (rDrag) rDrag = null;
+        
+        // Replay mode drags
+        replayList.forEach(r => { r.dragObj = null; });
     });
 
     function createMassState(lat, lon) {
@@ -450,7 +459,7 @@
                 if (isPlaying) document.getElementById('playPauseBtn').click();
                 renderGrid();
             } else {
-                renderReplayView();
+                renderReplayGrid();
             }
         });
     });
@@ -557,6 +566,9 @@
         return false;
     }
 
+    // ==========================================
+    // EDITOR GRID & CANVAS LOGIC
+    // ==========================================
     function renderGrid() {
         if (currentMode === 'replay') return; 
         gridContainer.innerHTML = '';
@@ -635,12 +647,14 @@
             });
             updateAllCanvases();
         } else {
-            const canvas = document.getElementById('replay-canvas');
-            if (canvas) {
-                canvas.width = canvas.parentElement.clientWidth;
-                canvas.height = canvas.parentElement.clientHeight;
-                updateReplayCanvas();
-            }
+            replayList.forEach((replay, i) => {
+                const canvas = document.getElementById(`replay-canvas-${i}`);
+                if (canvas) {
+                    canvas.width = canvas.parentElement.clientWidth;
+                    canvas.height = canvas.parentElement.clientHeight;
+                }
+            });
+            drawAllReplayCanvases();
         }
     });
 
@@ -750,24 +764,6 @@
             text += "\n";
         });
         return { text, csvText };
-    }
-
-    function calculateCPA(target, osSpd) {
-        const rx = target.x / 400;
-        const ry = -target.z / 400;
-        const rad = target.hdg * Math.PI / 180;
-        const v_tx = target.spd * Math.sin(rad);
-        const v_ty = target.spd * Math.cos(rad);
-        const v_rx = v_tx - 0;
-        const v_ry = v_ty - osSpd; 
-        const v_rel_sq = v_rx * v_rx + v_ry * v_ry;
-
-        if (v_rel_sq < 0.01) return { cpa: Math.hypot(rx, ry), tcpa: 0 };
-
-        const tcpa_hr = -(rx * v_rx + ry * v_ry) / v_rel_sq;
-        const cpa_x = rx + v_rx * tcpa_hr;
-        const cpa_y = ry + v_ry * tcpa_hr;
-        return { cpa: Math.hypot(cpa_x, cpa_y), tcpa: tcpa_hr * 60 }; 
     }
 
     function bindCanvasEvents(canvas, idx) {
@@ -935,8 +931,7 @@
             let prevX = objInfo.owner === 'OS' ? 0 : shipData.x;
             let prevZ = objInfo.owner === 'OS' ? 0 : shipData.z;
             let prevName = objInfo.owner === 'OS' ? 'OS' : `T${objInfo.owner + 1}`;
-            let prevCourse = shipData.hdg;
-
+            
             if (objInfo.index > 0) {
                 prevX = wpArray[objInfo.index - 1].x;
                 prevZ = wpArray[objInfo.index - 1].z;
@@ -1214,7 +1209,10 @@
         }
     });
 
-    document.getElementById('loadJsonBtn').addEventListener('click', () => document.getElementById('jsonInput').click());
+    document.getElementById('loadJsonBtn').addEventListener('click', () => {
+        document.getElementById('jsonInput').removeAttribute('multiple');
+        document.getElementById('jsonInput').click();
+    });
     
     document.getElementById('jsonInput').addEventListener('change', (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -1384,142 +1382,32 @@
                 updateShipTypeOptions();
                 
                 if (currentMode === 'editor') renderGrid(); 
-                else renderReplayView();
+                else renderReplayGrid();
             } catch (err) { alert('JSON 파싱 오류: 데이터 형식이 맞지 않습니다.\n' + err.message); }
         }; reader.readAsText(file); e.target.value = '';
     });
 
-    let rPanX = null, rPanY = null, rViewScale = 1/3.0, rDrag = null;
-    function renderReplayView() {
-        gridContainer.innerHTML = '';
-        gridContainer.style.gridTemplateColumns = '1fr';
-        gridContainer.style.gridTemplateRows = '1fr';
-        
-        const vp = document.createElement('div');
-        vp.className = 'viewport active-vp';
-        vp.innerHTML = `<canvas class="vp-canvas" id="replay-canvas"></canvas>`;
-        gridContainer.appendChild(vp);
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const canvas = document.getElementById('replay-canvas');
-                if(!canvas) return;
-                canvas.width = vp.clientWidth || vp.getBoundingClientRect().width; 
-                canvas.height = vp.clientHeight || vp.getBoundingClientRect().height;
-                if(rPanX === null || rPanY === null) { 
-                    rPanX = canvas.width/2; 
-                    rPanY = canvas.height/2; 
-                }
-
-                canvas.addEventListener('wheel', (e) => {
-                    e.preventDefault();
-                    const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
-                    rViewScale = Math.min(1/0.5, Math.max(1/30, rViewScale / zoomFactor)); 
-                    updateReplayCanvas();
-                }, { passive: false });
-
-                canvas.addEventListener('mousedown', (e) => {
-                    const rect = canvas.getBoundingClientRect();
-                    rDrag = { startX: e.clientX - rect.left - rPanX, startY: e.clientY - rect.top - rPanY };
-                });
-                canvas.addEventListener('mousemove', (e) => {
-                    if(rDrag) {
-                        const rect = canvas.getBoundingClientRect();
-                        rPanX = (e.clientX - rect.left) - rDrag.startX; rPanY = (e.clientY - rect.top) - rDrag.startY;
-                        updateReplayCanvas();
-                    }
-                });
-                updateReplayCanvas();
-            });
-        });
-    }
-
-    document.getElementById('loadLocalJsonBtn').addEventListener('click', () => document.getElementById('localJsonInput').click());
-    document.getElementById('localJsonInput').addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            parseReplayJSON(event.target.result);
-            if (replayFrames.length > 0) { renderReplayView(); }
-        }; reader.readAsText(file); e.target.value = ''; 
-    });
-
-    document.getElementById('fetchDriveListBtn').addEventListener('click', () => {
-        const container = document.getElementById('driveFileContainer');
-        const select = document.getElementById('driveFileSelect');
-        const msg = document.getElementById('driveLoadingMsg');
-        
-        container.style.display = 'block';
-        msg.style.display = 'block';
-        msg.textContent = "구글 드라이브에서 파일 목록을 가져오는 중...";
-        select.innerHTML = '<option value="">목록 로딩 중...</option>';
-        select.disabled = true;
-
-        fetch(`${GOOGLE_SCRIPT_URL}?action=list`)
-            .then(res => res.json())
-            .then(files => {
-                select.innerHTML = '<option value="">재생할 파일을 선택하세요</option>';
-                files.forEach(file => {
-                    const opt = document.createElement('option');
-                    opt.value = file.id;
-                    opt.textContent = file.name;
-                    select.appendChild(opt);
-                });
-                select.disabled = false;
-                msg.style.display = 'none';
-            })
-            .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 권한을 확인하세요.";
-                msg.style.color = "var(--accent-red)";
-                console.error(err);
-            });
-    });
-
-    document.getElementById('loadSelectedDriveFileBtn').addEventListener('click', () => {
-        const select = document.getElementById('driveFileSelect');
-        const fileId = select.value;
-        const msg = document.getElementById('driveLoadingMsg');
-
-        if (!fileId) {
-            alert("파일을 먼저 선택해주세요.");
-            return;
-        }
-
-        msg.style.display = 'block';
-        msg.style.color = "var(--accent-yellow)";
-        msg.textContent = "시뮬레이션 데이터를 다운로드하는 중...";
-
-        fetch(`${GOOGLE_SCRIPT_URL}?action=load&fileId=${fileId}`)
-            .then(res => res.json())
-            .then(data => {
-                msg.style.display = 'none';
-                parseReplayJSON(JSON.stringify(data));
-                if (replayFrames.length > 0) { renderReplayView(); }
-            })
-            .catch(err => {
-                msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
-                msg.style.color = "var(--accent-red)";
-                console.error(err);
-            });
-    });
-
-    function parseReplayJSON(jsonStr) {
+    // ==========================================
+    // REPLAY LOGIC (Multi-Screen Support)
+    // ==========================================
+    function createReplayData(jsonStr, fileName) {
         try {
             const data = JSON.parse(jsonStr);
             const logArray = data.logData || (Array.isArray(data) ? data : []); 
 
             if (logArray.length === 0) {
                 if (data.os || data.targets || data.ships) {
-                    alert("⚠️ 선택하신 파일은 [시나리오] 파일입니다.\n리플레이를 보려면 시뮬레이터에서 저장된 [로그 데이터(Replay JSON)]를 불러오세요.");
+                    console.warn(`[${fileName}] 선택하신 파일은 리플레이가 아닌 시나리오 파일입니다.`);
                 } else {
-                    alert("유효한 리플레이 데이터(logData)가 없습니다.");
+                    console.warn(`[${fileName}] 유효한 리플레이 데이터가 없습니다.`);
                 }
-                return;
+                return null;
             }
 
             const frames = {};
-            let originLat = massList[0].originLat;
-            let originLon = massList[0].originLon;
+            // Use the global origin for mapping lat/lon to local x/z consistently
+            const originLat = globalOrigin.lat;
+            const originLon = globalOrigin.lon;
             const cosLat = Math.cos(originLat * Math.PI / 180);
 
             logArray.forEach(row => {
@@ -1550,28 +1438,218 @@
                 frames[t].push({ name, x: simX, z: simZ, hdg, cog, sog });
             });
             
-            replayFrames = Object.keys(frames).map(Number).sort((a,b)=>a-b).map(t => ({ time: t, ships: frames[t] }));
-            if (replayFrames.length > 0) {
-                const slider = document.getElementById('timeSlider');
-                slider.max = replayFrames.length - 1; slider.value = 0; currentReplayTime = replayFrames[0].time;
-                document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
-            }
+            const parsedFrames = Object.keys(frames).map(Number).sort((a,b)=>a-b).map(t => ({ time: t, ships: frames[t] }));
+            
+            return {
+                name: fileName,
+                frames: parsedFrames,
+                panX: null, panY: null, viewScale: 1 / 3.0,
+                dragObj: null
+            };
         } catch (err) {
-            alert("JSON 파싱 오류: " + err.message);
+            console.error(`JSON Parsing Error in file ${fileName}:`, err);
+            return null;
         }
     }
 
+    function renderReplayGrid() {
+        if (currentMode !== 'replay') return;
+        gridContainer.innerHTML = '';
+        
+        let cols = 1, rows = 1;
+        const len = replayList.length;
+        if (len === 0) return; // No replays loaded
+        else if (len === 2) { cols = 2; rows = 1; }
+        else if (len === 3) { cols = 3; rows = 1; } 
+        else if (len === 4) { cols = 2; rows = 2; }
+        else if (len >= 5 && len <= 6) { cols = 3; rows = 2; }
+        else if (len >= 7 && len <= 8) { cols = 4; rows = 2; }
+
+        gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        gridContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        replayList.forEach((replay, i) => {
+            const vp = document.createElement('div');
+            vp.className = `viewport active-vp`;
+            vp.innerHTML = `
+                <div class="vp-label">[${replay.name}]</div>
+                <canvas class="vp-canvas" id="replay-canvas-${i}"></canvas>
+            `;
+            gridContainer.appendChild(vp);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const canvas = document.getElementById(`replay-canvas-${i}`);
+                    if(!canvas) return;
+                    
+                    canvas.width = vp.clientWidth || vp.getBoundingClientRect().width; 
+                    canvas.height = vp.clientHeight || vp.getBoundingClientRect().height;
+                    
+                    if(replay.panX === null || replay.panY === null) { 
+                        replay.panX = canvas.width/2; 
+                        replay.panY = canvas.height/2; 
+                    }
+
+                    // Independent Pan & Zoom Events
+                    canvas.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+                        replay.viewScale = Math.min(1/0.5, Math.max(1/30, replay.viewScale / zoomFactor)); 
+                        drawAllReplayCanvases();
+                    }, { passive: false });
+
+                    canvas.addEventListener('mousedown', (e) => {
+                        const rect = canvas.getBoundingClientRect();
+                        replay.dragObj = { startX: e.clientX - rect.left - replay.panX, startY: e.clientY - rect.top - replay.panY };
+                    });
+                    
+                    canvas.addEventListener('mousemove', (e) => {
+                        if(replay.dragObj) {
+                            const rect = canvas.getBoundingClientRect();
+                            replay.panX = (e.clientX - rect.left) - replay.dragObj.startX; 
+                            replay.panY = (e.clientY - rect.top) - replay.dragObj.startY;
+                            drawAllReplayCanvases();
+                        }
+                    });
+                    
+                    drawAllReplayCanvases();
+                });
+            });
+        });
+    }
+
+    function initReplayPlayback() {
+        if (replayList.length === 0) return;
+        
+        // Find the maximum number of frames across all loaded replays
+        maxReplayFrames = Math.max(...replayList.map(r => r.frames.length));
+        
+        const slider = document.getElementById('timeSlider');
+        slider.max = maxReplayFrames - 1; 
+        slider.value = 0; 
+        
+        // Assuming all start at similar time (0.0s usually)
+        currentReplayTime = replayList[0].frames[0]?.time || 0;
+        document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+        
+        renderReplayGrid();
+    }
+
+    document.getElementById('loadLocalJsonBtn').addEventListener('click', () => {
+        const input = document.getElementById('localJsonInput');
+        input.setAttribute('multiple', 'multiple'); // Ensure multiple selection is allowed
+        input.click();
+    });
+
+    document.getElementById('localJsonInput').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files); 
+        if (files.length === 0) return;
+        if (files.length > 8) { alert("최대 8개까지만 동시 재생 가능합니다."); return; }
+
+        if (isPlaying) document.getElementById('playPauseBtn').click();
+        replayList = [];
+
+        for (let file of files) {
+            const text = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target.result);
+                reader.readAsText(file);
+            });
+            const replayData = createReplayData(text, file.name.replace('.json', ''));
+            if (replayData) replayList.push(replayData);
+        }
+
+        e.target.value = ''; 
+        if (replayList.length > 0) initReplayPlayback();
+    });
+
+    document.getElementById('fetchDriveListBtn').addEventListener('click', () => {
+        const container = document.getElementById('driveFileContainer');
+        const select = document.getElementById('driveFileSelect');
+        const msg = document.getElementById('driveLoadingMsg');
+        
+        container.style.display = 'block';
+        msg.style.display = 'block';
+        msg.textContent = "구글 드라이브에서 파일 목록을 가져오는 중...";
+        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        select.disabled = true;
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=list`)
+            .then(res => res.json())
+            .then(files => {
+                select.innerHTML = '';
+                files.forEach(file => {
+                    const opt = document.createElement('option');
+                    opt.value = file.id;
+                    opt.textContent = file.name;
+                    select.appendChild(opt);
+                });
+                select.disabled = false;
+                msg.style.display = 'none';
+            })
+            .catch(err => {
+                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 권한을 확인하세요.";
+                msg.style.color = "var(--accent-red)";
+                console.error(err);
+            });
+    });
+
+    document.getElementById('loadSelectedDriveFileBtn').addEventListener('click', async () => {
+        const select = document.getElementById('driveFileSelect');
+        const selectedOptions = Array.from(select.selectedOptions);
+        const msg = document.getElementById('driveLoadingMsg');
+
+        if (selectedOptions.length === 0) {
+            alert("파일을 선택해주세요. (Ctrl/Shift 키로 다중 선택 가능)");
+            return;
+        }
+        if (selectedOptions.length > 8) {
+            alert("최대 8개까지만 동시 재생 가능합니다.");
+            return;
+        }
+
+        if (isPlaying) document.getElementById('playPauseBtn').click();
+        
+        msg.style.display = 'block';
+        msg.style.color = "var(--accent-yellow)";
+        msg.textContent = "시뮬레이션 데이터를 다운로드하는 중...";
+        
+        replayList = [];
+
+        try {
+            const promises = selectedOptions.map(opt => 
+                fetch(`${GOOGLE_SCRIPT_URL}?action=load&fileId=${opt.value}`)
+                .then(res => res.json())
+                .then(data => createReplayData(JSON.stringify(data), opt.text.replace('.json', '')))
+            );
+
+            const results = await Promise.all(promises);
+            results.forEach(r => { if (r) replayList.push(r); });
+
+            msg.style.display = 'none';
+            if (replayList.length > 0) initReplayPlayback();
+        } catch (err) {
+            msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
+            msg.style.color = "var(--accent-red)";
+            console.error(err);
+        }
+    });
+
     const slider = document.getElementById('timeSlider');
     slider.addEventListener('input', (e) => {
-        if (replayFrames.length === 0) return;
-        currentReplayTime = replayFrames[parseInt(e.target.value)].time;
+        if (replayList.length === 0) return;
+        const globalIdx = parseInt(e.target.value);
+        // Display time based on the first loaded replay's timestamp (fallback to idx)
+        const refReplay = replayList[0];
+        const safeIdx = Math.min(globalIdx, refReplay.frames.length - 1);
+        currentReplayTime = refReplay.frames[safeIdx]?.time || globalIdx;
         document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
-        updateReplayCanvas();
+        drawAllReplayCanvases();
     });
 
     const playPauseBtn = document.getElementById('playPauseBtn');
     playPauseBtn.addEventListener('click', () => {
-        if (replayFrames.length === 0) return;
+        if (replayList.length === 0) return;
         if (isPlaying) {
             isPlaying = false; playPauseBtn.textContent = 'PLAY';
             playPauseBtn.style.background = '#1f293d'; playPauseBtn.style.color = 'var(--text-main)';
@@ -1581,10 +1659,15 @@
             playPauseBtn.style.background = '#eab308'; playPauseBtn.style.color = '#000';
             playInterval = setInterval(() => {
                 let idx = parseInt(slider.value) + 1;
-                if (idx >= replayFrames.length) { playPauseBtn.click(); return; }
-                slider.value = idx; currentReplayTime = replayFrames[idx].time;
+                if (idx >= maxReplayFrames) { playPauseBtn.click(); return; }
+                slider.value = idx; 
+                
+                const refReplay = replayList[0];
+                const safeIdx = Math.min(idx, refReplay.frames.length - 1);
+                currentReplayTime = refReplay.frames[safeIdx]?.time || idx;
+                
                 document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
-                updateReplayCanvas();
+                drawAllReplayCanvases();
             }, 1000 / playSpeed); 
         }
     });
@@ -1601,103 +1684,85 @@
     document.getElementById('speed3xBtn').addEventListener('click', () => setSpeed(3, 'speed3xBtn'));
     document.getElementById('speed5xBtn').addEventListener('click', () => setSpeed(5, 'speed5xBtn'));
 
-    function updateReplayCanvas() {
-        const canvas = document.getElementById('replay-canvas');
-        if(!canvas) return;
-        const ctxL = canvas.getContext('2d');
-        ctxL.clearRect(0, 0, canvas.width, canvas.height);
-        
-        ctxL.strokeStyle = '#1e293b'; ctxL.lineWidth = 1; ctxL.beginPath();
-        ctxL.moveTo(0, rPanY); ctxL.lineTo(canvas.width, rPanY); ctxL.moveTo(rPanX, 0); ctxL.lineTo(rPanX, canvas.height); ctxL.stroke();
-        const maxDistPx = Math.max(Math.hypot(rPanX, rPanY), Math.hypot(canvas.width - rPanX, rPanY), Math.hypot(rPanX, canvas.height - rPanY), Math.hypot(canvas.width - rPanX, canvas.height - rPanY));
-        const maxCables = Math.ceil((maxDistPx / rViewScale) / 40);
-        
-        ctxL.setLineDash([4, 4]);
-        for (let i = 10; i <= maxCables; i += 10) {
-            const radius_px = (i * 40) * rViewScale; 
-            ctxL.strokeStyle = (i % 20 === 0) ? '#2d3f5a' : '#1d283a'; ctxL.lineWidth = (i % 20 === 0) ? 1.5 : 1;
-            ctxL.beginPath(); ctxL.arc(rPanX, rPanY, radius_px, 0, Math.PI * 2); ctxL.stroke();
-            if (i % 20 === 0 && radius_px > 15 && radius_px < Math.max(canvas.width, canvas.height) * 1.5) {
-                ctxL.fillStyle = '#334155'; ctxL.font = '10px monospace'; ctxL.textAlign='center';
-                ctxL.fillText(`${(i/10).toFixed(1)} NM`, rPanX + 4, rPanY - radius_px + 12);
-            }
-        }
-        ctxL.setLineDash([]);
+    function drawAllReplayCanvases() {
+        if (replayList.length === 0) return;
+        const globalIdx = parseInt(document.getElementById('timeSlider').value);
 
-        const mass = massList[0];
-        if (mass) {
-            if (mass.osData.waypoints.length > 0) {
-                ctxL.strokeStyle = '#0ea5e9'; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
-                ctxL.beginPath(); ctxL.moveTo(rPanX, rPanY); 
-                mass.osData.waypoints.forEach(g => ctxL.lineTo(rPanX + g.x * rViewScale, rPanY + g.z * rViewScale));
-                ctxL.stroke(); ctxL.setLineDash([]);
-                mass.osData.waypoints.forEach((g) => {
-                    const cx = rPanX + (g.x * rViewScale); const cy = rPanY + (g.z * rViewScale);
-                    ctxL.shadowColor = '#0ea5e9'; ctxL.shadowBlur = 10; ctxL.fillStyle = '#0ea5e9';
-                    ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill(); ctxL.shadowBlur = 0;
-                });
-            }
+        replayList.forEach((replay, i) => {
+            const canvas = document.getElementById(`replay-canvas-${i}`);
+            if(!canvas) return;
+            const ctxL = canvas.getContext('2d');
+            ctxL.clearRect(0, 0, canvas.width, canvas.height);
             
-            mass.targets.forEach(t => {
-                if (t.waypoints.length > 0) {
-                    ctxL.strokeStyle = '#ef4444'; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
-                    ctxL.beginPath(); ctxL.moveTo(rPanX + t.x * rViewScale, rPanY + t.z * rViewScale);
-                    t.waypoints.forEach(g => ctxL.lineTo(rPanX + g.x * rViewScale, rPanY + g.z * rViewScale));
-                    ctxL.stroke(); ctxL.setLineDash([]);
-                    t.waypoints.forEach((g) => {
-                        const cx = rPanX + (g.x * rViewScale); const cy = rPanY + (g.z * rViewScale);
-                        ctxL.shadowColor = '#ef4444'; ctxL.shadowBlur = 10; ctxL.fillStyle = '#ef4444';
-                        ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill(); ctxL.shadowBlur = 0;
-                    });
+            ctxL.strokeStyle = '#1e293b'; ctxL.lineWidth = 1; ctxL.beginPath();
+            ctxL.moveTo(0, replay.panY); ctxL.lineTo(canvas.width, replay.panY); 
+            ctxL.moveTo(replay.panX, 0); ctxL.lineTo(replay.panX, canvas.height); ctxL.stroke();
+            
+            const maxDistPx = Math.max(Math.hypot(replay.panX, replay.panY), Math.hypot(canvas.width - replay.panX, replay.panY), Math.hypot(replay.panX, canvas.height - replay.panY), Math.hypot(canvas.width - replay.panX, canvas.height - replay.panY));
+            const maxCables = Math.ceil((maxDistPx / replay.viewScale) / 40);
+            
+            ctxL.setLineDash([4, 4]);
+            for (let j = 10; j <= maxCables; j += 10) {
+                const radius_px = (j * 40) * replay.viewScale; 
+                ctxL.strokeStyle = (j % 20 === 0) ? '#2d3f5a' : '#1d283a'; ctxL.lineWidth = (j % 20 === 0) ? 1.5 : 1;
+                ctxL.beginPath(); ctxL.arc(replay.panX, replay.panY, radius_px, 0, Math.PI * 2); ctxL.stroke();
+                if (j % 20 === 0 && radius_px > 15 && radius_px < Math.max(canvas.width, canvas.height) * 1.5) {
+                    ctxL.fillStyle = '#334155'; ctxL.font = '10px monospace'; ctxL.textAlign='center';
+                    ctxL.fillText(`${(j/10).toFixed(1)} NM`, replay.panX + 4, replay.panY - radius_px + 12);
                 }
-            });
-        }
-
-        if (replayFrames.length === 0) return;
-
-        const idx = parseInt(document.getElementById('timeSlider').value);
-        
-        ctxL.strokeStyle = 'rgba(16, 185, 129, 0.5)';
-        ctxL.lineWidth = 3;
-        ctxL.beginPath();
-        let firstPt = true;
-        for (let i = 0; i <= idx; i++) {
-            const f = replayFrames[i];
-            const os = f.ships.find(s => s.name === 'OS' || s.name.startsWith('MASS'));
-            if (os) {
-                const cx = rPanX + os.x * rViewScale;
-                const cy = rPanY + os.z * rViewScale;
-                if (firstPt) { ctxL.moveTo(cx, cy); firstPt = false; }
-                else { ctxL.lineTo(cx, cy); }
             }
-        }
-        ctxL.stroke();
+            ctxL.setLineDash([]);
 
-        const frame = replayFrames[idx];
-        frame.ships.forEach(ship => {
-            const cx = rPanX + (ship.x * rViewScale);
-            const cy = rPanY + (ship.z * rViewScale);
-            const isOS = ship.name === 'OS' || ship.name.startsWith('MASS');
-            const color = isOS ? '#10b981' : '#ef4444';
-            const wpDist = ship.sog * VECTOR_SCALE;
+            // Draw tracks
+            const localIdx = Math.min(globalIdx, replay.frames.length - 1);
             
-            if (wpDist > 0) {
-                const rad = (ship.cog - 90) * Math.PI / 180;
-                const wpX = cx + Math.cos(rad) * (wpDist * rViewScale); const wpY = cy + Math.sin(rad) * (wpDist * rViewScale);
-                ctxL.strokeStyle = color; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
-                ctxL.beginPath(); ctxL.moveTo(cx, cy); ctxL.lineTo(wpX, wpY); ctxL.stroke(); ctxL.setLineDash([]);
-                ctxL.save(); ctxL.translate(wpX, wpY); ctxL.rotate(ship.cog * Math.PI / 180);
-                ctxL.fillStyle = color; ctxL.beginPath(); ctxL.moveTo(0, -6); ctxL.lineTo(4, 6); ctxL.lineTo(-4, 6); ctxL.fill(); ctxL.restore();
+            ctxL.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+            ctxL.lineWidth = 3;
+            ctxL.beginPath();
+            let firstPt = true;
+            
+            for (let fIdx = 0; fIdx <= localIdx; fIdx++) {
+                const f = replay.frames[fIdx];
+                const os = f.ships.find(s => s.name === 'OS' || s.name.startsWith('MASS'));
+                if (os) {
+                    const cx = replay.panX + os.x * replay.viewScale;
+                    const cy = replay.panY + os.z * replay.viewScale;
+                    if (firstPt) { ctxL.moveTo(cx, cy); firstPt = false; }
+                    else { ctxL.lineTo(cx, cy); }
+                }
             }
+            ctxL.stroke();
 
-            ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate(ship.hdg * Math.PI / 180); ctxL.scale(rViewScale, rViewScale); 
-            ctxL.shadowColor = color; ctxL.shadowBlur = 10; ctxL.fillStyle = color;
-            const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
-            ctxL.beginPath(); ctxL.moveTo(0, -halfLen); ctxL.lineTo(halfWid, -halfLen + 12); ctxL.lineTo(halfWid, halfLen); ctxL.lineTo(-halfWid, halfLen); ctxL.lineTo(-halfWid, -halfLen + 12); ctxL.closePath(); ctxL.fill();
-            ctxL.lineWidth = 1 / rViewScale; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.restore();
+            // Draw Ships
+            const frame = replay.frames[localIdx];
+            if (!frame) return;
 
-            ctxL.fillStyle = isOS ? '#10b981' : '#f87171'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
-            ctxL.fillText(isOS ? 'OS' : ship.name, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * rViewScale + 15));
+            frame.ships.forEach(ship => {
+                const cx = replay.panX + (ship.x * replay.viewScale);
+                const cy = replay.panY + (ship.z * replay.viewScale);
+                const isOS = ship.name === 'OS' || ship.name.startsWith('MASS');
+                const color = isOS ? '#10b981' : '#ef4444';
+                const wpDist = ship.sog * VECTOR_SCALE;
+                
+                if (wpDist > 0) {
+                    const rad = (ship.cog - 90) * Math.PI / 180;
+                    const wpX = cx + Math.cos(rad) * (wpDist * replay.viewScale); 
+                    const wpY = cy + Math.sin(rad) * (wpDist * replay.viewScale);
+                    ctxL.strokeStyle = color; ctxL.lineWidth = 1.5; ctxL.setLineDash([4, 4]);
+                    ctxL.beginPath(); ctxL.moveTo(cx, cy); ctxL.lineTo(wpX, wpY); ctxL.stroke(); ctxL.setLineDash([]);
+                    ctxL.save(); ctxL.translate(wpX, wpY); ctxL.rotate(ship.cog * Math.PI / 180);
+                    ctxL.fillStyle = color; ctxL.beginPath(); ctxL.moveTo(0, -6); ctxL.lineTo(4, 6); ctxL.lineTo(-4, 6); ctxL.fill(); ctxL.restore();
+                }
+
+                ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate(ship.hdg * Math.PI / 180); ctxL.scale(replay.viewScale, replay.viewScale); 
+                ctxL.shadowColor = color; ctxL.shadowBlur = 10; ctxL.fillStyle = color;
+                const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
+                ctxL.beginPath(); ctxL.moveTo(0, -halfLen); ctxL.lineTo(halfWid, -halfLen + 12); ctxL.lineTo(halfWid, halfLen); ctxL.lineTo(-halfWid, halfLen); ctxL.lineTo(-halfWid, -halfLen + 12); ctxL.closePath(); ctxL.fill();
+                ctxL.lineWidth = 1 / replay.viewScale; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.restore();
+
+                ctxL.fillStyle = isOS ? '#10b981' : '#f87171'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
+                ctxL.fillText(isOS ? 'OS' : ship.name, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * replay.viewScale + 15));
+            });
         });
     }
 
