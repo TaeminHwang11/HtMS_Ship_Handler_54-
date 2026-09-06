@@ -924,19 +924,26 @@
             }
         }
 
-        ecdisEl.addEventListener('mousedown', (e) => handleRadarDragStart(e.clientX, e.clientY));
-        ecdisEl.addEventListener('mousemove', (e) => handleRadarDragMove(e.clientX, e.clientY));
-        ecdisEl.addEventListener('mouseup', () => { isRadarDragging = false; });
-        ecdisEl.addEventListener('mouseleave', () => { isRadarDragging = false; });
+        ecdisEl.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            handleRadarDragStart(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(isRadarDragging) handleRadarDragMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => { isRadarDragging = false; });
 
         ecdisEl.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
             handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
         }, {passive: false});
-        ecdisEl.addEventListener('touchmove', (e) => {
-            if(isRadarDragging) e.preventDefault();
-            handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        window.addEventListener('touchmove', (e) => {
+            if(isRadarDragging) {
+                e.preventDefault();
+                handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
         }, {passive: false});
-        ecdisEl.addEventListener('touchend', () => { isRadarDragging = false; });
+        window.addEventListener('touchend', () => { isRadarDragging = false; });
 
         ecdisEl.addEventListener('click', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
