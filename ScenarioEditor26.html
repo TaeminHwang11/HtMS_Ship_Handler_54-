@@ -168,12 +168,12 @@
             }
         }
 
-        #driveFileSelect {
+        #driveFileSelect, #scenarioDriveSelect {
             height: 140px; 
             overflow-y: auto;
         }
-        #driveFileSelect option { padding: 4px; }
-        #driveFileSelect option:checked { background: var(--accent-cyan); color: #000; }
+        #driveFileSelect option, #scenarioDriveSelect option { padding: 4px; }
+        #driveFileSelect option:checked, #scenarioDriveSelect option:checked { background: var(--accent-cyan); color: #000; }
     </style>
 </head>
 <body>
@@ -202,11 +202,21 @@
         </select>
     </div>
 
+    <!-- 구글 드라이브 기반 시나리오 불러오기/저장 버튼 -->
     <div class="btn-group" style="flex-direction: row; margin-bottom: 15px;">
-        <button class="tool-btn btn-load" id="loadJsonBtn" style="flex: 1;">JSON 불러오기</button>
-        <button class="tool-btn" id="saveBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">JSON 저장</button>
+        <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">시나리오 불러오기</button>
+        <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">시나리오 저장하기</button>
     </div>
-    <input type="file" id="jsonInput" accept=".json" style="display: none;">
+    
+    <!-- 구글 드라이브 시나리오 목록 선택 컨테이너 (숨김 처리됨) -->
+    <div id="scenarioDriveLoadContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
+        <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">구글 드라이브 시나리오 목록</label>
+        <select id="scenarioDriveSelect" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
+            <option value="">목록 로딩 중...</option>
+        </select>
+        <button class="tool-btn" id="loadSelectedScenarioBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">선택 시나리오 불러오기</button>
+        <div id="scenarioLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">통신 중... 잠시만 기다려주세요.</div>
+    </div>
 
     <div class="tab-menu" id="tabMenu">
         <button class="tab-btn active" data-mode="editor">SCENARIO EDITOR</button>
@@ -315,8 +325,8 @@
 </div>
 
 <script>
-    // 📌 구글 앱스 스크립트 웹 앱 URL
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZtLBiZAcyQEk9dUmlhpfcylqZ3RIuXpmFGOadtriT2Xnz2SXa-CvxXC-EVntIZvSVjw/exec";
+    // 📌 구글 앱스 스크립트 웹 앱 URL (사용자 제공 URL 적용)
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
 
     const HTMS_SHIP_TYPES = [
         "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", "CargoShip1", "CargoShip2",
@@ -1181,7 +1191,253 @@
         }
     }
 
-    document.getElementById('saveBtn').addEventListener('click', async () => {
+    // ==========================================
+    // 공통 시나리오 파싱 적용 로직
+    // ==========================================
+    function applyLoadedScenario(parsed) {
+        const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
+        const isIncomingHTMSArray = Array.isArray(parsed);
+        const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && !!parsed.os;
+
+        if (parsed.environment) {
+            if (parsed.environment.wind) {
+                globalEnv.windDir = Number(parsed.environment.wind.dir ?? 45);
+                globalEnv.windSpd = Number(parsed.environment.wind.spd ?? 12.5);
+            }
+            if (parsed.environment.current) {
+                globalEnv.currDir = Number(parsed.environment.current.dir ?? 0);
+                globalEnv.currSpd = Number(parsed.environment.current.spd ?? 0.0);
+            }
+            document.getElementById('envWindDir').value = globalEnv.windDir;
+            document.getElementById('envWindSpd').value = globalEnv.windSpd;
+            document.getElementById('envCurrDir').value = globalEnv.currDir;
+            document.getElementById('envCurrSpd').value = globalEnv.currSpd;
+        }
+
+        if (simMode === 'HTMS') {
+            const newMass = createMassState(34.800000, 126.400000);
+            if (isIncomingMASS) {
+                let osShipMASS = parsed.ships.find(s => s.isMASS === 1) || parsed.ships[0];
+                let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
+                if (osWpSet && osWpSet.WayPoints.length > 0) {
+                    newMass.originLat = Number(osWpSet.WayPoints[0].Latitude) || 34.8;
+                    newMass.originLon = Number(osWpSet.WayPoints[0].Longitude) || 126.4;
+                }
+                const fromLatLon = (lat, lon) => {
+                    const dxM = (lon - newMass.originLon) * 111111 * Math.cos(newMass.originLat * Math.PI / 180);
+                    const dzM = -(lat - newMass.originLat) * 111111;
+                    return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                };
+                newMass.osData = { type: osShipMASS.shipType || 'ContainerShip1', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
+                if (osWpSet && osWpSet.WayPoints.length > 1) {
+                    for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
+                }
+                parsed.ships.filter(s => s.isMASS !== 1).forEach(s => {
+                    let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+                    if (!ws || ws.WayPoints.length === 0) return;
+                    let startPt = fromLatLon(Number(ws.WayPoints[0].Latitude), Number(ws.WayPoints[0].Longitude));
+                    let waypoints = [];
+                    for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
+                    const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
+                    newMass.targets.push({ type: s.shipType || 'ContainerShip1', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                });
+            } else if (isIncomingHTMSArray) {
+                parsed.forEach(item => {
+                    if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
+                    else {
+                        const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
+                        newMass.targets.push({ type: 'ContainerShip1', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
+                    }
+                });
+            } else if (isIncomingHTMSObj) {
+                if (parsed.origin) { 
+                    newMass.originLat = Number(parsed.origin.lat) || 34.8; 
+                    newMass.originLon = Number(parsed.origin.lon) || 126.4; 
+                }
+                const safeOs = parsed.os || {};
+                newMass.osData = { 
+                    type: safeOs.type || 'ContainerShip1', 
+                    hdg: Number(safeOs.hdg) || 0, 
+                    spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
+                    waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                };
+                newMass.targets = (parsed.targets || []).map(t => {
+                    const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
+                    return {
+                        type: t.type || 'ContainerShip1',
+                        x: Number(t.x) || 0, z: Number(t.z) || 0,
+                        hdg: Number(t.hdg) || 0,
+                        spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
+                        waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                    };
+                });
+            }
+            massList = [newMass];
+        } else { 
+            massList = [];
+            if (isIncomingMASS) {
+                const osShips = parsed.ships.filter(s => s.isMASS === 1);
+                if (osShips.length === 0) throw new Error("시나리오에 isMASS=1 인 선박이 없습니다.");
+                osShips.forEach(osShipMASS => {
+                    let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
+                    let oLat = 34.800000; let oLon = 126.400000;
+                    if (osWpSet && osWpSet.WayPoints.length > 0) { oLat = Number(osWpSet.WayPoints[0].Latitude) || oLat; oLon = Number(osWpSet.WayPoints[0].Longitude) || oLon; }
+                    const newMass = createMassState(oLat, oLon);
+                    const fromLatLon = (lat, lon) => {
+                        const dxM = (lon - oLon) * 111111 * Math.cos(oLat * Math.PI / 180);
+                        const dzM = -(lat - oLat) * 111111;
+                        return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                    };
+                    newMass.osData = { type: osShipMASS.shipType || 'CNTR_2700', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
+                    if (osWpSet && osWpSet.WayPoints.length > 1) {
+                        for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
+                    }
+                    massList.push(newMass);
+                });
+                const targetShips = parsed.ships.filter(s => s.isMASS !== 1);
+                targetShips.forEach(s => {
+                    let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+                    if (!ws || ws.WayPoints.length === 0) return;
+                    const tLat = Number(ws.WayPoints[0].Latitude); const tLon = Number(ws.WayPoints[0].Longitude);
+                    let bestMassIdx = 0; let minDist = Infinity;
+                    massList.forEach((mass, i) => {
+                        const dist = Math.hypot(mass.originLat - tLat, mass.originLon - tLon);
+                        if (dist < minDist) { minDist = dist; bestMassIdx = i; }
+                    });
+                    const targetMass = massList[bestMassIdx];
+                    const fromLatLon = (lat, lon) => {
+                        const dxM = (lon - targetMass.originLon) * 111111 * Math.cos(targetMass.originLat * Math.PI / 180);
+                        const dzM = -(lat - targetMass.originLat) * 111111;
+                        return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+                    };
+                    let startPt = fromLatLon(tLat, tLon);
+                    let waypoints = [];
+                    for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
+                    const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
+                    targetMass.targets.push({ type: s.shipType || 'CNTR_2700', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
+                });
+            } else {
+                const newMass = createMassState(34.800000, 126.400000);
+                if (isIncomingHTMSArray) {
+                    parsed.forEach(item => {
+                        if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
+                        else {
+                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
+                            newMass.targets.push({ type: 'CNTR_2700', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
+                        }
+                    });
+                } else if (isIncomingHTMSObj) {
+                    if (parsed.origin) { 
+                        newMass.originLat = Number(parsed.origin.lat) || 34.8; 
+                        newMass.originLon = Number(parsed.origin.lon) || 126.4; 
+                    }
+                    const safeOs = parsed.os || {};
+                    newMass.osData = { 
+                        type: safeOs.type || 'CNTR_2700', 
+                        hdg: Number(safeOs.hdg) || 0, 
+                        spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
+                        waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                    };
+                    newMass.targets = (parsed.targets || []).map(t => {
+                        const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
+                        return {
+                            type: t.type || 'CNTR_2700',
+                            x: Number(t.x) || 0, z: Number(t.z) || 0,
+                            hdg: Number(t.hdg) || 0,
+                            spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
+                            waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
+                        };
+                    });
+                }
+                massList.push(newMass);
+            }
+        }
+        
+        activeMassIndex = 0;
+        updateShipTypeOptions();
+        if (currentMode === 'editor') renderGrid(); 
+        else renderReplayGrid();
+    }
+
+
+    // ==========================================
+    // 시나리오 불러오기 로직 (구글 드라이브)
+    // ==========================================
+    document.getElementById('loadScenarioBtn').addEventListener('click', () => {
+        const container = document.getElementById('scenarioDriveLoadContainer');
+        const select = document.getElementById('scenarioDriveSelect');
+        const msg = document.getElementById('scenarioLoadingMsg');
+        
+        // 창 열기/닫기 토글
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+        msg.style.display = 'block';
+        msg.textContent = "구글 드라이브에서 시나리오 목록을 가져오는 중...";
+        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        select.disabled = true;
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=list`)
+            .then(res => res.json())
+            .then(files => {
+                select.innerHTML = '';
+                if(files.length === 0) {
+                    select.innerHTML = '<option value="">저장된 시나리오가 없습니다.</option>';
+                } else {
+                    files.forEach(file => {
+                        const opt = document.createElement('option');
+                        opt.value = file.id;
+                        opt.textContent = file.name;
+                        select.appendChild(opt);
+                    });
+                }
+                select.disabled = false;
+                msg.style.display = 'none';
+            })
+            .catch(err => {
+                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 권한을 확인하세요.";
+                msg.style.color = "var(--accent-red)";
+                console.error(err);
+            });
+    });
+
+    document.getElementById('loadSelectedScenarioBtn').addEventListener('click', async () => {
+        const select = document.getElementById('scenarioDriveSelect');
+        const msg = document.getElementById('scenarioLoadingMsg');
+        
+        if (!select.value) {
+            alert("불러올 시나리오 파일을 선택해주세요.");
+            return;
+        }
+
+        msg.style.display = 'block';
+        msg.style.color = "var(--accent-yellow)";
+        msg.textContent = "시나리오 데이터를 다운로드하는 중...";
+        
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fileId=${select.value}`);
+            const parsed = await res.json();
+            
+            applyLoadedScenario(parsed);
+
+            msg.style.display = 'none';
+            document.getElementById('scenarioDriveLoadContainer').style.display = 'none';
+            alert("시나리오를 성공적으로 불러왔습니다.");
+        } catch (err) {
+            msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
+            msg.style.color = "var(--accent-red)";
+            console.error(err);
+            alert("JSON 파싱 오류: 데이터 형식이 맞지 않습니다.\n" + err.message);
+        }
+    });
+
+    // ==========================================
+    // 시나리오 저장하기 로직 (구글 드라이브 & 자동 채번)
+    // ==========================================
+    document.getElementById('saveScenarioBtn').addEventListener('click', async () => {
         try {
             generateJSONOutput(); 
             const dataStr = document.getElementById('jsonOutput').value;
@@ -1189,202 +1445,66 @@
                 alert("저장할 시나리오 데이터가 없습니다. (타선 및 맵 정보 확인)");
                 return;
             }
+            
+            const btn = document.getElementById('saveScenarioBtn');
+            btn.textContent = '번호 확인 중...';
+            btn.disabled = true;
+            
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
-            const fileName = `${prefix}${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
-            const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+            
+            // 1. 드라이브 목록을 조회하여 최대 번호 계산
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=list`);
+            const files = await res.json();
+            
+            let maxNum = 0;
+            files.forEach(f => {
+                if(f.name.startsWith(prefix)) {
+                    // HTMS_Scenario_005.json 에서 숫자 부분 추출
+                    const match = f.name.match(/_(\d+)\.json$/);
+                    if(match) {
+                        const num = parseInt(match[1], 10);
+                        if(num > maxNum) maxNum = num;
+                    }
+                }
+            });
+            
+            const nextNumStr = String(maxNum + 1).padStart(3, '0');
+            const suggestedName = `${prefix}${nextNumStr}.json`;
 
-            if (window.showSaveFilePicker) {
-                try {
-                    const handle = await window.showSaveFilePicker({ suggestedName: fileName, types: [{ accept: { 'application/json': ['.json'] } }]});
-                    const writable = await handle.createWritable(); 
-                    await writable.write(blob); 
-                    await writable.close();
-                } catch (err) {}
+            btn.textContent = '시나리오 저장하기';
+            btn.disabled = false;
+
+            // 2. 파일명 확인 팝업창
+            const finalName = prompt("저장할 시나리오 파일명을 확인하거나 수정하세요.", suggestedName);
+            if (!finalName) return; // 취소
+
+            btn.textContent = '저장 중...';
+            btn.disabled = true;
+
+            // 3. POST 요청으로 드라이브에 저장
+            const postRes = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    fileName: finalName,
+                    fileContent: dataStr
+                })
+            });
+
+            const postData = await postRes.json();
+            
+            if(postData.success) {
+                alert(`성공적으로 저장되었습니다!\n파일명: ${postData.fileName}`);
             } else {
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                alert(`저장에 실패했습니다: ${postData.error}`);
             }
+
         } catch (e) {
             alert("저장 중 오류가 발생했습니다: " + e.message);
+        } finally {
+            const btn = document.getElementById('saveScenarioBtn');
+            btn.textContent = '시나리오 저장하기';
+            btn.disabled = false;
         }
-    });
-
-    document.getElementById('loadJsonBtn').addEventListener('click', () => {
-        document.getElementById('jsonInput').removeAttribute('multiple');
-        document.getElementById('jsonInput').click();
-    });
-    
-    document.getElementById('jsonInput').addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const parsed = JSON.parse(event.target.result);
-                const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
-                const isIncomingHTMSArray = Array.isArray(parsed);
-                const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && !!parsed.os;
-
-                if (parsed.environment) {
-                    if (parsed.environment.wind) {
-                        globalEnv.windDir = Number(parsed.environment.wind.dir ?? 45);
-                        globalEnv.windSpd = Number(parsed.environment.wind.spd ?? 12.5);
-                    }
-                    if (parsed.environment.current) {
-                        globalEnv.currDir = Number(parsed.environment.current.dir ?? 0);
-                        globalEnv.currSpd = Number(parsed.environment.current.spd ?? 0.0);
-                    }
-                    document.getElementById('envWindDir').value = globalEnv.windDir;
-                    document.getElementById('envWindSpd').value = globalEnv.windSpd;
-                    document.getElementById('envCurrDir').value = globalEnv.currDir;
-                    document.getElementById('envCurrSpd').value = globalEnv.currSpd;
-                }
-
-                if (simMode === 'HTMS') {
-                    const newMass = createMassState(34.800000, 126.400000);
-                    if (isIncomingMASS) {
-                        let osShipMASS = parsed.ships.find(s => s.isMASS === 1) || parsed.ships[0];
-                        let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
-                        if (osWpSet && osWpSet.WayPoints.length > 0) {
-                            newMass.originLat = Number(osWpSet.WayPoints[0].Latitude) || 34.8;
-                            newMass.originLon = Number(osWpSet.WayPoints[0].Longitude) || 126.4;
-                        }
-                        const fromLatLon = (lat, lon) => {
-                            const dxM = (lon - newMass.originLon) * 111111 * Math.cos(newMass.originLat * Math.PI / 180);
-                            const dzM = -(lat - newMass.originLat) * 111111;
-                            return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
-                        };
-                        newMass.osData = { type: osShipMASS.shipType || 'ContainerShip1', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
-                        if (osWpSet && osWpSet.WayPoints.length > 1) {
-                            for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
-                        }
-                        parsed.ships.filter(s => s.isMASS !== 1).forEach(s => {
-                            let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
-                            if (!ws || ws.WayPoints.length === 0) return;
-                            let startPt = fromLatLon(Number(ws.WayPoints[0].Latitude), Number(ws.WayPoints[0].Longitude));
-                            let waypoints = [];
-                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
-                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
-                            newMass.targets.push({ type: s.shipType || 'ContainerShip1', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
-                        });
-                    } else if (isIncomingHTMSArray) {
-                        parsed.forEach(item => {
-                            if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
-                            else {
-                                const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
-                                newMass.targets.push({ type: 'ContainerShip1', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
-                            }
-                        });
-                    } else if (isIncomingHTMSObj) {
-                        if (parsed.origin) { 
-                            newMass.originLat = Number(parsed.origin.lat) || 34.8; 
-                            newMass.originLon = Number(parsed.origin.lon) || 126.4; 
-                        }
-                        const safeOs = parsed.os || {};
-                        newMass.osData = { 
-                            type: safeOs.type || 'ContainerShip1', 
-                            hdg: Number(safeOs.hdg) || 0, 
-                            spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
-                            waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
-                        };
-                        newMass.targets = (parsed.targets || []).map(t => {
-                            const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
-                            return {
-                                type: t.type || 'ContainerShip1',
-                                x: Number(t.x) || 0, z: Number(t.z) || 0,
-                                hdg: Number(t.hdg) || 0,
-                                spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
-                                waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
-                            };
-                        });
-                    }
-                    massList = [newMass];
-                } else { 
-                    massList = [];
-                    if (isIncomingMASS) {
-                        const osShips = parsed.ships.filter(s => s.isMASS === 1);
-                        if (osShips.length === 0) throw new Error("시나리오에 isMASS=1 인 선박이 없습니다.");
-                        osShips.forEach(osShipMASS => {
-                            let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
-                            let oLat = 34.800000; let oLon = 126.400000;
-                            if (osWpSet && osWpSet.WayPoints.length > 0) { oLat = Number(osWpSet.WayPoints[0].Latitude) || oLat; oLon = Number(osWpSet.WayPoints[0].Longitude) || oLon; }
-                            const newMass = createMassState(oLat, oLon);
-                            const fromLatLon = (lat, lon) => {
-                                const dxM = (lon - oLon) * 111111 * Math.cos(oLat * Math.PI / 180);
-                                const dzM = -(lat - oLat) * 111111;
-                                return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
-                            };
-                            newMass.osData = { type: osShipMASS.shipType || 'CNTR_2700', hdg: Number(osShipMASS.initHeading) || 0, spd: Number(osShipMASS.initSpeed) || 10, waypoints: [] };
-                            if (osWpSet && osWpSet.WayPoints.length > 1) {
-                                for (let i = 1; i < osWpSet.WayPoints.length; i++) newMass.osData.waypoints.push(fromLatLon(Number(osWpSet.WayPoints[i].Latitude), Number(osWpSet.WayPoints[i].Longitude)));
-                            }
-                            massList.push(newMass);
-                        });
-                        const targetShips = parsed.ships.filter(s => s.isMASS !== 1);
-                        targetShips.forEach(s => {
-                            let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
-                            if (!ws || ws.WayPoints.length === 0) return;
-                            const tLat = Number(ws.WayPoints[0].Latitude); const tLon = Number(ws.WayPoints[0].Longitude);
-                            let bestMassIdx = 0; let minDist = Infinity;
-                            massList.forEach((mass, i) => {
-                                const dist = Math.hypot(mass.originLat - tLat, mass.originLon - tLon);
-                                if (dist < minDist) { minDist = dist; bestMassIdx = i; }
-                            });
-                            const targetMass = massList[bestMassIdx];
-                            const fromLatLon = (lat, lon) => {
-                                const dxM = (lon - targetMass.originLon) * 111111 * Math.cos(targetMass.originLat * Math.PI / 180);
-                                const dzM = -(lat - targetMass.originLat) * 111111;
-                                return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
-                            };
-                            let startPt = fromLatLon(tLat, tLon);
-                            let waypoints = [];
-                            for (let i = 1; i < ws.WayPoints.length; i++) waypoints.push(fromLatLon(Number(ws.WayPoints[i].Latitude), Number(ws.WayPoints[i].Longitude)));
-                            const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(s.initSpeed) || 10));
-                            targetMass.targets.push({ type: s.shipType || 'CNTR_2700', x: startPt.x, z: startPt.z, hdg: Number(s.initHeading) || 0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: waypoints });
-                        });
-                    } else {
-                        const newMass = createMassState(34.800000, 126.400000);
-                        if (isIncomingHTMSArray) {
-                            parsed.forEach(item => {
-                                if (item.isGoal) newMass.osData.waypoints.push({ x: Number(item.x)||0, z: Number(item.z)||0 });
-                                else {
-                                    const spd = Math.min(MAX_TARGET_SPD, Math.max(0, Number(item.spd) || 10));
-                                    newMass.targets.push({ type: 'CNTR_2700', x: Number(item.x)||0, z: Number(item.z)||0, hdg: Number(item.hdg)||0, spd: spd, wpDist: spd * VECTOR_SCALE, waypoints: [] });
-                                }
-                            });
-                        } else if (isIncomingHTMSObj) {
-                            if (parsed.origin) { 
-                                newMass.originLat = Number(parsed.origin.lat) || 34.8; 
-                                newMass.originLon = Number(parsed.origin.lon) || 126.4; 
-                            }
-                            const safeOs = parsed.os || {};
-                            newMass.osData = { 
-                                type: safeOs.type || 'CNTR_2700', 
-                                hdg: Number(safeOs.hdg) || 0, 
-                                spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
-                                waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
-                            };
-                            newMass.targets = (parsed.targets || []).map(t => {
-                                const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
-                                return {
-                                    type: t.type || 'CNTR_2700',
-                                    x: Number(t.x) || 0, z: Number(t.z) || 0,
-                                    hdg: Number(t.hdg) || 0,
-                                    spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
-                                    waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
-                                };
-                            });
-                        }
-                        massList.push(newMass);
-                    }
-                }
-                
-                activeMassIndex = 0;
-                updateShipTypeOptions();
-                
-                if (currentMode === 'editor') renderGrid(); 
-                else renderReplayGrid();
-            } catch (err) { alert('JSON 파싱 오류: 데이터 형식이 맞지 않습니다.\n' + err.message); }
-        }; reader.readAsText(file); e.target.value = '';
     });
 
     // ==========================================
