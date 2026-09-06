@@ -168,7 +168,8 @@
             }
         }
 
-        #driveFileSelect, #scenarioDriveSelect {
+        /* 리플레이 로그 다중선택 목록은 기존 고정 높이 유지 */
+        #driveFileSelect {
             height: 140px; 
             overflow-y: auto;
         }
@@ -303,7 +304,7 @@
         <input type="file" id="localJsonInput" accept=".json" multiple style="display: none;">
 
         <div id="driveFileContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE FILE LIST (다중 선택 가능)</label>
+            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE LOG LIST (다중 선택 가능)</label>
             <select id="driveFileSelect" multiple style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
                 <option value="">파일을 선택하세요...</option>
             </select>
@@ -325,8 +326,9 @@
 </div>
 
 <script>
-    // 📌 구글 앱스 스크립트 웹 앱 URL (사용자 제공 URL 적용)
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+    // 📌 독립된 두 개의 구글 앱스 스크립트 웹 앱 URL 적용
+    const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+    const REPLAY_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxES_Tm6HaYhZkF5euk9OtFyLGbOVyhjYGR3LGSGZGVxbrIueF1jMOqYctdtpVx7JluGQ/exec";
 
     const HTMS_SHIP_TYPES = [
         "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", "CargoShip1", "CargoShip2",
@@ -1191,9 +1193,6 @@
         }
     }
 
-    // ==========================================
-    // 공통 시나리오 파싱 적용 로직
-    // ==========================================
     function applyLoadedScenario(parsed) {
         const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
         const isIncomingHTMSArray = Array.isArray(parsed);
@@ -1380,9 +1379,12 @@
         select.innerHTML = '<option value="">목록 로딩 중...</option>';
         select.disabled = true;
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=list`)
+        // ★ 독립된 시나리오용 주소 사용
+        fetch(`${SCENARIO_SCRIPT_URL}?action=list`)
             .then(res => res.json())
             .then(files => {
+                if (files.error) throw new Error(files.error);
+                
                 select.innerHTML = '';
                 if(files.length === 0) {
                     select.innerHTML = '<option value="">저장된 시나리오가 없습니다.</option>';
@@ -1398,7 +1400,7 @@
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 권한을 확인하세요.";
+                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 상태를 확인하세요.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -1418,9 +1420,12 @@
         msg.textContent = "시나리오 데이터를 다운로드하는 중...";
         
         try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=load&fileId=${select.value}`);
+            // ★ 독립된 시나리오용 주소 사용
+            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${select.value}`);
             const parsed = await res.json();
             
+            if (parsed.error) throw new Error(parsed.error);
+
             applyLoadedScenario(parsed);
 
             msg.style.display = 'none';
@@ -1430,7 +1435,7 @@
             msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
             msg.style.color = "var(--accent-red)";
             console.error(err);
-            alert("JSON 파싱 오류: 데이터 형식이 맞지 않습니다.\n" + err.message);
+            alert("데이터를 불러오는 중 오류가 발생했습니다.\n" + err.message);
         }
     });
 
@@ -1452,14 +1457,15 @@
             
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
             
-            // 1. 드라이브 목록을 조회하여 최대 번호 계산
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=list`);
+            // 1. 드라이브 목록을 조회하여 최대 번호 계산 (독립된 시나리오용 주소 사용)
+            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
             const files = await res.json();
             
+            if (files.error) throw new Error(files.error);
+
             let maxNum = 0;
             files.forEach(f => {
                 if(f.name.startsWith(prefix)) {
-                    // HTMS_Scenario_005.json 에서 숫자 부분 추출
                     const match = f.name.match(/_(\d+)\.json$/);
                     if(match) {
                         const num = parseInt(match[1], 10);
@@ -1476,13 +1482,13 @@
 
             // 2. 파일명 확인 팝업창
             const finalName = prompt("저장할 시나리오 파일명을 확인하거나 수정하세요.", suggestedName);
-            if (!finalName) return; // 취소
+            if (!finalName) return; 
 
             btn.textContent = '저장 중...';
             btn.disabled = true;
 
-            // 3. POST 요청으로 드라이브에 저장
-            const postRes = await fetch(GOOGLE_SCRIPT_URL, {
+            // 3. POST 요청으로 드라이브에 저장 (독립된 시나리오용 주소 사용)
+            const postRes = await fetch(SCENARIO_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({
                     fileName: finalName,
@@ -1742,21 +1748,28 @@
         select.innerHTML = '<option value="">목록 로딩 중...</option>';
         select.disabled = true;
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=list`)
+        // ★ 독립된 리플레이용 주소 사용 (원래 로직 그대로 복원)
+        fetch(`${REPLAY_SCRIPT_URL}?action=list`)
             .then(res => res.json())
             .then(files => {
+                if (files.error) throw new Error(files.error);
+
                 select.innerHTML = '';
-                files.forEach(file => {
-                    const opt = document.createElement('option');
-                    opt.value = file.id;
-                    opt.textContent = file.name;
-                    select.appendChild(opt);
-                });
+                if(files.length === 0) {
+                    select.innerHTML = '<option value="">저장된 로그 파일이 없습니다.</option>';
+                } else {
+                    files.forEach(file => {
+                        const opt = document.createElement('option');
+                        opt.value = file.id;
+                        opt.textContent = file.name;
+                        select.appendChild(opt);
+                    });
+                }
                 select.disabled = false;
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 권한을 확인하세요.";
+                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 상태를 확인하세요.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -1785,10 +1798,14 @@
         replayList = [];
 
         try {
+            // ★ 독립된 리플레이용 주소 사용 (원래 로직 그대로 복원)
             const promises = selectedOptions.map(opt => 
-                fetch(`${GOOGLE_SCRIPT_URL}?action=load&fileId=${opt.value}`)
+                fetch(`${REPLAY_SCRIPT_URL}?action=load&fileId=${opt.value}`)
                 .then(res => res.json())
-                .then(data => createReplayData(JSON.stringify(data), opt.text.replace('.json', '')))
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    return createReplayData(JSON.stringify(data), opt.text.replace('.json', ''));
+                })
             );
 
             const results = await Promise.all(promises);
@@ -1800,6 +1817,7 @@
             msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
             msg.style.color = "var(--accent-red)";
             console.error(err);
+            alert("데이터를 불러오는 중 오류가 발생했습니다.\n" + err.message);
         }
     });
 
