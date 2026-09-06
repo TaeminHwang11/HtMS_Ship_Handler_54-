@@ -360,7 +360,7 @@
         let isCpaDropdownOpen = false;
         let currentCpaLimit = 1.0;
         
-        let isLowGraphic = false; // 그래픽 최적화 모드 상태
+        let graphicMode = 'HIGH'; // 'HIGH', 'MID', 'LOW'
 
         const wakePool = [];
         const activeWakes = [];
@@ -442,6 +442,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // 1. High Graphic Water (Water.js)
         const water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), {
             textureWidth: 512, textureHeight: 512,
             waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }),
@@ -450,10 +451,31 @@
         water.rotation.x = -Math.PI / 2; 
         scene.add(water);
 
-        // 저사양 그래픽용 단순 바다 (투명 Plane)
+        // 2. Mid Graphic Water (MeshPhongMaterial + Normal Map)
+        const midWaterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(400, 400); 
+        });
+        const midWater = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshPhongMaterial({
+                color: 0x004488, 
+                normalMap: midWaterNormals,
+                normalScale: new THREE.Vector2(1.5, 1.5),
+                specular: 0xffffff,
+                shininess: 80,
+                transparent: true,
+                opacity: 0.85
+            })
+        );
+        midWater.rotation.x = -Math.PI / 2;
+        scene.add(midWater);
+        midWater.visible = false;
+
+        // 3. Low Graphic Water (단색)
         const simpleWater = new THREE.Mesh(
             new THREE.PlaneGeometry(80000, 80000),
-            new THREE.MeshBasicMaterial({ color: 0x00E5FF, transparent: true, opacity: 0.85 })
+            new THREE.MeshBasicMaterial({ color: 0x004488, transparent: true, opacity: 0.85 })
         );
         simpleWater.rotation.x = -Math.PI / 2;
         scene.add(simpleWater);
@@ -477,7 +499,8 @@
         let daySkybox = null; 
         let nightSkybox = null;
         let isNight = false; 
-        let currentDaySeaColor = 0x00E5FF; 
+        let currentDaySeaColorHigh = 0x00E5FF;
+        let currentDaySeaColorLow = 0x004488; 
 
         // Wake effect setup
         const wakeCanvas = document.createElement('canvas');
@@ -600,8 +623,13 @@
                 ambientLight.intensity = 0.2; 
                 dirLight.intensity = 0.1; 
                 dirLight.color.setHex(0xffffff);
+                
                 water.material.uniforms['sunColor'].value.setHex(0x112233); 
                 water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
+                
+                midWater.material.color.setHex(0x0f182b);
+                midWater.material.specular.setHex(0x223344); 
+                
                 simpleWater.material.color.setHex(0x0f182b);
                 
                 const theta = Math.PI * 0.5; 
@@ -619,9 +647,14 @@
                 ambientLight.intensity = 1.5; 
                 dirLight.intensity = 1.0; 
                 dirLight.color.setHex(0xffffff);
+                
                 water.material.uniforms['sunColor'].value.setHex(0xdddddd); 
-                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
-                simpleWater.material.color.setHex(currentDaySeaColor);
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColorHigh); 
+                
+                midWater.material.color.setHex(currentDaySeaColorLow);
+                midWater.material.specular.setHex(0xffffff); 
+                
+                simpleWater.material.color.setHex(currentDaySeaColorLow);
                 
                 const elevation = 15; const azimuth = 47;
                 const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
@@ -652,7 +685,6 @@
             }
 
             if (isRadarOpen) {
-                // 패널을 항상 중앙 아래로 리셋하여 띄웁니다.
                 container.style.display = 'block';
                 container.style.left = '50%';
                 container.style.top = 'auto';
@@ -743,13 +775,26 @@
             document.getElementById('btn-sea-normal').classList.remove('active'); 
             document.getElementById('btn-sea-dark').classList.remove('active');
             
-            if (level === 'bright') { currentDaySeaColor = 0x00BFFF; document.getElementById('btn-sea-bright').classList.add('active'); } 
-            else if (level === 'normal') { currentDaySeaColor = 0x00E5FF; document.getElementById('btn-sea-normal').classList.add('active'); } 
-            else if (level === 'dark') { currentDaySeaColor = 0x253c54; document.getElementById('btn-sea-dark').classList.add('active'); }
+            if (level === 'bright') { 
+                currentDaySeaColorHigh = 0x00BFFF; 
+                currentDaySeaColorLow = 0x00E5FF; // 밝은 시안색
+                document.getElementById('btn-sea-bright').classList.add('active'); 
+            } 
+            else if (level === 'normal') { 
+                currentDaySeaColorHigh = 0x00E5FF; 
+                currentDaySeaColorLow = 0x004488; // 진한 파란색
+                document.getElementById('btn-sea-normal').classList.add('active'); 
+            } 
+            else if (level === 'dark') { 
+                currentDaySeaColorHigh = 0x253c54; 
+                currentDaySeaColorLow = 0x152535; // 어두운 파란색
+                document.getElementById('btn-sea-dark').classList.add('active'); 
+            }
             
             if (!isNight) { 
-                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
-                simpleWater.material.color.setHex(currentDaySeaColor);
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColorHigh); 
+                midWater.material.color.setHex(currentDaySeaColorLow);
+                simpleWater.material.color.setHex(currentDaySeaColorLow);
             }
         };
 
@@ -759,22 +804,35 @@
         };
 
         window.toggleGraphicMode = function() {
-            isLowGraphic = !isLowGraphic;
             const btn = document.getElementById('btn-graphic');
-            if (isLowGraphic) {
-                btn.innerText = 'GFX: LOW';
-                btn.classList.remove('active');
-                renderer.setPixelRatio(0.75); // 해상도 낮춤
+            if (graphicMode === 'HIGH') {
+                graphicMode = 'MID';
+                btn.innerText = 'GFX: MID';
+                btn.classList.add('active');
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
                 if (gameState === 'PLAYING') {
                     water.visible = false;
+                    midWater.visible = true;
+                    simpleWater.visible = false;
+                }
+            } else if (graphicMode === 'MID') {
+                graphicMode = 'LOW';
+                btn.innerText = 'GFX: LOW';
+                btn.classList.remove('active');
+                renderer.setPixelRatio(0.75); // 해상도 대폭 낮춤
+                if (gameState === 'PLAYING') {
+                    water.visible = false;
+                    midWater.visible = false;
                     simpleWater.visible = true;
                 }
             } else {
+                graphicMode = 'HIGH';
                 btn.innerText = 'GFX: HIGH';
                 btn.classList.add('active');
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // 해상도 복구
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // 원래 해상도
                 if (gameState === 'PLAYING') {
                     water.visible = true;
+                    midWater.visible = false;
                     simpleWater.visible = false;
                 }
             }
@@ -801,6 +859,7 @@
             document.body.classList.remove('ai-active'); 
             currentMode = 'NONE';
             water.visible = false; 
+            midWater.visible = false;
             simpleWater.visible = false;
             scene.background = new THREE.Color(0x000000);
             toggleRadar(false);
@@ -1239,11 +1298,17 @@
             let osFileName = MAIN_OS_FILE;
             setTimeOfDay(isNight);
             
-            if (isLowGraphic) {
+            if (graphicMode === 'LOW') {
                 water.visible = false;
+                midWater.visible = false;
                 simpleWater.visible = true;
+            } else if (graphicMode === 'MID') {
+                water.visible = false;
+                midWater.visible = true;
+                simpleWater.visible = false;
             } else {
                 water.visible = true;
+                midWater.visible = false;
                 simpleWater.visible = false;
             }
             
@@ -1772,7 +1837,7 @@
                     UI_ELEMENTS.dangerTargetTcpa.innerText = "-"; 
                     UI_ELEMENTS.dangerTargetBcr.innerText = "-";
                     
-                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`; 
+                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PRO জ্ঞCCEED ON CURRENT SAFE ROUTE</li>`; 
                     dangerChevrons.visible = false; 
                     voiceContent.innerHTML = `선장님, 설정된 안전 반경(${currentCpaLimit.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
                 }
@@ -1787,8 +1852,13 @@
             if (gameState === 'PLAYING') {
                 if (!isPaused) { 
                     const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
-                    if (!isLowGraphic) {
+                    if (graphicMode === 'HIGH') {
                         water.material.uniforms['time'].value += dt * 0.3; 
+                    } else if (graphicMode === 'MID') {
+                        if (midWater.material.normalMap) {
+                            midWater.material.normalMap.offset.x += dt * 0.02;
+                            midWater.material.normalMap.offset.y += dt * 0.03;
+                        }
                     }
                     updatePhysics(dt); 
                 } else { 
