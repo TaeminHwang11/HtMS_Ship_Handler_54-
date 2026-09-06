@@ -168,7 +168,6 @@
             }
         }
 
-        /* 리플레이 로그 다중선택 목록은 기존 고정 높이 유지 */
         #driveFileSelect {
             height: 140px; 
             overflow-y: auto;
@@ -203,15 +202,20 @@
         </select>
     </div>
 
-    <!-- 구글 드라이브 기반 시나리오 불러오기/저장 버튼 -->
-    <div class="btn-group" style="flex-direction: row; margin-bottom: 15px;">
-        <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">시나리오 불러오기</button>
-        <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">시나리오 저장하기</button>
+    <!-- 구글 드라이브 기반 시나리오 관리 (인라인 방식 팝업 제거) -->
+    <div style="background: #172033; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #334155;">
+        <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">SCENARIO FILE NAME</label>
+        <input type="text" id="scenarioNameInput" placeholder="빈칸 시 자동 번호 생성" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; margin-bottom:10px; box-sizing:border-box;">
+        
+        <div class="btn-group" style="flex-direction: row; margin-bottom: 0;">
+            <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">목록 열기</button>
+            <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">드라이브 저장</button>
+        </div>
     </div>
     
     <!-- 구글 드라이브 시나리오 목록 선택 컨테이너 (숨김 처리됨) -->
     <div id="scenarioDriveLoadContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
-        <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">구글 드라이브 시나리오 목록</label>
+        <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">시나리오 파일 선택</label>
         <select id="scenarioDriveSelect" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
             <option value="">목록 로딩 중...</option>
         </select>
@@ -326,7 +330,6 @@
 </div>
 
 <script>
-    // 📌 독립된 두 개의 구글 앱스 스크립트 웹 앱 URL 적용
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
     const REPLAY_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxES_Tm6HaYhZkF5euk9OtFyLGbOVyhjYGR3LGSGZGVxbrIueF1jMOqYctdtpVx7JluGQ/exec";
 
@@ -352,13 +355,11 @@
     let currentMode = 'editor'; 
     let isDeleteMode = false; 
 
-    // Editor Variables
     let massList = []; 
     let activeMassIndex = 0; 
     let globalOrigin = { lat: 34.800000, lon: 126.400000 };
     let globalEnv = { windDir: 45, windSpd: 12.5, currDir: 0, currSpd: 0.0 };
 
-    // Replay Variables (Multi-screen support)
     let replayList = []; 
     let maxReplayFrames = 0;
     let currentReplayTime = 0;
@@ -566,7 +567,6 @@
         if (simMode !== 'MASS') return false;
         let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
         if (total + addCount > 20) {
-            alert(`[경고] MASS 시뮬레이터는 전체 선박을 20척 초과하여 생성할 수 없습니다.\n현재 총 선박 수: ${total}척`);
             return true;
         }
         return false;
@@ -671,7 +671,7 @@
     });
 
     document.getElementById('addMassBtn').addEventListener('click', () => {
-        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        if (massList.length >= 8) return;
         if (checkShipLimit(1)) return;
         const lastOrigin = massList[massList.length - 1];
         const lat = lastOrigin.originLat;
@@ -682,7 +682,7 @@
     });
 
     document.getElementById('dupMassBtn').addEventListener('click', () => {
-        if (massList.length >= 8) return alert("최대 8척의 MASS 창만 생성할 수 있습니다.");
+        if (massList.length >= 8) return;
         const activeMass = massList[activeMassIndex];
         if (checkShipLimit(1 + activeMass.targets.length)) return;
         const newMass = JSON.parse(JSON.stringify(activeMass));
@@ -694,7 +694,7 @@
     });
 
     document.getElementById('delMassBtn').addEventListener('click', () => {
-        if (massList.length <= 1) return alert("마지막 MASS 창은 삭제할 수 없습니다.");
+        if (massList.length <= 1) return;
         massList.splice(activeMassIndex, 1);
         activeMassIndex = Math.max(0, activeMassIndex - 1);
         renderGrid();
@@ -1367,7 +1367,6 @@
         const select = document.getElementById('scenarioDriveSelect');
         const msg = document.getElementById('scenarioLoadingMsg');
         
-        // 창 열기/닫기 토글
         if (container.style.display === 'block') {
             container.style.display = 'none';
             return;
@@ -1376,10 +1375,10 @@
         container.style.display = 'block';
         msg.style.display = 'block';
         msg.textContent = "구글 드라이브에서 시나리오 목록을 가져오는 중...";
+        msg.style.color = "var(--accent-yellow)";
         select.innerHTML = '<option value="">목록 로딩 중...</option>';
         select.disabled = true;
 
-        // ★ 독립된 시나리오용 주소 사용
         fetch(`${SCENARIO_SCRIPT_URL}?action=list`)
             .then(res => res.json())
             .then(files => {
@@ -1409,18 +1408,23 @@
     document.getElementById('loadSelectedScenarioBtn').addEventListener('click', async () => {
         const select = document.getElementById('scenarioDriveSelect');
         const msg = document.getElementById('scenarioLoadingMsg');
+        const btn = document.getElementById('loadSelectedScenarioBtn');
+        const originalText = btn.textContent;
+        const originalBg = btn.style.background;
         
         if (!select.value) {
-            alert("불러올 시나리오 파일을 선택해주세요.");
+            btn.textContent = "❌ 파일을 선택해주세요";
+            btn.style.background = "#ef4444";
+            setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; }, 1500);
             return;
         }
 
         msg.style.display = 'block';
         msg.style.color = "var(--accent-yellow)";
         msg.textContent = "시나리오 데이터를 다운로드하는 중...";
+        btn.disabled = true;
         
         try {
-            // ★ 독립된 시나리오용 주소 사용
             const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${select.value}`);
             const parsed = await res.json();
             
@@ -1428,66 +1432,93 @@
 
             applyLoadedScenario(parsed);
 
-            msg.style.display = 'none';
-            document.getElementById('scenarioDriveLoadContainer').style.display = 'none';
-            alert("시나리오를 성공적으로 불러왔습니다.");
+            document.getElementById('scenarioNameInput').value = select.options[select.selectedIndex].text.replace('.json', '');
+
+            msg.textContent = "✅ 성공적으로 불러왔습니다!";
+            msg.style.color = "var(--accent-green)";
+            btn.textContent = "✅ 불러오기 완료!";
+            btn.style.background = "#10b981";
+
+            setTimeout(() => {
+                msg.style.display = 'none';
+                document.getElementById('scenarioDriveLoadContainer').style.display = 'none';
+                btn.textContent = originalText;
+                btn.style.background = originalBg;
+                btn.disabled = false;
+            }, 1500);
+
         } catch (err) {
-            msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
+            msg.textContent = "❌ 불러오기 실패!";
             msg.style.color = "var(--accent-red)";
+            btn.textContent = "❌ 에러 발생";
+            btn.style.background = "#ef4444";
             console.error(err);
-            alert("데이터를 불러오는 중 오류가 발생했습니다.\n" + err.message);
+            setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; btn.disabled = false; }, 2000);
         }
     });
 
     // ==========================================
-    // 시나리오 저장하기 로직 (구글 드라이브 & 자동 채번)
+    // 시나리오 저장하기 로직 (구글 드라이브 & 자동 채번 / 인라인 알림 처리)
     // ==========================================
     document.getElementById('saveScenarioBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('saveScenarioBtn');
+        const originalText = btn.textContent;
+        const originalBg = btn.style.background;
+        const originalColor = btn.style.color;
+
+        const showTempMessage = (text, bg) => {
+            btn.textContent = text;
+            btn.style.background = bg;
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = originalBg;
+                btn.style.color = originalColor;
+                btn.disabled = false;
+            }, 2000);
+        };
+
         try {
             generateJSONOutput(); 
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === "") {
-                alert("저장할 시나리오 데이터가 없습니다. (타선 및 맵 정보 확인)");
+                showTempMessage('❌ 저장 실패 (데이터 없음)', '#ef4444');
                 return;
             }
             
-            const btn = document.getElementById('saveScenarioBtn');
-            btn.textContent = '번호 확인 중...';
+            btn.textContent = '이름 확인 중...';
             btn.disabled = true;
             
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
+            const inputVal = document.getElementById('scenarioNameInput').value.trim();
             
-            // 1. 드라이브 목록을 조회하여 최대 번호 계산 (독립된 시나리오용 주소 사용)
-            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
-            const files = await res.json();
+            let finalName = "";
             
-            if (files.error) throw new Error(files.error);
+            if (inputVal) {
+                finalName = inputVal.endsWith('.json') ? inputVal : inputVal + '.json';
+            } else {
+                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
+                const files = await res.json();
+                
+                if (files.error) throw new Error(files.error);
 
-            let maxNum = 0;
-            files.forEach(f => {
-                if(f.name.startsWith(prefix)) {
-                    const match = f.name.match(/_(\d+)\.json$/);
-                    if(match) {
-                        const num = parseInt(match[1], 10);
-                        if(num > maxNum) maxNum = num;
+                let maxNum = 0;
+                files.forEach(f => {
+                    if(f.name.startsWith(prefix)) {
+                        const match = f.name.match(/_(\d+)\.json$/);
+                        if(match) {
+                            const num = parseInt(match[1], 10);
+                            if(num > maxNum) maxNum = num;
+                        }
                     }
-                }
-            });
-            
-            const nextNumStr = String(maxNum + 1).padStart(3, '0');
-            const suggestedName = `${prefix}${nextNumStr}.json`;
+                });
+                
+                const nextNumStr = String(maxNum + 1).padStart(3, '0');
+                finalName = `${prefix}${nextNumStr}.json`;
+            }
 
-            btn.textContent = '시나리오 저장하기';
-            btn.disabled = false;
+            btn.textContent = '드라이브 저장 중...';
 
-            // 2. 파일명 확인 팝업창
-            const finalName = prompt("저장할 시나리오 파일명을 확인하거나 수정하세요.", suggestedName);
-            if (!finalName) return; 
-
-            btn.textContent = '저장 중...';
-            btn.disabled = true;
-
-            // 3. POST 요청으로 드라이브에 저장 (독립된 시나리오용 주소 사용)
             const postRes = await fetch(SCENARIO_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -1499,17 +1530,15 @@
             const postData = await postRes.json();
             
             if(postData.success) {
-                alert(`성공적으로 저장되었습니다!\n파일명: ${postData.fileName}`);
+                document.getElementById('scenarioNameInput').value = postData.fileName.replace('.json', '');
+                showTempMessage('✅ 저장 완료!', '#10b981');
             } else {
-                alert(`저장에 실패했습니다: ${postData.error}`);
+                showTempMessage('❌ 저장 실패', '#ef4444');
             }
 
         } catch (e) {
-            alert("저장 중 오류가 발생했습니다: " + e.message);
-        } finally {
-            const btn = document.getElementById('saveScenarioBtn');
-            btn.textContent = '시나리오 저장하기';
-            btn.disabled = false;
+            console.error("저장 에러:", e);
+            showTempMessage('❌ 에러 발생', '#ef4444');
         }
     });
 
@@ -1748,7 +1777,6 @@
         select.innerHTML = '<option value="">목록 로딩 중...</option>';
         select.disabled = true;
 
-        // ★ 독립된 리플레이용 주소 사용 (원래 로직 그대로 복원)
         fetch(`${REPLAY_SCRIPT_URL}?action=list`)
             .then(res => res.json())
             .then(files => {
@@ -1781,7 +1809,11 @@
         const msg = document.getElementById('driveLoadingMsg');
 
         if (selectedOptions.length === 0) {
-            alert("파일을 선택해주세요. (Ctrl/Shift 키로 다중 선택 가능)");
+            const btn = document.getElementById('loadSelectedDriveFileBtn');
+            const orig = btn.textContent;
+            btn.textContent = '❌ 파일을 선택하세요';
+            btn.style.background = '#ef4444';
+            setTimeout(() => { btn.textContent = orig; btn.style.background = '#10b981'; }, 1500);
             return;
         }
         if (selectedOptions.length > 8) {
@@ -1798,7 +1830,6 @@
         replayList = [];
 
         try {
-            // ★ 독립된 리플레이용 주소 사용 (원래 로직 그대로 복원)
             const promises = selectedOptions.map(opt => 
                 fetch(`${REPLAY_SCRIPT_URL}?action=load&fileId=${opt.value}`)
                 .then(res => res.json())
@@ -1817,7 +1848,6 @@
             msg.textContent = "파일 데이터를 불러오는 데 실패했습니다.";
             msg.style.color = "var(--accent-red)";
             console.error(err);
-            alert("데이터를 불러오는 중 오류가 발생했습니다.\n" + err.message);
         }
     });
 
