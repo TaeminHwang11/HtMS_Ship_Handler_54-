@@ -13,13 +13,25 @@
             --port-color: #ef4444;
             --mid-color: #94a3b8;
         }
-        /* Letterboxing for 16:9 fixed aspect ratio */
-        body { margin: 0; padding: 0; background: #000; color: var(--text-main); font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        /* 화면 비율 반응형 처리를 위한 body/container 설정 */
+        body { 
+            margin: 0; padding: 0; background: #000; color: var(--text-main); 
+            font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; 
+            display: flex; justify-content: center; align-items: center; 
+            width: 100vw; height: 100vh; 
+        }
         
+        /* 1280x720 고정 크기를 기반으로 JS에서 Scale 처리 */
+        #app-container { 
+            width: 1280px; height: 720px; position: relative; 
+            background: var(--bg-dark); display: flex; flex-direction: column; 
+            overflow: hidden; box-shadow: 0 0 2vw rgba(255,255,255,0.05); 
+            transform-origin: center center; 
+        }
+
         #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.5s; }
         #start-screen h1 { font-size: 3rem; margin-bottom: 2rem; color: #38bdf8; text-align: center; }
         
-        /* Start Screen Compass SVG Animation */
         @keyframes float-compass {
             0% { transform: translateY(0) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(2deg); }
@@ -45,9 +57,6 @@
         .curve-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-size: 1rem; font-weight: bold; }
         .legend-item { display: flex; align-items: center; gap: 8px; color: #f8fafc; }
         .legend-color { width: 20px; height: 4px; border-radius: 2px; }
-
-        /* 16:9 Fixed Container */
-        #app-container { position: relative; width: 100vw; height: 56.25vw; max-width: 177.78vh; max-height: 100vh; background: var(--bg-dark); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 2vw rgba(255,255,255,0.05); }
         
         /* TOP SECTION */
         #top-section { display: flex; flex: 1; height: 85%; }
@@ -55,17 +64,14 @@
         /* Left: Compass Display */
         #compass-section { flex: 7.5; position: relative; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); box-sizing: border-box; overflow: hidden; }
         
-        /* Floating Guides around Compass */
         .compass-guide { position: absolute; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px; border: 1px solid #334155; font-size: clamp(0.7rem, 1vw, 0.9rem); color: #94a3b8; z-index: 20; white-space: nowrap; }
         #env-info { top: 20px; left: 20px; font-family: monospace; color: #7dd3fc; }
         #steady-timer { top: 20px; right: 20px; text-align: right; }
         #steady-status { font-weight: bold; font-size: clamp(1rem, 1.2vw, 1.2rem); }
         
-        /* Fixed Bottom-Left: Calculation Guide */
         #calc-guide { bottom: 20px; left: 20px; right: auto; top: auto; border-color: #0284c7; background: rgba(2, 132, 199, 0.1); }
         #calc-guide h3 { margin: 0 0 5px 0; font-size: clamp(0.8rem, 1.1vw, 0.95rem); color: #38bdf8; }
 
-        /* Fixed Bottom-Right: Tutorial Tooltip */
         #tutorial-tooltip { position: absolute; bottom: 20px; right: 20px; left: auto; top: auto; background: #0284c7; color: white; padding: 15px 20px; border-radius: 8px; font-size: clamp(0.85rem, 1.1vw, 1rem); box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; pointer-events: none; transition: opacity 0.3s; opacity: 0; text-align: left; line-height: 1.4; border: 1px solid #38bdf8; white-space: normal; word-break: keep-all; width: max-content; max-width: 380px; }
 
         .compass-ring { width: 450px; height: 450px; border-radius: 50%; border: 15px solid #334155; position: relative; background: #e2e8f0; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
@@ -174,8 +180,7 @@
             <div id="compass-section">
                 <!-- 환경 변수 -->
                 <div class="compass-guide" id="env-info">
-                    <div>Variation: <span style="color:#fcd34d;">6.0° W</span></div>
-                    <div>Gyro Err: <span style="color:#fcd34d;">1.0° E</span></div>
+                    <!-- JS에서 렌더링 됩니다 -->
                 </div>
 
                 <!-- Steady 타이머 -->
@@ -292,6 +297,15 @@
     </div>
 
     <script>
+        // 화면 크기에 맞게 앱을 비율 훼손 없이 확대/축소하는 반응형 핸들러
+        function resizeApp() {
+            const app = document.getElementById('app-container');
+            const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+            app.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeApp);
+        resizeApp(); // 초기 로딩 시 적용
+
         function updateTextDOM(id, text, color = null) {
             let el = document.getElementById(id);
             if (!el) return;
@@ -301,6 +315,18 @@
 
         let currentMode = 'BEGINNER'; 
         let mapDistLevel = 0;
+
+        let variation = -6.0;
+        let gyroError = 1.0;
+
+        function updateEnvInfo() {
+            let el = document.getElementById('env-info');
+            if (el) {
+                const varText = variation === 0 ? "0.0°" : `${Math.abs(variation).toFixed(1)}° ${variation > 0 ? 'E' : 'W'}`;
+                const geText = gyroError === 0 ? "0.0°" : `${Math.abs(gyroError).toFixed(1)}° ${gyroError > 0 ? 'E' : 'W'}`;
+                el.innerHTML = `<div>Variation: <span style="color:#fcd34d;">${varText}</span></div><div>Gyro Err: <span style="color:#fcd34d;">${geText}</span></div>`;
+            }
+        }
 
         const diffBtns = document.querySelectorAll('.diff-btn');
         diffBtns.forEach(btn => {
@@ -455,13 +481,12 @@
         let steadyTime = 0;
         const STEADY_TARGET = 300; 
         
-        // 오류 유발 플래그
         let innateB = 6.5, innateC = -4.0, innateD = 1.0; 
         let bErrorAdded = false, cErrorAdded = false, dErrorAdded = false;
 
-        const K = 2.0, T = 25.0, dt = 1.0 / 60.0, rudderSpeed = 2.0;     
+        // 수정사항 반영: 러더 속도를 2.5로 변경
+        const K = 2.0, T = 25.0, dt = 1.0 / 60.0, rudderSpeed = 2.5;     
 
-        // Map Variables
         let shipX = 0, shipY = 0;
         let shipSpeed = 15; 
         let wps = [];
@@ -481,18 +506,13 @@
             let newAngle = baseAngle + turnAng;
             let legLength = 2000 + Math.random() * 6000; 
             
-            wps.push({
-                x: p2.x + legLength * Math.sin(newAngle),
-                y: p2.y - legLength * Math.cos(newAngle)
-            });
+            wps.push({ x: p2.x + legLength * Math.sin(newAngle), y: p2.y - legLength * Math.cos(newAngle) });
         }
 
         function initMap() {
             wps = [{x: 0, y: 0}, {x: 0, y: -3000}];
             activeIdx = 0;
-            generateNextWP();
-            generateNextWP();
-            generateNextWP();
+            generateNextWP(); generateNextWP(); generateNextWP();
             shipX = 0; shipY = 0; heading = 0;
             shipTrack = [];
             updateTextDOM('map-speed', shipSpeed.toString());
@@ -538,7 +558,18 @@
             currentTutorialStep = -1;
             disableAP();
 
-            if (currentMode === 'BEGINNER') {
+            if (currentMode === 'EXPERT') {
+                // Expert 모드: Variation (-15~15), Gyro Error (-3~3) 랜덤 (0 제외)
+                let v = 0; while(v === 0) { v = Math.floor(Math.random() * 31) - 15; }
+                variation = v;
+                let g = 0; while(g === 0) { g = Math.floor(Math.random() * 7) - 3; }
+                gyroError = g;
+                
+                document.getElementById('calc-guide').style.display = 'block';
+                tutorialStep = 1; 
+            } else if (currentMode === 'BEGINNER') {
+                variation = -6.0;
+                gyroError = 1.0;
                 document.getElementById('calc-guide').style.display = 'block';
                 tutorialStep = 1; 
             } else if (currentMode === 'STEERING') {
@@ -550,6 +581,8 @@
                 initMap();
                 setTimeout(resizeMap, 100);
             }
+
+            updateEnvInfo();
 
             document.getElementById('start-screen').style.opacity = '0';
             setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; isRunning = true; requestAnimationFrame(loop); }, 500);
@@ -565,20 +598,13 @@
         function showDeviationCurve() {
             const cvs = document.getElementById('curve-canvas');
             const ctx = cvs.getContext('2d');
-            const w = cvs.width;
-            const h = cvs.height;
+            const w = cvs.width; const h = cvs.height;
             
             ctx.clearRect(0, 0, w, h);
             
-            // Draw Grid
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 1;
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 1; ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-            // X-axis: -15 to +15
             const maxDev = 15;
             for(let dev = -15; dev <= 15; dev += 5) {
                 let x = w/2 + (dev / maxDev) * (w/2 - 40);
@@ -586,7 +612,6 @@
                 ctx.fillText(dev > 0 ? dev+'°E' : (dev < 0 ? Math.abs(dev)+'°W' : '0°'), x, 10);
             }
 
-            // Y-axis: 0 to 360
             ctx.textAlign = 'right';
             for(let hdg = 0; hdg <= 360; hdg += 45) {
                 let y = 30 + (hdg / 360) * (h - 60);
@@ -594,39 +619,29 @@
                 ctx.fillText(hdg.toString().padStart(3,'0')+'°', 35, y);
             }
             
-            // Center Line
             ctx.strokeStyle = '#94a3b8';
             ctx.beginPath(); ctx.moveTo(w/2, 20); ctx.lineTo(w/2, h-20); ctx.stroke();
 
-            // Calculate current net values
             const curB = innateB + getMagnetSum('B');
             const curC = innateC + getMagnetSum('C');
             let sliderEl = document.getElementById('sphere-slider');
             const curD = innateD + (sliderEl ? parseFloat(sliderEl.value) : 0);
 
-            // Initial uncorrected values
-            const beforeB = innateB;
-            const beforeC = innateC;
-            const beforeD = innateD;
+            const beforeB = innateB, beforeC = innateC, beforeD = innateD;
 
             function drawCurve(b, c, d, color, thickness) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = thickness;
-                ctx.beginPath();
+                ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.beginPath();
                 for(let hdg = 0; hdg <= 360; hdg++) {
                     let rad = hdg * Math.PI / 180;
                     let dev = (b * Math.sin(rad)) + (c * Math.cos(rad)) + (d * Math.sin(2 * rad));
                     let x = w/2 + (dev / maxDev) * (w/2 - 40);
                     let y = 30 + (hdg / 360) * (h - 60);
-                    if (hdg === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                    if (hdg === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 }
                 ctx.stroke();
             }
 
-            // Draw Before
             drawCurve(beforeB, beforeC, beforeD, '#ef4444', 2);
-            // Draw After
             drawCurve(curB, curC, curD, '#22c55e', 3);
             
             document.getElementById('curve-modal').style.display = 'flex';
@@ -640,10 +655,27 @@
         function clearHighlights() { 
             document.querySelectorAll('.highlight-blink').forEach(el => el.classList.remove('highlight-blink')); 
         }
-        function setCalcGuide(mag, trueH, gyroH) { 
+
+        function formatDeg(val) {
+            return Math.round(val).toString().padStart(3, '0');
+        }
+
+        function getTargetGyro(magTarget) {
+            return (magTarget + variation - gyroError + 360) % 360;
+        }
+
+        function setCalcGuideDynamic(magT, trueT, gyroT) {
             let el = document.getElementById('calc-guide-text');
+            let varStr = variation >= 0 ? `${variation.toFixed(1)}°E` : `${Math.abs(variation).toFixed(1)}°W`;
+            let gyroStr = gyroError >= 0 ? `${gyroError.toFixed(1)}°E` : `${Math.abs(gyroError).toFixed(1)}°W`;
+            
+            let signVar = variation >= 0 ? '+' : '-';
+            let signGyro = gyroError >= 0 ? '-' : '+';
+
             if(el) {
-                el.innerHTML = `목표 자침(Mag) <span style='font-size:1.1rem; color:#fff;'>${mag}°</span><br>진방위 = ${mag}° + 편차(6°W) = <span style='color:#fff;'>${trueH}°</span><br>목표 자이로 = ${trueH}° - 오차(1°E) = <span style='color:#fff;'>${gyroH}°</span>`;
+                el.innerHTML = `목표 자침(Mag) <span style='font-size:1.1rem; color:#fff;'>${formatDeg(magT)}°</span><br>` +
+                               `진방위 = ${formatDeg(magT)}° ${signVar} 편차(${varStr}) = <span style='color:#fff;'>${formatDeg(trueT)}°</span><br>` +
+                               `목표 자이로 = ${formatDeg(trueT)}° ${signGyro} 오차(${gyroStr}) = <span style='color:#fff;'>${formatDeg(gyroT)}°</span>`;
             }
         }
 
@@ -651,7 +683,8 @@
             let tooltip = document.getElementById('tutorial-tooltip');
             if (!tooltip) return;
 
-            if (currentMode !== 'BEGINNER' || tutorialStep === 0) { 
+            // Beginner, Expert 모두 튜토리얼(가이드) 진행 허용
+            if ((currentMode !== 'BEGINNER' && currentMode !== 'EXPERT') || tutorialStep === 0) { 
                 if (currentTutorialStep !== 0) { 
                     tooltip.style.opacity = '0'; 
                     clearHighlights(); 
@@ -675,179 +708,199 @@
                 tutorialTimer = 0;
             }
             
+            // 각 단계별 목표 방위 사전 계산
+            let magTarget, gyroTarget, trueTarget;
+            if ([1,2,3].includes(tutorialStep)) magTarget = 90;
+            else if ([4,5,6].includes(tutorialStep)) magTarget = 180;
+            else if ([7,8,9].includes(tutorialStep)) magTarget = 270;
+            else if ([10,11,12].includes(tutorialStep)) magTarget = 0;
+            else if ([13,14,15].includes(tutorialStep)) magTarget = 45;
+            else if ([16,17,18].includes(tutorialStep)) magTarget = 135;
+            else if ([19,20,21].includes(tutorialStep)) magTarget = 225;
+            else if ([22,23,24].includes(tutorialStep)) magTarget = 315;
+
+            if (magTarget !== undefined) {
+                gyroTarget = getTargetGyro(magTarget);
+                trueTarget = (magTarget + variation + 360) % 360;
+            }
+
             if (tutorialStep === 1) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('090', '084', '083');
-                    tooltip.innerHTML = "Autopilot으로 <b>083</b>을 세팅 후 SET을 누르거나<br>방향키로 <b>083°</b>를 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `Autopilot으로 <b>${formatDeg(gyroTarget)}</b>을 세팅 후 SET을 누르거나<br>방향키로 <b>${formatDeg(gyroTarget)}°</b>를 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 83) < 2) { tutorialStep = 2; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 2; }
             } else if (tutorialStep === 2) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 3; } 
-                else if (getAngleDiff(heading, 83) > 5) { tutorialStep = 1; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 1; }
             } else if (tutorialStep === 3) {
                 if (stepChanged) {
                     document.getElementById('guide-box-b').classList.add('highlight-blink');
-                    tooltip.innerHTML = "B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>090.0°</b>가 되도록 맞추세요.";
+                    tooltip.innerHTML = `B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>${formatDeg(magTarget)}.0°</b>가 되도록 맞추세요.`;
                 }
                 if (tutorialTimer >= 400 && tutorialTimer < 420) {
-                    tooltip.innerHTML = "B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>090.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째와 세 번째 슬롯을 두 번씩 클릭해 Red가 아래로 가게 하세요)</span>";
+                    tooltip.innerHTML = `B-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>${formatDeg(magTarget)}.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째와 세 번째 슬롯을 두 번씩 클릭해 Red가 아래로 가게 하세요)</span>`;
                 }
-                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 90) <= 0.3) { tutorialStep = 4; } 
+                if (steadyTime >= STEADY_TARGET && getAngleDiff(magHeadingOut, magTarget) <= 0.3) { tutorialStep = 4; } 
                 else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 2; }
             } else if (tutorialStep === 4) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('180', '174', '173');
-                    tooltip.innerHTML = "훌륭합니다! 다음은 C자석입니다.<br>Gyro Heading을 <b>173°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `훌륭합니다! 다음은 C자석입니다.<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 173) < 2) { tutorialStep = 5; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 5; }
             } else if (tutorialStep === 5) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 6; } 
-                else if (getAngleDiff(heading, 173) > 5) { tutorialStep = 4; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 4; }
             } else if (tutorialStep === 6) {
                 if (stepChanged) {
                     document.getElementById('guide-box-c').classList.add('highlight-blink');
-                    tooltip.innerHTML = "C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>180.0°</b>가 되도록 맞추세요.";
+                    tooltip.innerHTML = `C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>${formatDeg(magTarget)}.0°</b>가 되도록 맞추세요.`;
                 }
                 if (tutorialTimer >= 400 && tutorialTimer < 420) {
-                    tooltip.innerHTML = "C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>180.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째 슬롯을 한 번 클릭해 Red가 오른쪽으로 가게 하세요)</span>";
+                    tooltip.innerHTML = `C-Magnet 슬롯을 클릭해 자침(Magnetic)이 <b>${formatDeg(magTarget)}.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 첫 번째 슬롯을 한 번 클릭해 Red가 오른쪽으로 가게 하세요)</span>`;
                 }
-                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 180) <= 0.3) { tutorialStep = 7; } 
+                if (steadyTime >= STEADY_TARGET && getAngleDiff(magHeadingOut, magTarget) <= 0.3) { tutorialStep = 7; } 
                 else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 5; }
             } else if (tutorialStep === 7) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('270', '264', '263');
-                    tooltip.innerHTML = "완벽합니다! 이제 반대 방위 오차를 반감(Halving)합니다.<br>Gyro Heading을 <b>263°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `완벽합니다! 이제 반대 방위 오차를 반감(Halving)합니다.<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 263) < 2) { tutorialStep = 8; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 8; }
             } else if (tutorialStep === 8) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 9; } 
-                else if (getAngleDiff(heading, 263) > 5) { tutorialStep = 7; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 7; }
             } else if (tutorialStep === 9) {
                 if (stepChanged) {
                     document.getElementById('guide-box-b').classList.add('highlight-blink');
-                    tooltip.innerHTML = "270도에 도달했습니다. 발생한 자차 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>353°</b>(000도)를 향해 배를 돌리세요)</span>";
+                    let nextMag = 0; let nextGyro = getTargetGyro(nextMag);
+                    tooltip.innerHTML = `270도에 도달했습니다. 발생한 자차 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>${formatDeg(nextGyro)}°</b>(${formatDeg(nextMag)}도)를 향해 배를 돌리세요)</span>`;
                 }
-                if (getAngleDiff(heading, 263) > 8) { tutorialStep = 10; }
+                if (getAngleDiff(heading, gyroTarget) > 8) { tutorialStep = 10; }
             } else if (tutorialStep === 10) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('000', '354', '353');
-                    tooltip.innerHTML = "배를 회전하는군요! 000도 자차 수정을 위해<br>Gyro Heading을 <b>353°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `배를 회전하는군요! 000도 자차 수정을 위해<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 353) < 2) { tutorialStep = 11; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 11; }
             } else if (tutorialStep === 11) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 12; } 
-                else if (getAngleDiff(heading, 353) > 5) { tutorialStep = 10; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 10; }
             } else if (tutorialStep === 12) {
                 if (stepChanged) {
                     document.getElementById('guide-box-c').classList.add('highlight-blink');
-                    tooltip.innerHTML = "000도에 도달했습니다. C자석의 잔여 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 <b>038°</b>(045도)를 향해 배를 돌리세요)</span>";
+                    let nextMag = 45; let nextGyro = getTargetGyro(nextMag);
+                    tooltip.innerHTML = `000도에 도달했습니다. C자석의 잔여 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 <b>${formatDeg(nextGyro)}°</b>(${formatDeg(nextMag)}도)를 향해 배를 돌리세요)</span>`;
                 }
-                if (getAngleDiff(heading, 353) > 8) { tutorialStep = 13; }
+                if (getAngleDiff(heading, gyroTarget) > 8) { tutorialStep = 13; }
             } else if (tutorialStep === 13) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('045', '039', '038');
-                    tooltip.innerHTML = "연철구(D) 수정을 위해<br>Gyro Heading을 <b>038°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `연철구(D) 수정을 위해<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 38) < 2) { tutorialStep = 14; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 14; }
             } else if (tutorialStep === 14) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 15; } 
-                else if (getAngleDiff(heading, 38) > 5) { tutorialStep = 13; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 13; }
             } else if (tutorialStep === 15) {
                 if (stepChanged) {
                     document.getElementById('guide-box-d').classList.add('highlight-blink');
-                    tooltip.innerHTML = "연철구 슬라이더를 조작하여 자침(Magnetic)이 <b>045.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 슬라이더를 좌우로 움직여 정확히 045.0°를 만드세요)</span>";
+                    tooltip.innerHTML = `연철구 슬라이더를 조작하여 자침(Magnetic)이 <b>${formatDeg(magTarget)}.0°</b>가 되도록 맞추세요.<br><br><span style='color:#fcd34d; font-size:0.9rem;'>(힌트: 슬라이더를 좌우로 움직여 정확히 ${formatDeg(magTarget)}.0°를 만드세요)</span>`;
                 }
-                if (steadyTime >= STEADY_TARGET && Math.abs(magHeadingOut - 45) <= 0.3) { tutorialStep = 16; }
+                if (steadyTime >= STEADY_TARGET && getAngleDiff(magHeadingOut, magTarget) <= 0.3) { tutorialStep = 16; }
                 else if (steadyTime < STEADY_TARGET - 50) { tutorialStep = 14; }
             } else if (tutorialStep === 16) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('135', '129', '128');
-                    tooltip.innerHTML = "좋습니다! 마지막 반감 확인입니다.<br>Gyro Heading을 <b>128°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `좋습니다! 마지막 반감 확인입니다.<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 128) < 2) { tutorialStep = 17; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 17; }
             } else if (tutorialStep === 17) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 18; } 
-                else if (getAngleDiff(heading, 128) > 5) { tutorialStep = 16; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 16; }
             } else if (tutorialStep === 18) {
                 if (stepChanged) {
                     document.getElementById('guide-box-d').classList.add('highlight-blink');
-                    tooltip.innerHTML = "135도에 도달했습니다. 연철구의 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>218°</b>(225도)를 향해 배를 돌리세요)</span>";
+                    let nextMag = 225; let nextGyro = getTargetGyro(nextMag);
+                    tooltip.innerHTML = `135도에 도달했습니다. 연철구의 오차를 <b>절반만</b> 수정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(수정 후 Autopilot이나 방향키로 <b>${formatDeg(nextGyro)}°</b>(${formatDeg(nextMag)}도)를 향해 배를 돌리세요)</span>`;
                 }
-                if (getAngleDiff(heading, 128) > 8) { tutorialStep = 19; }
+                if (getAngleDiff(heading, gyroTarget) > 8) { tutorialStep = 19; }
             } else if (tutorialStep === 19) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('225', '219', '218');
-                    tooltip.innerHTML = "8점 방위의 6번째, 225도(SW)를 확인합니다.<br>Gyro Heading을 <b>218°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `8점 방위의 6번째, 225도(SW)를 확인합니다.<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 218) < 2) { tutorialStep = 20; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 20; }
             } else if (tutorialStep === 20) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 21; } 
-                else if (getAngleDiff(heading, 218) > 5) { tutorialStep = 19; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 19; }
             } else if (tutorialStep === 21) {
                 if (stepChanged) {
                     document.getElementById('guide-box-d').classList.add('highlight-blink');
-                    tooltip.innerHTML = "225도(SW)에 도달했습니다. 잔여 오차를 확인하고 필요시 미세조정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(확인 후 <b>308°</b>(315도)를 향해 배를 돌리세요)</span>";
+                    let nextMag = 315; let nextGyro = getTargetGyro(nextMag);
+                    tooltip.innerHTML = `225도(SW)에 도달했습니다. 잔여 오차를 확인하고 필요시 미세조정하세요.<br><span style='color:#fcd34d; font-size:0.85rem;'>(확인 후 <b>${formatDeg(nextGyro)}°</b>(${formatDeg(nextMag)}도)를 향해 배를 돌리세요)</span>`;
                 }
-                if (getAngleDiff(heading, 218) > 8) { tutorialStep = 22; }
+                if (getAngleDiff(heading, gyroTarget) > 8) { tutorialStep = 22; }
             } else if (tutorialStep === 22) {
                 if (stepChanged) {
                     document.getElementById('rudder-control-area').classList.add('highlight-blink');
-                    setCalcGuide('315', '309', '308');
-                    tooltip.innerHTML = "마지막 8점 방위, 315도(NW)입니다.<br>Gyro Heading을 <b>308°</b>로 조타하세요.";
+                    setCalcGuideDynamic(magTarget, trueTarget, gyroTarget);
+                    tooltip.innerHTML = `마지막 8점 방위, 315도(NW)입니다.<br>Gyro Heading을 <b>${formatDeg(gyroTarget)}°</b>로 조타하세요.`;
                 }
-                if (getAngleDiff(heading, 308) < 2) { tutorialStep = 23; }
+                if (getAngleDiff(heading, gyroTarget) < 2) { tutorialStep = 23; }
             } else if (tutorialStep === 23) {
                 if (stepChanged) {
                     document.getElementById('steady-timer').classList.add('highlight-blink');
                     tooltip.innerHTML = "<b>Steady</b> 게이지가 다 찰 때까지 방위를 유지하세요.";
                 }
                 if (steadyTime >= STEADY_TARGET) { tutorialStep = 24; } 
-                else if (getAngleDiff(heading, 308) > 5) { tutorialStep = 22; }
+                else if (getAngleDiff(heading, gyroTarget) > 5) { tutorialStep = 22; }
             } else if (tutorialStep === 24) {
                 if (stepChanged) {
                     document.getElementById('guide-box-d').classList.add('highlight-blink');
-                    tooltip.innerHTML = "315도(NW)에 도달했습니다. 모든 방위의 수정이 완료되었습니다.<br><span style='color:#fcd34d; font-size:0.85rem;'>(마무리를 위해 배를 아무 방향으로나 돌려보세요)</span>";
+                    tooltip.innerHTML = `315도(NW)에 도달했습니다. 모든 방위의 수정이 완료되었습니다.<br><span style='color:#fcd34d; font-size:0.85rem;'>(마무리를 위해 배를 아무 방향으로나 돌려보세요)</span>`;
                 }
-                if (getAngleDiff(heading, 308) > 8) { tutorialStep = 25; }
+                if (getAngleDiff(heading, gyroTarget) > 8) { tutorialStep = 25; }
             } else if (tutorialStep === 25) {
                 if (stepChanged) {
                     clearHighlights();
-                    tooltip.innerHTML = "8점 방위 자차 수정(8-point Adjustment) 튜토리얼을<br>모두 성공적으로 완료하셨습니다!";
+                    tooltip.innerHTML = `8점 방위 자차 수정(8-point Adjustment) 튜토리얼을<br>모두 성공적으로 완료하셨습니다!`;
                     showDeviationCurve();
                     setTimeout(() => { tutorialStep = 0; }, 6000);
                 }
@@ -865,9 +918,7 @@
             mapCtx.scale(scale, scale);
             mapCtx.translate(-shipX, -shipY);
 
-            // Draw Grid
-            mapCtx.strokeStyle = '#1e293b';
-            mapCtx.lineWidth = 1 / scale;
+            mapCtx.strokeStyle = '#1e293b'; mapCtx.lineWidth = 1 / scale;
             let startX = Math.floor((shipX - mapCanvas.width/2/scale)/1000)*1000;
             let startY = Math.floor((shipY - mapCanvas.height/2/scale)/1000)*1000;
             for(let i=-3; i<=3; i++) {
@@ -875,74 +926,46 @@
                 mapCtx.beginPath(); mapCtx.moveTo(shipX - 5000, startY + i*1000); mapCtx.lineTo(shipX + 5000, startY + i*1000); mapCtx.stroke();
             }
 
-            // Draw Wake (Track)
-            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-            mapCtx.lineWidth = 3 / scale;
+            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; mapCtx.lineWidth = 3 / scale;
             mapCtx.beginPath();
             if (shipTrack.length > 0) {
                 mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
-                for (let i=1; i<shipTrack.length; i++) {
-                    mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y);
-                }
+                for (let i=1; i<shipTrack.length; i++) { mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y); }
                 mapCtx.stroke();
             }
 
-            // Draw Route & Course Texts
-            mapCtx.strokeStyle = '#fcd34d';
-            mapCtx.lineWidth = 4 / scale;
-            mapCtx.beginPath();
+            mapCtx.strokeStyle = '#fcd34d'; mapCtx.lineWidth = 4 / scale; mapCtx.beginPath();
             let startWpIdx = Math.max(0, activeIdx);
             mapCtx.moveTo(wps[startWpIdx].x, wps[startWpIdx].y);
             for(let i=startWpIdx + 1; i<wps.length; i++) mapCtx.lineTo(wps[i].x, wps[i].y);
             mapCtx.stroke();
             
             for(let i=1; i<wps.length; i++) {
-                let dx = wps[i].x - wps[i-1].x;
-                let dy = wps[i].y - wps[i-1].y;
+                let dx = wps[i].x - wps[i-1].x; let dy = wps[i].y - wps[i-1].y;
                 let ang = Math.atan2(dx, -dy) * 180 / Math.PI;
                 if(ang < 0) ang += 360;
+                let midX = (wps[i].x + wps[i-1].x) / 2; let midY = (wps[i].y + wps[i-1].y) / 2;
                 
-                let midX = (wps[i].x + wps[i-1].x) / 2;
-                let midY = (wps[i].y + wps[i-1].y) / 2;
-                
-                mapCtx.save();
-                mapCtx.translate(midX, midY);
-                mapCtx.rotate(ang * Math.PI / 180);
-                mapCtx.fillStyle = '#fcd34d';
-                mapCtx.font = "bold 80px Arial";
+                mapCtx.save(); mapCtx.translate(midX, midY); mapCtx.rotate(ang * Math.PI / 180);
+                mapCtx.fillStyle = '#fcd34d'; mapCtx.font = "bold 80px Arial";
                 mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", -40, -20);
                 mapCtx.restore();
             }
 
-            // Draw Ship
-            mapCtx.translate(shipX, shipY);
-            mapCtx.rotate(heading * Math.PI / 180);
-            mapCtx.fillStyle = '#ef4444';
-            mapCtx.beginPath();
-            mapCtx.moveTo(0, -100); 
-            mapCtx.lineTo(30, -50);
-            mapCtx.lineTo(30, 100);
-            mapCtx.lineTo(-30, 100);
-            mapCtx.lineTo(-30, -50);
-            mapCtx.closePath();
-            mapCtx.fill();
-            mapCtx.strokeStyle = '#fff';
-            mapCtx.lineWidth = 2 / scale;
-            mapCtx.stroke();
+            mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
+            mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath();
+            mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
+            mapCtx.closePath(); mapCtx.fill();
+            mapCtx.strokeStyle = '#fff'; mapCtx.lineWidth = 2 / scale; mapCtx.stroke();
 
             mapCtx.restore();
 
-            // Advance WP logic & XTD
-            let p1 = wps[activeIdx];
-            let p2 = wps[activeIdx+1];
-            let dx = p2.x - p1.x;
-            let dy = p2.y - p1.y;
+            let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
+            let dx = p2.x - p1.x; let dy = p2.y - p1.y;
             let len = Math.sqrt(dx*dx + dy*dy);
             
             let xtd = 0;
-            if(len > 0) {
-                xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len;
-            }
+            if(len > 0) { xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len; }
             
             let dot = (shipX - p2.x) * dx + (shipY - p2.y) * dy;
             if (dot >= 0) { 
@@ -958,20 +981,16 @@
             let simSteps = (isFastForward && apEnabled) ? 15 : 1;
 
             for (let step = 0; step < simSteps; step++) {
-                // 1. AP Logic
                 if (apEnabled) {
                     let err = (apTarget - heading) % 360;
-                    if (err > 180) err -= 360;
-                    if (err < -180) err += 360;
+                    if (err > 180) err -= 360; if (err < -180) err += 360;
 
-                    let Kp_ap = 6.5; 
-                    let Kd_ap = 2.5; 
+                    let Kp_ap = 6.5; let Kd_ap = 2.5; 
                     let desired_rudder = (err * Kp_ap) - (rot * Kd_ap);
                     desired_rudder = Math.max(-35, Math.min(35, desired_rudder));
                     orderRudder = desired_rudder;
                 }
 
-                // 2. Rudder Actuation
                 if (actualRudder !== orderRudder) {
                     let diff = orderRudder - actualRudder;
                     let rStep = rudderSpeed * dt; 
@@ -979,7 +998,6 @@
                     else actualRudder += Math.sign(diff) * rStep;
                 }
 
-                // 3. Physics & Disturbance
                 let disturbance = 0;
                 let effLevel = 0; 
                 if (currentMode === 'STEERING') {
@@ -1000,7 +1018,6 @@
                 heading = (heading + (rot / 60.0) * dt) % 360; 
                 if (heading < 0) heading += 360;
 
-                // 4. Map Updates (Steering Mode)
                 if (currentMode === 'STEERING') {
                     let speedMs = shipSpeed * 0.514444; 
                     shipX += speedMs * Math.sin(heading * Math.PI / 180) * dt;
@@ -1011,10 +1028,8 @@
                         if (shipTrack.length > 300) shipTrack.shift(); 
                     }
                 } else {
-                    // 5. Compass Tutorial Mode Updates
                     let errAp = (apTarget - heading) % 360;
-                    if (errAp > 180) errAp -= 360;
-                    if (errAp < -180) errAp += 360;
+                    if (errAp > 180) errAp -= 360; if (errAp < -180) errAp += 360;
                     
                     let MathAbsRot = Math.abs(rot);
                     if (MathAbsRot < 2.0 && actualRudder === 0 && !apEnabled) {
@@ -1025,7 +1040,7 @@
                         steadyTime = Math.max(steadyTime - 2, 0);
                     }
                     
-                    const trueHeading = heading + 1.0; 
+                    const trueHeading = (heading + gyroError + 360) % 360; 
                     const radH = heading * Math.PI / 180;
                     const netB = innateB + getMagnetSum('B');
                     const netC = innateC + getMagnetSum('C');
@@ -1035,17 +1050,12 @@
                     
                     const deviation = (netB * Math.sin(radH)) + (netC * Math.cos(radH)) + (netD * Math.sin(2 * radH));
                     
-                    magHeadingOut = (trueHeading - (-6.0) + deviation) % 360;
-                    if (magHeadingOut < 0) magHeadingOut += 360;
+                    magHeadingOut = (trueHeading - variation + deviation + 360) % 360;
                 }
             }
 
-            // --- Render UI (Once per frame to avoid DOM Thrashing) ---
-            let fmtOrd = formatRudder(orderRudder);
-            updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
-            let fmtAct = formatRudder(actualRudder);
-            updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
-
+            let fmtOrd = formatRudder(orderRudder); updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
+            let fmtAct = formatRudder(actualRudder); updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
             updateTextDOM('heading-val', heading.toFixed(1).padStart(5, '0') + '°');
             updateTextDOM('rot-val', rot.toFixed(1));
 
