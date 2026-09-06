@@ -643,7 +643,7 @@
                 scene.background = daySkybox || new THREE.Color(0x5a6a79); 
                 scene.environment = daySkybox || null;
                 scene.fog.color.setHex(0x5a6a79); 
-                scene.fog.density = 0.00015;
+                scene.fog.density = 0.15;
                 ambientLight.intensity = 1.5; 
                 dirLight.intensity = 1.0; 
                 dirLight.color.setHex(0xffffff);
@@ -656,7 +656,7 @@
                 
                 simpleWater.material.color.setHex(currentDaySeaColorLow);
                 
-                const elevation = 100; const azimuth = 320;
+                const elevation = 100; const azimuth = 0;
                 const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
                 sun.x = Math.cos(elRad) * Math.sin(azRad); 
                 sun.y = Math.sin(elRad); 
