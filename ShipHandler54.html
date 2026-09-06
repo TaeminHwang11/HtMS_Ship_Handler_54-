@@ -521,7 +521,7 @@
                // 👇 여기에 스카이박스 회전 코드를 추가하세요 👇
                if (daySkybox) {
                daySkybox.wrapS = THREE.RepeatWrapping;
-               daySkybox.offset.x = -133 / 360; // 133도 위치에 있던 밝은 하늘을 000도 정면으로 끌어옵니다.
+               daySkybox.offset.x = 133 / 360; // 133도 위치에 있던 밝은 하늘을 000도 정면으로 끌어옵니다.
              }
             dirLight.position.copy(sun).multiplyScalar(100); water.material.uniforms['sunDirection'].value.copy(sun).normalize();
         }
