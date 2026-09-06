@@ -243,6 +243,7 @@
                 <button id="btn-sea-bright" class="btn-ctrl-small" onclick="setSeaColor('bright')">BRIGHT SEA</button>
                 <button id="btn-sea-normal" class="btn-ctrl-small active" onclick="setSeaColor('normal')">NORM SEA</button>
                 <button id="btn-sea-dark" class="btn-ctrl-small" onclick="setSeaColor('dark')">DARK SEA</button>
+                <button id="btn-graphic" class="btn-ctrl-small active" onclick="toggleGraphicMode()">GFX: HIGH</button>
             </div>
         </div>
 
@@ -350,6 +351,8 @@
         let isOsDropdownOpen = false;
         let isCpaDropdownOpen = false;
         let currentCpaLimit = 1.0;
+        
+        let isLowGraphic = false; // 그래픽 최적화 모드 상태
 
         const wakePool = [];
         const activeWakes = [];
@@ -437,6 +440,15 @@
         });
         water.rotation.x = -Math.PI / 2; 
         scene.add(water);
+
+        // 저사양 그래픽용 단순 바다 (투명 Plane)
+        const simpleWater = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshBasicMaterial({ color: 0x00E5FF, transparent: true, opacity: 0.85 })
+        );
+        simpleWater.rotation.x = -Math.PI / 2;
+        scene.add(simpleWater);
+        simpleWater.visible = false;
 
         const origWaterRender = water.onBeforeRender;
         water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) {
@@ -581,6 +593,7 @@
                 dirLight.color.setHex(0xffffff);
                 water.material.uniforms['sunColor'].value.setHex(0x112233); 
                 water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
+                simpleWater.material.color.setHex(0x0f182b);
                 
                 const theta = Math.PI * 0.5; 
                 const phi = 2 * Math.PI * 0.0;
@@ -599,6 +612,7 @@
                 dirLight.color.setHex(0xffffff);
                 water.material.uniforms['sunColor'].value.setHex(0xdddddd); 
                 water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
+                simpleWater.material.color.setHex(currentDaySeaColor);
                 
                 const elevation = 15; const azimuth = 47;
                 const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
@@ -694,12 +708,37 @@
             else if (level === 'normal') { currentDaySeaColor = 0x00E5FF; document.getElementById('btn-sea-normal').classList.add('active'); } 
             else if (level === 'dark') { currentDaySeaColor = 0x253c54; document.getElementById('btn-sea-dark').classList.add('active'); }
             
-            if (!isNight) { water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); }
+            if (!isNight) { 
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
+                simpleWater.material.color.setHex(currentDaySeaColor);
+            }
         };
 
         window.toggleDayNight = function() { 
             isNight = !isNight; 
             setTimeOfDay(isNight); 
+        };
+
+        window.toggleGraphicMode = function() {
+            isLowGraphic = !isLowGraphic;
+            const btn = document.getElementById('btn-graphic');
+            if (isLowGraphic) {
+                btn.innerText = 'GFX: LOW';
+                btn.classList.remove('active');
+                renderer.setPixelRatio(0.75); // 해상도 낮춤
+                if (gameState === 'PLAYING') {
+                    water.visible = false;
+                    simpleWater.visible = true;
+                }
+            } else {
+                btn.innerText = 'GFX: HIGH';
+                btn.classList.add('active');
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // 해상도 복구
+                if (gameState === 'PLAYING') {
+                    water.visible = true;
+                    simpleWater.visible = false;
+                }
+            }
         };
 
         window.returnToMenuFromSim = function() {
@@ -723,6 +762,7 @@
             document.body.classList.remove('ai-active'); 
             currentMode = 'NONE';
             water.visible = false; 
+            simpleWater.visible = false;
             scene.background = new THREE.Color(0x000000);
         }
 
@@ -1061,7 +1101,15 @@
 
         window.startSimulation = async function() {
             let osFileName = MAIN_OS_FILE;
-            water.visible = true; setTimeOfDay(isNight);
+            setTimeOfDay(isNight);
+            
+            if (isLowGraphic) {
+                water.visible = false;
+                simpleWater.visible = true;
+            } else {
+                water.visible = true;
+                simpleWater.visible = false;
+            }
             
             for(let i = osShip.children.length - 1; i >= 0; i--) { if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); }
             targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0;
@@ -1357,11 +1405,26 @@
             ctxR.clearRect(0, 0, canvasR.width, canvasR.height); 
             ctxR.strokeStyle = 'rgba(0, 255, 255, 0.3)'; 
             ctxR.lineWidth = 1;
-            for(let r = 1; r <= 4; r++) { 
-                ctxR.beginPath(); 
-                ctxR.arc(drawCx, drawCy, r * (canvasR.width/8), 0, Math.PI * 2); 
-                ctxR.stroke(); 
+
+            // --- 레인지링 동적 생성 수정 부분 ---
+            const ringSpacing = canvasR.width / 8;
+            // 패닝에 의해 화면 밖으로 벗어난 부분까지 링을 그리기 위해 최대 거리 계산
+            const distToCorners = [
+                Math.hypot(0 - drawCx, 0 - drawCy),
+                Math.hypot(canvasR.width - drawCx, 0 - drawCy),
+                Math.hypot(0 - drawCx, canvasR.height - drawCy),
+                Math.hypot(canvasR.width - drawCx, canvasR.height - drawCy)
+            ];
+            const maxDist = Math.max(...distToCorners);
+            const maxRings = Math.ceil(maxDist / ringSpacing);
+
+            for(let r = 1; r <= maxRings; r++) {
+                ctxR.beginPath();
+                ctxR.arc(drawCx, drawCy, r * ringSpacing, 0, Math.PI * 2);
+                ctxR.stroke();
             }
+            // ----------------------------------
+
             ctxR.save(); ctxR.translate(drawCx, drawCy);
 
             let mostDangerousTarget = null; 
@@ -1585,7 +1648,9 @@
             if (gameState === 'PLAYING') {
                 if (!isPaused) { 
                     const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
-                    water.material.uniforms['time'].value += dt * 0.3; 
+                    if (!isLowGraphic) {
+                        water.material.uniforms['time'].value += dt * 0.3; 
+                    }
                     updatePhysics(dt); 
                 } else { 
                     clock.getDelta(); 
