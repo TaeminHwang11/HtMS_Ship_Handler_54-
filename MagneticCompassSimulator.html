@@ -484,7 +484,6 @@
         let innateB = 6.5, innateC = -4.0, innateD = 1.0; 
         let bErrorAdded = false, cErrorAdded = false, dErrorAdded = false;
 
-        // 수정사항 반영: 러더 속도를 2.5로 변경
         const K = 2.0, T = 25.0, dt = 1.0 / 60.0, rudderSpeed = 2.5;     
 
         let shipX = 0, shipY = 0;
@@ -981,11 +980,12 @@
             let simSteps = (isFastForward && apEnabled) ? 15 : 1;
 
             for (let step = 0; step < simSteps; step++) {
+                // 1. AP Logic (게인값 최적화 수정)
                 if (apEnabled) {
                     let err = (apTarget - heading) % 360;
                     if (err > 180) err -= 360; if (err < -180) err += 360;
 
-                    let Kp_ap = 6.5; let Kd_ap = 2.5; 
+                    let Kp_ap = 1.2; let Kd_ap = 0.5; // 변경됨 (러더 속도 2.5에 맞춘 오버슈트 방지 임계 제동)
                     let desired_rudder = (err * Kp_ap) - (rot * Kd_ap);
                     desired_rudder = Math.max(-35, Math.min(35, desired_rudder));
                     orderRudder = desired_rudder;
