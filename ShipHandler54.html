@@ -1451,7 +1451,7 @@
             shipPhysics.simTime += dt; 
             
             let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder; 
-            let rStep = 0.5 * dt; 
+            let rStep = 1.5 * dt; 
             
             if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder; 
             else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
