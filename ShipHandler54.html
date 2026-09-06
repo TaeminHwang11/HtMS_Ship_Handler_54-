@@ -925,12 +925,48 @@
             raycaster.setFromCamera(mouse, camera); const intersects = raycaster.intersectObjects(targetShips, true); let hoveredShip = null;
             if(intersects.length > 0) { let obj = intersects[0].object; while(obj.parent && !obj.userData.name) { obj = obj.parent; } if (obj.userData.name) hoveredShip = obj; }
 
-            if (shipPhysics.wps && shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
-                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctxR.lineWidth = 1.5; ctxR.setLineDash([5, 5]); ctxR.beginPath(); ctxR.moveTo(0, 0);
-                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) { let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z; let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; ctxR.lineTo(rotX, rotY); }
-                ctxR.stroke(); ctxR.setLineDash([]);
-                for(let i=currentWpIndex; i<shipPhysics.wps.length; i++) { let relX = shipPhysics.wps[i].x - osShip.position.x; let relZ = shipPhysics.wps[i].z - osShip.position.z; let true_brg = Math.atan2(relX, -relZ); let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); let distSq = relX*relX + relZ*relZ; let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; ctxR.beginPath(); ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); ctxR.fill(); }
+           if (shipPhysics.wps && shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
+            ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; ctxR.lineWidth = 1.5; ctxR.setLineDash([5, 5]); ctxR.beginPath();
+            
+            // 💡 수정된 부분: 현재 향하는 웨이포인트의 '이전' 웨이포인트부터 선을 그리도록 시작점 설정
+            let startIndex = Math.max(0, currentWpIndex - 1);
+            
+            // 아직 첫 번째(0번) 웨이포인트로 향하는 중일 때만 본선(0,0)에서 선을 시작합니다.
+            if (currentWpIndex === 0) {
+                ctxR.moveTo(0, 0);
             }
+        
+            for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
+                let relX = shipPhysics.wps[i].x - osShip.position.x; 
+                let relZ = shipPhysics.wps[i].z - osShip.position.z; 
+                let true_brg = Math.atan2(relX, -relZ); 
+                let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); 
+                let distSq = relX*relX + relZ*relZ; 
+                let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                
+                // 이전 웨이포인트의 위치로 펜을 이동시킨 뒤, 다음 웨이포인트로 선을 긋습니다.
+                if (i === startIndex && currentWpIndex !== 0) {
+                    ctxR.moveTo(rotX, rotY);
+                } else {
+                    ctxR.lineTo(rotX, rotY);
+                }
+            }
+            ctxR.stroke(); ctxR.setLineDash([]);
+            
+            // 웨이포인트 점 찍기
+            for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
+                let relX = shipPhysics.wps[i].x - osShip.position.x; 
+                let relZ = shipPhysics.wps[i].z - osShip.position.z; 
+                let true_brg = Math.atan2(relX, -relZ); 
+                let rel_brg = true_brg - (shipPhysics.heading * Math.PI/180); 
+                let distSq = relX*relX + relZ*relZ; 
+                let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; 
+                ctxR.beginPath(); ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); ctxR.fill(); 
+            }
+        }
 
             const osSog = shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed;
             const osCog = shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading;
