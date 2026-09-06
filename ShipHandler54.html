@@ -515,9 +515,10 @@
                 scene.fog.color.setHex(0x5a6a79); scene.fog.density = 0.00015;
                 ambientLight.intensity = 1.5; dirLight.intensity = 1.0; dirLight.color.setHex(0xffffff);
                 water.material.uniforms['sunColor'].value.setHex(0xdddddd); water.material.uniforms['waterColor'].value.setHex(currentDaySeaColor); 
-                const theta = Math.PI * 0.25; const phi = 2 * Math.PI * 0.25; 
-                sun.x = Math.cos(phi); sun.y = Math.sin(phi) * Math.sin(theta); sun.z = Math.sin(phi) * Math.cos(theta);
-            }
+               const elevation = 45; const azimuth = 47;
+const elRad = elevation * (Math.PI / 180); const azRad = azimuth * (Math.PI / 180);
+sun.x = Math.cos(elRad) * Math.sin(azRad); sun.y = Math.sin(elRad); sun.z = -Math.cos(elRad) * Math.cos(azRad);
+}
             dirLight.position.copy(sun).multiplyScalar(100); water.material.uniforms['sunDirection'].value.copy(sun).normalize();
         }
         window.toggleDayNight = function() { isNight = !isNight; setTimeOfDay(isNight); }; setTimeOfDay(isNight);
