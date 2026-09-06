@@ -335,6 +335,14 @@
         let isPaused = false;
         let isHudDragged = false; 
         let manualRadarZoom = 1.0;
+        // --- 레이더 패닝(Panning) 관련 변수 ---
+        let radarOffsetX = 0; 
+        let radarOffsetY = 0; 
+        let isRadarDragging = false; 
+        let radarDragStartX = 0; 
+        let radarDragStartY = 0; 
+        let hasRadarDragged = false;
+        // ------------------------------------
         let camMoveDir = null;
         let isCamPadOpen = false;
         let loadedScenarioConfig = null;
@@ -646,7 +654,8 @@
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
             panel.addEventListener('mousedown', (e) => {
-                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
+                // 레이더 캔버스는 드래그에서 제외
+                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName) || e.target.id === 'ecdis-canvas') return;
                 isPanelDragging = true; isHudDragged = false; 
                 startX = e.clientX; startY = e.clientY;
                 const rect = panel.getBoundingClientRect(); 
@@ -849,7 +858,7 @@
         });
 
         document.addEventListener('mousedown', (e) => { 
-            if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') isDraggingCam = true; 
+            if(e.target.tagName === 'CANVAS' && e.target.id !== 'ecdis-canvas' && gameState === 'PLAYING') isDraggingCam = true; 
         });
         document.addEventListener('mouseup', () => { isDraggingCam = false; });
         document.addEventListener('mousemove', (e) => {
@@ -863,7 +872,7 @@
         });
 
         document.addEventListener('touchstart', (e) => {
-            if(e.target.tagName === 'CANVAS' && gameState === 'PLAYING') {
+            if(e.target.tagName === 'CANVAS' && e.target.id !== 'ecdis-canvas' && gameState === 'PLAYING') {
                 isDraggingCam = true;
                 lastTouchX = e.touches[0].clientX;
                 lastTouchY = e.touches[0].clientY;
@@ -890,8 +899,49 @@
             }
         }, {passive: false});
 
-        document.getElementById('ecdis-canvas').addEventListener('click', function(e) {
-            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged) return;
+        // --- 레이더 패닝(드래그) 및 클릭 통합 로직 ---
+        const ecdisEl = document.getElementById('ecdis-canvas');
+
+        function handleRadarDragStart(clientX, clientY) {
+            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
+            isRadarDragging = true;
+            hasRadarDragged = false;
+            radarDragStartX = clientX;
+            radarDragStartY = clientY;
+        }
+
+        function handleRadarDragMove(clientX, clientY) {
+            if (!isRadarDragging) return;
+            const dx = clientX - radarDragStartX;
+            const dy = clientY - radarDragStartY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasRadarDragged = true;
+            
+            if (hasRadarDragged) {
+                radarOffsetX += dx;
+                radarOffsetY += dy;
+                radarDragStartX = clientX;
+                radarDragStartY = clientY;
+            }
+        }
+
+        ecdisEl.addEventListener('mousedown', (e) => handleRadarDragStart(e.clientX, e.clientY));
+        ecdisEl.addEventListener('mousemove', (e) => handleRadarDragMove(e.clientX, e.clientY));
+        ecdisEl.addEventListener('mouseup', () => { isRadarDragging = false; });
+        ecdisEl.addEventListener('mouseleave', () => { isRadarDragging = false; });
+
+        ecdisEl.addEventListener('touchstart', (e) => {
+            handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        ecdisEl.addEventListener('touchmove', (e) => {
+            if(isRadarDragging) e.preventDefault();
+            handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        ecdisEl.addEventListener('touchend', () => { isRadarDragging = false; });
+
+        ecdisEl.addEventListener('click', function(e) {
+            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
+            if(hasRadarDragged) return; // 드래그를 한 경우 타겟 클릭 취소
+
             const rect = this.getBoundingClientRect(); 
             const clickX = e.clientX - rect.left; 
             const clickY = e.clientY - rect.top; 
@@ -907,8 +957,10 @@
                 const true_bearing_rad = Math.atan2(relX, -relZ); 
                 const relBearing = true_bearing_rad - (shipPhysics.heading * DEG2RAD); 
                 const distSq = relX*relX + relZ*relZ; 
-                const px = cx + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; 
-                const py = cy - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale; 
+                
+                // 패닝된 오프셋을 반영하여 타겟 위치 판별
+                const px = cx + radarOffsetX + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; 
+                const py = cy + radarOffsetY - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale; 
                 const clickDist = Math.hypot(px - clickX, py - clickY); 
                 if(clickDist < minDist) { 
                     minDist = clickDist; 
@@ -1009,7 +1061,7 @@
             document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
             activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
 
-            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; manualRadarZoom = 1.0; 
+            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; manualRadarZoom = 1.0; radarOffsetX = 0; radarOffsetY = 0; 
             
             env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
 
@@ -1289,6 +1341,10 @@
             const ctxR = canvasR.getContext('2d'); 
             const cx = canvasR.width/2; 
             const cy = canvasR.height/2; 
+            // --- 패닝 오프셋 적용 ---
+            const drawCx = cx + radarOffsetX;
+            const drawCy = cy + radarOffsetY;
+            // ------------------------
             const mapScale = (canvasR.width / 2) / window.currentRadarMaxDist; 
             
             ctxR.clearRect(0, 0, canvasR.width, canvasR.height); 
@@ -1296,10 +1352,10 @@
             ctxR.lineWidth = 1;
             for(let r = 1; r <= 4; r++) { 
                 ctxR.beginPath(); 
-                ctxR.arc(cx, cy, r * (canvasR.width/8), 0, Math.PI * 2); 
+                ctxR.arc(drawCx, drawCy, r * (canvasR.width/8), 0, Math.PI * 2); 
                 ctxR.stroke(); 
             }
-            ctxR.save(); ctxR.translate(cx, cy);
+            ctxR.save(); ctxR.translate(drawCx, drawCy);
 
             let mostDangerousTarget = null; 
             let minTcpa = Infinity; 
