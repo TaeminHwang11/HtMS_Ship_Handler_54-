@@ -972,8 +972,8 @@
                 document.getElementById('hud-lines').style.opacity = '1'; 
                 arOverlayGroup.visible = true; 
                 
-                // AI CAS 기능 활성화시 레이더도 함께 켜짐
-                toggleRadar(true);
+                // 삭제 또는 주석 처리하여 AI CAS 모드 활성화 시 레이더 강제 켜짐을 방지함
+                // toggleRadar(true);
             }
         };
 
@@ -1634,19 +1634,21 @@
             // --- 레인지링 동적 생성 수정 부분 ---
             const ringSpacing = canvasR.width / 8;
             // 패닝에 의해 화면 밖으로 벗어난 부분까지 링을 그리기 위해 최대 거리 계산
-            const distToCorners = [
-                Math.hypot(0 - drawCx, 0 - drawCy),
-                Math.hypot(canvasR.width - drawCx, 0 - drawCy),
-                Math.hypot(0 - drawCx, canvasR.height - drawCy),
-                Math.hypot(canvasR.width - drawCx, canvasR.height - drawCy)
-            ];
-            const maxDist = Math.max(...distToCorners);
-            const maxRings = Math.ceil(maxDist / ringSpacing);
+            if (ringSpacing > 0) {
+                const distToCorners = [
+                    Math.hypot(0 - drawCx, 0 - drawCy),
+                    Math.hypot(canvasR.width - drawCx, 0 - drawCy),
+                    Math.hypot(0 - drawCx, canvasR.height - drawCy),
+                    Math.hypot(canvasR.width - drawCx, canvasR.height - drawCy)
+                ];
+                const maxDist = Math.max(...distToCorners);
+                const maxRings = Math.ceil(maxDist / ringSpacing);
 
-            for(let r = 1; r <= maxRings; r++) {
-                ctxR.beginPath();
-                ctxR.arc(drawCx, drawCy, r * ringSpacing, 0, Math.PI * 2);
-                ctxR.stroke();
+                for(let r = 1; r <= maxRings; r++) {
+                    ctxR.beginPath();
+                    ctxR.arc(drawCx, drawCy, r * ringSpacing, 0, Math.PI * 2);
+                    ctxR.stroke();
+                }
             }
             // ----------------------------------
 
@@ -1858,7 +1860,7 @@
                     UI_ELEMENTS.dangerTargetTcpa.innerText = "-"; 
                     UI_ELEMENTS.dangerTargetBcr.innerText = "-";
                     
-                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PRO জ্ঞCCEED ON CURRENT SAFE ROUTE</li>`; 
+                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PRO CEED ON CURRENT SAFE ROUTE</li>`; 
                     dangerChevrons.visible = false; 
                     voiceContent.innerHTML = `선장님, 설정된 안전 반경(${currentCpaLimit.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
                 }
