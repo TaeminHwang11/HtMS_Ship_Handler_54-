@@ -762,9 +762,10 @@
                 panel.style.left = (startLeft + dx) + 'px'; 
                 panel.style.top = (startTop + dy) + 'px';
             });
-            window.addEventListener('mouseup', () => { 
+           window.addEventListener('mouseup', () => { 
                 if (isPanelDragging) { 
                     isPanelDragging = false; 
+                    isHudDragged = false; // <--- 이 부분이 누락되어 있었음
                     panel.style.zIndex = panel.id === 'digital-hud-container' ? '9999' : ''; 
                 } 
             });
