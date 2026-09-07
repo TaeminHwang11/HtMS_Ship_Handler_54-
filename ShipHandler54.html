@@ -30,7 +30,7 @@
         body.ai-active #digital-hud-container { border-bottom: 2px solid #00ffff; box-shadow: 0 8px 25px rgba(0,255,255,0.15); }
         .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 55px;}
         .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px;}
-        .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace; cursor: pointer; transition: color 0.2s;}
+        .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace;}
         
         body.ai-active #val-hdg, body.ai-active #val-crs, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind, body.ai-active #val-current { 
             color: #00bfff !important; text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); 
@@ -53,6 +53,7 @@
         }
         .collision-alert { animation: blink-collision 0.6s infinite !important; pointer-events: none; }
         #btn-collision { padding: 0 10px; font-size: 11px; font-weight: bold; border-radius: 4px; border: 1px solid #00ffaa; background: rgba(0,255,170,0.1); color: #00ffaa; display: flex; align-items: center; justify-content: center; height: 24px; }
+
 
         #camera-hint { position: absolute; top: 85px; left: 50%; transform: translateX(-50%); font-size: 15px; color: #00ffaa; pointer-events: none; z-index: 20; text-shadow: 0 2px 5px #000; font-weight: bold; text-align: center; display: none;}
         .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
@@ -214,7 +215,6 @@
                 <div id="btn-collision">COLLISION CLEAR</div>
             </div>
             <div class="btn-group-small">
-                <button id="btn-data-toggle" class="btn-ctrl-small active" onclick="toggleDataMode()">DATA</button>
                 <button id="btn-pause" class="btn-ctrl-small" onclick="togglePause()">PAUSE</button>
                 <button id="btn-cam-control" class="btn-ctrl-small" onclick="toggleCamControls()">CAM</button>
                 <button id="btn-touch-steer" class="btn-ctrl-small" onclick="toggleTouchSteering()">TOUCH STR</button>
@@ -361,8 +361,6 @@
         let currentCpaLimit = 1.0;
         
         let graphicMode = 'HIGH'; // 'HIGH', 'MID', 'LOW'
-        let isDataHidden = false;
-        let visibleDataFields = {};
 
         const wakePool = [];
         const activeWakes = [];
@@ -431,15 +429,6 @@
             UI_ELEMENTS.ecdisCanvas = document.getElementById('ecdis-canvas');
             UI_ELEMENTS.ecdisContainer = document.getElementById('ecdis-container');
             UI_ELEMENTS.hudLines = document.getElementById('hud-lines');
-
-            // Data 숨김 클릭 이벤트 부여
-            document.querySelectorAll('.digital-val').forEach(el => {
-                el.addEventListener('click', function(e) {
-                    if (isDataHidden) {
-                        visibleDataFields[this.id] = true;
-                    }
-                });
-            });
         });
 
         // ==========================================
@@ -667,7 +656,7 @@
                 
                 simpleWater.material.color.setHex(currentDaySeaColorLow);
                 
-                const elevation = 100; const azimuth = 0;
+                const elevation = 15; const azimuth = 47;
                 const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
                 sun.x = Math.cos(elRad) * Math.sin(azRad); 
                 sun.y = Math.sin(elRad); 
@@ -677,20 +666,11 @@
             water.material.uniforms['sunDirection'].value.copy(sun).normalize();
         }
 
+
         // ==========================================
         // 6. UI & EVENT HANDLERS
         // ==========================================
-        window.toggleDataMode = function() {
-            isDataHidden = !isDataHidden;
-            visibleDataFields = {}; 
-            const btn = document.getElementById('btn-data-toggle');
-            if(isDataHidden) {
-                btn.classList.remove('active');
-            } else {
-                btn.classList.add('active');
-            }
-        };
-
+        
         // --- 레이더 토글 함수 ---
         let isRadarOpen = false;
         window.toggleRadar = function(forceState) {
@@ -759,8 +739,8 @@
         document.querySelectorAll('.draggable-panel').forEach(panel => {
             let isPanelDragging = false, startX, startY, startLeft, startTop;
             panel.addEventListener('mousedown', (e) => {
-                // 레이더 캔버스와 디지털 데이터 등은 패널 드래그에서 제외
-                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName) || e.target.id === 'ecdis-canvas' || e.target.classList.contains('digital-val')) return;
+                // 레이더 캔버스는 기본 드래그에서 제외하고 별도 롱프레스 이벤트로 처리
+                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName) || e.target.id === 'ecdis-canvas') return;
                 isPanelDragging = true; isHudDragged = false; 
                 startX = e.clientX; startY = e.clientY;
                 const rect = panel.getBoundingClientRect(); 
@@ -797,17 +777,17 @@
             
             if (level === 'bright') { 
                 currentDaySeaColorHigh = 0x00BFFF; 
-                currentDaySeaColorLow = 0x00E5FF; 
+                currentDaySeaColorLow = 0x00E5FF; // 밝은 시안색
                 document.getElementById('btn-sea-bright').classList.add('active'); 
             } 
             else if (level === 'normal') { 
                 currentDaySeaColorHigh = 0x00E5FF; 
-                currentDaySeaColorLow = 0x004488; 
+                currentDaySeaColorLow = 0x004488; // 진한 파란색
                 document.getElementById('btn-sea-normal').classList.add('active'); 
             } 
             else if (level === 'dark') { 
                 currentDaySeaColorHigh = 0x253c54; 
-                currentDaySeaColorLow = 0x152535; 
+                currentDaySeaColorLow = 0x152535; // 어두운 파란색
                 document.getElementById('btn-sea-dark').classList.add('active'); 
             }
             
@@ -839,7 +819,7 @@
                 graphicMode = 'LOW';
                 btn.innerText = 'GFX: LOW';
                 btn.classList.remove('active');
-                renderer.setPixelRatio(0.75);
+                renderer.setPixelRatio(0.75); // 해상도 대폭 낮춤
                 if (gameState === 'PLAYING') {
                     water.visible = false;
                     midWater.visible = false;
@@ -849,7 +829,7 @@
                 graphicMode = 'HIGH';
                 btn.innerText = 'GFX: HIGH';
                 btn.classList.add('active');
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // 원래 해상도
                 if (gameState === 'PLAYING') {
                     water.visible = true;
                     midWater.visible = false;
@@ -858,7 +838,7 @@
             }
         };
 
-        window.returnToMenuFromSim = function() {
+            window.returnToMenuFromSim = function() {
             gameState = 'MENU';
             for(let i = osShip.children.length - 1; i >= 0; i--) { 
                 if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); 
@@ -884,14 +864,19 @@
             scene.background = new THREE.Color(0x000000);
             toggleRadar(false);
 
+            // ==========================================
+            // [수정/추가된 부분] 메인 메뉴로 돌아갈 때 모든 HUD UI 숨기기
+            // ==========================================
             document.getElementById('digital-hud-container').style.display = 'none';
             document.getElementById('camera-hint').style.display = 'none';
             document.getElementById('manual-target-panel').style.display = 'none';
             
+            // CAS 모드가 켜져 있었을 경우를 대비해 패널 숨김 및 버튼 비활성화
             document.getElementById('right-center-cas-panel').style.display = 'none';
             document.getElementById('bottom-left-panel').style.display = 'none';
             document.getElementById('btn-mode-cas').classList.remove('active');
             
+            // 캠 컨트롤 패드 및 터치 조타 버튼이 켜져 있었을 경우를 대비해 끄기
             document.getElementById('cam-control-pad').style.display = 'none';
             document.getElementById('btn-cam-control').classList.remove('active');
             isCamPadOpen = false;
@@ -987,6 +972,7 @@
                 document.getElementById('hud-lines').style.opacity = '1'; 
                 arOverlayGroup.visible = true; 
                 
+                // AI CAS 기능 활성화시 레이더도 함께 켜짐
                 toggleRadar(true);
             }
         };
@@ -1081,6 +1067,7 @@
 
         function handleRadarDragStart(clientX, clientY) {
             if(gameState !== 'PLAYING' || isPaused) return false;
+            // 일반 패닝은 CAS 모드가 아닐때만 허용 (기존 로직 유지)
             if(currentMode === 'CAS') return false; 
             
             isRadarDragging = true;
@@ -1091,13 +1078,13 @@
         }
 
         function handleRadarDragMove(clientX, clientY) {
-            if (isRadarWindowDragging) return; 
+            if (isRadarWindowDragging) return; // 윈도우 드래그 중엔 패닝 무시
             if (!isRadarDragging) return;
             const dx = clientX - radarDragStartX;
             const dy = clientY - radarDragStartY;
             if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
                 hasRadarDragged = true;
-                if(radarHoldTimer) clearTimeout(radarHoldTimer); 
+                if(radarHoldTimer) clearTimeout(radarHoldTimer); // 조금이라도 움직이면 윈도우 드래그 타이머 취소
             }
             
             if (hasRadarDragged) {
@@ -1114,17 +1101,19 @@
 
             handleRadarDragStart(e.clientX, e.clientY);
 
+            // 꾸욱 눌렀을 때(400ms) 창 자체를 이동시킬 수 있도록 처리
             radarHoldTimer = setTimeout(() => {
                 if (!hasRadarDragged) {
                     isRadarWindowDragging = true;
                     isRadarDragging = false;
-                    hasRadarDragged = true;
+                    hasRadarDragged = true; // 이후의 클릭 이벤트를 방지
                     radarWinStartX = e.clientX;
                     radarWinStartY = e.clientY;
                     const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
                     radarWinStartLeft = rect.left;
                     radarWinStartTop = rect.top;
 
+                    // Absolute 위치 초기화
                     UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
                     UI_ELEMENTS.ecdisContainer.style.right = 'auto';
                     UI_ELEMENTS.ecdisContainer.style.transform = 'none';
@@ -1132,7 +1121,7 @@
                     UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
                     UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
                     UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
-                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00'; 
+                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00'; // 드래그 모드 시각적 피드백
                 }
             }, 400);
         });
@@ -1153,7 +1142,7 @@
             if(isRadarWindowDragging) {
                 isRadarWindowDragging = false;
                 UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
-                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)'; 
+                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)'; // 원래대로
             }
             isRadarDragging = false; 
         });
@@ -1214,7 +1203,7 @@
 
         ecdisEl.addEventListener('click', function(e) {
             if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
-            if(hasRadarDragged || isRadarWindowDragging) return; 
+            if(hasRadarDragged || isRadarWindowDragging) return; // 드래그를 한 경우 타겟 클릭 취소
 
             const rect = this.getBoundingClientRect(); 
             const clickX = e.clientX - rect.left; 
@@ -1232,6 +1221,7 @@
                 const relBearing = true_bearing_rad - (shipPhysics.heading * DEG2RAD); 
                 const distSq = relX*relX + relZ*relZ; 
                 
+                // 패닝된 오프셋을 반영하여 타겟 위치 판별
                 const px = cx + radarOffsetX + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; 
                 const py = cy + radarOffsetY - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale; 
                 const clickDist = Math.hypot(px - clickX, py - clickY); 
@@ -1352,12 +1342,9 @@
             
             env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
 
-            // 시뮬레이션 시작 시 데이터 표시 초기화
-            isDataHidden = false;
-            visibleDataFields = {};
-            document.getElementById('btn-data-toggle').classList.add('active');
-
             document.getElementById('digital-hud-container').style.display = 'flex';
+            
+            // 레이더 초기 상태는 OFF로 설정
             toggleRadar(false);
 
             document.getElementById('camera-hint').style.display = 'block';
@@ -1476,6 +1463,7 @@
             });
         }
 
+
         // ==========================================
         // 8. UPDATE LOGIC (Physics & AI)
         // ==========================================
@@ -1484,7 +1472,7 @@
             shipPhysics.simTime += dt; 
             
             let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder; 
-            let rStep = 2.5 * dt; 
+            let rStep = 1.5 * dt; 
             
             if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder; 
             else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
@@ -1597,35 +1585,26 @@
         }
 
         function updateAI() {
-            // HUD 블라인드 표시 확인용 함수
-            const showData = (id) => (!isDataHidden || visibleDataFields[id]);
-
             // Update HUD values using cached DOM elements
-            UI_ELEMENTS.valHdg.innerText = showData('val-hdg') ? shipPhysics.heading.toFixed(1).padStart(5, '0') + '°' : '-'; 
-            UI_ELEMENTS.valCrs.innerText = showData('val-crs') ? (shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading).toFixed(1).padStart(5, '0') + '°' : '-'; 
-            UI_ELEMENTS.valSog.innerText = showData('val-sog') ? (shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed).toFixed(1) : '-'; 
-            UI_ELEMENTS.valLat.innerText = showData('val-lat') ? Math.abs(shipPhysics.lat).toFixed(1) : '-';
+            UI_ELEMENTS.valHdg.innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; 
+            UI_ELEMENTS.valCrs.innerText = (shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading).toFixed(1).padStart(5, '0') + '°'; 
+            UI_ELEMENTS.valSog.innerText = (shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed).toFixed(1); 
+            UI_ELEMENTS.valLat.innerText = Math.abs(shipPhysics.lat).toFixed(1);
             
             const rotVal = shipPhysics.rot; 
-            UI_ELEMENTS.valRot.innerText = showData('val-rot') ? Math.abs(rotVal).toFixed(1) : '-'; 
-            if (showData('val-rot')) { 
-                if (rotVal > 0.1) { UI_ELEMENTS.valRot.style.color = '#00ffaa'; } else if (rotVal < -0.1) { UI_ELEMENTS.valRot.style.color = '#ff3333'; } else { UI_ELEMENTS.valRot.style.color = '#fff'; }
-            } else { UI_ELEMENTS.valRot.style.color = '#fff'; }
+            UI_ELEMENTS.valRot.innerText = Math.abs(rotVal).toFixed(1); 
+            if (rotVal > 0.1) { UI_ELEMENTS.valRot.style.color = '#00ffaa'; } else if (rotVal < -0.1) { UI_ELEMENTS.valRot.style.color = '#ff3333'; } else { UI_ELEMENTS.valRot.style.color = '#fff'; }
             
             const rudCmdVal = shipPhysics.targetRudder; 
-            UI_ELEMENTS.valRudCmd.innerText = showData('val-rud-cmd') ? Math.abs(rudCmdVal).toFixed(1) + '°' : '-'; 
-            if (showData('val-rud-cmd')) { 
-                if (rudCmdVal > 0.1) { UI_ELEMENTS.valRudCmd.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { UI_ELEMENTS.valRudCmd.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudCmd.style.color = '#fff'; }
-            } else { UI_ELEMENTS.valRudCmd.style.color = '#fff'; }
+            UI_ELEMENTS.valRudCmd.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; 
+            if (rudCmdVal > 0.1) { UI_ELEMENTS.valRudCmd.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { UI_ELEMENTS.valRudCmd.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudCmd.style.color = '#fff'; }
             
             const rudActVal = shipPhysics.actualRudder; 
-            UI_ELEMENTS.valRudAct.innerText = showData('val-rud-act') ? Math.abs(rudActVal).toFixed(1) + '°' : '-'; 
-            if (showData('val-rud-act')) { 
-                if (rudActVal > 0.1) { UI_ELEMENTS.valRudAct.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { UI_ELEMENTS.valRudAct.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudAct.style.color = '#fff'; }
-            } else { UI_ELEMENTS.valRudAct.style.color = '#fff'; }
+            UI_ELEMENTS.valRudAct.innerText = Math.abs(rudActVal).toFixed(1) + '°'; 
+            if (rudActVal > 0.1) { UI_ELEMENTS.valRudAct.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { UI_ELEMENTS.valRudAct.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudAct.style.color = '#fff'; }
 
-            UI_ELEMENTS.valWind.innerText = showData('val-wind') ? `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}` : '-';
-            UI_ELEMENTS.valCurrent.innerText = showData('val-current') ? `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}` : '-';
+            UI_ELEMENTS.valWind.innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}`;
+            UI_ELEMENTS.valCurrent.innerText = `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}`;
 
             let maxDistSq = 1000 * 1000;
             targetShips.forEach(ts => { 
@@ -1642,15 +1621,19 @@
             const ctxR = canvasR.getContext('2d'); 
             const cx = canvasR.width/2; 
             const cy = canvasR.height/2; 
+            // --- 패닝 오프셋 적용 ---
             const drawCx = cx + radarOffsetX;
             const drawCy = cy + radarOffsetY;
+            // ------------------------
             const mapScale = (canvasR.width / 2) / window.currentRadarMaxDist; 
             
             ctxR.clearRect(0, 0, canvasR.width, canvasR.height); 
             ctxR.strokeStyle = 'rgba(0, 255, 255, 0.3)'; 
             ctxR.lineWidth = 1;
 
+            // --- 레인지링 동적 생성 수정 부분 ---
             const ringSpacing = canvasR.width / 8;
+            // 패닝에 의해 화면 밖으로 벗어난 부분까지 링을 그리기 위해 최대 거리 계산
             const distToCorners = [
                 Math.hypot(0 - drawCx, 0 - drawCy),
                 Math.hypot(canvasR.width - drawCx, 0 - drawCy),
@@ -1665,6 +1648,7 @@
                 ctxR.arc(drawCx, drawCy, r * ringSpacing, 0, Math.PI * 2);
                 ctxR.stroke();
             }
+            // ----------------------------------
 
             ctxR.save(); ctxR.translate(drawCx, drawCy);
 
@@ -1874,7 +1858,7 @@
                     UI_ELEMENTS.dangerTargetTcpa.innerText = "-"; 
                     UI_ELEMENTS.dangerTargetBcr.innerText = "-";
                     
-                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PROCEED ON CURRENT SAFE ROUTE</li>`; 
+                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PRO জ্ঞCCEED ON CURRENT SAFE ROUTE</li>`; 
                     dangerChevrons.visible = false; 
                     voiceContent.innerHTML = `선장님, 설정된 안전 반경(${currentCpaLimit.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
                 }
