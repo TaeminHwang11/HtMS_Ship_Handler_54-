@@ -103,7 +103,7 @@
         #fpv-content { position: relative; flex: 1; width: 100%; height: 100%; overflow: hidden; }
         #fpv-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
 
-        /* ================= 💡 복구된 원본 시뮬레이터 상단 HUD ================= */
+        /* ================= 원본 시뮬레이터 상단 HUD 완벽 복구 ================= */
         #digital-hud-container { 
             top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; 
             padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; 
@@ -240,7 +240,6 @@
                 <div id="btn-steer-stbd" class="steer-btn">S</div>
             </div>
             
-            <!-- 💡 터치/마우스 창 크기 조절 핸들 -->
             <div id="fpv-resize-handle"></div>
         </div>
     </div>
@@ -257,10 +256,12 @@
     const SHIP_WID_UNIT = 10.8; 
     const VECTOR_SCALE = 8;     
 
-    const VALID_SHIP_TYPES = [
-        "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", 
-        "CargoShip1", "CargoShip2", "ContainerShip1", "ContainerShip2", 
-        "FishingBoat1", "GasCarrier1", "PassengerShip1", "SteamShip", "Warship"
+    // 💡 원본 시뮬레이터와 100% 동일한 선박 에셋 리스트 적용
+    const modelFiles = [
+        "Models/AircraftCarrier1.glb", "Models/AircraftCarrier2.glb", "Models/BulkCarrier.glb", 
+        "Models/CargoShip1.glb", "Models/CargoShip2.glb", "Models/ContainerShip1.glb", 
+        "Models/ContainerShip2.glb", "Models/FishingBoat1.glb", "Models/GasCarrier1.glb", 
+        "Models/PassengerShip1.glb", "Models/SteamShip.glb", "Models/Warship.glb"
     ];
 
     const fallbackScenarioData = {
@@ -291,9 +292,16 @@
     let lastTime = performance.now();
     let isSimulationRunning = false;
 
+    // 카메라 컨트롤 변수 복구
+    let isDraggingCam = false; 
+    let camAngleX = -0.05; 
+    let camAngleY = 0; 
+    let lastCamTouchX = 0, lastCamTouchY = 0;
+
     let parsedModels = {};
     let daySkybox = null;
     let water;
+    let osShip; // 본선 그룹 (카메라 탑승용)
     let globalEnv = { windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
 
     // ==========================================
@@ -318,16 +326,20 @@
     }
 
     function getValidShipType(rawType) {
-        if (!rawType) return "CargoShip1";
-        if (VALID_SHIP_TYPES.includes(rawType)) return rawType;
-        const t = rawType.toUpperCase();
-        if (t.includes("CNTR")) return "ContainerShip1";
-        if (t.includes("BULK")) return "BulkCarrier";
-        if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1";
-        if (t.includes("FISH")) return "FishingBoat1";
-        if (t.includes("PASS")) return "PassengerShip1";
-        if (t.includes("CARRIER")) return "AircraftCarrier1";
-        return "CargoShip1"; 
+        if (!rawType) return "CargoShip1.glb";
+        const rawUpper = rawType.toUpperCase();
+        const exactMatch = modelFiles.find(f => f.toUpperCase().includes(rawUpper));
+        if (exactMatch) return exactMatch.split('/').pop();
+        
+        if (rawUpper.includes("CNTR")) return "ContainerShip1.glb";
+        if (rawUpper.includes("BULK")) return "BulkCarrier.glb";
+        if (rawUpper.includes("CHEM") || rawUpper.includes("LNG") || rawUpper.includes("GAS") || rawUpper.includes("TANK")) return "GasCarrier1.glb";
+        if (rawUpper.includes("FISH")) return "FishingBoat1.glb";
+        if (rawUpper.includes("PASS")) return "PassengerShip1.glb";
+        if (rawUpper.includes("CARRIER")) return "AircraftCarrier1.glb";
+        if (rawUpper.includes("WAR")) return "Warship.glb";
+        
+        return "CargoShip1.glb"; 
     }
 
     async function loadScenarioAndStart() {
@@ -340,7 +352,6 @@
 
         btnStart.style.display = 'none';
         loadMsg.style.display = 'block';
-        loadMsg.innerText = "데이터 다운로드 및 에셋 구성 중...";
 
         let scenarioData;
         if(scnId === "local_test") scenarioData = fallbackScenarioData;
@@ -353,6 +364,7 @@
         }
 
         const texLoader = new THREE.TextureLoader();
+        loadMsg.innerText = "스카이박스 불러오는 중... (1/4)";
         try {
             daySkybox = await new Promise((resolve) => {
                 texLoader.load(GITHUB_BASE_URL + "Environment/NiceSky.jpg", (tex) => { 
@@ -361,39 +373,38 @@
             });
         } catch(e) {}
 
-        await load3DAssets(scenarioData);
-        initializeSimulation(scenarioData);
-    }
-
-    async function load3DAssets(data) {
+        // 💡 원본 시뮬레이터 에셋 로딩 과정 100% 복구
         const gltfLoader = new THREE.GLTFLoader();
-        const shipTypes = [...new Set(data.ships.map(s => getValidShipType(s.shipType)))];
-        
-        for (let i = 0; i < shipTypes.length; i++) {
-            const type = shipTypes[i];
+        for (let i = 0; i < modelFiles.length; i++) {
+            const filePath = modelFiles[i];
+            loadMsg.innerText = `3D 선박 모델 다운로드 중... (${i+1}/${modelFiles.length})`;
             await new Promise((resolve) => {
-                gltfLoader.load(GITHUB_BASE_URL + `Models/${type}.glb`, (gltf) => {
-                    storeLoadedModel(type, gltf); resolve();
+                gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
+                    const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
+                    const box = new THREE.Box3().setFromObject(rawModel); 
+                    const size = new THREE.Vector3(); box.getSize(size); 
+                    const center = new THREE.Vector3(); box.getCenter(center);
+                    
+                    if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
+                    if (!isFinite(center.x)) center.set(0, 0, 0);
+                    
+                    rawModel.position.set(-center.x, -center.y, -center.z); 
+                    const maxDim = Math.max(size.x, size.y, size.z); 
+                    const scale = 150 / maxDim;
+                    const wrapper = new THREE.Group(); 
+                    wrapper.add(rawModel); 
+                    wrapper.scale.set(scale, scale, scale);
+                    
+                    const fileName = filePath.split('/').pop(); 
+                    parsedModels[fileName] = { group: wrapper };
+                    resolve();
                 }, undefined, () => { resolve(); });
             });
+            await new Promise(r => setTimeout(r, 50)); 
         }
-    }
 
-    function storeLoadedModel(type, gltf) {
-        const rawModel = gltf.scene;
-        rawModel.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(rawModel); 
-        const size = new THREE.Vector3(); box.getSize(size); 
-        const center = new THREE.Vector3(); box.getCenter(center);
-        
-        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
-        if (!isFinite(center.x)) center.set(0, 0, 0);
-        rawModel.position.set(-center.x, -center.y, -center.z); 
-        
-        const scale = 150 / Math.max(size.x, size.y, size.z); 
-        const wrapper = new THREE.Group(); 
-        wrapper.add(rawModel); wrapper.scale.set(scale, scale, scale);
-        parsedModels[type] = { group: wrapper };
+        loadMsg.innerText = "시뮬레이션 초기화 중...";
+        initializeSimulation(scenarioData);
     }
 
     window.addEventListener('DOMContentLoaded', fetchScenarioList);
@@ -488,7 +499,6 @@
                 canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
                 vObj.panX = canvas.width / 2; vObj.panY = canvas.height / 2;
 
-                // 마우스 로직
                 const startPan = (clientX, clientY) => {
                     document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
                     vp.classList.add('active-vp'); selectedMassIndex = idx; selectedTargetIndex = -1; updateSidebar();
@@ -515,7 +525,7 @@
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${range.toFixed(1)} NM`;
                 }, { passive: false });
 
-                // 💡 터치(드래그 & 핀치줌) 로직 완벽 적용
+                // 터치(드래그 & 핀치줌)
                 let initialPinchDist = null;
                 canvas.addEventListener('touchstart', (e) => {
                     if(e.touches.length === 1) startPan(e.touches[0].clientX, e.touches[0].clientY);
@@ -583,7 +593,8 @@
                 const color = isOwnShip ? '#10b981' : (s.isMASS ? '#06b6d4' : '#ef4444');
                 if (isSelected && !isOwnShip) { ctx.beginPath(); ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 10, 0, Math.PI * 2); ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2; ctx.stroke(); }
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
-                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, s.name);
+                if (!isOwnShip) drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, s.name);
+                else drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, ""); // 본선 라벨 생략
             });
         });
     }
@@ -615,13 +626,12 @@
     // ==========================================
     // 7. FPV WINDOW & THREE.JS
     // ==========================================
-    // 💡 FPV 창 터치/마우스 드래그 및 크기 조절 로직
     const fpvWin = document.getElementById('fpv-container');
     const fpvHeader = document.getElementById('fpv-header');
     const fpvResize = document.getElementById('fpv-resize-handle');
     let isDragWin = false, isReszWin = false, stX, stY, stL, stT, stW, stH;
 
-    const startDrag = (e) => { if(e.target.id==='btn-exit-3d') return; isDragWin = true; const t = e.touches ? e.touches[0] : e; stX = t.clientX; stY = t.clientY; stL = fpvWin.offsetLeft; stT = fpvWin.offsetTop; };
+    const startDrag = (e) => { if(e.target.tagName==='BUTTON') return; isDragWin = true; const t = e.touches ? e.touches[0] : e; stX = t.clientX; stY = t.clientY; stL = fpvWin.offsetLeft; stT = fpvWin.offsetTop; };
     const doDrag = (e) => { if(!isDragWin) return; const t = e.touches ? e.touches[0] : e; fpvWin.style.left = (stL + (t.clientX - stX)) + 'px'; fpvWin.style.top = (stT + (t.clientY - stY)) + 'px'; };
     const stopDrag = () => { isDragWin = false; };
     fpvHeader.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', doDrag); window.addEventListener('mouseup', stopDrag);
@@ -633,12 +643,42 @@
     fpvResize.addEventListener('mousedown', startResz); window.addEventListener('mousemove', doResz); window.addEventListener('mouseup', stopResz);
     fpvResize.addEventListener('touchstart', startResz, {passive: false}); window.addEventListener('touchmove', doResz, {passive: false}); window.addEventListener('touchend', stopResz);
 
+    // 💡 카메라 현장 드래그 로직 복구 (마우스 및 터치 지원)
+    const fpvContent = document.getElementById('fpv-content');
+    fpvContent.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'DIV') isDraggingCam = true; });
+    window.addEventListener('mouseup', () => { isDraggingCam = false; });
+    window.addEventListener('mousemove', (e) => {
+        if (isDraggingCam && is3DMode) { 
+            camAngleY -= e.movementX * 0.003; 
+            camAngleX -= e.movementY * 0.003; 
+            camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
+        }
+    });
+
+    fpvContent.addEventListener('touchstart', (e) => {
+        if (!e.target.classList.contains('steer-btn') && !e.target.closest('#digital-hud-container') && e.touches.length === 1) {
+            isDraggingCam = true; lastCamTouchX = e.touches[0].clientX; lastCamTouchY = e.touches[0].clientY;
+        }
+    }, {passive: false});
+    window.addEventListener('touchend', () => { isDraggingCam = false; });
+    window.addEventListener('touchmove', (e) => {
+        if (isDraggingCam && is3DMode && e.touches.length === 1) {
+            let moveX = e.touches[0].clientX - lastCamTouchX;
+            let moveY = e.touches[0].clientY - lastCamTouchY;
+            camAngleY -= moveX * 0.003; camAngleX -= moveY * 0.003;
+            camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX));
+            lastCamTouchX = e.touches[0].clientX; lastCamTouchY = e.touches[0].clientY;
+        }
+    }, {passive: false});
+
 
     function initThreeJS() {
         const contentDiv = document.getElementById('fpv-content');
         scene = new THREE.Scene();
         if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
+
+        osShip = new THREE.Group(); scene.add(osShip);
 
         camera3D = new THREE.PerspectiveCamera(60, contentDiv.clientWidth / contentDiv.clientHeight, 1, 80000);
         renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -662,14 +702,15 @@
         }).observe(contentDiv);
     }
 
-    function getModelForShip(type, colorHex) {
+    function getModelForShip(type) {
         if (parsedModels[type]) return parsedModels[type].group.clone();
         const group = new THREE.Group();
-        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: colorHex }) ); hull.position.y = 5;
+        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
         const bridge = new THREE.Mesh( new THREE.BoxGeometry(10, 8, 10), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }) ); bridge.position.set(0, 14, 15);
         group.add(hull); group.add(bridge); return group;
     }
 
+    let targetMeshes = [];
     function enter3DMode() {
         if(selectedMassIndex < 0) return;
         const mass = massViews[selectedMassIndex].massEntity;
@@ -677,10 +718,21 @@
         document.getElementById('fpv-title').innerText = `${mass.name} FPV CAMERA`;
         is3DMode = true;
 
-        if(mockupOS) scene.remove(mockupOS);
-        targetMeshes.forEach(m => scene.remove(m)); targetMeshes = [];
-        mockupOS = getModelForShip(mass.type, 0x10b981); scene.add(mockupOS);
-        simEntities.forEach((tgt) => { if(tgt === mass) return; const tMesh = getModelForShip(tgt.type, tgt.isMASS ? 0x06b6d4 : 0xef4444); scene.add(tMesh); targetMeshes.push({ entity: tgt, mesh: tMesh }); });
+        // 본선(OS) 구성 완벽 복원
+        for(let i = osShip.children.length - 1; i >= 0; i--) { 
+            if(osShip.children[i] !== camera3D) osShip.remove(osShip.children[i]); 
+        }
+        targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
+        
+        const osModel = getModelForShip(mass.type);
+        osShip.add(osModel);
+        if (!osShip.children.includes(camera3D)) osShip.add(camera3D);
+        camera3D.position.set(0, 60, 0); // 브릿지 카메라 위치 복구
+
+        simEntities.forEach((tgt) => { 
+            if(tgt === mass) return; 
+            const tMesh = getModelForShip(tgt.type); scene.add(tMesh); targetMeshes.push({ entity: tgt, mesh: tMesh }); 
+        });
         
         document.getElementById('val-wind').innerText = `${globalEnv.windDir}° / ${globalEnv.windSpd}`;
         document.getElementById('val-current').innerText = `${globalEnv.currentDir}° / ${globalEnv.currentSpd}`;
@@ -694,8 +746,14 @@
         water.material.uniforms['time'].value += dt * 0.3;
         const meterScale = 4.63;
 
-        mockupOS.position.set(mass.x * meterScale, 0, mass.z * meterScale); mockupOS.rotation.y = -mass.hdg * DEG2RAD;
-        camera3D.position.set(mass.x * meterScale, 25, mass.z * meterScale + 20); camera3D.rotation.y = -mass.hdg * DEG2RAD; camera3D.rotation.x = -0.05; 
+        // OS 위치 및 회전 동기화
+        osShip.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
+        osShip.rotation.y = -mass.hdg * DEG2RAD;
+        
+        camera3D.rotation.order = 'YXZ';
+        camera3D.rotation.y = camAngleY; 
+        camera3D.rotation.x = camAngleX;
+
         targetMeshes.forEach(t => { t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; });
 
         document.getElementById('val-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
@@ -730,8 +788,6 @@
         if(is3DMode) sync3DScene(dt);
         render2D(); updateSidebar();
     }
-
-    document.getElementById('btn-enter-3d').addEventListener('click', enter3DMode);
 
 </script>
 </body>
