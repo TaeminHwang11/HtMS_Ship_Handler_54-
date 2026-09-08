@@ -1495,7 +1495,15 @@
             const ss = String(now.getSeconds()).padStart(2, '0');
             const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
             
-            const customFileName = `S_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+            // 💡 선택한 시나리오 이름 가져오기
+            const scenarioSelect = document.getElementById('scenario-select');
+            let loadedScenarioName = "UnknownScenario";
+            if (scenarioSelect && scenarioSelect.selectedIndex >= 0) {
+                loadedScenarioName = scenarioSelect.options[scenarioSelect.selectedIndex].text;
+            }
+            
+            // 💡 파일명 맨 앞에 시나리오 이름 추가 (예: Scenario_001_S_20260908_...)
+            const customFileName = `${loadedScenarioName}_S_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
             const payload = { 
                 studentId: studentInfo.id, 
                 studentName: studentInfo.name, 
