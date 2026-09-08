@@ -1514,7 +1514,7 @@
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
             .then(res => res.json()).then(res => { 
                 document.getElementById('finish-title').innerText = "데이터 전송 성공!"; 
-                document.getElementById('finish-desc').innerText = "결과가 안전하게 저장되었습니다. 이제 창을 닫으셔도 좋습니다."; 
+                document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다."; 
             })
             .catch(err => { 
                 document.getElementById('finish-title').innerText = "전송 실패"; 
