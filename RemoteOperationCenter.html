@@ -70,20 +70,21 @@
         .btn-main:hover { background: #38bdf8; }
         .btn-main:disabled { background: #334155; border-color: #475569; color: #94a3b8; cursor: not-allowed; }
 
-        /* 💡 반응형(모바일/태블릿) 처리: 가로 폭이 768px 이하일 때 화면 분할 */
+        /* 모바일 대응 레이아웃 */
         @media (max-width: 768px) {
             #scc-container { flex-direction: column !important; }
             #grid-container { flex: none; height: 55vh; }
             #sidebar { width: 100%; height: 45vh; border-left: none; border-top: 2px solid var(--border-color); padding: 15px; }
         }
 
-        /* ================= 3D FPV 모드 레이아웃 (원본 시뮬레이터 UI 이식) ================= */
+        /* ================= 3D FPV 모드 레이아웃 ================= */
         #fpv-container { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 30; background: #000; }
         #fpv-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
         
-        #digital-hud-container { top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); position: absolute; pointer-events: auto; white-space: nowrap; }
+        /* 💡 HUD 패널을 상단에서 하단으로 이동하고 둥글게 처리 */
+        #digital-hud-container { bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 12px 25px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: absolute; pointer-events: auto; white-space: nowrap; backdrop-filter: blur(8px); }
         .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 55px; }
-        .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px; }
+        .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 2px; }
         .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace; }
         .digital-val.danger { color: #ff3333 !important; text-shadow: 0 0 10px rgba(255,51,51,0.5); }
 
@@ -96,7 +97,7 @@
         #btn-steer-stbd { right: 30px; }
 
         @media (max-width: 768px) {
-            #digital-hud-container { width: 90%; flex-wrap: wrap; gap: 10px; padding: 10px; }
+            #digital-hud-container { width: 90%; flex-wrap: wrap; gap: 10px; padding: 10px; bottom: 20px; }
             .digital-item { min-width: 45px; }
             .digital-val { font-size: 18px; }
             .steer-btn { width: 60px; height: 60px; font-size: 24px; }
@@ -131,7 +132,7 @@
     </div>
 
     <!-- 2. 2D 다중 관제 센터 -->
-    <div id="scc-container" style="display:none;">
+    <div id="scc-container">
         <div id="grid-container"></div>
         <div id="sidebar">
             <div class="panel-title">SCC DASHBOARD</div>
@@ -156,10 +157,10 @@
         </div>
     </div>
 
-    <!-- 3. 3D FPV 뷰어 (원본 시뮬레이터 UI 적용) -->
+    <!-- 3. 3D FPV 뷰어 -->
     <div id="fpv-container">
         <div id="fpv-ui">
-            <!-- 기존 시뮬레이터 디지털 HUD 복원 -->
+            <!-- 하단에 둥근 모서리로 배치된 디지털 HUD -->
             <div id="digital-hud-container">
                 <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
                 <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
@@ -169,6 +170,7 @@
             </div>
 
             <button id="btn-exit-3d">✖ 관제 화면으로 복귀</button>
+            <div style="position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: var(--accent-cyan); text-shadow: 0 0 10px #0ff;" id="fpv-title">MASS FPV CAMERA</div>
             
             <div id="btn-steer-port" class="steer-btn">P</div>
             <div id="btn-steer-stbd" class="steer-btn">S</div>
@@ -180,13 +182,21 @@
     // 0. CONSTANTS & FALLBACK DATA
     // ==========================================
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
-    const GITHUB_BASE_URL = "./"; // 사용자 에셋 경로
+    const GITHUB_BASE_URL = "./"; // 사용자 모델 및 환경 폴더가 위치한 기본 경로
     const DEG2RAD = Math.PI / 180;
     
     const SHIP_LEN_UNIT = 64.8;  
     const SHIP_WID_UNIT = 10.8; 
     const VECTOR_SCALE = 8;     
 
+    // 💡 사용자가 실제로 보유한 선박 모델 목록 (이미지 기반 매핑용)
+    const VALID_SHIP_TYPES = [
+        "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", 
+        "CargoShip1", "CargoShip2", "ContainerShip1", "ContainerShip2", 
+        "FishingBoat1", "GasCarrier1", "PassengerShip1", "SteamShip", "Warship"
+    ];
+
+    // 테스트용 폴백 데이터
     const fallbackScenarioData = {
         "ScenarioName": "Exported_MASS_Scenario",
         "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
@@ -219,7 +229,6 @@
     let lastTime = performance.now();
     let isSimulationRunning = false;
 
-    // 3D 전역변수
     let parsedModels = {};
     let daySkybox = null;
     let water;
@@ -254,6 +263,22 @@
         }
     }
 
+    // 💡 시나리오의 선박 타입을 보유한 에셋 이름으로 자동 변환하는 매핑 함수
+    function getValidShipType(rawType) {
+        if (!rawType) return "CargoShip1";
+        if (VALID_SHIP_TYPES.includes(rawType)) return rawType;
+        
+        const t = rawType.toUpperCase();
+        if (t.includes("CNTR")) return "ContainerShip1";
+        if (t.includes("BULK")) return "BulkCarrier";
+        if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1";
+        if (t.includes("FISH")) return "FishingBoat1";
+        if (t.includes("PASS")) return "PassengerShip1";
+        if (t.includes("CARRIER")) return "AircraftCarrier1";
+        
+        return "CargoShip1"; // 매칭 실패 시 기본 화물선 할당
+    }
+
     async function loadScenarioAndStart() {
         const stId = document.getElementById('student-id').value.trim();
         const stName = document.getElementById('student-name').value.trim();
@@ -282,7 +307,6 @@
             }
         }
 
-        // 스카이박스 로드 (원래 코드 방식)
         const texLoader = new THREE.TextureLoader();
         try {
             daySkybox = await new Promise((resolve) => {
@@ -292,7 +316,6 @@
             });
         } catch(e) {}
 
-        // 선박 에셋 병렬 로드
         await load3DAssets(scenarioData);
 
         initializeSimulation(scenarioData);
@@ -300,25 +323,21 @@
 
     async function load3DAssets(data) {
         const gltfLoader = new THREE.GLTFLoader();
-        const shipTypes = [...new Set(data.ships.map(s => s.shipType || "CNTR_2700"))];
+        
+        // 💡 시나리오의 선박 타입을 매핑 함수를 통해 유효한 이름으로 치환
+        const shipTypes = [...new Set(data.ships.map(s => getValidShipType(s.shipType)))];
         
         for (let i = 0; i < shipTypes.length; i++) {
             const type = shipTypes[i];
             const filePath = `Models/${type}.glb`;
-            const fallbackPath = `Models/ContainerShip1.glb`; 
             
             await new Promise((resolve) => {
                 gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
                     storeLoadedModel(type, gltf);
                     resolve();
                 }, undefined, () => {
-                    gltfLoader.load(GITHUB_BASE_URL + fallbackPath, (fbGltf) => {
-                        storeLoadedModel(type, fbGltf);
-                        resolve();
-                    }, undefined, () => {
-                        console.warn(`[에셋 경고] ${type} 모델을 찾을 수 없습니다.`);
-                        resolve();
-                    });
+                    console.warn(`[에셋 경고] ${filePath} 모델을 찾을 수 없어 임시 박스로 대체됩니다.`);
+                    resolve(); // 에러 발생 시에도 중단되지 않도록 resolve 처리
                 });
             });
         }
@@ -383,7 +402,6 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('scc-container').style.display = 'flex';
         
-        // 환경 변수 파싱
         if(data.environment && data.environment.wind) {
             globalEnv.windDir = data.environment.wind.dir;
             globalEnv.windSpd = data.environment.wind.spd;
@@ -409,7 +427,7 @@
             simEntities.push({
                 id: s.mmsi,
                 name: s.shipName,
-                type: s.shipType || "CNTR_2700",
+                type: getValidShipType(s.shipType), // 💡 렌더링용 타입 매핑
                 isMASS: s.isMASS === 1,
                 x: uPos.x,
                 z: uPos.z,
@@ -605,11 +623,10 @@
                 const isSelected = (selectedMassIndex === idx && selectedTargetIndex === tIdx);
                 const color = isOwnShip ? '#10b981' : (s.isMASS ? '#06b6d4' : '#ef4444');
 
-                // 💡 요구사항: 타겟 선택 시 에디터 방식의 주황빛 동그라미(테두리) 표시
                 if (isSelected && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 10, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#eab308'; // 주황/노란색 테두리
+                    ctx.strokeStyle = '#eab308';
                     ctx.lineWidth = 2;
                     ctx.stroke();
                 }
@@ -683,7 +700,6 @@
         dirLight.position.set(-1000, 1500, -1000);
         scene.add(dirLight);
 
-        // 💡 화려한 바다 그래픽 복구
         water = new THREE.Water(
             new THREE.PlaneGeometry(80000, 80000),
             {
@@ -735,7 +751,7 @@
         
         document.getElementById('scc-container').style.display = 'none';
         document.getElementById('fpv-container').style.display = 'block';
-        //document.getElementById('fpv-title').innerText = `${mass.name} - FPV CAMERA`;
+        document.getElementById('fpv-title').innerText = `${mass.name} - FPV CAMERA`;
         
         is3DMode = true;
 
@@ -753,7 +769,6 @@
             targetMeshes.push({ entity: tgt, mesh: tMesh });
         });
 
-        // 환경변수 세팅
         document.getElementById('val-wind').innerText = `${globalEnv.windDir}° / ${globalEnv.windSpd}`;
 
         window.dispatchEvent(new Event('resize'));
@@ -785,10 +800,9 @@
             t.mesh.rotation.y = -t.entity.hdg * DEG2RAD;
         });
 
-        // 💡 원본 시뮬레이터 HUD 업데이트 연동
         document.getElementById('val-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
         document.getElementById('val-sog').innerText = `${mass.spd.toFixed(1)}`;
-        document.getElementById('val-rot').innerText = `0.0`; // 현재는 단순 전진만 하므로 0 고정
+        document.getElementById('val-rot').innerText = `0.0`; 
         
         let minCPA = Infinity;
         simEntities.forEach(tgt => {
