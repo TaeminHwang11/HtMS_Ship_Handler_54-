@@ -201,7 +201,7 @@
             if (files.error) throw new Error(files.error);
 
             select.innerHTML = '';
-            const filteredFiles = files.filter(f => f.name.includes(' MASS'));
+            const filteredFiles = files.filter(f => f.name.includes('MASS'));
 
             if(filteredFiles.length === 0) {
                 select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
