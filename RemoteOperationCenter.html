@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>[HTMS] Remote Operation Center Simulator</title>
+    <!-- Three.js 및 에셋 로더 (기존 고퀄리티 그래픽용) -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/objects/Water.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
 
@@ -42,8 +46,11 @@
         
         #grid-container { flex: 1; display: grid; gap: 2px; background: var(--border-color); width: 100%; height: 100%; }
         
-        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; cursor: crosshair; border: 2px solid transparent; transition: border 0.2s; }
+        /* 기본 테두리를 밝은 파란색(--accent-cyan)으로 변경 */
+        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; cursor: crosshair; border: 2px solid var(--accent-cyan); transition: border 0.2s; }
+        /* 선택된 뷰포트 테두리는 유지(노란색) */
         .viewport.active-vp { border: 2px solid var(--accent-yellow); }
+        
         .vp-canvas { width: 100%; height: 100%; display: block; }
         
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
@@ -100,7 +107,7 @@
                     <option value="">목록 로딩 중...</option>
                 </select>
             </div>
-            <button class="btn-start" onclick="loadScenarioAndStart()">시뮬레이션 시작</button>
+            <button class="btn-start" onclick="loadScenarioAndStart()" id="btn-start">시뮬레이션 시작</button>
             <div id="loading-screen">통신 중... 잠시만 기다려주세요.</div>
         </div>
     </div>
@@ -150,6 +157,7 @@
     // 0. CONSTANTS & FALLBACK DATA
     // ==========================================
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+    const GITHUB_BASE_URL = "./"; // 사용자 환경 경로에 맞춰 조정 가능
     const DEG2RAD = Math.PI / 180;
     
     // 시나리오 에디터 렌더링 규격
@@ -162,12 +170,12 @@
         "ScenarioName": "Exported_MASS_Scenario",
         "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
         "ships": [
-            { "mmsi": 156836315, "isMASS": 1, "shipName": "MASS_1", "initSpeed": 17, "initHeading": 0, "waypointSetID": 0 },
-            { "mmsi": 386492446, "isMASS": 1, "shipName": "MASS_2", "initSpeed": 17, "initHeading": 0, "waypointSetID": 1 },
-            { "mmsi": 991047364, "isMASS": 1, "shipName": "MASS_3", "initSpeed": 17, "initHeading": 0, "waypointSetID": 2 },
-            { "mmsi": 578307389, "isMASS": 0, "shipName": "ALPHA_1", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 },
-            { "mmsi": 234627185, "isMASS": 0, "shipName": "BRAVO_1", "initSpeed": 10, "initHeading": 180, "waypointSetID": 4 },
-            { "mmsi": 647906261, "isMASS": 0, "shipName": "CHARLIE_1", "initSpeed": 15, "initHeading": 210.9, "waypointSetID": 5 }
+            { "mmsi": 156836315, "isMASS": 1, "shipName": "MASS_1", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 0 },
+            { "mmsi": 386492446, "isMASS": 1, "shipName": "MASS_2", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 1 },
+            { "mmsi": 991047364, "isMASS": 1, "shipName": "MASS_3", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 2 },
+            { "mmsi": 578307389, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "CNTR_2700", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 },
+            { "mmsi": 234627185, "isMASS": 0, "shipName": "BRAVO_1", "shipType": "CNTR_2700", "initSpeed": 10, "initHeading": 180, "waypointSetID": 4 },
+            { "mmsi": 647906261, "isMASS": 0, "shipName": "CHARLIE_1", "shipType": "CNTR_2700", "initSpeed": 15, "initHeading": 210.9, "waypointSetID": 5 }
         ],
         "WayPointSet": [
             { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }] },
@@ -190,6 +198,10 @@
     let lastTime = performance.now();
     let isSimulationRunning = false;
 
+    // 3D 관련 전역변수
+    let parsedModels = {};
+    let water;
+
     // ==========================================
     // 2. GOOGLE DRIVE FETCH & LOGIN
     // ==========================================
@@ -201,7 +213,7 @@
             if (files.error) throw new Error(files.error);
 
             select.innerHTML = '';
-            const filteredFiles = files.filter(f => f.name.includes('MASS'));
+            const filteredFiles = files.filter(f => f.name.includes('MASS') || f.name.includes('Scenario'));
 
             if(filteredFiles.length === 0) {
                 select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
@@ -224,28 +236,86 @@
         const stName = document.getElementById('student-name').value.trim();
         const scnId = document.getElementById('scenario-select').value;
         const loadMsg = document.getElementById('loading-screen');
+        const btnStart = document.getElementById('btn-start');
 
         if(!stId || !stName) { alert("학번과 이름을 입력해주세요."); return; }
         if(!scnId) { alert("시나리오를 선택해주세요."); return; }
 
+        btnStart.style.display = 'none';
         loadMsg.style.display = 'block';
-        loadMsg.innerText = "데이터 다운로드 및 지형 구성 중...";
+        loadMsg.innerText = "시나리오 다운로드 중...";
 
         let scenarioData;
         if(scnId === "local_test") {
             scenarioData = fallbackScenarioData;
-            setTimeout(() => initializeSimulation(scenarioData), 500); // 딜레이 페이크
         } else {
             try {
                 const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}`);
                 scenarioData = await res.json();
                 if(scenarioData.error) throw new Error(scenarioData.error);
-                initializeSimulation(scenarioData);
             } catch (err) {
                 alert("시나리오 로드 실패! 로컬 테스트용으로 진행합니다.");
-                initializeSimulation(fallbackScenarioData);
+                scenarioData = fallbackScenarioData;
             }
         }
+
+        // 선박 모델 다운로드 (고퀄리티 그래픽용)
+        loadMsg.innerText = "3D 선박 그래픽 에셋 다운로드 중...";
+        await load3DAssets(scenarioData);
+
+        initializeSimulation(scenarioData);
+    }
+
+    // 3D 모델 다운로드 함수
+    async function load3DAssets(data) {
+        const gltfLoader = new THREE.GLTFLoader();
+        
+        // 시나리오에 있는 모든 선박 타입 추출 (중복 제거)
+        const shipTypes = [...new Set(data.ships.map(s => s.shipType || "CNTR_2700"))];
+        
+        for (let i = 0; i < shipTypes.length; i++) {
+            const type = shipTypes[i];
+            const filePath = `Models/${type}.glb`;
+            const fallbackPath = `Models/ContainerShip1.glb`; // 해당 타입이 없을 때를 대비한 기본 모델
+            
+            await new Promise((resolve) => {
+                gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
+                    storeLoadedModel(type, gltf);
+                    resolve();
+                }, undefined, () => {
+                    // 모델 로드 실패 시 폴백 모델 시도 (임시 박스 렌더링 에러 방지)
+                    gltfLoader.load(GITHUB_BASE_URL + fallbackPath, (fbGltf) => {
+                        storeLoadedModel(type, fbGltf);
+                        resolve();
+                    }, undefined, () => {
+                        // 둘 다 없으면 콘솔 경고만 띄우고 진행 (이후 모형 생성 로직이 처리함)
+                        console.warn(`[에셋 경고] ${type} 모델을 찾을 수 없습니다.`);
+                        resolve();
+                    });
+                });
+            });
+        }
+    }
+
+    function storeLoadedModel(type, gltf) {
+        const rawModel = gltf.scene;
+        rawModel.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(rawModel); 
+        const size = new THREE.Vector3(); box.getSize(size); 
+        const center = new THREE.Vector3(); box.getCenter(center);
+        
+        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
+        if (!isFinite(center.x)) center.set(0, 0, 0);
+        
+        rawModel.position.set(-center.x, -center.y, -center.z); 
+        const maxDim = Math.max(size.x, size.y, size.z); 
+        const scale = 150 / maxDim; // 표준 스케일 보정
+        
+        const wrapper = new THREE.Group(); 
+        wrapper.add(rawModel); 
+        wrapper.scale.set(scale, scale, scale);
+        
+        parsedModels[type] = { group: wrapper };
     }
 
     window.addEventListener('DOMContentLoaded', fetchScenarioList);
@@ -253,8 +323,6 @@
     // ==========================================
     // 3. UTILS (좌표계 변환 & CPA)
     // ==========================================
-    // 1 Unit = 4.63m (시나리오 에디터 렌더링 규격 적용)
-    // 400 Unit = 1 NM (1852m)
     function latLonToUnits(lat, lon, refLat, refLon) {
         const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
         const dzM = -(lat - refLat) * 111111;
@@ -262,7 +330,7 @@
     }
 
     function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
-        const unitSpeedOS = voSpd * (400 / 3600); // knot to units/sec
+        const unitSpeedOS = voSpd * (400 / 3600); 
         const unitSpeedTS = vtSpd * (400 / 3600);
         
         const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); 
@@ -278,7 +346,6 @@
         const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
         const cpaUnits = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
         
-        // BCR 생략 (CPA, TCPA 위주로 표현)
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: -1 }; 
     }
 
@@ -309,6 +376,7 @@
             simEntities.push({
                 id: s.mmsi,
                 name: s.shipName,
+                type: s.shipType || "CNTR_2700",
                 isMASS: s.isMASS === 1,
                 x: uPos.x,
                 z: uPos.z,
@@ -319,7 +387,6 @@
 
         const massShips = simEntities.filter(s => s.isMASS);
         
-        // 그리드 레이아웃 동적 분할
         const count = massShips.length;
         let cols = 1, rows = 1;
         if (count === 2) cols = 2;
@@ -345,13 +412,12 @@
             const vObj = { 
                 massEntity: mass, 
                 canvasId: `canvas-mass-${idx}`,
-                viewScale: 1 / 3.0, // 기본 3NM 뷰
+                viewScale: 1 / 3.0, 
                 panX: 0, panY: 0,
                 isDragging: false, dragStartX: 0, dragStartY: 0
             };
             massViews.push(vObj);
 
-            // 이벤트 바인딩 (선택, 줌, 패닝)
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
                 canvas.width = canvas.parentElement.clientWidth;
@@ -366,7 +432,6 @@
                     selectedTargetIndex = -1;
                     updateSidebar();
 
-                    // 타겟 클릭 (Hit Test)
                     const rect = canvas.getBoundingClientRect();
                     const mx = e.clientX - rect.left;
                     const my = e.clientY - rect.top;
@@ -380,7 +445,6 @@
                         const cx = vObj.panX + relX * vObj.viewScale;
                         const cy = vObj.panY + relZ * vObj.viewScale;
                         
-                        // 클릭 반경 (배 크기 비례)
                         const hitRadius = Math.max(15, (SHIP_LEN_UNIT / 2) * vObj.viewScale);
                         if(Math.hypot(mx - cx, my - cy) < hitRadius) {
                             selectedTargetIndex = i;
@@ -427,9 +491,9 @@
     }
 
     // ==========================================
-    // 5. 2D RENDERING (시나리오 에디터 코드 이식)
+    // 5. 2D RENDERING 
     // ==========================================
-    function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label, isSelected) {
+    function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; 
         const cy = panY + z * viewScale;
         ctx.save(); 
@@ -440,7 +504,6 @@
         ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fillStyle = color;
         const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
         
-        // 오각 선박 모양
         ctx.beginPath(); 
         ctx.moveTo(0, -halfLen); 
         ctx.lineTo(halfWid, -halfLen + 12); 
@@ -451,8 +514,7 @@
         ctx.fill();
         
         ctx.lineWidth = 1 / viewScale; 
-        ctx.strokeStyle = isSelected ? '#eab308' : '#ffffff'; 
-        if(isSelected) { ctx.lineWidth = 3 / viewScale; ctx.shadowColor = '#eab308'; ctx.shadowBlur = 20; }
+        ctx.strokeStyle = '#ffffff'; 
         ctx.stroke(); 
         ctx.restore();
 
@@ -485,12 +547,10 @@
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 축선
             ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.beginPath();
             ctx.moveTo(0, v.panY); ctx.lineTo(canvas.width, v.panY);
             ctx.moveTo(v.panX, 0); ctx.lineTo(v.panX, canvas.height); ctx.stroke();
 
-            // 레인지 링 (Code 1 스타일)
             const rangeNM = 1 / v.viewScale;
             let stepCbl = rangeNM <= 1.5 ? 1 : (rangeNM <= 3.5 ? 5 : (rangeNM <= 8.0 ? 10 : 20));   
             let majorCbl = rangeNM <= 1.5 ? 5 : (rangeNM <= 3.5 ? 10 : (rangeNM <= 8.0 ? 20 : 50)); 
@@ -506,7 +566,6 @@
             }
             ctx.setLineDash([]);
 
-            // 모든 선박 렌더링
             simEntities.forEach((s, tIdx) => {
                 const relX = s.x - v.massEntity.x;
                 const relZ = s.z - v.massEntity.z;
@@ -515,8 +574,17 @@
                 const isSelected = (selectedMassIndex === idx && selectedTargetIndex === tIdx);
                 const color = isOwnShip ? '#10b981' : (s.isMASS ? '#06b6d4' : '#ef4444');
 
+                // 💡 요구사항: 타겟 선택 시 에디터 방식의 주황빛 동그라미(테두리) 표시
+                if (isSelected && !isOwnShip) {
+                    ctx.beginPath();
+                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#eab308'; // 주황/노란색 테두리
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
-                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, s.name, isSelected);
+                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, s.name);
             });
         });
     }
@@ -557,40 +625,52 @@
     }
 
     // ==========================================
-    // 7. THREE.JS 3D ENGINE (FPV View)
+    // 7. THREE.JS 3D ENGINE (High Graphics FPV)
     // ==========================================
-    let scene, camera3D, renderer3D;
-    let mockupOS, targetMeshes = [];
-    
     function initThreeJS() {
         const container = document.getElementById('fpv-container');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x05101a);
-        scene.fog = new THREE.FogExp2(0x05101a, 0.0001);
+        scene.background = new THREE.Color(0x5a6a79); // 낮 바다 하늘색 느낌
+        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
 
-        camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 50000);
+        camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 80000);
         
         renderer3D = new THREE.WebGLRenderer({ antialias: true });
+        renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
         renderer3D.setSize(window.innerWidth, window.innerHeight);
         container.insertBefore(renderer3D.domElement, document.getElementById('fpv-ui'));
 
-        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        const ambientLight = new THREE.AmbientLight(0x707070, 1.5);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(0, 1000, -1000);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(-1000, 1500, -1000);
         scene.add(dirLight);
 
-        // 간이 바다
-        const sea = new THREE.Mesh(
+        // 💡 화려한 바다 그래픽 (Water.js) 복구
+        water = new THREE.Water(
             new THREE.PlaneGeometry(80000, 80000),
-            new THREE.MeshBasicMaterial({ color: 0x020813, transparent: true, opacity: 0.9 })
+            {
+                textureWidth: 512, textureHeight: 512,
+                waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }),
+                sunDirection: new THREE.Vector3(1, 1, 1).normalize(),
+                sunColor: 0xdddddd,
+                waterColor: 0x00E5FF,
+                distortionScale: 1.5,
+                alpha: 1.0
+            }
         );
-        sea.rotation.x = -Math.PI / 2;
-        scene.add(sea);
+        water.rotation.x = -Math.PI / 2;
+        scene.add(water);
 
-        const grid = new THREE.GridHelper(20000, 100, 0x06b6d4, 0x1f293d);
-        grid.position.y = 0.5;
-        scene.add(grid);
+        // Water 렌더링 시 투명도 이슈 해결용
+        const origWaterRender = water.onBeforeRender;
+        water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) {
+            const originalBackground = scene.background; 
+            scene.background = new THREE.Color(0x000000); 
+            if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group );
+            scene.background = originalBackground; 
+        };
 
         window.addEventListener('resize', () => {
             if(!is3DMode) return;
@@ -600,14 +680,20 @@
         });
     }
 
-    function createMockupShip(colorHex) {
-        const group = new THREE.Group();
-        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: colorHex }) );
-        hull.position.y = 5;
-        const bridge = new THREE.Mesh( new THREE.BoxGeometry(10, 8, 10), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }) );
-        bridge.position.set(0, 14, 15);
-        group.add(hull); group.add(bridge);
-        return group;
+    // 만약 로딩된 모델이 없으면 대체용으로 사용할 임시 모델
+    function getModelForShip(type, colorHex) {
+        if (parsedModels[type]) {
+            return parsedModels[type].group.clone();
+        } else {
+            // 모델 로딩 실패 시 폴백 박스
+            const group = new THREE.Group();
+            const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: colorHex }) );
+            hull.position.y = 5;
+            const bridge = new THREE.Mesh( new THREE.BoxGeometry(10, 8, 10), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }) );
+            bridge.position.set(0, 14, 15);
+            group.add(hull); group.add(bridge);
+            return group;
+        }
     }
 
     function enter3DMode() {
@@ -624,12 +710,13 @@
         targetMeshes.forEach(m => scene.remove(m));
         targetMeshes = [];
 
-        mockupOS = createMockupShip(0x10b981);
+        // 진짜 3D 모델 가져와서 적용
+        mockupOS = getModelForShip(mass.type, 0x10b981);
         scene.add(mockupOS);
 
         simEntities.forEach((tgt) => {
             if(tgt === mass) return;
-            const tMesh = createMockupShip(tgt.isMASS ? 0x06b6d4 : 0xef4444);
+            const tMesh = getModelForShip(tgt.type, tgt.isMASS ? 0x06b6d4 : 0xef4444);
             scene.add(tMesh);
             targetMeshes.push({ entity: tgt, mesh: tMesh });
         });
@@ -643,9 +730,12 @@
         document.getElementById('scc-container').style.display = 'flex';
     }
 
-    function sync3DScene() {
+    function sync3DScene(dt) {
         if(!is3DMode || selectedMassIndex < 0) return;
         const mass = massViews[selectedMassIndex].massEntity;
+
+        // 바다 쉐이더 물결 애니메이션
+        water.material.uniforms['time'].value += dt * 0.3;
 
         // 3D 공간상 1 Unit = 4.63m 스케일 적용하여 배치
         const meterScale = 4.63;
@@ -700,13 +790,13 @@
         if(!isSimulationRunning) return;
 
         const now = performance.now();
-        const dt = (now - lastTime) / 1000;
+        const dt = Math.min((now - lastTime) / 1000, 0.1); // 최대 0.1초 튀는 현상 방지
         lastTime = now;
 
         updatePhysics(dt);
 
         if(is3DMode) {
-            sync3DScene();
+            sync3DScene(dt);
         } else {
             render2D();
             updateSidebar();
@@ -719,3 +809,4 @@
 </script>
 </body>
 </html>
+
