@@ -201,7 +201,6 @@
             <label>이름 (Name)</label>
             <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
         </div>
-        <!-- 시나리오 선택 (구글 드라이브 연동) -->
         <div class="form-row">
             <label>시나리오 (Scenario)</label>
             <select id="scenario-select">
@@ -627,10 +626,11 @@
 </div>
 
 <script>
-    // --- 구글 드라이브 시나리오 스크립트 연결 주소 ---
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
 
-    // 로그인 화면 로드 시 구글 드라이브 목록 페칭
+    // 저장 시 사용할 현재 로드된 시나리오 이름 전역 변수
+    let loadedScenarioName = "Random";
+
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
@@ -640,7 +640,6 @@
             
             select.innerHTML = '<option value="random">무작위 생성 (Random)</option>';
             
-            // 이름에 'Scenario'가 포함된 파일만 필터링
             const filtered = files.filter(f => f.name.includes('Scenario'));
             
             filtered.forEach(file => {
@@ -655,7 +654,7 @@
         }
     }
 
-    fetchScenarioList(); // 최초 구동 시 즉시 실행
+    fetchScenarioList(); 
 
     let activeDropdown = null;
     function toggleCustomDropdown(id, e) {
@@ -703,14 +702,17 @@
         btn.innerText = "시나리오 로딩 중...";
         btn.disabled = true;
 
-        const selectedFileId = document.getElementById('scenario-select').value;
+        const select = document.getElementById('scenario-select');
+        const selectedFileId = select.value;
         
-        // 무작위 생성을 택했거나 선택된 파일이 없을 경우
         if (selectedFileId === 'random' || !selectedFileId) {
+            loadedScenarioName = "Random"; // 전역 변수 저장
             finishLoginSuccess();
             initEnvironment();
         } else {
-            // 구글 드라이브에서 시나리오 파일 직접 로드
+            // 확장자 떼고 이름만 보관
+            loadedScenarioName = select.options[select.selectedIndex].text.replace('.json', '');
+            
             fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${selectedFileId}`)
             .then(res => res.json())
             .then(data => {
@@ -721,6 +723,7 @@
             .catch(err => {
                 console.error("시나리오 파일 로딩 실패:", err);
                 alert("시나리오를 불러오는데 실패했습니다. 무작위 환경으로 시작합니다.");
+                loadedScenarioName = "Random";
                 finishLoginSuccess();
                 initEnvironment();
             });
@@ -958,7 +961,8 @@
         const ss = String(now.getSeconds()).padStart(2, '0');
         const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
         
-        const customFileName = `R_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+        // 전역변수 loadedScenarioName를 앞에 삽입합니다.
+        const customFileName = `${loadedScenarioName}_R_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
         const payload = { 
             studentId: studentInfo.id, 
