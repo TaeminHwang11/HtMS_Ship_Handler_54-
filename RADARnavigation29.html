@@ -31,10 +31,11 @@
         .menu-box { background: rgba(30,30,35,0.8); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 40px; width: 350px; box-shadow: 0 10px 40px rgba(58, 117, 196, 0.2); }
         .form-row { margin-bottom: 20px; text-align: left; }
         .form-row label { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
-        .form-row input { width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: #fff; font-family: 'Roboto', sans-serif; font-size: 16px; border-radius: 4px; box-sizing: border-box; outline: none; transition: 0.2s;}
-        .form-row input:focus { border-color: var(--accent-blue); }
+        .form-row input, .form-row select { width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: #fff; font-family: 'Roboto', sans-serif; font-size: 16px; border-radius: 4px; box-sizing: border-box; outline: none; transition: 0.2s;}
+        .form-row input:focus, .form-row select:focus { border-color: var(--accent-blue); }
         .btn-main { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; font-family: 'Roboto', sans-serif; background: var(--accent-blue); color: #fff; transition: 0.2s; }
         .btn-main:hover { filter: brightness(1.2); }
+        .btn-main:disabled { background: #555; cursor: not-allowed; }
         
         #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .finish-title { font-size: 32px; font-weight: bold; color: var(--text-highlight); margin-bottom: 15px; }
@@ -77,7 +78,6 @@
         }
         #radar-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
         
-        /* 터치 조타 버튼 UI */
         .steer-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 28px; font-weight: bold; font-family: 'Roboto', sans-serif; display: none; align-items: center; justify-content: center; z-index: 9999; cursor: pointer; user-select: none; backdrop-filter: blur(4px); transition: 0.1s;}
         .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: translateY(-50%) scale(0.95); }
 
@@ -93,7 +93,6 @@
         .badge.green { border-color: var(--text-highlight); color: var(--text-highlight); background: #113311; }
         .badge.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
         
-        /* 커스텀 드롭다운 CSS */
         .custom-select-wrapper { position: relative; display: inline-block; user-select: none; }
         .custom-select-box { padding: 2px 5px; background: transparent; border: 1px solid #555; color: var(--text-muted); font-weight: bold; border-radius: 2px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: inherit; }
         .custom-select-box.green { border-color: var(--text-highlight); color: var(--text-highlight); background: #113311; }
@@ -202,7 +201,14 @@
             <label>이름 (Name)</label>
             <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
         </div>
-        <button class="btn-main" onclick="startLogin()">시작하기</button>
+        <!-- 시나리오 선택 (구글 드라이브 연동) -->
+        <div class="form-row">
+            <label>시나리오 (Scenario)</label>
+            <select id="scenario-select">
+                <option value="">목록 로딩 중...</option>
+            </select>
+        </div>
+        <button class="btn-main" id="btn-start" onclick="startLogin()">시작하기</button>
     </div>
 </div>
 
@@ -621,6 +627,36 @@
 </div>
 
 <script>
+    // --- 구글 드라이브 시나리오 스크립트 연결 주소 ---
+    const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+
+    // 로그인 화면 로드 시 구글 드라이브 목록 페칭
+    async function fetchScenarioList() {
+        const select = document.getElementById('scenario-select');
+        try {
+            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
+            const files = await res.json();
+            if (files.error) throw new Error(files.error);
+            
+            select.innerHTML = '<option value="random">무작위 생성 (Random)</option>';
+            
+            // 이름에 'Scenario'가 포함된 파일만 필터링
+            const filtered = files.filter(f => f.name.includes('Scenario'));
+            
+            filtered.forEach(file => {
+                const opt = document.createElement('option');
+                opt.value = file.id;
+                opt.textContent = file.name;
+                select.appendChild(opt);
+            });
+        } catch(e) {
+            console.error("시나리오 목록 로드 실패:", e);
+            select.innerHTML = '<option value="random">불러오기 실패 (무작위 생성만 가능)</option>';
+        }
+    }
+
+    fetchScenarioList(); // 최초 구동 시 즉시 실행
+
     let activeDropdown = null;
     function toggleCustomDropdown(id, e) {
         if(e) e.stopPropagation();
@@ -662,12 +698,39 @@
         studentInfo.id = document.getElementById('student-id').value.trim();
         studentInfo.name = document.getElementById('student-name').value.trim();
         if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
-        document.getElementById('login-overlay').style.display = 'none';
+
+        const btn = document.getElementById('btn-start');
+        btn.innerText = "시나리오 로딩 중...";
+        btn.disabled = true;
+
+        const selectedFileId = document.getElementById('scenario-select').value;
         
+        // 무작위 생성을 택했거나 선택된 파일이 없을 경우
+        if (selectedFileId === 'random' || !selectedFileId) {
+            finishLoginSuccess();
+            initEnvironment();
+        } else {
+            // 구글 드라이브에서 시나리오 파일 직접 로드
+            fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${selectedFileId}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) throw new Error(data.error);
+                finishLoginSuccess();
+                parseScenarioData(data);
+            })
+            .catch(err => {
+                console.error("시나리오 파일 로딩 실패:", err);
+                alert("시나리오를 불러오는데 실패했습니다. 무작위 환경으로 시작합니다.");
+                finishLoginSuccess();
+                initEnvironment();
+            });
+        }
+    }
+
+    function finishLoginSuccess() {
+        document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('val-wind-spd').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3, '0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
-        
-        autoLoadScenario();
     }
 
     let isTransmitting = false;
@@ -751,7 +814,6 @@
     let isDraggingEBL2 = false;
     let isDraggingVRM2 = false;
 
-    // ----- OFFSET 상태 관리 객체 및 토글 함수 추가 -----
     let offsetEBL1 = { active: false, placing: false, tx: 0, ty: 0 };
     let offsetVRM1 = { active: false, placing: false, tx: 0, ty: 0 };
     let offsetEBL2 = { active: false, placing: false, tx: 0, ty: 0 };
@@ -767,19 +829,18 @@
         if (!state.active) {
             state.active = true;
             state.placing = true;
-            state.tx = os.x; // 초기 위치는 본선
+            state.tx = os.x;
             state.ty = os.y;
             document.getElementById(btnId).classList.add('active');
             document.getElementById(btnId).style.background = 'var(--accent-blue)';
             document.getElementById(btnId).style.color = '#fff';
         } else if (state.active && !state.placing) {
-            state.active = false; // 오프셋 끄기 (본선 중심으로 되돌림)
+            state.active = false;
             document.getElementById(btnId).classList.remove('active');
             document.getElementById(btnId).style.background = '';
             document.getElementById(btnId).style.color = '';
         }
     }
-    // ----------------------------------------------------
 
     let piActive = [false, false, false, false];
     let piSpacing = [0.5, 1.0, 1.5, 2.0];
@@ -897,7 +958,6 @@
         const ss = String(now.getSeconds()).padStart(2, '0');
         const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
         
-        // 요구사항 2: 저장 파일명 앞에 'R_' 추가
         const customFileName = `R_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
         const payload = { 
@@ -918,23 +978,6 @@
             document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다.";
             console.error(err);
         });
-    }
-
-    async function autoLoadScenario() {
-        const scenarioFile = "Scenarios/Scenario.json";
-        try {
-            const res = await fetch(scenarioFile);
-            if (res.ok) {
-                const data = await res.json();
-                parseScenarioData(data);
-            } else {
-                console.warn("시나리오 파일이 존재하지 않아 무작위 타선을 배치합니다.");
-                initEnvironment();
-            }
-        } catch (err) {
-            console.warn("시나리오 자동 로딩 실패, 무작위 타선을 배치합니다.", err);
-            initEnvironment();
-        }
     }
 
     function parseScenarioData(data) {
@@ -958,7 +1001,7 @@
         if (data.os) {
             os.hdg = Number(data.os.hdg) || os.hdg;
             os.spd = Number(data.os.spd) || os.spd;
-            os.cmdSpd = os.spd; // 시나리오 기준 선속 저장
+            os.cmdSpd = os.spd;
             os.targetRudder = 0;
             os.actualRudder = 0;
             os.rot = 0;
@@ -1321,7 +1364,6 @@
         let relBrg = trueBrg - os.hdg;
         if(relBrg < 0) relBrg += 360;
 
-        // ---- OFFSET 위치 고정 로직 ----
         let tx_mouse = os.x + ((mouseDistPx / displayRadius) * currentRange) * Math.sin(trueBrg * Math.PI / 180);
         let ty_mouse = os.y + ((mouseDistPx / displayRadius) * currentRange) * Math.cos(trueBrg * Math.PI / 180);
 
@@ -1331,8 +1373,7 @@
         if (offsetEBL2.placing) { offsetEBL2.placing = false; offsetEBL2.tx = tx_mouse; offsetEBL2.ty = ty_mouse; placingAny = true; }
         if (offsetVRM2.placing) { offsetVRM2.placing = false; offsetVRM2.tx = tx_mouse; offsetVRM2.ty = ty_mouse; placingAny = true; }
 
-        if (placingAny) return; // 배치 중이었으면 드래그나 타겟 클릭 무시
-        // --------------------------------
+        if (placingAny) return; 
 
         let ebl1OriginPx = offsetEBL1.active ? getScreenPos(offsetEBL1.tx, offsetEBL1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
         let vrm1OriginPx = offsetVRM1.active ? getScreenPos(offsetVRM1.tx, offsetVRM1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
@@ -1434,7 +1475,6 @@
         let relBrg = trueBrg - os.hdg;
         if(relBrg < 0) relBrg += 360;
 
-        // ---- OFFSET 마우스 따라다니기 적용 ----
         let tx_mouse = os.x + ((mouseDistPx / displayRadius) * currentRange) * Math.sin(trueBrg * Math.PI / 180);
         let ty_mouse = os.y + ((mouseDistPx / displayRadius) * currentRange) * Math.cos(trueBrg * Math.PI / 180);
 
@@ -2020,7 +2060,6 @@
             }
         }
 
-        // ----- EBL / VRM 오프셋 위치 렌더링 반영 -----
         if (ebl1Active) {
             let opx = offsetEBL1.active ? getScreenPos(offsetEBL1.tx, offsetEBL1.ty, displayRadius, osPx, osPy) : {x: osPx, y: osPy};
             ctx.strokeStyle = '#3a75c4'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2.5;
@@ -2043,7 +2082,6 @@
             ctx.strokeStyle = '#eebb00'; ctx.setLineDash([10, 5, 2, 5]); ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.arc(opx.x, opx.y, (vrm2Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
         }
-        // ---------------------------------------------
 
         const getTgtIndex = (id) => selectedTargets.indexOf(id) + 1;
 
