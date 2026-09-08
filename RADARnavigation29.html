@@ -576,22 +576,22 @@
                         <span style="color:#ff3333; font-size:9px; font-weight:bold;">ARC</span>
                     </div>
                     <span id="val-ebl1" style="font-family:monospace; color:var(--text-main); font-size:12px;">088.9 ° T</span>
-                    <span class="btn">OFFSET</span>
+                    <span class="btn" id="btn-ebl1-offset" onclick="toggleOffset('ebl1')">OFFSET</span>
                 </div>
                 <div class="control-row">
                     <span class="badge" id="btn-vrm1" style="border-radius:10px; padding:2px 6px;" onclick="toggleVRM()">VRM 1</span>
                     <span id="val-vrm1" style="font-family:monospace; color:var(--text-main); font-size:12px;">0.24 NM</span>
-                    <span class="btn btn-dropdown">Fixed</span>
+                    <span class="btn" id="btn-vrm1-offset" onclick="toggleOffset('vrm1')">OFFSET</span>
                 </div>
                 <div class="control-row" style="margin-top:4px;">
                     <span class="badge" id="btn-ebl2" style="border-radius:10px; padding:2px 6px;" onclick="toggleEBL2()">EBL 2</span>
                     <span id="val-ebl2" style="font-family:monospace; color:var(--text-main); font-size:12px;">045.0 ° T</span>
-                    <span class="btn">OFFSET</span>
+                    <span class="btn" id="btn-ebl2-offset" onclick="toggleOffset('ebl2')">OFFSET</span>
                 </div>
                 <div class="control-row">
                     <span class="badge" id="btn-vrm2" style="border-radius:10px; padding:2px 6px;" onclick="toggleVRM2()">VRM 2</span>
                     <span id="val-vrm2" style="font-family:monospace; color:var(--text-main); font-size:12px;">1.00 NM</span>
-                    <span class="btn btn-dropdown">Fixed</span>
+                    <span class="btn" id="btn-vrm2-offset" onclick="toggleOffset('vrm2')">OFFSET</span>
                 </div>
             </div>
 
@@ -751,6 +751,36 @@
     let isDraggingEBL2 = false;
     let isDraggingVRM2 = false;
 
+    // ----- OFFSET 상태 관리 객체 및 토글 함수 추가 -----
+    let offsetEBL1 = { active: false, placing: false, tx: 0, ty: 0 };
+    let offsetVRM1 = { active: false, placing: false, tx: 0, ty: 0 };
+    let offsetEBL2 = { active: false, placing: false, tx: 0, ty: 0 };
+    let offsetVRM2 = { active: false, placing: false, tx: 0, ty: 0 };
+
+    window.toggleOffset = function(type) {
+        let state, btnId;
+        if(type === 'ebl1') { state = offsetEBL1; btnId = 'btn-ebl1-offset'; }
+        if(type === 'vrm1') { state = offsetVRM1; btnId = 'btn-vrm1-offset'; }
+        if(type === 'ebl2') { state = offsetEBL2; btnId = 'btn-ebl2-offset'; }
+        if(type === 'vrm2') { state = offsetVRM2; btnId = 'btn-vrm2-offset'; }
+
+        if (!state.active) {
+            state.active = true;
+            state.placing = true;
+            state.tx = os.x; // 초기 위치는 본선
+            state.ty = os.y;
+            document.getElementById(btnId).classList.add('active');
+            document.getElementById(btnId).style.background = 'var(--accent-blue)';
+            document.getElementById(btnId).style.color = '#fff';
+        } else if (state.active && !state.placing) {
+            state.active = false; // 오프셋 끄기 (본선 중심으로 되돌림)
+            document.getElementById(btnId).classList.remove('active');
+            document.getElementById(btnId).style.background = '';
+            document.getElementById(btnId).style.color = '';
+        }
+    }
+    // ----------------------------------------------------
+
     let piActive = [false, false, false, false];
     let piSpacing = [0.5, 1.0, 1.5, 2.0];
     let piBrg = [0.0, 0.0, 0.0, 0.0];
@@ -790,7 +820,7 @@
     const targets = [];
     const aisTargets = [];
     const goalPoints = [];
-    let lastWaypoint = null; // 수정된 부분
+    let lastWaypoint = null;
 
     const aisPrefixes = ["MAERSK", "MSC", "CMA CGM", "EVER", "HMM", "ONE", "COSCO", "OOCL"];
     const aisSuffixes = ["SPAIN", "KOREA", "BUSAN", "VENUS", "APOLLO", "PIONEER", "STAR", "CHAMPION"];
@@ -867,7 +897,8 @@
         const ss = String(now.getSeconds()).padStart(2, '0');
         const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
         
-        const customFileName = `${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+        // 요구사항 2: 저장 파일명 앞에 'R_' 추가
+        const customFileName = `R_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
         const payload = { 
             studentId: studentInfo.id, 
@@ -910,7 +941,7 @@
         targets.length = 0;
         aisTargets.length = 0;
         goalPoints.length = 0; 
-        lastWaypoint = null; // 수정된 부분
+        lastWaypoint = null;
         alarmLog = [];
         alarmedTargets.clear();
         updateAlarmUI();
@@ -947,7 +978,7 @@
         document.getElementById('val-curr-spd').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3, '0')}° / ${globalEnv.currentSpd.toFixed(1)} kn`;
         
         if (data.os && data.os.waypoints) {
-            lastWaypoint = { x: os.x, y: os.y }; // 수정된 부분
+            lastWaypoint = { x: os.x, y: os.y };
             data.os.waypoints.forEach(wp => {
                 let rawX = Number(wp.x) / 400;
                 let rawY = -Number(wp.z) / 400; 
@@ -1290,11 +1321,33 @@
         let relBrg = trueBrg - os.hdg;
         if(relBrg < 0) relBrg += 360;
 
+        // ---- OFFSET 위치 고정 로직 ----
+        let tx_mouse = os.x + ((mouseDistPx / displayRadius) * currentRange) * Math.sin(trueBrg * Math.PI / 180);
+        let ty_mouse = os.y + ((mouseDistPx / displayRadius) * currentRange) * Math.cos(trueBrg * Math.PI / 180);
+
+        let placingAny = false;
+        if (offsetEBL1.placing) { offsetEBL1.placing = false; offsetEBL1.tx = tx_mouse; offsetEBL1.ty = ty_mouse; placingAny = true; }
+        if (offsetVRM1.placing) { offsetVRM1.placing = false; offsetVRM1.tx = tx_mouse; offsetVRM1.ty = ty_mouse; placingAny = true; }
+        if (offsetEBL2.placing) { offsetEBL2.placing = false; offsetEBL2.tx = tx_mouse; offsetEBL2.ty = ty_mouse; placingAny = true; }
+        if (offsetVRM2.placing) { offsetVRM2.placing = false; offsetVRM2.tx = tx_mouse; offsetVRM2.ty = ty_mouse; placingAny = true; }
+
+        if (placingAny) return; // 배치 중이었으면 드래그나 타겟 클릭 무시
+        // --------------------------------
+
+        let ebl1OriginPx = offsetEBL1.active ? getScreenPos(offsetEBL1.tx, offsetEBL1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let vrm1OriginPx = offsetVRM1.active ? getScreenPos(offsetVRM1.tx, offsetVRM1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let ebl2OriginPx = offsetEBL2.active ? getScreenPos(offsetEBL2.tx, offsetEBL2.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let vrm2OriginPx = offsetVRM2.active ? getScreenPos(offsetVRM2.tx, offsetVRM2.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+
         if (ebl1Active) {
-            let angleDiff1 = Math.abs(angleDiff(trueBrg, ebl1AngleTrue));
+            let dx1 = mx - ebl1OriginPx.x; let dy1 = ebl1OriginPx.y - my;
+            let brg1 = Math.atan2(dx1, dy1) * (180 / Math.PI) + displayUpBrg;
+            if (brg1 < 0) brg1 += 360;
+            if (brg1 >= 360) brg1 -= 360;
+            let angleDiff1 = Math.abs(angleDiff(brg1, ebl1AngleTrue));
             if (angleDiff1 < 5) { isDraggingEBL = true; manualEblOverride = true; return; }
         }
-
+        
         if (hoveredTargetId !== null) {
             const idx = selectedTargets.indexOf(hoveredTargetId);
             if (idx === -1) { 
@@ -1306,11 +1359,23 @@
             return;
         }
 
-        if (vrm1Active && Math.abs(mouseDistPx - (vrm1Dist / currentRange) * displayRadius) < 15) { isDraggingVRM = true; return; }
-        if (vrm2Active && Math.abs(mouseDistPx - (vrm2Dist / currentRange) * displayRadius) < 15) { isDraggingVRM2 = true; return; }
+        if (vrm1Active) {
+            let dx1 = mx - vrm1OriginPx.x; let dy1 = vrm1OriginPx.y - my;
+            let distPx1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+            if (Math.abs(distPx1 - (vrm1Dist / currentRange) * displayRadius) < 15) { isDraggingVRM = true; return; }
+        }
         if (ebl2Active) {
-            let angleDiff2 = Math.abs(angleDiff(trueBrg, ebl2AngleTrue));
+            let dx2 = mx - ebl2OriginPx.x; let dy2 = ebl2OriginPx.y - my;
+            let brg2 = Math.atan2(dx2, dy2) * (180 / Math.PI) + displayUpBrg;
+            if (brg2 < 0) brg2 += 360;
+            if (brg2 >= 360) brg2 -= 360;
+            let angleDiff2 = Math.abs(angleDiff(brg2, ebl2AngleTrue));
             if (angleDiff2 < 5) { isDraggingEBL2 = true; return; }
+        }
+        if (vrm2Active) {
+            let dx2 = mx - vrm2OriginPx.x; let dy2 = vrm2OriginPx.y - my;
+            let distPx2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+            if (Math.abs(distPx2 - (vrm2Dist / currentRange) * displayRadius) < 15) { isDraggingVRM2 = true; return; }
         }
 
         for(let i=0; i<4; i++) {
@@ -1369,10 +1434,49 @@
         let relBrg = trueBrg - os.hdg;
         if(relBrg < 0) relBrg += 360;
 
-        if (isDraggingVRM) { vrm1Dist = Math.max(0, (mouseDistPx / displayRadius) * currentRange); document.getElementById('val-vrm1').innerText = vrm1Dist.toFixed(2) + " NM"; } 
-        else if (isDraggingEBL) { ebl1AngleTrue = trueBrg; document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T"; triggerArcUpdate(); } 
-        else if (isDraggingVRM2) { vrm2Dist = Math.max(0, (mouseDistPx / displayRadius) * currentRange); document.getElementById('val-vrm2').innerText = vrm2Dist.toFixed(2) + " NM"; } 
-        else if (isDraggingEBL2) { ebl2AngleTrue = trueBrg; document.getElementById('val-ebl2').innerText = ebl2AngleTrue.toFixed(1).padStart(5, '0') + " ° T"; } 
+        // ---- OFFSET 마우스 따라다니기 적용 ----
+        let tx_mouse = os.x + ((mouseDistPx / displayRadius) * currentRange) * Math.sin(trueBrg * Math.PI / 180);
+        let ty_mouse = os.y + ((mouseDistPx / displayRadius) * currentRange) * Math.cos(trueBrg * Math.PI / 180);
+
+        if (offsetEBL1.placing) { offsetEBL1.tx = tx_mouse; offsetEBL1.ty = ty_mouse; }
+        if (offsetVRM1.placing) { offsetVRM1.tx = tx_mouse; offsetVRM1.ty = ty_mouse; }
+        if (offsetEBL2.placing) { offsetEBL2.tx = tx_mouse; offsetEBL2.ty = ty_mouse; }
+        if (offsetVRM2.placing) { offsetVRM2.tx = tx_mouse; offsetVRM2.ty = ty_mouse; }
+
+        let ebl1OriginPx = offsetEBL1.active ? getScreenPos(offsetEBL1.tx, offsetEBL1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let vrm1OriginPx = offsetVRM1.active ? getScreenPos(offsetVRM1.tx, offsetVRM1.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let ebl2OriginPx = offsetEBL2.active ? getScreenPos(offsetEBL2.tx, offsetEBL2.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+        let vrm2OriginPx = offsetVRM2.active ? getScreenPos(offsetVRM2.tx, offsetVRM2.ty, displayRadius, osPx, osPy) : { x: osPx, y: osPy };
+
+        if (isDraggingVRM) {
+            let dx1 = mx - vrm1OriginPx.x; let dy1 = vrm1OriginPx.y - my;
+            let distPx1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+            vrm1Dist = Math.max(0, (distPx1 / displayRadius) * currentRange);
+            document.getElementById('val-vrm1').innerText = vrm1Dist.toFixed(2) + " NM";
+        }
+        else if (isDraggingEBL) {
+            let dx1 = mx - ebl1OriginPx.x; let dy1 = ebl1OriginPx.y - my;
+            let brg1 = Math.atan2(dx1, dy1) * (180 / Math.PI) + displayUpBrg;
+            if(brg1 < 0) brg1 += 360;
+            if(brg1 >= 360) brg1 -= 360;
+            ebl1AngleTrue = brg1;
+            document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+            triggerArcUpdate();
+        }
+        else if (isDraggingVRM2) {
+            let dx2 = mx - vrm2OriginPx.x; let dy2 = vrm2OriginPx.y - my;
+            let distPx2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+            vrm2Dist = Math.max(0, (distPx2 / displayRadius) * currentRange);
+            document.getElementById('val-vrm2').innerText = vrm2Dist.toFixed(2) + " NM";
+        }
+        else if (isDraggingEBL2) {
+            let dx2 = mx - ebl2OriginPx.x; let dy2 = ebl2OriginPx.y - my;
+            let brg2 = Math.atan2(dx2, dy2) * (180 / Math.PI) + displayUpBrg;
+            if(brg2 < 0) brg2 += 360;
+            if(brg2 >= 360) brg2 -= 360;
+            ebl2AngleTrue = brg2;
+            document.getElementById('val-ebl2').innerText = ebl2AngleTrue.toFixed(1).padStart(5, '0') + " ° T";
+        }
         else if (isDraggingPIRotate && activePiIdx > -1) { piBrg[activePiIdx] = trueBrg; document.getElementById('pi-brg' + activePiIdx).value = piBrg[activePiIdx].toFixed(1).padStart(5, '0'); } 
         else if (isDraggingPIScale && activePiIdx > -1) {
             let pRelBrg = piBrg[activePiIdx] - os.hdg; while(pRelBrg < 0) pRelBrg += 360;
@@ -1614,37 +1718,31 @@
         
         const osHdgRad = os.hdg * (Math.PI / 180);
 
-        // --- 3D 시뮬레이터 조종/운동 모델 적용 (선속 감속) ---
         const speedLossFactor = 0.008; 
         const targetSpeed = os.cmdSpd * (1.0 - speedLossFactor * Math.abs(os.rot));
         const T_surge = 15.0; 
         os.spd += (targetSpeed - os.spd) * (realDt / T_surge);
 
-        // 1. 기초 선수 방향 이동
         let moveX = os.spd * Math.sin(osHdgRad) * simDtHours;
         let moveY = os.spd * Math.cos(osHdgRad) * simDtHours;
 
-        // 2. 조류 (Current - Set & Drift) 적용
         if (globalEnv.currentSpd > 0) {
             let currentRad = globalEnv.currentDir * (Math.PI / 180);
             moveX += globalEnv.currentSpd * Math.sin(currentRad) * simDtHours;
             moveY += globalEnv.currentSpd * Math.cos(currentRad) * simDtHours;
         }
 
-        // 3. 바람 (Wind - Leeway) 적용 (3D 환경 모델 적용)
         if (globalEnv.windSpd > 0) {
             let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - os.hdg + 360) % 360 * Math.PI / 180);
             moveX += windDriftSpeed * Math.cos(osHdgRad) * simDtHours;
             moveY -= windDriftSpeed * Math.sin(osHdgRad) * simDtHours;
         }
 
-        // 4. SOG / COG 산출
         let actualVx = moveX / simDtHours;
         let actualVy = moveY / simDtHours;
         os.sog = Math.sqrt(actualVx*actualVx + actualVy*actualVy);
         os.cog = (Math.atan2(actualVx, actualVy) * 180 / Math.PI + 360) % 360;
 
-        // 5. 위치 업데이트
         os.x += moveX; 
         os.y += moveY;
         os.lat += moveY / 60; 
@@ -1665,14 +1763,13 @@
             let dx = gp.x - os.x; let dy = gp.y - os.y;
             let distToGoalNM = Math.sqrt(dx*dx + dy*dy);
             if (distToGoalNM < 0.3) {
-                lastWaypoint = goalPoints.shift(); // 수정된 부분
+                lastWaypoint = goalPoints.shift(); 
                 if(goalPoints.length === 0) { finishSimulationAndSendData(); }
             }
         }
 
         simTimeSeconds += simDtHours * 3600;
         
-        // 로깅 처리 (기존 코드와 동일)
         if (simTimeSeconds - lastLogTimeSec >= 1.0) {
             lastLogTimeSec = simTimeSeconds; let tStr = simTimeSeconds.toFixed(1);
             logData.push({ time: tStr, name: "OS", lat: os.lat.toFixed(6), lon: os.lon.toFixed(6), x: (os.x * 400).toFixed(2), y: (-os.y * 400).toFixed(2), hdg: os.hdg.toFixed(1), sog: os.sog.toFixed(1), cog: os.cog.toFixed(1), rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1) });
@@ -1777,7 +1874,6 @@
         if (goalPoints.length > 0) {
             ctx.save(); ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath(); 
             
-            // 수정된 부분: 기준점을 본선이 아닌 이전 웨이포인트(lastWaypoint)로 고정
             if (lastWaypoint) {
                 const startSp = getScreenPos(lastWaypoint.x, lastWaypoint.y, displayRadius, osPx, osPy);
                 ctx.moveTo(startSp.x, startSp.y);
@@ -1924,24 +2020,30 @@
             }
         }
 
+        // ----- EBL / VRM 오프셋 위치 렌더링 반영 -----
         if (ebl1Active) {
+            let opx = offsetEBL1.active ? getScreenPos(offsetEBL1.tx, offsetEBL1.ty, displayRadius, osPx, osPy) : {x: osPx, y: osPy};
             ctx.strokeStyle = '#3a75c4'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2.5;
             let eRad = (ebl1AngleTrue - displayUpBrg - 90) * (Math.PI/180);
-            ctx.beginPath(); ctx.moveTo(osPx, osPy); ctx.lineTo(osPx + Math.cos(eRad)*maxDist, osPy + Math.sin(eRad)*maxDist); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(opx.x, opx.y); ctx.lineTo(opx.x + Math.cos(eRad)*maxDist*2, opx.y + Math.sin(eRad)*maxDist*2); ctx.stroke(); ctx.setLineDash([]);
         }
         if (vrm1Active) {
+            let opx = offsetVRM1.active ? getScreenPos(offsetVRM1.tx, offsetVRM1.ty, displayRadius, osPx, osPy) : {x: osPx, y: osPy};
             ctx.strokeStyle = '#3a75c4'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(osPx, osPy, (vrm1Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.arc(opx.x, opx.y, (vrm1Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
         }
         if (ebl2Active) {
+            let opx = offsetEBL2.active ? getScreenPos(offsetEBL2.tx, offsetEBL2.ty, displayRadius, osPx, osPy) : {x: osPx, y: osPy};
             ctx.strokeStyle = '#eebb00'; ctx.setLineDash([10, 5, 2, 5]); ctx.lineWidth = 1.5;
             let eRad2 = (ebl2AngleTrue - displayUpBrg - 90) * (Math.PI/180);
-            ctx.beginPath(); ctx.moveTo(osPx, osPy); ctx.lineTo(osPx + Math.cos(eRad2)*maxDist, osPy + Math.sin(eRad2)*maxDist); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(opx.x, opx.y); ctx.lineTo(opx.x + Math.cos(eRad2)*maxDist*2, opx.y + Math.sin(eRad2)*maxDist*2); ctx.stroke(); ctx.setLineDash([]);
         }
         if (vrm2Active) {
+            let opx = offsetVRM2.active ? getScreenPos(offsetVRM2.tx, offsetVRM2.ty, displayRadius, osPx, osPy) : {x: osPx, y: osPy};
             ctx.strokeStyle = '#eebb00'; ctx.setLineDash([10, 5, 2, 5]); ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.arc(osPx, osPy, (vrm2Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+            ctx.beginPath(); ctx.arc(opx.x, opx.y, (vrm2Dist / currentRange) * displayRadius, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
         }
+        // ---------------------------------------------
 
         const getTgtIndex = (id) => selectedTargets.indexOf(id) + 1;
 
