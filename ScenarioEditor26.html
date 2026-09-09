@@ -407,6 +407,7 @@
     let simMode = 'HTMS'; 
     let currentMode = 'editor'; 
     let isDeleteMode = false; 
+    let hasWarnedShipLimit = false; // 선박 수량 제한 경고 플래그
 
     // 글로벌 컨트롤 전용 변수
     let globalDrag = false;
@@ -759,8 +760,11 @@
         if (simMode !== 'MASS') return false;
         let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
         if (total + addCount > 20) {
-            alert("20척이 넘었습니다!");
-            return false; // 제한 품. 추가 가능하게 유지
+            if (!hasWarnedShipLimit) {
+                alert("20척이 넘었습니다!");
+                hasWarnedShipLimit = true;
+            }
+            return false;
         }
         return false;
     }
@@ -1623,11 +1627,18 @@
             .then(files => {
                 if (files.error) throw new Error(files.error);
                 
+                // 시뮬레이터 모드에 따른 파일 필터링
+                const filteredFiles = files.filter(file => {
+                    if (simMode === 'HTMS') return file.name.includes('Scenario');
+                    if (simMode === 'MASS') return file.name.includes('MASS');
+                    return true;
+                });
+                
                 select.innerHTML = '';
-                if(files.length === 0) {
-                    select.innerHTML = '<option value="">저장된 시나리오가 없습니다.</option>';
+                if(filteredFiles.length === 0) {
+                    select.innerHTML = '<option value="">조건에 맞는 시나리오가 없습니다.</option>';
                 } else {
-                    files.forEach(file => {
+                    filteredFiles.forEach(file => {
                         const opt = document.createElement('option');
                         opt.value = file.id;
                         opt.textContent = file.name;
