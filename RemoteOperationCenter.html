@@ -117,7 +117,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_9" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_11" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -236,7 +236,6 @@
 
     const modelFiles = ["Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"];
 
-    // 💡 30개 전세계 주요 항구 노드 및 코드(식별자) 명시
     const NAV_GRAPH = {
         'HKG': { code: 'HKG', name: 'Hong Kong', lat: 22.3, lon: 114.1, edges: ['PUS', 'SHA', 'SGP', 'O_NPAC', 'SYD'] },
         'ICN': { code: 'ICN', name: 'Incheon', lat: 37.4, lon: 126.6, edges: ['PUS', 'SHA'] },
@@ -268,7 +267,6 @@
         'BCN': { code: 'BCN', name: 'Barcelona', lat: 41.3, lon: 2.1, edges: ['O_SUEZ', 'ROT'] },
         'IST': { code: 'IST', name: 'Istanbul', lat: 41.0, lon: 28.9, edges: ['O_SUEZ'] },
         'ATH': { code: 'ATH', name: 'Athens', lat: 37.9, lon: 23.7, edges: ['O_SUEZ', 'BCN'] },
-        // 해상 가상 노드 (Ocean Nodes for routing)
         'O_NPAC': { code: 'O_NPAC', name: 'North Pacific', lat: 30, lon: -160, edges: ['TYO', 'PUS', 'HKG', 'LAX', 'SFO', 'YVR', 'HNL'] },
         'O_SPAC': { code: 'O_SPAC', name: 'South Pacific', lat: -20, lon: -130, edges: ['SYD', 'AKL', 'O_PANAMA'] },
         'O_IND': { code: 'O_IND', name: 'Indian Ocean', lat: -5, lon: 80, edges: ['SGP', 'JKT', 'CMB', 'BOM', 'DXB', 'KHI', 'CPT'] },
@@ -309,6 +307,7 @@
     let seaMesh; 
 
     let lastTouchX = 0, lastTouchY = 0;
+    let refLat = 34.8; let refLon = 126.4;
 
     function findSeaRoute(startCode, endCode) {
         let distances = {}; let prev = {}; let pq = [];
@@ -344,7 +343,6 @@
         try {
             document.getElementById('loading-screen').style.display = 'block';
             
-            // 💡 1번 반영: 로컬 Jsons 폴더에서 GeoJSON 파일 로드
             fetch(GITHUB_BASE_URL + 'Jsons/countries.geo.json')
                 .then(r => r.json())
                 .then(data => { worldGeoJSON = data; if(currentMode==='SURVEILLANCE') renderWorldMap(); })
@@ -553,7 +551,6 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-wrapper').style.display = 'flex';
 
-        // 💡 2번 반영: 덮어쓰기 치명적 오류 수정을 위해 지역 변수화
         let baseRefLat = 34.8; let baseRefLon = 126.4;
         if(data.WayPointSet && data.WayPointSet.length > 0) { 
             baseRefLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
@@ -571,7 +568,6 @@
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
 
-            // 💡 로컬 2D 좌표와 글로벌 3D 맵핑 데이터의 분리
             const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: baseRefLat, Longitude: baseRefLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, baseRefLat, baseRefLon);
@@ -859,8 +855,6 @@
                 }
                 accum += segDists[i];
             }
-
-            // 💡 1번 반영: 점선 항로 그리기 삭제 (깔끔한 화면 유지)
             
             const destNode = rNodes[rNodes.length-1];
             const destXY = getXY(destNode.lat, destNode.lon);
@@ -873,7 +867,6 @@
             ctx.fillText(s.destPort.code, destXY.x + 8, destXY.y + 4);
             ctx.restore();
 
-            // 💡 1번 반영: MASS 선박 아이콘 적용
             const sXY = getXY(curLat, curLon);
             ctx.save();
             ctx.translate(sXY.x, sXY.y);
@@ -1066,6 +1059,7 @@
         renderWorldMap();
     }
 
+    // 💡 1번 반영: 집중 관찰 모드에서 복귀 시 일반 모니터링 모드로 상태 명확히 전환
     window.enterGeneralMode = function() {
         currentMode = 'GENERAL';
         isSplitMode = false;
@@ -1115,25 +1109,13 @@
         updateSidebar();
     }
 
+    // 💡 1번 반영: exitSplitMode 실행 시 enterGeneralMode를 호출하여 상태 충돌 버그 완전 해결
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         if(interventionState !== 'NONE') endIntervention();
         
-        if(massViews[activeMassIndex]) {
-            massViews[activeMassIndex].panOffsetX = 0;
-            massViews[activeMassIndex].panOffsetY = 0;
-        }
-
-        const wrapper = document.getElementById('main-wrapper');
-        wrapper.classList.remove('split-mode');
-        
-        document.getElementById('panel-split').style.display = 'none';
-        document.getElementById('panel-macro').style.display = 'flex';
-
-        massViews.forEach((v, i) => { document.getElementById(`vp-${i}`).classList.remove('hidden-vp'); });
-
         logEvent("MACRO_MODE_RETURN", {});
-        updateGridLayout();
+        enterGeneralMode();
     }
 
     // ==========================================
@@ -1539,8 +1521,8 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    // 💡 3번 반영: 파도 속도 기존 5배 감소
-                    const speedFact = Math.max(0.02, mass.spd * 0.004); 
+                    // 💡 2번 반영: 파도 흐름 속도를 직전 대비 다시 절반으로 감속
+                    const speedFact = Math.max(0.01, mass.spd * 0.002); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
