@@ -137,7 +137,7 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 뷰 컬럼 (상/하단 분할 처리) -->
+        <!-- 좌측 뷰 컬럼 -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
@@ -170,7 +170,6 @@
                     <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
                     <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
                     <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
-                    <!-- 💡 XTD / ETA 추가 완료 -->
                     <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
                     <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
                     <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
@@ -212,7 +211,6 @@
                     <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0 °/min</b></div>
                     <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
                     <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
-                    <!-- 💡 XTD / ETA 추가 완료 -->
                     <div class="data-row"><span>XTD:</span> <b id="split-os-xtd" class="hud-val">0.00 NM</b></div>
                     <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
@@ -237,7 +235,6 @@
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
                 
-                <!-- 조타 제어 버튼 -->
                 <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
                     <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
                     <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
@@ -267,7 +264,6 @@
         "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
     ];
 
-    // 💡 4척 모두 관리 대상(isMASS: 1)으로 변경 및 거리를 계산할 수 있도록 다중 웨이포인트(경로) 구성
     const fallbackScenarioData = {
         "ScenarioName": "Exported_MASS_Scenario",
         "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
@@ -295,6 +291,9 @@
     let isSimulationRunning = false;
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
+    
+    // 💡 원격 운항 통신 지연(1 FPS) 효과를 위한 렌더링 타이머 변수
+    let lastRenderTime = 0; 
 
     let interventionState = 'NONE'; 
     let interventionTimer = null;
@@ -418,7 +417,6 @@
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
     }
 
-    // 💡 XTD, ETA 계산 함수 추가 (루트를 따라 도착 목표 시뮬레이션 구현)
     function calculateXTDAndETA(ship) {
         if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
             return { xtd: 0, etaMinutes: 0 };
@@ -437,7 +435,7 @@
             distRemaining += Math.hypot(ship.waypoints[i+1].x - ship.waypoints[i].x, ship.waypoints[i+1].z - ship.waypoints[i].z);
         }
         
-        const distNM = distRemaining / 400; // 400 pixels = 1 NM
+        const distNM = distRemaining / 400; 
         const spd = Math.max(0.1, ship.spd); 
         const etaHours = distNM / spd;
         
@@ -519,7 +517,6 @@
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
             
-            // 💡 웨이포인트(루트) 파싱 추가
             let wps = [];
             if (wpSet && wpSet.WayPoints) {
                 wpSet.WayPoints.forEach(wp => wps.push(latLonToUnits(Number(wp.Latitude), Number(wp.Longitude), refLat, refLon)));
@@ -586,6 +583,9 @@
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
                         vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; 
                         vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; 
+                        
+                        // 💡 1FPS 고정이지만 사용자가 지도를 움직일 땐 렉이 없도록 즉시 화면 갱신
+                        render2D(); 
                     }
                 });
                 window.addEventListener('mouseup', () => vObj.isDragging = false);
@@ -613,6 +613,9 @@
                     e.preventDefault();
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
+                    
+                    // 💡 줌 인/아웃 할 때 렉이 없도록 즉시 화면 갱신
+                    render2D(); 
                 }, { passive: false });
             }, 100);
         });
@@ -657,7 +660,6 @@
         document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
         
-        // 💡 실시간 XTD 및 ETA UI 업데이트 적용 완료
         document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
         document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
@@ -870,7 +872,6 @@
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
-        // 💡 daySkybox 강제 참조로 인한 충돌 제거 (가장 첫번째 스카이박스 우선 적용)
         if(loadedSkyboxes && loadedSkyboxes.length > 0) { scene.background = loadedSkyboxes[0]; } 
         else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
@@ -911,7 +912,14 @@
         fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
         window.addEventListener('mouseup', () => { isDraggingCam = false; });
         window.addEventListener('mousemove', (e) => {
-            if (isDraggingCam && isSplitMode) { camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); }
+            if (isDraggingCam && isSplitMode) { 
+                camAngleY -= e.movementX * 0.003; 
+                camAngleX -= e.movementY * 0.003; 
+                camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
+                
+                // 💡 1FPS 고정이지만 마우스로 카메라 시점을 회전할 때는 즉각 렌더링
+                if(renderer3D && scene && camera3D) renderer3D.render(scene, camera3D); 
+            }
         });
     }
 
@@ -1005,7 +1013,6 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 2D 화면에 웨이포인트(루트) 그리기
                 if (s.waypoints && s.waypoints.length > 0) {
                     const isOwnShip = s === v.massEntity;
                     const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
@@ -1054,8 +1061,11 @@
     function mainLoop() {
         requestAnimationFrame(mainLoop);
         if(!isSimulationRunning) return;
-        const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
+        const now = performance.now(); 
+        const dt = Math.min((now - lastTime) / 1000, 0.1); 
+        lastTime = now;
         
+        // 💡 1. 물리 연산 (정확도 유지를 위해 60FPS 속도로 기존처럼 계속 계산)
         simEntities.forEach(s => { 
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
@@ -1096,14 +1106,12 @@
             let actualVx = moveX / dt; let actualVz = -moveZ / dt;
             s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
 
-            // 💡 웨이포인트(루트) 도달 처리
             if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
                 const nextWp = s.waypoints[s.currentWpIndex];
                 const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
                 if (distToWp < 100) { s.currentWpIndex++; }
             }
 
-            // 💡 XTD, ETA를 1초에 한 번만 계산하여 CPU 과부하 방지 (최적화)
             if (now - s.lastRouteCalcTime >= 1000) {
                 const routeData = calculateXTDAndETA(s);
                 s.xtd = routeData.xtd;
@@ -1112,39 +1120,40 @@
             }
         });
         
-        render2D();
-        
-        // UI 업데이트 빈도 조절 (초당 60프레임 전체 업데이트 시 발생하던 렉 방지)
-        if (Math.floor(now) % 6 === 0) {
+        // 💡 2. 영상 및 데이터 렌더링 (1FPS 제한 = 1000ms 마다 실행)
+        if (now - lastRenderTime >= 1000) {
+            render2D();
             updateSidebar();
-        }
-        
-        if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
-            const mass = massViews[activeMassIndex].massEntity;
-
-            // 💡 바다 애니메이션이 선박의 Heading(선수) 기준 전방에서 후방으로 흐르도록 수정
-            if (seaMesh && seaMesh.material.normalMap) {
-                const hdgRad = mass.hdg * DEG2RAD;
-                const speedFact = Math.max(0.002, mass.spd * 0.001); // 최소 속도 보장
-                seaMesh.material.normalMap.offset.x += dt * speedFact * Math.sin(hdgRad);
-                seaMesh.material.normalMap.offset.y -= dt * speedFact * Math.cos(hdgRad);
-            }
-
-            const meterScale = 4.63; 
-
-            osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
-            osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
             
-            camera3D.rotation.order = 'YXZ';
-            camera3D.rotation.y = camAngleY; 
-            camera3D.rotation.x = camAngleX;
+            if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
+                const mass = massViews[activeMassIndex].massEntity;
+                
+                // 바다 물결 애니메이션도 1초 단위로 점프
+                if (seaMesh && seaMesh.material.normalMap) {
+                    const hdgRad = mass.hdg * DEG2RAD;
+                    const speedFact = Math.max(0.002, mass.spd * 0.001); 
+                    seaMesh.material.normalMap.offset.x += 1.0 * speedFact * Math.sin(hdgRad);
+                    seaMesh.material.normalMap.offset.y -= 1.0 * speedFact * Math.cos(hdgRad);
+                }
 
-            targetMeshes.forEach(t => { 
-                t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
-                t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
-            });
+                const meterScale = 4.63; 
+                osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
+                osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
+                
+                camera3D.rotation.order = 'YXZ';
+                camera3D.rotation.y = camAngleY; 
+                camera3D.rotation.x = camAngleX;
 
-            renderer3D.render(scene, camera3D);
+                targetMeshes.forEach(t => { 
+                    t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
+                    t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
+                });
+
+                renderer3D.render(scene, camera3D);
+            }
+            
+            // 타이머 리셋
+            lastRenderTime = now;
         }
     }
 
