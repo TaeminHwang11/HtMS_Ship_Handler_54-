@@ -84,16 +84,15 @@
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .steer-btn { position: absolute; bottom: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 24px; font-family: 'Rajdhani', sans-serif; font-weight: bold; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 60; transition: 0.1s; backdrop-filter: blur(4px); user-select: none; }
-        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); }
-        #btn-steer-port { left: 30px; }
-        #btn-steer-stbd { right: 30px; }
+        /* ================= 사이드바 조타 버튼 (우측 하단) ================= */
+        .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
+        .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
 
-        /* ================= 사이드바 컴포넌트 ================= */
+        /* ================= 사이드바 공통/컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
@@ -149,8 +148,6 @@
                     <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
                     <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
                 </div>
-                <div id="btn-steer-port" class="steer-btn" onmousedown="applySteer('P')">P</div>
-                <div id="btn-steer-stbd" class="steer-btn" onmousedown="applySteer('S')">S</div>
             </div>
             
             <!-- 상하 크기 조절바 -->
@@ -160,7 +157,7 @@
             <div id="grid-area"></div>
         </div>
         
-        <!-- 우측 사이드바 -->
+        <!-- 우측 사이드바 (패널 전환) -->
         <div id="sidebar">
             
             <!-- MACRO 모드 패널 -->
@@ -228,6 +225,7 @@
                     <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
                 </div>
 
+                <!-- 💡 Step 2: 레이턴시 조절기 -->
                 <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK LATENCY</span>
@@ -236,6 +234,12 @@
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
                 
+                <!-- 💡 Step 2: 사이드바 내부 조타 버튼 컨트롤 (개입 시 나타남) -->
+                <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
+                </div>
+
                 <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
                 <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
             </div>
@@ -299,7 +303,7 @@
     let osShipGroup, targetMeshes = [];
     let isDraggingCam = false; 
     let camAngleX = -0.05, camAngleY = 0; 
-    let seaMesh; // 💡 반투명 바다 매쉬 객체 추가
+    let seaMesh; 
 
     // ==========================================
     // 2. FETCH & INITIALIZATION
@@ -731,8 +735,7 @@
         document.getElementById('intervention-overlay').style.display = 'none';
         document.getElementById('btn-intervention').style.display = 'none';
         document.getElementById('btn-end-intervention').style.display = 'block';
-        document.getElementById('btn-steer-port').style.display = 'flex';
-        document.getElementById('btn-steer-stbd').style.display = 'flex';
+        document.getElementById('steering-controls').style.display = 'flex';
         
         logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
     }
@@ -745,8 +748,7 @@
         document.getElementById('btn-intervention').style.display = 'block';
         document.getElementById('btn-intervention').disabled = false;
         document.getElementById('btn-end-intervention').style.display = 'none';
-        document.getElementById('btn-steer-port').style.display = 'none';
-        document.getElementById('btn-steer-stbd').style.display = 'none';
+        document.getElementById('steering-controls').style.display = 'none';
         
         if(massViews[activeMassIndex]) { massViews[activeMassIndex].massEntity.targetRudder = 0; }
         logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
@@ -754,20 +756,45 @@
 
     window.applySteer = function(dir) {
         if(interventionState !== 'ACTIVE') return;
+        const latencySec = parseFloat(document.getElementById('latency-slider').value);
+        const latencyMs = latencySec * 1000;
         const mass = massViews[activeMassIndex].massEntity;
-        mass.targetRudder = Math.max(-35, Math.min(35, mass.targetRudder + (dir === 'P' ? -5 : 5))); 
-        mass.targetRudder = Math.round(mass.targetRudder/5)*5; 
-        logEvent("MANUAL_STEERING", { massId: mass.name, cmd: mass.targetRudder, dir: dir });
+        const massId = mass.name;
+        
+        // 💡 지연 로직 (명령 전송 즉시 로그)
+        logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: dir, delayMs: latencyMs });
+        
+        setTimeout(() => {
+            if(interventionState !== 'ACTIVE') return;
+            const currentMass = massViews[activeMassIndex].massEntity;
+            if(currentMass.name !== massId) return;
+
+            currentMass.targetRudder = Math.max(-35, Math.min(35, currentMass.targetRudder + (dir === 'P' ? -5 : 5))); 
+            currentMass.targetRudder = Math.round(currentMass.targetRudder/5)*5; 
+            logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: currentMass.targetRudder, dir: dir });
+        }, latencyMs);
     }
 
+    // 💡 키보드 컨트롤 (스페이스바로 타각 리셋 포함)
     window.addEventListener('keydown', (e) => {
         if(interventionState !== 'ACTIVE') return;
         if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
         if(e.code === 'ArrowRight' && !e.repeat) { applySteer('S'); e.preventDefault(); }
         if(e.code === 'Space') { 
+            const latencySec = parseFloat(document.getElementById('latency-slider').value);
+            const latencyMs = latencySec * 1000;
             const mass = massViews[activeMassIndex].massEntity;
-            mass.targetRudder = 0; 
-            logEvent("MANUAL_STEERING", { massId: mass.name, cmd: 0, dir: 'C' });
+            const massId = mass.name;
+            
+            logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
+            setTimeout(() => {
+                if(interventionState !== 'ACTIVE') return;
+                const currentMass = massViews[activeMassIndex].massEntity;
+                if(currentMass.name !== massId) return;
+
+                currentMass.targetRudder = 0; 
+                logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
+            }, latencyMs);
             e.preventDefault(); 
         }
     });
@@ -777,7 +804,7 @@
     }
 
     // ==========================================
-    // 5. LIGHTWEIGHT 3D ENGINE (💡 바다 렌더링 업데이트)
+    // 5. LIGHTWEIGHT 3D ENGINE
     // ==========================================
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
@@ -799,7 +826,6 @@
         scene.add(new THREE.AmbientLight(0x707070, 1.5));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
 
-        // 💡 투명한 물결(Normal Map) 바다 생성
         const waterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
             t.wrapS = t.wrapT = THREE.RepeatWrapping;
             t.repeat.set(200, 200); 
@@ -843,7 +869,7 @@
 
     function setup3DSceneForMass(idx) {
         const mass = massViews[idx].massEntity;
-        document.getElementById('fpv-label').innerText = `MASS_${idx + 1} FPV CAM`;
+        document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); }
         targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
@@ -955,7 +981,6 @@
             const T_surge = 15.0; 
             s.spd += (targetSpeed - s.spd) * (dt / T_surge);
 
-            // 💡 속도 계산 단위 복구
             const speedUnits = s.spd * (400 / 3600);
 
             let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt;
@@ -982,7 +1007,6 @@
         updateSidebar();
         
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
-            // 💡 바다 물결 애니메이션
             if (seaMesh && seaMesh.material.normalMap) {
                 seaMesh.material.normalMap.offset.x += dt * 0.015;
                 seaMesh.material.normalMap.offset.y += dt * 0.025;
