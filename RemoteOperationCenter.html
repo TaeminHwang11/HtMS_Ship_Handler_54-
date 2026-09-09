@@ -76,6 +76,7 @@
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
+        .hud-cursor-info { color: #fca5a5; margin-top: 2px; } /* 커서 방위/거리 텍스트 색상 */
         
         /* ================= 3D FPV 내부 UI ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
@@ -106,7 +107,6 @@
 
         .hud-val { color: var(--accent-green) !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
 
-        /* 💡 다중 패널을 위한 닫기 버튼 추가 */
         .close-target { float: right; cursor: pointer; color: #ef4444; font-size: 14px; line-height: 1; }
         .close-target:hover { color: #fca5a5; }
     </style>
@@ -125,7 +125,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_4" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -185,7 +185,6 @@
                     <div class="data-row"><span>CURRENT:</span> <b id="ui-env-curr">-</b></div>
                 </div>
 
-                <!-- 💡 여러 타겟 정보를 담을 동적 컨테이너 -->
                 <div id="macro-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
 
                 <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
@@ -198,7 +197,6 @@
                 <div class="panel-title" style="color: var(--accent-yellow);">집중관찰모드</div>
                 <button class="btn-return" onclick="exitSplitMode()">MACRO VIEW (복귀)</button>
                 
-                <!-- 💡 개입 제어 버튼 위로 이동 -->
                 <button id="btn-intervention" onclick="requestIntervention()" style="margin-bottom: 10px;">원격 개입 (Intervention)</button>
                 <button id="btn-end-intervention" onclick="endIntervention()" style="margin-bottom: 10px;">개입 종료 (AUTO RETURN)</button>
                 
@@ -219,15 +217,18 @@
                     <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
 
-                <!-- 💡 여러 타겟 정보를 담을 동적 컨테이너 -->
                 <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
 
+                <!-- 💡 3, 4번 반영: 랜덤 통신 상태/지연 UI (슬라이더 제거) -->
                 <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK LATENCY</span>
-                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-latency">3.0 s</span>
+                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK STATUS</span>
+                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-net-status">보통 (30 FPS)</span>
                     </div>
-                    <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="font-size:12px; color:var(--text-muted); font-weight:bold;">LATENCY</span>
+                        <span style="font-size:13px; color:#ef4444; font-family:monospace; font-weight:bold;" id="val-latency">통신 지연: 3.0 s</span>
+                    </div>
                 </div>
             </div>
 
@@ -262,7 +263,6 @@
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
-    // 렌더링 프레임 분리용 변수
     let last2DRenderTime = 0; 
     let last3DRenderTime = 0;
 
@@ -504,13 +504,15 @@
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
 
+            // 💡 랜덤 딜레이 및 프레임 초기 속성 추가
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: finalType, isMASS: isMass, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
                 skybox: finalSkybox,
-                waypoints: wps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0
+                waypoints: wps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0,
+                latencySec: 3.0, connStatus: '보통', fps3D: 30, frameInterval: 33, lastCommUpdate: performance.now()
             });
         });
 
@@ -522,16 +524,18 @@
             const vp = document.createElement('div');
             vp.className = `viewport ${idx === 0 ? 'active-vp' : ''}`;
             vp.id = `vp-${idx}`;
+            
+            // 💡 2번 반영: 커서 위치 기준 BRG/DST 표시용 엘리먼트 추가
             vp.innerHTML = `
                 <div class="vp-label">${mass.name}</div>
                 <div class="coord-hud" id="hud-${idx}">
                     <div class="hud-range">RANGE: 3.0 NM</div>
+                    <div class="hud-cursor-info">BRG: - / DST: -</div>
                 </div>
                 <canvas class="vp-canvas" id="canvas-mass-${idx}"></canvas>
             `;
             grid.appendChild(vp);
 
-            // 💡 여러 타겟을 담기 위해 배열(selectedTargets) 사용으로 변경
             const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, panOffsetX: 0, panOffsetY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargets: [], initialPinchDistance: 0, initialViewScale: 0 };
             massViews.push(vObj);
 
@@ -555,15 +559,33 @@
                     vObj.dragStartY = (e.clientY - rect.top) - vObj.panOffsetY;
                 });
                 window.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left;
+                    const my = e.clientY - rect.top;
+
+                    // 💡 커서 Hover 방위/거리 연산
+                    if (!vObj.isDragging) {
+                        const dx = mx - vObj.panX; 
+                        const dy = my - vObj.panY;
+                        const dist = Math.sqrt(dx*dx + dy*dy) / vObj.viewScale / 400; // NM
+                        let brg = Math.atan2(dx, -dy) * 180 / Math.PI; 
+                        if (brg < 0) brg += 360;
+                        const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
+                        if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
+                    }
+
                     if(vObj.isDragging) { 
-                        const rect = canvas.getBoundingClientRect(); 
-                        const dx = (e.clientX - rect.left) - vObj.dragStartX - vObj.panOffsetX;
-                        const dy = (e.clientY - rect.top) - vObj.dragStartY - vObj.panOffsetY;
+                        const dx = mx - vObj.dragStartX - vObj.panOffsetX;
+                        const dy = my - vObj.dragStartY - vObj.panOffsetY;
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
-                        vObj.panOffsetX = (e.clientX - rect.left) - vObj.dragStartX; 
-                        vObj.panOffsetY = (e.clientY - rect.top) - vObj.dragStartY; 
+                        vObj.panOffsetX = mx - vObj.dragStartX; 
+                        vObj.panOffsetY = my - vObj.dragStartY; 
                         render2D(); 
                     }
+                });
+                canvas.addEventListener('mouseout', () => {
+                    const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
+                    if (cursorHud) cursorHud.innerText = `BRG: - / DST: -`;
                 });
                 
                 canvas.addEventListener('touchstart', (e) => {
@@ -582,11 +604,21 @@
                 window.addEventListener('touchmove', (e) => {
                     if (vObj.isDragging && e.touches.length === 1) {
                         const rect = canvas.getBoundingClientRect(); 
-                        const dx = (e.touches[0].clientX - rect.left) - vObj.dragStartX - vObj.panOffsetX;
-                        const dy = (e.touches[0].clientY - rect.top) - vObj.dragStartY - vObj.panOffsetY;
+                        const mx = e.touches[0].clientX - rect.left;
+                        const my = e.touches[0].clientY - rect.top;
+
+                        const dx = mx - vObj.dragStartX - vObj.panOffsetX;
+                        const dy = my - vObj.dragStartY - vObj.panOffsetY;
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
-                        vObj.panOffsetX = (e.touches[0].clientX - rect.left) - vObj.dragStartX; 
-                        vObj.panOffsetY = (e.touches[0].clientY - rect.top) - vObj.dragStartY; 
+                        vObj.panOffsetX = mx - vObj.dragStartX; 
+                        vObj.panOffsetY = my - vObj.dragStartY; 
+
+                        const curDx = mx - vObj.panX; const curDy = my - vObj.panY;
+                        const dist = Math.sqrt(curDx*curDx + curDy*curDy) / vObj.viewScale / 400;
+                        let brg = Math.atan2(curDx, -curDy) * 180 / Math.PI; if (brg < 0) brg += 360;
+                        const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
+                        if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
+
                         render2D();
                     } else if (e.touches.length === 2 && vObj.initialPinchDistance > 0) {
                         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
@@ -619,7 +651,6 @@
                         }
                     });
                     
-                    // 💡 여러 타겟을 클릭하여 추가할 수 있게 처리
                     if(clickedIndex !== -1) {
                         if(!vObj.selectedTargets.includes(clickedIndex)) {
                             vObj.selectedTargets.push(clickedIndex);
@@ -645,7 +676,6 @@
         mainLoop();
     }
 
-    // 💡 타겟 삭제 기능 함수
     window.removeTarget = function(vIdx, tIdx) {
         const vObj = massViews[vIdx];
         vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
@@ -688,10 +718,9 @@
         document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
         document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
-        // 💡 동적 타겟 패널 렌더러
         const updateTgtPanels = (containerId) => {
             const container = document.getElementById(containerId);
-            container.innerHTML = ''; // 초기화
+            container.innerHTML = '';
             
             vObj.selectedTargets.forEach(tgtIdx => {
                 if(simEntities[tgtIdx]) {
@@ -732,6 +761,12 @@
             document.getElementById('split-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
             document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanels('split-targets-container');
+
+            // 💡 네트워크 상태 UI 업데이트
+            document.getElementById('val-latency').innerText = `통신 지연: ${mass.latencySec} s`;
+            document.getElementById('val-net-status').innerText = `${mass.connStatus} (${mass.fps3D} FPS)`;
+            document.getElementById('val-net-status').style.color = mass.connStatus === '좋음' ? '#10b981' : (mass.connStatus === '보통' ? '#eab308' : '#ef4444');
+
         } else {
             updateTgtPanels('macro-targets-container');
         }
@@ -816,7 +851,8 @@
     // 💡 Step 2: INTERVENTION & KEYBOARD CONTROL
     // ==========================================
     window.requestIntervention = function() {
-        const latency = parseFloat(document.getElementById('latency-slider').value);
+        // 💡 딜레이를 슬라이더가 아닌 해당 본선의 랜덤 딜레이 값에서 가져옴
+        const latency = parseFloat(massViews[activeMassIndex].massEntity.latencySec);
         const massName = massViews[activeMassIndex].massEntity.name;
         
         document.getElementById('btn-intervention').disabled = true;
@@ -863,8 +899,7 @@
 
     window.applySteer = function(dir) {
         if(interventionState !== 'ACTIVE') return;
-        const latencySec = parseFloat(document.getElementById('latency-slider').value);
-        const latencyMs = latencySec * 1000;
+        const latencyMs = parseFloat(massViews[activeMassIndex].massEntity.latencySec) * 1000;
         const mass = massViews[activeMassIndex].massEntity;
         const massId = mass.name;
         
@@ -886,8 +921,7 @@
         if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
         if(e.code === 'ArrowRight' && !e.repeat) { applySteer('S'); e.preventDefault(); }
         if(e.code === 'Space') { 
-            const latencySec = parseFloat(document.getElementById('latency-slider').value);
-            const latencyMs = latencySec * 1000;
+            const latencyMs = parseFloat(massViews[activeMassIndex].massEntity.latencySec) * 1000;
             const mass = massViews[activeMassIndex].massEntity;
             const massId = mass.name;
             
@@ -1084,10 +1118,11 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                if (s.waypoints && s.waypoints.length > 0) {
-                    const isOwnShip = s === v.massEntity;
-                    const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
-                    
+                const isOwnShip = s === v.massEntity;
+
+                // 💡 5번 반영: 타선 항로 숨김 처리 (본선일 때만 항로 렌더링)
+                if (isOwnShip && s.waypoints && s.waypoints.length > 0) {
+                    const routeColor = 'rgba(16, 185, 129, 0.4)';
                     ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
                     ctx.beginPath();
                     
@@ -1103,7 +1138,7 @@
                     }
                     ctx.stroke(); ctx.setLineDash([]);
                     
-                    ctx.fillStyle = isOwnShip ? '#10b981' : '#ef4444';
+                    ctx.fillStyle = '#10b981';
                     for(let i = 0; i < s.waypoints.length; i++) {
                         const wp = s.waypoints[i];
                         const wRelX = wp.x - v.massEntity.x;
@@ -1112,13 +1147,11 @@
                     }
                 }
 
-                if(s.isMASS && s !== v.massEntity) return; 
+                if(s.isMASS && !isOwnShip) return; 
                 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
-                const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
                 
-                // 💡 다중 선택된 모든 타겟에 주황색 하이라이트 표시
                 if (v.selectedTargets.includes(tIdx) && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
@@ -1139,6 +1172,16 @@
         lastTime = now;
         
         simEntities.forEach(s => { 
+            // 💡 3, 4번 반영: 5초마다 랜덤 통신 지연 및 FPS 업데이트
+            if (now - s.lastCommUpdate >= 5000) {
+                s.latencySec = (Math.random() * 9 + 1).toFixed(1); // 1.0 ~ 10.0초 사이 딜레이
+                let latVal = parseFloat(s.latencySec);
+                if (latVal <= 3.0) { s.connStatus = '좋음'; s.fps3D = 60; s.frameInterval = 16; }
+                else if (latVal <= 7.0) { s.connStatus = '보통'; s.fps3D = 30; s.frameInterval = 33; }
+                else { s.connStatus = '불량'; s.fps3D = 10; s.frameInterval = 100; }
+                s.lastCommUpdate = now;
+            }
+
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
             if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
@@ -1192,17 +1235,18 @@
             }
         });
         
-        // 💡 3D 영상 렌더링 (30 FPS 제한 = 약 33ms 마다)
-        if (now - last3DRenderTime >= 33) {
-            const dt3d = (now - last3DRenderTime) / 1000;
-            last3DRenderTime = now;
+        // 💡 1, 4번 반영: 3D 동적 프레임 및 바다 방향 역전 렌더링
+        if (isSplitMode && massViews[activeMassIndex] && renderer3D) {
+            const mass = massViews[activeMassIndex].massEntity;
             
-            if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
-                const mass = massViews[activeMassIndex].massEntity;
+            if (now - last3DRenderTime >= mass.frameInterval) {
+                const dt3d = (now - last3DRenderTime) / 1000;
+                last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
                     const speedFact = Math.max(0.5, mass.spd * 0.1); 
-                    seaMesh.material.normalMap.offset.y -= speedFact * dt3d; 
+                    // 💡 바다 물결 애니메이션 부호 변경 (앞에서 뒤로)
+                    seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
                 const meterScale = 4.63; 
@@ -1222,7 +1266,7 @@
             }
         }
 
-        // 2D 관제 렌더링 (1 FPS 제한)
+        // 2D 관제 렌더링 (고정 1 FPS)
         if (now - last2DRenderTime >= 1000) {
             last2DRenderTime = now;
             render2D();
