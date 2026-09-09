@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>[HTMS] Portable Remote Operation Center</title>
+    <title>[HTMS] Remote Operation Center</title>
     <!-- Three.js 및 에셋 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -33,7 +33,9 @@
         .menu-box { background: rgba(0,0,0,0.6); border: 1px solid var(--accent-cyan); border-radius: 12px; padding: 40px; width: 90%; max-width: 400px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(6,182,212,0.1); }
         .form-row { margin-bottom: 20px; text-align: left; }
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold; }
-        .form-row input, .form-row select { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; border-radius: 4px; outline: none; box-sizing: border-box; }
+        /* 💡 드롭다운 흰 배경 버그 수정 */
+        .form-row input, .form-row select { width: 100%; padding: 12px; background: #111827; border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; border-radius: 4px; outline: none; box-sizing: border-box; }
+        .form-row select option { background: #111827; color: #fff; }
         .form-row input:focus, .form-row select:focus { border-color: var(--accent-cyan); }
         
         .btn-start { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: var(--accent-green); color: #000; transition: 0.2s; margin-top: 10px; }
@@ -44,27 +46,27 @@
         /* ================= 메인 레이아웃 ================= */
         #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         
-        /* 좌측 뷰 컬럼 (매크로/스플릿 화면 영역) */
+        /* 좌측 뷰 컬럼 (위: 3D / 아래: 2D) */
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
         /* 스플릿 모드 상단: 3D FPV (평소엔 숨김) */
-        #fpv-area { display: none; flex: 1; background: #050a10; position: relative; border-bottom: 2px solid var(--accent-cyan); box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
+        #fpv-area { display: none; background: #050a10; position: relative; border-bottom: 2px solid var(--accent-cyan); box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         
-        /* 하단 (매크로 모드에선 전체): 2D 그리드 영역 */
+        /* 스플릿 모드 하단 / 매크로 전체: 2D 그리드 영역 */
         #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; }
+
+        /* Split Mode State Classes (상하 50:50 분할) */
+        #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; }
+        #main-wrapper.split-mode #grid-area { flex: 1; } 
 
         /* 우측 사이드바 (대시보드 패널) */
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
-        /* Split Mode State Classes */
-        #main-wrapper.split-mode #fpv-area { display: block; }
-        #main-wrapper.split-mode #grid-area { flex: 1; } /* 화면 절반으로 자동 세팅 */
-
         /* ================= 2D 뷰포트 내부 스타일 ================= */
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; }
         .viewport.active-vp { border: 2px solid var(--accent-yellow); }
-        .viewport.hidden-vp { display: none !important; } /* 스플릿 뷰 시 선택되지 않은 창 숨김 */
+        .viewport.hidden-vp { display: none !important; } 
         .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
         
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
@@ -72,7 +74,7 @@
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
         
         /* ================= 3D FPV 내부 라벨 ================= */
-        #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px;}
+        #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
 
         /* ================= 사이드바 공통/컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
@@ -81,13 +83,12 @@
         #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); }
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
 
-        .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 15px; margin-bottom: 15px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
-        .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; font-weight: bold; }
-        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
+        .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
+        .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
         .data-row span { color: #94a3b8; font-weight: bold; }
-        .data-row b { color: #fff; font-family: monospace; font-size: 18px; }
+        .data-row b { color: #fff; font-family: monospace; font-size: 15px; }
 
-        /* 디지털 HUD 폰트 스타일 */
         .hud-val { color: var(--accent-green) !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
     </style>
 </head>
@@ -95,8 +96,8 @@
 
     <!-- 1. 로그인 (메인 화면) -->
     <div id="login-overlay">
-        <h1>[HTMS] Portable Remote Operation Center</h1>
-        <h2>REMOTE OPERATION SIMULATOR</h2>
+        <h1>[HTMS] Remote Operation Center</h1>
+        <h2>PORTABLE REMOTE OPERATION SIMULATOR</h2>
         
         <div class="menu-box">
             <div class="form-row">
@@ -121,7 +122,7 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 컬럼: 위(3D) / 아래(2D) -->
+        <!-- 좌측 뷰 컬럼: 위(3D) / 아래(2D) -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
@@ -137,13 +138,37 @@
             <!-- MACRO 모드 패널 -->
             <div id="panel-macro" style="display: flex; flex-direction: column; height: 100%;">
                 <div class="panel-title">MACRO DASHBOARD</div>
-                <div class="info-box">
-                    <div class="info-header" style="color: var(--accent-cyan);">SELECTED MASS INFO</div>
-                    <div class="data-row"><span>NAME:</span> <b id="ui-mass-name" style="color: var(--accent-yellow);">-</b></div>
-                    <div class="data-row"><span>HDG:</span> <b id="ui-mass-hdg">-</b></div>
-                    <div class="data-row"><span>SOG:</span> <b id="ui-mass-sog">-</b></div>
+                
+                <div class="info-box" style="border-left-color: var(--accent-green);">
+                    <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="ui-os-name" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>HDG:</span> <b id="ui-os-hdg">-</b></div>
+                    <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
+                    <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
+                    <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">2026-09-15 14:00</b></div>
+                    <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
                 </div>
-                <div style="font-size: 13px; color: #94a3b8; background: #0f172a; padding: 15px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
+
+                <div class="info-box">
+                    <div class="info-header">ENVIRONMENT</div>
+                    <div class="data-row"><span>WIND:</span> <b id="ui-env-wind">-</b></div>
+                    <div class="data-row"><span>CURRENT:</span> <b id="ui-env-curr">-</b></div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--accent-red); margin-bottom: 0;">
+                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="ui-tgt-name" style="color: #fca5a5;">-</b></div>
+                    <div class="data-row"><span>MMSI:</span> <b id="ui-tgt-mmsi">-</b></div>
+                    <div class="data-row"><span>BRG:</span> <b id="ui-tgt-brg">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-tgt-hdgcog">-</b></div>
+                    <div class="data-row"><span>SOG / STW:</span> <b id="ui-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
+                    <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
+                </div>
+
+                <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
                     💡 <b>상세 관찰 및 개입</b><br>특정 선박의 화면을 <b>더블클릭</b> 하세요.
                 </div>
             </div>
@@ -166,7 +191,7 @@
                     </div>
                 </div>
 
-                <!-- 임시 개입 버튼 (Step 2 연동 대기) -->
+                <!-- 임시 개입 버튼 -->
                 <button id="btn-intervention" onclick="alert('Step 2: 통신 지연(Latency) 로직 구현 대기 중입니다.')">원격 개입 (Intervention)</button>
             </div>
 
@@ -216,6 +241,7 @@
     let isSplitMode = false;
     let isSimulationRunning = false;
     let lastTime = performance.now();
+    let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
 
     // 3D Variables
     let scene, camera3D, renderer3D;
@@ -226,18 +252,16 @@
     let camAngleX = -0.05, camAngleY = 0; 
 
     // ==========================================
-    // 2. FETCH & INITIALIZATION (캐시 버스팅 완벽 적용)
+    // 2. FETCH & INITIALIZATION
     // ==========================================
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
-            // 💡 URL 끝에 타임스탬프를 붙여 브라우저 캐시 무력화
             const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list&t=${new Date().getTime()}`);
             const data = await res.json();
             let files = Array.isArray(data) ? data : (data.files || data.data || []);
             select.innerHTML = '';
             
-            // 💡 파일명에 MASS 또는 SCENARIO가 들어간 파일 모두 필터링
             const filteredFiles = files.filter(f => f && f.name && (String(f.name).toUpperCase().includes('MASS') || String(f.name).toUpperCase().includes('SCENARIO')));
             
             if(filteredFiles.length === 0) select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
@@ -271,14 +295,17 @@
         if(scnId === "local_test") scenarioData = fallbackScenarioData;
         else {
             try {
-                // 시나리오 데이터도 캐시 우회하여 최신버전 로드
                 const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
                 scenarioData = await res.json();
                 if(scenarioData.error) throw new Error(scenarioData.error);
             } catch (err) { scenarioData = fallbackScenarioData; }
         }
 
-        // 💡 영점 조절 세팅 (Settings.json) 최신 로드 및 localStorage 반영
+        if(scenarioData.environment) {
+            if(scenarioData.environment.wind) { globalEnv.windDir = scenarioData.environment.wind.dir; globalEnv.windSpd = scenarioData.environment.wind.spd; }
+            if(scenarioData.environment.current) { globalEnv.currentDir = scenarioData.environment.current.dir; globalEnv.currentSpd = scenarioData.environment.current.spd; }
+        }
+
         loadMsg.innerText = "영점 조절 세팅 로드 중... (1/3)";
         try { 
             const setRes = await fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime()); 
@@ -286,7 +313,7 @@
                 const settingsData = await setRes.json(); 
                 for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
             } 
-        } catch(e) { console.warn("Settings.json 로드 실패", e); }
+        } catch(e) {}
 
         const texLoader = new THREE.TextureLoader();
         loadMsg.innerText = "스카이박스 불러오는 중... (2/3)";
@@ -321,7 +348,7 @@
     }
 
     // ==========================================
-    // 3. SIMULATION LOGIC & RESIZE OBSERVER
+    // 3. MATH & PHYSICS
     // ==========================================
     function latLonToUnits(lat, lon, refLat, refLon) {
         const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
@@ -329,27 +356,56 @@
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
     }
 
-    // 💡 ResizeObserver: CSS 트랜지션 중에도 캔버스 찌그러짐을 완벽하게 방지하는 핵심 엔진
+    function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
+        const unitSpeedOS = voSpd * (400 / 3600); 
+        const unitSpeedTS = vtSpd * (400 / 3600);
+        
+        const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); const voZ = -unitSpeedOS * Math.cos(voHdg * DEG2RAD); 
+        const vtX = unitSpeedTS * Math.sin(vtHdg * DEG2RAD); const vtZ = -unitSpeedTS * Math.cos(vtHdg * DEG2RAD); 
+        const dvX = vtX - voX; const dvZ = vtZ - voZ; 
+        const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); 
+        const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
+        const cpaUnits = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
+        
+        const radH = voHdg * DEG2RAD; 
+        const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); 
+        const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); 
+        const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); 
+        const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); 
+        
+        let bcr = -1; 
+        if (Math.abs(dvX_stbd) > 0.0001) { 
+            const t_cross = -relX_stbd / dvX_stbd; 
+            if (t_cross > 0) { 
+                const bcr_units = relZ_fwd + dvZ_fwd * t_cross; 
+                if (bcr_units > 0) bcr = bcr_units / 400; 
+            } 
+        } 
+        return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
+    }
+
+    // 💡 ResizeObserver: 완벽한 리사이즈 대응
     const layoutObserver = new ResizeObserver(entries => {
         for(let entry of entries) {
-            // 2D 캔버스 리사이즈
             if(entry.target.classList.contains('viewport')) {
                 const canvas = entry.target.querySelector('.vp-canvas');
-                if(canvas) {
+                if(canvas && entry.contentRect.width > 0) {
                     canvas.width = entry.contentRect.width;
                     canvas.height = entry.contentRect.height;
                 }
             } 
-            // 3D 캔버스 리사이즈
             else if (entry.target.id === 'fpv-area' && camera3D && renderer3D) {
-                camera3D.aspect = entry.contentRect.width / entry.contentRect.height;
-                camera3D.updateProjectionMatrix();
-                renderer3D.setSize(entry.contentRect.width, entry.contentRect.height);
+                if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                    camera3D.aspect = entry.contentRect.width / entry.contentRect.height;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(entry.contentRect.width, entry.contentRect.height);
+                }
             }
         }
-        // 리사이즈 즉시 렌더링 호출로 깜빡임/왜곡 방지
-        render2D();
-        if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+        if(isSimulationRunning) {
+            render2D();
+            if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+        }
     });
 
     function initializeSimulation(data) {
@@ -368,7 +424,8 @@
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
             simEntities.push({ 
-                id: s.mmsi, name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, 
+                id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
+                name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed 
             });
         });
@@ -390,13 +447,12 @@
             `;
             grid.appendChild(vp);
 
-            const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0 };
+            // 💡 selectedTargetIndex 변수 추가 (오렌지 원 선택용)
+            const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargetIndex: -1 };
             massViews.push(vObj);
 
-            // 💡 해당 뷰포트를 ResizeObserver에 등록
             layoutObserver.observe(vp);
 
-            // 이벤트 바인딩
             vp.addEventListener('mousedown', () => {
                 document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
                 vp.classList.add('active-vp');
@@ -413,13 +469,45 @@
                 
                 canvas.addEventListener('mousedown', (e) => {
                     const rect = canvas.getBoundingClientRect();
-                    vObj.isDragging = true; vObj.dragStartX = (e.clientX - rect.left) - vObj.panX; vObj.dragStartY = (e.clientY - rect.top) - vObj.panY;
+                    vObj.isDragging = true; vObj.hasDragged = false;
+                    vObj.dragStartX = (e.clientX - rect.left) - vObj.panX; vObj.dragStartY = (e.clientY - rect.top) - vObj.panY;
                 });
                 window.addEventListener('mousemove', (e) => {
-                    if(vObj.isDragging) { const rect = canvas.getBoundingClientRect(); vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; }
+                    if(vObj.isDragging) { 
+                        const rect = canvas.getBoundingClientRect(); 
+                        const dx = (e.clientX - rect.left) - vObj.dragStartX - vObj.panX;
+                        const dy = (e.clientY - rect.top) - vObj.dragStartY - vObj.panY;
+                        if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
+                        vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; 
+                        vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; 
+                    }
                 });
                 window.addEventListener('mouseup', () => vObj.isDragging = false);
                 
+                // 💡 타선 클릭 선택 로직
+                canvas.addEventListener('click', (e) => {
+                    if(vObj.hasDragged) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left;
+                    const my = e.clientY - rect.top;
+                    
+                    let clickedIndex = -1;
+                    simEntities.forEach((s, tIdx) => {
+                        if(s.isMASS && s !== vObj.massEntity) return;
+                        if(s === vObj.massEntity) return;
+                        const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
+                        const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
+                        // 클릭 반경 판단
+                        if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
+                            clickedIndex = tIdx;
+                        }
+                    });
+                    vObj.selectedTargetIndex = clickedIndex;
+                    activeMassIndex = idx;
+                    updateSidebar();
+                    render2D();
+                });
+
                 canvas.addEventListener('wheel', (e) => {
                     e.preventDefault();
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
@@ -450,14 +538,48 @@
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     }
 
+    // 💡 패널 및 타선 정보 업데이트 
     function updateSidebar() {
         if(massViews.length === 0) return;
-        const mass = massViews[activeMassIndex].massEntity;
+        const vObj = massViews[activeMassIndex];
+        const mass = vObj.massEntity;
         
+        document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
+        document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
+
         // MACRO Panel Update
-        document.getElementById('ui-mass-name').innerText = mass.name;
-        document.getElementById('ui-mass-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
-        document.getElementById('ui-mass-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+        document.getElementById('ui-os-name').innerText = mass.name;
+        document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
+        document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+        
+        const tgtIdx = vObj.selectedTargetIndex;
+        if(tgtIdx >= 0 && simEntities[tgtIdx]) {
+            const tgt = simEntities[tgtIdx];
+            const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
+            const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
+            let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI);
+            if(brg < 0) brg += 360;
+
+            const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
+            
+            document.getElementById('ui-tgt-name').innerText = tgt.name;
+            document.getElementById('ui-tgt-mmsi').innerText = tgt.id;
+            document.getElementById('ui-tgt-brg').innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
+            document.getElementById('ui-tgt-hdgcog').innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
+            document.getElementById('ui-tgt-sogstw').innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
+            document.getElementById('ui-tgt-cpa').innerText = `${cpaData.cpa.toFixed(2)} NM`;
+            document.getElementById('ui-tgt-tcpa').innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
+            document.getElementById('ui-tgt-bcr').innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
+        } else {
+            document.getElementById('ui-tgt-name').innerText = '-';
+            document.getElementById('ui-tgt-mmsi').innerText = '-';
+            document.getElementById('ui-tgt-brg').innerText = '-';
+            document.getElementById('ui-tgt-hdgcog').innerText = '-';
+            document.getElementById('ui-tgt-sogstw').innerText = '-';
+            document.getElementById('ui-tgt-cpa').innerText = '-';
+            document.getElementById('ui-tgt-tcpa').innerText = '-';
+            document.getElementById('ui-tgt-bcr').innerText = '-';
+        }
         
         // SPLIT Panel Update
         if(isSplitMode) {
@@ -481,7 +603,6 @@
         document.getElementById('panel-macro').style.display = 'none';
         document.getElementById('panel-split').style.display = 'flex';
 
-        // 선택되지 않은 뷰포트 숨기기 (남은 1개가 grid-area 절반을 꽉 채움)
         massViews.forEach((v, i) => {
             const vp = document.getElementById(`vp-${i}`);
             if(i === idx) {
@@ -504,11 +625,9 @@
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.remove('split-mode');
         
-        // 패널 전환 복구
         document.getElementById('panel-split').style.display = 'none';
         document.getElementById('panel-macro').style.display = 'flex';
 
-        // 숨겼던 뷰포트 복구
         massViews.forEach((v, i) => {
             document.getElementById(`vp-${i}`).classList.remove('hidden-vp');
         });
@@ -517,7 +636,7 @@
     }
 
     // ==========================================
-    // 5. LIGHTWEIGHT 3D ENGINE (Step 1)
+    // 5. LIGHTWEIGHT 3D ENGINE
     // ==========================================
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
@@ -526,15 +645,14 @@
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
 
         osShipGroup = new THREE.Group(); scene.add(osShipGroup);
-        camera3D = new THREE.PerspectiveCamera(60, fpvArea.clientWidth / fpvArea.clientHeight, 1, 80000);
+        camera3D = new THREE.PerspectiveCamera(60, fpvArea.clientWidth / (fpvArea.clientHeight||1), 1, 80000);
         osShipGroup.add(camera3D); 
         
         renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); 
-        renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+        renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight || 1);
         fpvArea.appendChild(renderer3D.domElement);
         
-        // FPV 영역도 ResizeObserver에 등록!
         layoutObserver.observe(fpvArea);
 
         scene.add(new THREE.AmbientLight(0x707070, 1.5));
@@ -556,7 +674,6 @@
         });
     }
 
-    // 💡 캘리브레이션이 반영된 모델 로딩 로직
     function getModelForShip(type) {
         if (parsedModels[type]) {
             const clone = parsedModels[type].group.clone();
@@ -588,6 +705,7 @@
         camAngleX = -0.05; camAngleY = 0;
 
         simEntities.forEach((tgt) => { 
+            if(tgt.isMASS && tgt !== mass) return; // 다른 MASS는 숨기거나 상황에 맞춰 그림
             if(tgt === mass) return; 
             const tModel = getModelForShip(tgt.type); 
             const tGroup = new THREE.Group();
@@ -610,12 +728,18 @@
         if (label) { ctx.fillStyle = color; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * viewScale + 15)); }
     }
     
+    // 💡 벡터 끝부분 명확한 화살표(▶) 그리기 로직 추가
     function drawVectorArrowLocal(ctx, panX, panY, viewScale, x, z, heading, distUnit, color) {
         if (distUnit <= 0) return;
         const cx = panX + x * viewScale; const cy = panY + z * viewScale; const rad = (heading - 90) * DEG2RAD;
         const wpX = cx + Math.cos(rad) * (distUnit * viewScale); const wpY = cy + Math.sin(rad) * (distUnit * viewScale);
+        
         ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(wpX, wpY); ctx.stroke(); ctx.setLineDash([]);
+        
+        // 끝점 화살표 폴리곤
+        ctx.save(); ctx.translate(wpX, wpY); ctx.rotate(heading * DEG2RAD);
+        ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill(); ctx.restore();
     }
 
     function render2D() {
@@ -636,10 +760,22 @@
             for (let i = stepCbl; i <= maxCables; i += stepCbl) { const radius_px = (i * 40) * v.viewScale; ctx.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a'; ctx.lineWidth = (i % majorCbl === 0) ? 1.5 : 1; ctx.beginPath(); ctx.arc(v.panX, v.panY, radius_px, 0, Math.PI * 2); ctx.stroke(); }
             ctx.setLineDash([]);
             
-            simEntities.forEach((s) => {
+            simEntities.forEach((s, tIdx) => {
+                if(s.isMASS && s !== v.massEntity) return; // 매크로 뷰에서 타 MASS는 필터링하거나 그릴수도 있음 (기존로직 유지)
+                
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
                 const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
+                
+                // 💡 선택된 타선 오렌지색 원형 하이라이트
+                if (v.selectedTargetIndex === tIdx && !isOwnShip) {
+                    ctx.beginPath();
+                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#f97316';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
                 drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "OS" : s.name);
             });
@@ -658,7 +794,7 @@
         });
         
         render2D();
-        if(isSplitMode) updateSidebar();
+        updateSidebar();
         
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
             const mass = massViews[activeMassIndex].massEntity;
@@ -683,5 +819,3 @@
 </script>
 </body>
 </html>
-
-```
