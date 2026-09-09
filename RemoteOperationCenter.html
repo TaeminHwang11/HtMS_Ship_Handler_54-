@@ -77,15 +77,30 @@
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
         
-        /* ================= 3D FPV 내부 라벨 ================= */
+        /* ================= 3D FPV 내부 라벨 & 조타 버튼 ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
+        
+        /* Step 2: 개입 대기 화면 오버레이 */
+        #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
+        .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Step 2: 터치/클릭 조타 버튼 */
+        .steer-btn { position: absolute; bottom: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 24px; font-family: 'Rajdhani', sans-serif; font-weight: bold; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 60; transition: 0.1s; backdrop-filter: blur(4px); user-select: none; }
+        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); }
+        #btn-steer-port { left: 30px; }
+        #btn-steer-stbd { right: 30px; }
 
         /* ================= 사이드바 공통/컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
+        #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
+        #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
@@ -131,6 +146,17 @@
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">📷 MASS_1 CAM</div>
+                
+                <!-- 💡 Step 2: 원격 접속 오버레이 -->
+                <div id="intervention-overlay">
+                    <div class="latency-spinner"></div>
+                    <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
+                    <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
+                </div>
+
+                <!-- 💡 Step 2: 수동 조타 버튼 -->
+                <div id="btn-steer-port" class="steer-btn" onmousedown="applySteer('P')">P</div>
+                <div id="btn-steer-stbd" class="steer-btn" onmousedown="applySteer('S')">S</div>
             </div>
             
             <!-- 상하 크기 조절바 -->
@@ -190,6 +216,10 @@
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) HUD</div>
                     <div class="data-row"><span>HEADING:</span> <b id="split-hdg" class="hud-val">000.0°</b></div>
                     <div class="data-row"><span>SOG:</span> <b id="split-sog" class="hud-val">0.0 Kn</b></div>
+                    <!-- 💡 Step 2: 물리 엔진 데이터 표시 -->
+                    <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0</b></div>
+                    <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
+                    <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
                 </div>
 
                 <div class="info-box" style="border-left-color: var(--accent-red);">
@@ -199,8 +229,17 @@
                     </div>
                 </div>
 
-                <!-- 임시 개입 버튼 -->
-                <button id="btn-intervention" onclick="alert('Step 2: 통신 지연(Latency) 로직 구현 대기 중입니다.')">원격 개입 (Intervention)</button>
+                <!-- 💡 Step 2: 레이턴시 조절 슬라이더 및 개입 버튼 -->
+                <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK LATENCY</span>
+                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-latency">3.0 s</span>
+                    </div>
+                    <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
+                </div>
+                
+                <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
+                <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
             </div>
 
         </div>
@@ -241,7 +280,7 @@
     };
 
     // ==========================================
-    // 1. STATE VARIABLES
+    // 1. STATE VARIABLES & LOGGING
     // ==========================================
     let simEntities = []; 
     let massViews = [];   
@@ -250,6 +289,11 @@
     let isSimulationRunning = false;
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
+
+    // 💡 Step 2: Intervention State
+    let interventionState = 'NONE'; // NONE, CONNECTING, ACTIVE
+    let interventionTimer = null;
+    let systemLogs = []; // 최종 추출을 위한 이벤트/시계열 로그 배열
 
     // 3D Variables
     let scene, camera3D, renderer3D;
@@ -392,7 +436,6 @@
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
     }
 
-    // 💡 ResizeObserver: 완벽한 리사이즈 대응
     const layoutObserver = new ResizeObserver(entries => {
         for(let entry of entries) {
             if(entry.target.classList.contains('viewport')) {
@@ -431,10 +474,12 @@
             const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
+            // 💡 Step 2: 물리 엔진 데이터(Rudder, Rot, cmdSpeed) 초기화
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, 
-                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed 
+                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
+                targetRudder: 0, actualRudder: 0, rot: 0
             });
         });
 
@@ -524,6 +569,8 @@
         updateGridLayout();
         initThreeJS_Lightweight();
         
+        // 행동 로깅 시작
+        logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
         isSimulationRunning = true;
         mainLoop();
     }
@@ -585,10 +632,13 @@
             document.getElementById('ui-tgt-bcr').innerText = '-';
         }
         
-        // SPLIT Panel Update
+        // 💡 SPLIT Panel Update (물리 데이터 포함)
         if(isSplitMode) {
             document.getElementById('split-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
             document.getElementById('split-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+            document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)}`;
+            document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
+            document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
         }
     }
 
@@ -622,7 +672,6 @@
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.add('split-mode');
         
-        // FPV 영역 높이 초기화
         fpvArea.style.flex = '1';
         fpvArea.style.height = 'auto';
 
@@ -640,6 +689,7 @@
             }
         });
 
+        logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
         setup3DSceneForMass(idx);
         updateSidebar();
     }
@@ -647,6 +697,11 @@
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         isSplitMode = false;
+        
+        // 💡 복귀 시 개입(Intervention)이 활성화되어 있다면 강제 종료
+        if(interventionState !== 'NONE') {
+            endIntervention();
+        }
 
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.remove('split-mode');
@@ -658,13 +713,91 @@
             document.getElementById(`vp-${i}`).classList.remove('hidden-vp');
         });
 
+        logEvent("MACRO_MODE_RETURN", {});
         updateGridLayout();
+    }
+
+    // ==========================================
+    // 💡 Step 2: INTERVENTION (LATENCY) LOGIC
+    // ==========================================
+    window.requestIntervention = function() {
+        const latency = parseFloat(document.getElementById('latency-slider').value);
+        const massName = massViews[activeMassIndex].massEntity.name;
+        
+        document.getElementById('btn-intervention').disabled = true;
+        document.getElementById('intervention-overlay').style.display = 'flex';
+        
+        logEvent("INTERVENTION_REQUESTED", { massId: massName, latencySec: latency });
+        interventionState = 'CONNECTING';
+
+        let remaining = latency;
+        document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's';
+        
+        if (remaining <= 0) {
+            startIntervention();
+            return;
+        }
+
+        interventionTimer = setInterval(() => {
+            remaining -= 0.1;
+            if(remaining <= 0) {
+                clearInterval(interventionTimer);
+                startIntervention();
+            } else {
+                document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's';
+            }
+        }, 100);
+    }
+
+    function startIntervention() {
+        interventionState = 'ACTIVE';
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'none';
+        document.getElementById('btn-end-intervention').style.display = 'block';
+        document.getElementById('btn-steer-port').style.display = 'flex';
+        document.getElementById('btn-steer-stbd').style.display = 'flex';
+        
+        logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    window.endIntervention = function() {
+        if (interventionTimer) clearInterval(interventionTimer);
+        interventionState = 'NONE';
+        
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'block';
+        document.getElementById('btn-intervention').disabled = false;
+        document.getElementById('btn-end-intervention').style.display = 'none';
+        document.getElementById('btn-steer-port').style.display = 'none';
+        document.getElementById('btn-steer-stbd').style.display = 'none';
+        
+        // 타각 초기화 (Auto Return)
+        if(massViews[activeMassIndex]) {
+            massViews[activeMassIndex].massEntity.targetRudder = 0;
+        }
+        
+        logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    // 터치/클릭 수동 조타 (Physics 연동)
+    window.applySteer = function(dir) {
+        if(interventionState !== 'ACTIVE') return;
+        const mass = massViews[activeMassIndex].massEntity;
+        mass.targetRudder = Math.max(-35, Math.min(35, mass.targetRudder + (dir === 'P' ? -5 : 5))); 
+        mass.targetRudder = Math.round(mass.targetRudder/5)*5; 
+        logEvent("MANUAL_STEERING", { massId: mass.name, cmd: mass.targetRudder, dir: dir });
+    }
+
+    // 이벤트 로거 
+    function logEvent(action, payload) {
+        systemLogs.push({ time: ((performance.now() - lastTime)/1000).toFixed(2), action: action, data: payload });
     }
 
     // ==========================================
     // 5. LIGHTWEIGHT 3D ENGINE
     // ==========================================
     function initThreeJS_Lightweight() {
+        const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
         if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
@@ -676,7 +809,9 @@
         renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); 
         renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight || 1);
-        fpvArea.appendChild(renderer3D.domElement);
+        
+        // 버튼 등 UI 요소들보다 뒤에, 순수 배경으로 들어가도록 prepend 사용
+        fpvArea.insertBefore(renderer3D.domElement, fpvArea.firstChild);
         
         layoutObserver.observe(fpvArea);
 
@@ -741,7 +876,7 @@
     }
 
     // ==========================================
-    // 6. RENDER LOOP (2D & 3D Sync)
+    // 6. RENDER LOOP (2D & 3D Sync & 💡 Physics)
     // ==========================================
     function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; const cy = panY + z * viewScale;
@@ -809,7 +944,29 @@
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         
+        // 💡 Step 2: 선박 동역학(Physics Engine) 연산
         simEntities.forEach(s => { 
+            let rDiff = s.targetRudder - s.actualRudder; 
+            let rStep = 1.5 * dt; 
+            
+            if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
+            else s.actualRudder += Math.sign(rDiff) * rStep;
+            
+            const K_nom = 2.0; 
+            const T_nom = 25.0; 
+            const targetRot = K_nom * s.actualRudder; 
+            const rotDerivative = (targetRot - s.rot) / T_nom; 
+            
+            s.rot += rotDerivative * dt; 
+            s.hdg = (s.hdg + (s.rot / 60.0) * dt * 3) % 360; 
+            if (s.hdg < 0) s.hdg += 360;
+            
+            const speedLossFactor = 0.008; 
+            const targetSpeed = s.cmdSpeed * (1.0 - speedLossFactor * Math.abs(s.rot));
+            const T_surge = 15.0; 
+            
+            s.spd += (targetSpeed - s.spd) * (dt / T_surge);
+
             const speedUnits = s.spd * (400 / 3600); 
             s.x += speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; 
             s.z -= speedUnits * Math.cos(s.hdg * DEG2RAD) * dt; 
