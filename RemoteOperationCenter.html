@@ -122,11 +122,11 @@
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
                 <select id="scenario-select">
-                    <option value="">목록 로딩 중...</option>
+                    <option value="">데이터 연결 중...</option>
                 </select>
             </div>
             <button class="btn-start" onclick="loadScenarioAndStart()" id="btn-start">시뮬레이션 시작</button>
-            <div id="loading-screen">지도 데이터 다운로드 중... 잠시만 기다려주세요.</div>
+            <div id="loading-screen">로딩 중... 0%</div>
         </div>
     </div>
 
@@ -341,8 +341,6 @@
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
-            document.getElementById('loading-screen').style.display = 'block';
-            
             fetch(GITHUB_BASE_URL + 'Jsons/countries.geo.json')
                 .then(r => r.json())
                 .then(data => { worldGeoJSON = data; if(currentMode==='SURVEILLANCE') renderWorldMap(); })
@@ -358,10 +356,8 @@
             else filteredFiles.forEach(file => {
                 const opt = document.createElement('option'); opt.value = file.id; opt.textContent = String(file.name).replace('.json', ''); select.appendChild(opt);
             });
-            document.getElementById('loading-screen').style.display = 'none';
         } catch (err) {
             select.innerHTML = '<option value="">통신 오류. 다시 시도해주세요.</option>';
-            document.getElementById('loading-screen').style.display = 'none';
         }
     }
     window.addEventListener('DOMContentLoaded', fetchScenarioList);
@@ -385,12 +381,21 @@
         
         btnStart.style.display = 'none'; 
         loadMsg.style.display = 'block';
+        loadMsg.innerText = "로딩 중... 0%";
+
+        let totalLoadingSteps = 2 + 3 + modelFiles.length; 
+        let currentStep = 0;
+        const addProgress = () => {
+            currentStep++;
+            loadMsg.innerText = `로딩 중... ${Math.floor((currentStep / totalLoadingSteps) * 100)}%`;
+        };
 
         let scenarioData;
         try {
             const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
             scenarioData = await res.json();
             if(scenarioData.error) throw new Error(scenarioData.error);
+            addProgress();
         } catch (err) { 
             alert("시나리오를 불러오는데 실패했습니다. 네트워크 상태나 스크립트 주소를 확인하세요.");
             btnStart.style.display = 'block';
@@ -403,17 +408,16 @@
             if(scenarioData.environment.current) { globalEnv.currentDir = scenarioData.environment.current.dir; globalEnv.currentSpd = scenarioData.environment.current.spd; }
         }
 
-        loadMsg.innerText = "영점 조절 세팅 로드 중... (1/3)";
         try { 
             const setRes = await fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime()); 
             if(setRes.ok) { 
                 const settingsData = await setRes.json(); 
                 for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
             } 
-        } catch(e) {}
+            addProgress();
+        } catch(e) { addProgress(); }
 
         const texLoader = new THREE.TextureLoader();
-        loadMsg.innerText = "스카이박스 불러오는 중... (2/3)";
         loadedSkyboxes = [];
         const skyboxFiles = ["NiceSky.jpg", "GraySky.jpg", "SunsetSky.jpg"];
         for(let sf of skyboxFiles) {
@@ -425,11 +429,11 @@
                 });
                 if(tex) loadedSkyboxes.push(tex);
             } catch(e) {}
+            addProgress();
         }
 
         const gltfLoader = new THREE.GLTFLoader();
         for (let i = 0; i < modelFiles.length; i++) {
-            loadMsg.innerText = `3D 선박 로드 중... (${i+1}/${modelFiles.length})`;
             await new Promise((resolve) => {
                 gltfLoader.load(GITHUB_BASE_URL + modelFiles[i], (gltf) => {
                     const model = gltf.scene;
@@ -443,6 +447,7 @@
                     resolve();
                 }, undefined, () => resolve());
             });
+            addProgress();
             await new Promise(r => setTimeout(r, 20)); 
         }
 
@@ -762,9 +767,6 @@
         mainLoop();
     }
 
-    // ==========================================
-    // 💡 Tier 1: 고해상도 GeoJSON World Map Rendering
-    // ==========================================
     function renderWorldMap() {
         if(currentMode !== 'SURVEILLANCE') return;
         const canvas = document.getElementById('world-map-canvas');
@@ -1059,7 +1061,6 @@
         renderWorldMap();
     }
 
-    // 💡 1번 반영: 집중 관찰 모드에서 복귀 시 일반 모니터링 모드로 상태 명확히 전환
     window.enterGeneralMode = function() {
         currentMode = 'GENERAL';
         isSplitMode = false;
@@ -1109,7 +1110,6 @@
         updateSidebar();
     }
 
-    // 💡 1번 반영: exitSplitMode 실행 시 enterGeneralMode를 호출하여 상태 충돌 버그 완전 해결
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         if(interventionState !== 'NONE') endIntervention();
@@ -1521,7 +1521,6 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    // 💡 2번 반영: 파도 흐름 속도를 직전 대비 다시 절반으로 감속
                     const speedFact = Math.max(0.01, mass.spd * 0.002); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
