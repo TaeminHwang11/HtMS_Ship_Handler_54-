@@ -71,7 +71,7 @@
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; height: 100%; width: 100%; }
         .viewport.active-vp { border: 2px solid var(--accent-yellow); }
         .viewport.hidden-vp { display: none !important; } 
-        .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; } /* 💡 캔버스 터치 액션 방지 */
+        .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
         
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
@@ -105,6 +105,10 @@
         .data-row b { color: #fff; font-family: monospace; font-size: 15px; }
 
         .hud-val { color: var(--accent-green) !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+
+        /* 💡 다중 패널을 위한 닫기 버튼 추가 */
+        .close-target { float: right; cursor: pointer; color: #ef4444; font-size: 14px; line-height: 1; }
+        .close-target:hover { color: #fca5a5; }
     </style>
 </head>
 <body>
@@ -121,7 +125,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_3" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_4" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -152,7 +156,7 @@
             <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 뷰어 -->
+            <!-- 하단: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
@@ -181,17 +185,8 @@
                     <div class="data-row"><span>CURRENT:</span> <b id="ui-env-curr">-</b></div>
                 </div>
 
-                <div class="info-box" style="border-left-color: var(--accent-red); margin-bottom: 0;">
-                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
-                    <div class="data-row"><span>NAME:</span> <b id="ui-tgt-name" style="color: #fca5a5;">-</b></div>
-                    <div class="data-row"><span>MMSI:</span> <b id="ui-tgt-mmsi">-</b></div>
-                    <div class="data-row"><span>BRG:</span> <b id="ui-tgt-brg">-</b></div>
-                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-tgt-hdgcog">-</b></div>
-                    <div class="data-row"><span>SOG / STW:</span> <b id="ui-tgt-sogstw">-</b></div>
-                    <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
-                    <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
-                    <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
-                </div>
+                <!-- 💡 여러 타겟 정보를 담을 동적 컨테이너 -->
+                <div id="macro-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
 
                 <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
                     상세 관찰 및 개입을 원하시면<br>특정 선박 화면을 <b>더블클릭</b> 하세요.
@@ -200,8 +195,17 @@
 
             <!-- SPLIT (집중관찰) 모드 패널 -->
             <div id="panel-split" style="display: none; flex-direction: column; height: 100%;">
-                <div class="panel-title" style="color: var(--accent-yellow);">SPLIT DASHBOARD</div>
+                <div class="panel-title" style="color: var(--accent-yellow);">집중관찰모드</div>
                 <button class="btn-return" onclick="exitSplitMode()">MACRO VIEW (복귀)</button>
+                
+                <!-- 💡 개입 제어 버튼 위로 이동 -->
+                <button id="btn-intervention" onclick="requestIntervention()" style="margin-bottom: 10px;">원격 개입 (Intervention)</button>
+                <button id="btn-end-intervention" onclick="endIntervention()" style="margin-bottom: 10px;">개입 종료 (AUTO RETURN)</button>
+                
+                <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('P')" ontouchstart="applySteer('P'); event.preventDefault();">PORT (P)</div>
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('S')" ontouchstart="applySteer('S'); event.preventDefault();">STBD (S)</div>
+                </div>
                 
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) HUD</div>
@@ -215,17 +219,8 @@
                     <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
 
-                <div class="info-box" style="border-left-color: var(--accent-red);">
-                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
-                    <div class="data-row"><span>NAME:</span> <b id="split-tgt-name" style="color: #fca5a5;">-</b></div>
-                    <div class="data-row"><span>MMSI:</span> <b id="split-tgt-mmsi">-</b></div>
-                    <div class="data-row"><span>BRG:</span> <b id="split-tgt-brg">-</b></div>
-                    <div class="data-row"><span>HDG / COG:</span> <b id="split-tgt-hdgcog">-</b></div>
-                    <div class="data-row"><span>SOG / STW:</span> <b id="split-tgt-sogstw">-</b></div>
-                    <div class="data-row"><span>CPA:</span> <b id="split-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
-                    <div class="data-row"><span>TCPA:</span> <b id="split-tgt-tcpa">-</b></div>
-                    <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
-                </div>
+                <!-- 💡 여러 타겟 정보를 담을 동적 컨테이너 -->
+                <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
 
                 <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
@@ -234,15 +229,6 @@
                     </div>
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
-                
-                <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
-                    <!-- 💡 터치 이벤트(touchstart) 동시 매핑 추가 -->
-                    <div class="steer-btn-sidebar" onmousedown="applySteer('P')" ontouchstart="applySteer('P'); event.preventDefault();">PORT (P)</div>
-                    <div class="steer-btn-sidebar" onmousedown="applySteer('S')" ontouchstart="applySteer('S'); event.preventDefault();">STBD (S)</div>
-                </div>
-
-                <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
-                <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
             </div>
 
         </div>
@@ -276,6 +262,7 @@
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
+    // 렌더링 프레임 분리용 변수
     let last2DRenderTime = 0; 
     let last3DRenderTime = 0;
 
@@ -292,7 +279,6 @@
     let camAngleX = -0.05, camAngleY = 0; 
     let seaMesh; 
 
-    // 모바일 터치 카메라용 전역변수
     let lastTouchX = 0, lastTouchY = 0;
 
     // ==========================================
@@ -545,8 +531,8 @@
             `;
             grid.appendChild(vp);
 
-            // 💡 본선의 화면상 중앙 오프셋 관리 변수(panOffsetX, panOffsetY) 도입
-            const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, panOffsetX: 0, panOffsetY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargetIndex: -1, initialPinchDistance: 0, initialViewScale: 0 };
+            // 💡 여러 타겟을 담기 위해 배열(selectedTargets) 사용으로 변경
+            const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, panOffsetX: 0, panOffsetY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargets: [], initialPinchDistance: 0, initialViewScale: 0 };
             massViews.push(vObj);
 
             layoutObserver.observe(vp);
@@ -562,7 +548,6 @@
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
                 
-                // ===== 마우스 컨트롤 =====
                 canvas.addEventListener('mousedown', (e) => {
                     const rect = canvas.getBoundingClientRect();
                     vObj.isDragging = true; vObj.hasDragged = false;
@@ -581,7 +566,6 @@
                     }
                 });
                 
-                // ===== 터치 컨트롤 (드래그 + 핀치 줌) =====
                 canvas.addEventListener('touchstart', (e) => {
                     if (e.touches.length === 1) {
                         const rect = canvas.getBoundingClientRect();
@@ -616,11 +600,9 @@
                     }
                 }, {passive: false});
 
-                // 마우스/터치 종료
                 window.addEventListener('mouseup', () => vObj.isDragging = false);
                 window.addEventListener('touchend', () => { vObj.isDragging = false; vObj.initialPinchDistance = 0; });
                 
-                // 타겟 선박 클릭/터치 감지
                 canvas.addEventListener('click', (e) => {
                     if(vObj.hasDragged) return;
                     const rect = canvas.getBoundingClientRect();
@@ -636,7 +618,13 @@
                             clickedIndex = tIdx;
                         }
                     });
-                    vObj.selectedTargetIndex = clickedIndex;
+                    
+                    // 💡 여러 타겟을 클릭하여 추가할 수 있게 처리
+                    if(clickedIndex !== -1) {
+                        if(!vObj.selectedTargets.includes(clickedIndex)) {
+                            vObj.selectedTargets.push(clickedIndex);
+                        }
+                    }
                     activeMassIndex = idx; updateSidebar(); render2D();
                 });
 
@@ -655,6 +643,14 @@
         logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
         isSimulationRunning = true;
         mainLoop();
+    }
+
+    // 💡 타겟 삭제 기능 함수
+    window.removeTarget = function(vIdx, tIdx) {
+        const vObj = massViews[vIdx];
+        vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
+        updateSidebar();
+        render2D();
     }
 
     function updateGridLayout() {
@@ -692,33 +688,37 @@
         document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
         document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
-        const updateTgtPanel = (prefix) => {
-            const tgtIdx = vObj.selectedTargetIndex;
-            if(tgtIdx >= 0 && simEntities[tgtIdx]) {
-                const tgt = simEntities[tgtIdx];
-                const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
-                const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
-                let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
-                const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                
-                document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
-                document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
-                document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
-                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
-                document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
-                document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
-                document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
-                document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
-            } else {
-                document.getElementById(`${prefix}-tgt-name`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-mmsi`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-brg`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-sogstw`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-cpa`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-tcpa`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-bcr`).innerText = '-';
-            }
+        // 💡 동적 타겟 패널 렌더러
+        const updateTgtPanels = (containerId) => {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // 초기화
+            
+            vObj.selectedTargets.forEach(tgtIdx => {
+                if(simEntities[tgtIdx]) {
+                    const tgt = simEntities[tgtIdx];
+                    const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
+                    const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
+                    let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
+                    const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
+                    
+                    const html = `
+                    <div class="info-box" style="border-left-color: var(--accent-red); margin-bottom: 0;">
+                        <div class="info-header" style="color: var(--accent-red);">
+                            TARGET SHIP INFO 
+                            <span class="close-target" onclick="removeTarget(${activeMassIndex}, ${tgtIdx})">✖</span>
+                        </div>
+                        <div class="data-row"><span>NAME:</span> <b style="color: #fca5a5;">${tgt.name}</b></div>
+                        <div class="data-row"><span>MMSI:</span> <b>${tgt.id}</b></div>
+                        <div class="data-row"><span>BRG:</span> <b>${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)</b></div>
+                        <div class="data-row"><span>HDG / COG:</span> <b>${tgt.hdg.toFixed(1)}° / ${tgt.cog.toFixed(1)}°</b></div>
+                        <div class="data-row"><span>SOG / STW:</span> <b>${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}</b></div>
+                        <div class="data-row"><span>CPA:</span> <b style="color: var(--accent-yellow);">${cpaData.cpa.toFixed(2)} NM</b></div>
+                        <div class="data-row"><span>TCPA:</span> <b>${cpaData.tcpa > 0 ? (cpaData.tcpa/60).toFixed(1) + ' MIN' : '-'}</b></div>
+                        <div class="data-row"><span>BCR:</span> <b>${cpaData.bcr > 0 ? cpaData.bcr.toFixed(2) + ' NM' : '-'}</b></div>
+                    </div>`;
+                    container.innerHTML += html;
+                }
+            });
         };
 
         if(isSplitMode) {
@@ -731,9 +731,9 @@
             
             document.getElementById('split-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
             document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
-            updateTgtPanel('split');
+            updateTgtPanels('split-targets-container');
         } else {
-            updateTgtPanel('ui');
+            updateTgtPanels('macro-targets-container');
         }
     }
 
@@ -744,7 +744,6 @@
     const fpvArea = document.getElementById('fpv-area');
     let isHResizing = false;
 
-    // 분할 바 마우스 & 터치 연동
     hResizer.addEventListener('mousedown', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); });
     hResizer.addEventListener('touchstart', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); }, {passive: false});
 
@@ -766,7 +765,6 @@
         activeMassIndex = idx;
         isSplitMode = true;
         
-        // 💡 스플릿 진입 시 본선이 다시 정중앙에 오도록 오프셋 리셋
         massViews[idx].panOffsetX = 0;
         massViews[idx].panOffsetY = 0;
 
@@ -797,7 +795,6 @@
         
         if(interventionState !== 'NONE') { endIntervention(); }
         
-        // 💡 매크로 뷰 복귀 시에도 중앙 오프셋 초기화
         if(massViews[activeMassIndex]) {
             massViews[activeMassIndex].panOffsetX = 0;
             massViews[activeMassIndex].panOffsetY = 0;
@@ -956,7 +953,6 @@
         seaMesh.rotation.x = -Math.PI / 2;
         osShipGroup.add(seaMesh);
 
-        // 💡 3D 카메라 터치/마우스 연동
         fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
         fpvArea.addEventListener('touchstart', (e) => { 
             if(e.target.tagName === 'CANVAS' && e.touches.length === 1) { 
@@ -1072,7 +1068,6 @@
             const vp = canvas.parentElement;
             if(!canvas || vp.classList.contains('hidden-vp') || canvas.width === 0) return;
             
-            // 💡 본선을 캔버스 중앙에 배치 (리사이즈 되어도 자동으로 정중앙 유지)
             v.panX = canvas.width / 2 + v.panOffsetX;
             v.panY = canvas.height / 2 + v.panOffsetY;
 
@@ -1089,7 +1084,6 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 항로 독립 고정: 본선에서 뻗어나오지 않고, 웨이포인트끼리만 선을 그음
                 if (s.waypoints && s.waypoints.length > 0) {
                     const isOwnShip = s === v.massEntity;
                     const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
@@ -1124,7 +1118,8 @@
                 const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
                 
-                if (v.selectedTargetIndex === tIdx && !isOwnShip) {
+                // 💡 다중 선택된 모든 타겟에 주황색 하이라이트 표시
+                if (v.selectedTargets.includes(tIdx) && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
                     ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.stroke();
@@ -1143,7 +1138,6 @@
         const dt = Math.min((now - lastTime) / 1000, 0.1); 
         lastTime = now;
         
-        // 물리 연산 (60FPS 정밀도 유지)
         simEntities.forEach(s => { 
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
@@ -1198,8 +1192,8 @@
             }
         });
         
-        // 3D 영상 렌더링 (3 FPS 제한)
-        if (now - last3DRenderTime >= 333) {
+        // 💡 3D 영상 렌더링 (30 FPS 제한 = 약 33ms 마다)
+        if (now - last3DRenderTime >= 33) {
             const dt3d = (now - last3DRenderTime) / 1000;
             last3DRenderTime = now;
             
