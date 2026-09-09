@@ -1178,4 +1178,1121 @@
 
 </script>
 </body>
+</html>        #main-wrapper.split-mode #grid-area { flex: 1; min-height: 20%; display: block; } 
+
+        /* 우측 사이드바 (대시보드 패널) */
+        #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
+        .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
+        
+        /* ================= 2D 뷰포트 내부 스타일 ================= */
+        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; height: 100%; width: 100%; }
+        .viewport.active-vp { border: 2px solid var(--accent-yellow); }
+        .viewport.hidden-vp { display: none !important; } 
+        .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        
+        .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
+        .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+        .hud-range { color: var(--accent-cyan); font-weight: bold; }
+        
+        /* ================= 3D FPV 내부 UI ================= */
+        #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
+        
+        #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
+        .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 사이드바 조타 버튼 */
+        .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
+        .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
+
+        /* ================= 사이드바 컴포넌트 ================= */
+        .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
+        .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
+
+        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
+        #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
+        #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
+
+        .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
+        .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
+        .data-row span { color: #94a3b8; font-weight: bold; }
+        .data-row b { color: #fff; font-family: monospace; font-size: 15px; }
+
+        .hud-val { color: var(--accent-green) !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 로그인 (메인 화면) -->
+    <div id="login-overlay">
+        <h1>[HTMS] Remote Operation Center</h1>
+        <h2>PORTABLE REMOTE OPERATION SIMULATOR</h2>
+        
+        <div class="menu-box">
+            <div class="form-row">
+                <label>학번 (Student ID)</label>
+                <input type="text" id="student-id" placeholder="예: 20261234" autocomplete="off" value="20260001" />
+            </div>
+            <div class="form-row">
+                <label>이름 (Name)</label>
+                <!-- 💡 버전 V4 적용 완료 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v4" />
+            </div>
+            <div class="form-row">
+                <label>시나리오 (Scenario) 선택</label>
+                <select id="scenario-select">
+                    <option value="">목록 로딩 중...</option>
+                </select>
+            </div>
+            <button class="btn-start" onclick="loadScenarioAndStart()" id="btn-start">시뮬레이션 시작</button>
+            <div id="loading-screen">통신 중... 잠시만 기다려주세요.</div>
+        </div>
+    </div>
+
+    <!-- 2. 메인 관제 레이아웃 -->
+    <div id="main-wrapper">
+        
+        <!-- 좌측 뷰 컬럼 -->
+        <div id="view-column">
+            <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
+            <div id="fpv-area">
+                <div id="fpv-label">MASS_1 FPV CAM</div>
+                <div id="intervention-overlay">
+                    <div class="latency-spinner"></div>
+                    <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
+                    <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
+                </div>
+            </div>
+            
+            <!-- 상하 크기 조절바 -->
+            <div id="h-resizer"></div>
+
+            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 -->
+            <div id="grid-area"></div>
+        </div>
+        
+        <!-- 우측 사이드바 -->
+        <div id="sidebar">
+            
+            <!-- 💡 MACRO 모드 패널 (누락된 HTML 태그 완벽 복구) -->
+            <div id="panel-macro" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="panel-title">MACRO DASHBOARD</div>
+                
+                <div class="info-box" style="border-left-color: var(--accent-green);">
+                    <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="ui-os-name" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-os-hdgcog">-</b></div>
+                    <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
+                    <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
+                    <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
+                    <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-header">ENVIRONMENT</div>
+                    <div class="data-row"><span>WIND:</span> <b id="ui-env-wind">-</b></div>
+                    <div class="data-row"><span>CURRENT:</span> <b id="ui-env-curr">-</b></div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--accent-red); margin-bottom: 0;">
+                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="ui-tgt-name" style="color: #fca5a5;">-</b></div>
+                    <div class="data-row"><span>MMSI:</span> <b id="ui-tgt-mmsi">-</b></div>
+                    <div class="data-row"><span>BRG:</span> <b id="ui-tgt-brg">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-tgt-hdgcog">-</b></div>
+                    <div class="data-row"><span>SOG / STW:</span> <b id="ui-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="ui-tgt-xtd">-</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-tgt-eta">-</b></div>
+                    <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
+                    <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
+                </div>
+
+                <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
+                    상세 관찰 및 개입을 원하시면<br>특정 선박 화면을 <b>더블클릭</b> 하세요.
+                </div>
+            </div>
+
+            <!-- SPLIT (집중관찰) 모드 패널 -->
+            <div id="panel-split" style="display: none; flex-direction: column; height: 100%;">
+                <div class="panel-title" style="color: var(--accent-yellow);">SPLIT DASHBOARD</div>
+                <button class="btn-return" onclick="exitSplitMode()">MACRO VIEW (복귀)</button>
+                
+                <div class="info-box" style="border-left-color: var(--accent-green);">
+                    <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) HUD</div>
+                    <div class="data-row"><span>HEADING:</span> <b id="split-hdg" class="hud-val">000.0°</b></div>
+                    <div class="data-row"><span>COG:</span> <b id="split-cog" class="hud-val">000.0°</b></div>
+                    <div class="data-row"><span>SOG:</span> <b id="split-sog" class="hud-val">0.0 Kn</b></div>
+                    <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0 °/min</b></div>
+                    <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
+                    <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="split-os-xtd" class="hud-val">0.00 NM</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--accent-red);">
+                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="split-tgt-name" style="color: #fca5a5;">-</b></div>
+                    <div class="data-row"><span>MMSI:</span> <b id="split-tgt-mmsi">-</b></div>
+                    <div class="data-row"><span>BRG:</span> <b id="split-tgt-brg">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="split-tgt-hdgcog">-</b></div>
+                    <div class="data-row"><span>SOG / STW:</span> <b id="split-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="split-tgt-xtd">-</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="split-tgt-eta">-</b></div>
+                    <div class="data-row"><span>CPA:</span> <b id="split-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>TCPA:</span> <b id="split-tgt-tcpa">-</b></div>
+                    <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
+                </div>
+
+                <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK LATENCY</span>
+                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-latency">3.0 s</span>
+                    </div>
+                    <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
+                </div>
+                
+                <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
+                </div>
+
+                <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
+                <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
+            </div>
+
+        </div>
+
+    </div>
+
+<script>
+    // ==========================================
+    // 0. CONSTANTS & FALLBACK DATA
+    // ==========================================
+    const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+    const GITHUB_BASE_URL = "./"; 
+    const DEG2RAD = Math.PI / 180;
+    
+    const SHIP_LEN_UNIT = 64.8;  
+    const SHIP_WID_UNIT = 10.8; 
+    const VECTOR_SCALE = 8;     
+
+    const modelFiles = [
+        "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
+    ];
+
+    const fallbackScenarioData = {
+        "ScenarioName": "Exported_MASS_Scenario",
+        "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
+        "ships": [
+            { "mmsi": 111, "isMASS": 1, "shipName": "MASS_1", "shipType": "CNTR_2700", "initSpeed": 15, "initHeading": 45, "waypointSetID": 0 },
+            { "mmsi": 222, "isMASS": 1, "shipName": "MASS_2", "shipType": "CNTR_2700", "initSpeed": 12, "initHeading": 0, "waypointSetID": 1 },
+            { "mmsi": 333, "isMASS": 1, "shipName": "MASS_3", "shipType": "CNTR_2700", "initSpeed": 18, "initHeading": 315, "waypointSetID": 2 },
+            { "mmsi": 444, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "BULK", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
+        ],
+        "WayPointSet": [
+            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
+            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }, { "Latitude": 34.95, "Longitude": 126.50 }] },
+            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
+            { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.850000, "Longitude": 126.450000 }] }
+        ]
+    };
+
+    // ==========================================
+    // 1. STATE VARIABLES
+    // ==========================================
+    let simEntities = []; 
+    let massViews = [];   
+    let activeMassIndex = 0;
+    let isSplitMode = false;
+    let isSimulationRunning = false;
+    let lastTime = performance.now();
+    let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
+
+    let interventionState = 'NONE'; 
+    let interventionTimer = null;
+    let systemLogs = []; 
+
+    // 3D Variables
+    let scene, camera3D, renderer3D;
+    let parsedModels = {};
+    let loadedSkyboxes = []; 
+    let osShipGroup, targetMeshes = [];
+    let isDraggingCam = false; 
+    let camAngleX = -0.05, camAngleY = 0; 
+    let seaMesh; 
+
+    // ==========================================
+    // 2. FETCH & INITIALIZATION
+    // ==========================================
+    async function fetchScenarioList() {
+        const select = document.getElementById('scenario-select');
+        try {
+            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list&t=${new Date().getTime()}`);
+            const data = await res.json();
+            let files = Array.isArray(data) ? data : (data.files || data.data || []);
+            select.innerHTML = '';
+            
+            const filteredFiles = files.filter(f => f && f.name && (String(f.name).toUpperCase().includes('MASS') || String(f.name).toUpperCase().includes('SCENARIO')));
+            if(filteredFiles.length === 0) select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
+            else filteredFiles.forEach(file => {
+                const opt = document.createElement('option'); opt.value = file.id; opt.textContent = String(file.name).replace('.json', ''); select.appendChild(opt);
+            });
+        } catch (err) {
+            select.innerHTML = '<option value="local_test">[Local Test] Exported_MASS_Scenario</option>';
+        }
+    }
+    window.addEventListener('DOMContentLoaded', fetchScenarioList);
+
+    function getValidShipType(rawType) {
+        if (!rawType) return "CargoShip1.glb";
+        const t = String(rawType).toUpperCase();
+        if (t.includes("CNTR")) return "ContainerShip1.glb";
+        if (t.includes("BULK")) return "BulkCarrier.glb";
+        if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1.glb";
+        return "CargoShip1.glb"; 
+    }
+
+    async function loadScenarioAndStart() {
+        const scnId = document.getElementById('scenario-select').value;
+        const loadMsg = document.getElementById('loading-screen');
+        const btnStart = document.getElementById('btn-start');
+        
+        if(!document.getElementById('student-id').value) { alert("학번을 입력해주세요."); return; }
+        btnStart.style.display = 'none'; loadMsg.style.display = 'block';
+
+        let scenarioData;
+        if(scnId === "local_test") scenarioData = fallbackScenarioData;
+        else {
+            try {
+                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
+                scenarioData = await res.json();
+                if(scenarioData.error) throw new Error(scenarioData.error);
+            } catch (err) { scenarioData = fallbackScenarioData; }
+        }
+
+        if(scenarioData.environment) {
+            if(scenarioData.environment.wind) { globalEnv.windDir = scenarioData.environment.wind.dir; globalEnv.windSpd = scenarioData.environment.wind.spd; }
+            if(scenarioData.environment.current) { globalEnv.currentDir = scenarioData.environment.current.dir; globalEnv.currentSpd = scenarioData.environment.current.spd; }
+        }
+
+        loadMsg.innerText = "영점 조절 세팅 로드 중... (1/3)";
+        try { 
+            const setRes = await fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime()); 
+            if(setRes.ok) { 
+                const settingsData = await setRes.json(); 
+                for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
+            } 
+        } catch(e) {}
+
+        const texLoader = new THREE.TextureLoader();
+        loadMsg.innerText = "스카이박스 불러오는 중... (2/3)";
+        loadedSkyboxes = [];
+        const skyboxFiles = ["NiceSky.jpg", "GraySky.jpg", "SunsetSky.jpg"];
+        for(let sf of skyboxFiles) {
+            try {
+                let tex = await new Promise((resolve) => {
+                    texLoader.load(GITHUB_BASE_URL + "Environment/" + sf, (t) => { 
+                        t.mapping = THREE.EquirectangularReflectionMapping; resolve(t); 
+                    }, undefined, () => resolve(null));
+                });
+                if(tex) loadedSkyboxes.push(tex);
+            } catch(e) {}
+        }
+
+        const gltfLoader = new THREE.GLTFLoader();
+        for (let i = 0; i < modelFiles.length; i++) {
+            loadMsg.innerText = `3D 선박 로드 중... (${i+1}/${modelFiles.length})`;
+            await new Promise((resolve) => {
+                gltfLoader.load(GITHUB_BASE_URL + modelFiles[i], (gltf) => {
+                    const model = gltf.scene;
+                    const box = new THREE.Box3().setFromObject(model); 
+                    const size = new THREE.Vector3(); box.getSize(size); 
+                    const center = new THREE.Vector3(); box.getCenter(center);
+                    model.position.set(-center.x, -center.y, -center.z); 
+                    const scale = 150 / Math.max(size.x, size.y, size.z); 
+                    const wrapper = new THREE.Group(); wrapper.add(model); wrapper.scale.set(scale, scale, scale);
+                    parsedModels[modelFiles[i].split('/').pop()] = { group: wrapper };
+                    resolve();
+                }, undefined, () => resolve());
+            });
+            await new Promise(r => setTimeout(r, 20)); 
+        }
+
+        initializeSimulation(scenarioData);
+    }
+
+    // ==========================================
+    // 3. MATH & PHYSICS
+    // ==========================================
+    function latLonToUnits(lat, lon, refLat, refLon) {
+        const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
+        const dzM = -(lat - refLat) * 111111;
+        return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+    }
+
+    function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
+        const unitSpeedOS = voSpd * (400 / 3600); 
+        const unitSpeedTS = vtSpd * (400 / 3600);
+        const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); const voZ = -unitSpeedOS * Math.cos(voHdg * DEG2RAD); 
+        const vtX = unitSpeedTS * Math.sin(vtHdg * DEG2RAD); const vtZ = -unitSpeedTS * Math.cos(vtHdg * DEG2RAD); 
+        const dvX = vtX - voX; const dvZ = vtZ - voZ; 
+        const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); 
+        const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
+        const cpaUnits = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
+        
+        const radH = voHdg * DEG2RAD; 
+        const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); 
+        const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); 
+        const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); 
+        const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); 
+        
+        let bcr = -1; 
+        if (Math.abs(dvX_stbd) > 0.0001) { 
+            const t_cross = -relX_stbd / dvX_stbd; 
+            if (t_cross > 0) { const bcr_units = relZ_fwd + dvZ_fwd * t_cross; if (bcr_units > 0) bcr = bcr_units / 400; } 
+        } 
+        return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
+    }
+
+    function calculateXTDAndETA(ship) {
+        if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
+            return { xtd: 0, etaMinutes: 0, nextWpName: "N/A" };
+        }
+        
+        const prevWp = ship.waypoints[ship.currentWpIndex - 1] || ship.waypoints[0];
+        const nextWp = ship.waypoints[ship.currentWpIndex];
+        
+        const dx = nextWp.x - prevWp.x; const dz = nextWp.z - prevWp.z;
+        const routeLen = Math.hypot(dx, dz);
+        
+        let xtd = 0;
+        if (routeLen > 0) {
+            xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
+        }
+        
+        let distRemaining = Math.hypot(nextWp.x - ship.x, nextWp.z - ship.z);
+        for (let i = ship.currentWpIndex; i < ship.waypoints.length - 1; i++) {
+            distRemaining += Math.hypot(ship.waypoints[i+1].x - ship.waypoints[i].x, ship.waypoints[i+1].z - ship.waypoints[i].z);
+        }
+        
+        const distNM = distRemaining / 400;
+        const spd = Math.max(0.1, ship.spd); 
+        const etaHours = distNM / spd;
+        
+        return { xtd: xtd / 400, etaMinutes: etaHours * 60 };
+    }
+
+    function formatETA(minutes) {
+        if (minutes === 0 || !isFinite(minutes)) return "ARRIVED";
+        const d = new Date(); d.setMinutes(d.getMinutes() + minutes);
+        return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    const layoutObserver = new ResizeObserver(entries => {
+        for(let entry of entries) {
+            if(entry.target.classList.contains('viewport')) {
+                const canvas = entry.target.querySelector('.vp-canvas');
+                if(canvas && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                    canvas.width = entry.contentRect.width;
+                    canvas.height = entry.contentRect.height;
+                }
+            } 
+            else if (entry.target.id === 'fpv-area' && camera3D && renderer3D) {
+                if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                    camera3D.aspect = entry.contentRect.width / entry.contentRect.height;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(entry.contentRect.width, entry.contentRect.height);
+                }
+            }
+        }
+        if(isSimulationRunning) {
+            render2D();
+            if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+        }
+    });
+
+    function initializeSimulation(data) {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('main-wrapper').style.display = 'flex';
+        
+        let refLat = 34.8; let refLon = 126.4;
+        if(data.WayPointSet && data.WayPointSet.length > 0) { 
+            refLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
+            refLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); 
+        }
+
+        const randomMassModels = ["ContainerShip1.glb", "GasCarrier1.glb", "BulkCarrier.glb"];
+
+        simEntities = [];
+        data.ships.forEach(s => {
+            const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+            const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
+            const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
+            
+            let wps = [];
+            if (wpSet && wpSet.WayPoints) {
+                wpSet.WayPoints.forEach(wp => {
+                    wps.push(latLonToUnits(Number(wp.Latitude), Number(wp.Longitude), refLat, refLon));
+                });
+            }
+            
+            let isMass = s.isMASS === 1;
+            let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
+            let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
+
+            simEntities.push({ 
+                id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
+                name: s.shipName, type: finalType, isMASS: isMass, 
+                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
+                targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
+                skybox: finalSkybox,
+                waypoints: wps, currentWpIndex: 1
+            });
+        });
+
+        const massShips = simEntities.filter(s => s.isMASS);
+        const grid = document.getElementById('grid-area');
+        grid.innerHTML = ''; massViews = [];
+
+        massShips.forEach((mass, idx) => {
+            const vp = document.createElement('div');
+            vp.className = `viewport ${idx === 0 ? 'active-vp' : ''}`;
+            vp.id = `vp-${idx}`;
+            vp.innerHTML = `
+                <div class="vp-label">${mass.name}</div>
+                <div class="coord-hud" id="hud-${idx}">
+                    <div class="hud-range">RANGE: 3.0 NM</div>
+                </div>
+                <canvas class="vp-canvas" id="canvas-mass-${idx}"></canvas>
+            `;
+            grid.appendChild(vp);
+
+            const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargetIndex: -1 };
+            massViews.push(vObj);
+
+            layoutObserver.observe(vp);
+
+            vp.addEventListener('mousedown', () => {
+                document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
+                vp.classList.add('active-vp');
+                activeMassIndex = idx; updateSidebar();
+            });
+
+            vp.addEventListener('dblclick', () => { enterSplitMode(idx); });
+
+            setTimeout(() => {
+                const canvas = document.getElementById(vObj.canvasId);
+                if(canvas.parentElement.clientWidth > 0) {
+                    canvas.width = canvas.parentElement.clientWidth;
+                    canvas.height = canvas.parentElement.clientHeight;
+                }
+                vObj.panX = canvas.width / 2; vObj.panY = canvas.height / 2;
+                
+                canvas.addEventListener('mousedown', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    vObj.isDragging = true; vObj.hasDragged = false;
+                    vObj.dragStartX = (e.clientX - rect.left) - vObj.panX; vObj.dragStartY = (e.clientY - rect.top) - vObj.panY;
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if(vObj.isDragging) { 
+                        const rect = canvas.getBoundingClientRect(); 
+                        const dx = (e.clientX - rect.left) - vObj.dragStartX - vObj.panX;
+                        const dy = (e.clientY - rect.top) - vObj.dragStartY - vObj.panY;
+                        if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
+                        vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; 
+                        vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; 
+                    }
+                });
+                window.addEventListener('mouseup', () => vObj.isDragging = false);
+                
+                canvas.addEventListener('click', (e) => {
+                    if(vObj.hasDragged) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+                    
+                    let clickedIndex = -1;
+                    simEntities.forEach((s, tIdx) => {
+                        if(s.isMASS && s !== vObj.massEntity) return;
+                        if(s === vObj.massEntity) return;
+                        const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
+                        const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
+                        if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
+                            clickedIndex = tIdx;
+                        }
+                    });
+                    vObj.selectedTargetIndex = clickedIndex;
+                    activeMassIndex = idx; updateSidebar(); render2D();
+                });
+
+                canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
+                    vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
+                }, { passive: false });
+            }, 100);
+        });
+
+        updateGridLayout();
+        initThreeJS_Lightweight();
+        
+        logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
+        isSimulationRunning = true;
+        mainLoop();
+    }
+
+    // 💡 MACRO 뷰의 그리드 비율 초기화 처리 (SPLIT 복귀 시 중요)
+    function updateGridLayout() {
+        const grid = document.getElementById('grid-area');
+        if(isSplitMode) {
+            grid.style.gridTemplateColumns = '1fr'; 
+            grid.style.gridTemplateRows = '1fr';
+            return;
+        }
+        
+        const count = massViews.length;
+        if (count === 0) return;
+        let cols = 1, rows = 1;
+        if (count === 2) { cols = 2; rows = 1; }
+        else if (count === 3) { cols = 3; rows = 1; }
+        else if (count === 4) { cols = 2; rows = 2; }
+        else if (count > 4) { cols = 3; rows = Math.ceil(count / 3); }
+        
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        // 안전 장치: 리사이즈 강제 적용
+        setTimeout(() => {
+            massViews.forEach(v => {
+                const canvas = document.getElementById(v.canvasId);
+                const vp = canvas.parentElement;
+                if(!vp.classList.contains('hidden-vp') && vp.clientWidth > 0) {
+                    canvas.width = vp.clientWidth;
+                    canvas.height = vp.clientHeight;
+                }
+            });
+            if(isSplitMode && camera3D && renderer3D) {
+                const fpvArea = document.getElementById('fpv-area');
+                if(fpvArea.clientWidth > 0) {
+                    camera3D.aspect = fpvArea.clientWidth / fpvArea.clientHeight;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+                }
+            }
+        }, 50);
+    }
+
+    function updateSidebar() {
+        if(massViews.length === 0) return;
+        const vObj = massViews[activeMassIndex];
+        const mass = vObj.massEntity;
+        
+        document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
+        document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
+
+        const osRouteData = calculateXTDAndETA(mass);
+
+        document.getElementById('ui-os-name').innerText = mass.name;
+        document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`; // 💡 ID 누락 픽스 완료
+        document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+        document.getElementById('ui-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
+        document.getElementById('ui-os-eta').innerText = formatETA(osRouteData.etaMinutes);
+        
+        const updateTgtPanel = (prefix) => {
+            const tgtIdx = vObj.selectedTargetIndex;
+            if(tgtIdx >= 0 && simEntities[tgtIdx]) {
+                const tgt = simEntities[tgtIdx];
+                const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
+                const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
+                let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
+                const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
+                const tgtRouteData = calculateXTDAndETA(tgt); 
+                
+                document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
+                document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
+                document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.cog.toFixed(1)}°`;
+                document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
+                document.getElementById(`${prefix}-tgt-xtd`).innerText = `${tgtRouteData.xtd.toFixed(2)} NM`;
+                document.getElementById(`${prefix}-tgt-eta`).innerText = formatETA(tgtRouteData.etaMinutes);
+                document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
+                document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
+                document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
+            } else {
+                document.getElementById(`${prefix}-tgt-name`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-mmsi`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-brg`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-sogstw`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-xtd`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-eta`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-cpa`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-tcpa`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-bcr`).innerText = '-';
+            }
+        };
+
+        if(isSplitMode) {
+            document.getElementById('split-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
+            document.getElementById('split-cog').innerText = `${mass.cog.toFixed(1)}°`;
+            document.getElementById('split-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+            document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`;
+            document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
+            document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
+            document.getElementById('split-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
+            document.getElementById('split-os-eta').innerText = formatETA(osRouteData.etaMinutes);
+            updateTgtPanel('split');
+        } else {
+            updateTgtPanel('ui');
+        }
+    }
+
+    // ==========================================
+    // 4. UX FLOW: SPLIT MODE TOGGLE & RESIZER
+    // ==========================================
+    const hResizer = document.getElementById('h-resizer');
+    const fpvArea = document.getElementById('fpv-area');
+    let isHResizing = false;
+
+    hResizer.addEventListener('mousedown', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); });
+    window.addEventListener('mousemove', (e) => {
+        if (!isHResizing) return;
+        let newHeight = (e.clientY / window.innerHeight) * 100;
+        if(newHeight < 20) newHeight = 20; if(newHeight > 80) newHeight = 80;
+        fpvArea.style.flex = 'none'; fpvArea.style.height = `${newHeight}%`;
+    });
+    window.addEventListener('mouseup', () => {
+        if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; }
+    });
+
+    function enterSplitMode(idx) {
+        if(isSplitMode) return;
+        activeMassIndex = idx;
+        isSplitMode = true;
+        
+        const wrapper = document.getElementById('main-wrapper');
+        wrapper.classList.add('split-mode');
+        
+        fpvArea.style.flex = '1'; fpvArea.style.height = 'auto';
+
+        document.getElementById('panel-macro').style.display = 'none';
+        document.getElementById('panel-split').style.display = 'flex';
+
+        massViews.forEach((v, i) => {
+            const vp = document.getElementById(`vp-${i}`);
+            if(i === idx) { vp.classList.remove('hidden-vp'); vp.classList.add('active-vp'); } 
+            else { vp.classList.add('hidden-vp'); vp.classList.remove('active-vp'); }
+        });
+
+        // 그리드 1분할 강제 적용
+        updateGridLayout();
+
+        logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
+        setup3DSceneForMass(idx);
+        updateSidebar();
+    }
+
+    window.exitSplitMode = function() {
+        if(!isSplitMode) return;
+        isSplitMode = false;
+        
+        if(interventionState !== 'NONE') { endIntervention(); }
+
+        const wrapper = document.getElementById('main-wrapper');
+        wrapper.classList.remove('split-mode');
+        
+        document.getElementById('panel-split').style.display = 'none';
+        document.getElementById('panel-macro').style.display = 'flex';
+
+        massViews.forEach((v, i) => { document.getElementById(`vp-${i}`).classList.remove('hidden-vp'); });
+
+        logEvent("MACRO_MODE_RETURN", {});
+        updateGridLayout();
+    }
+
+    // ==========================================
+    // 💡 Step 2: INTERVENTION & KEYBOARD CONTROL
+    // ==========================================
+    window.requestIntervention = function() {
+        const latency = parseFloat(document.getElementById('latency-slider').value);
+        const massName = massViews[activeMassIndex].massEntity.name;
+        
+        document.getElementById('btn-intervention').disabled = true;
+        document.getElementById('intervention-overlay').style.display = 'flex';
+        
+        logEvent("INTERVENTION_REQUESTED", { massId: massName, latencySec: latency });
+        interventionState = 'CONNECTING';
+
+        let remaining = latency;
+        document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's';
+        
+        if (remaining <= 0) { startIntervention(); return; }
+
+        interventionTimer = setInterval(() => {
+            remaining -= 0.1;
+            if(remaining <= 0) { clearInterval(interventionTimer); startIntervention(); } 
+            else { document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's'; }
+        }, 100);
+    }
+
+    function startIntervention() {
+        interventionState = 'ACTIVE';
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'none';
+        document.getElementById('btn-end-intervention').style.display = 'block';
+        document.getElementById('steering-controls').style.display = 'flex';
+        
+        logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    window.endIntervention = function() {
+        if (interventionTimer) clearInterval(interventionTimer);
+        interventionState = 'NONE';
+        
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'block';
+        document.getElementById('btn-intervention').disabled = false;
+        document.getElementById('btn-end-intervention').style.display = 'none';
+        document.getElementById('steering-controls').style.display = 'none';
+        
+        if(massViews[activeMassIndex]) { massViews[activeMassIndex].massEntity.targetRudder = 0; }
+        logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    window.applySteer = function(dir) {
+        if(interventionState !== 'ACTIVE') return;
+        const latencySec = parseFloat(document.getElementById('latency-slider').value);
+        const latencyMs = latencySec * 1000;
+        const mass = massViews[activeMassIndex].massEntity;
+        const massId = mass.name;
+        
+        logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: dir, delayMs: latencyMs });
+        
+        setTimeout(() => {
+            if(interventionState !== 'ACTIVE') return;
+            const currentMass = massViews[activeMassIndex].massEntity;
+            if(currentMass.name !== massId) return;
+
+            currentMass.targetRudder = Math.max(-35, Math.min(35, currentMass.targetRudder + (dir === 'P' ? -5 : 5))); 
+            currentMass.targetRudder = Math.round(currentMass.targetRudder/5)*5; 
+            logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: currentMass.targetRudder, dir: dir });
+        }, latencyMs);
+    }
+
+    // 💡 키보드 조향 컨트롤 원상 복구 및 스크롤 고정 방지
+    window.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space') {
+            if(interventionState !== 'ACTIVE') return;
+            e.preventDefault(); // 화면 스크롤 방지
+            
+            const latencySec = parseFloat(document.getElementById('latency-slider').value);
+            const latencyMs = latencySec * 1000;
+            const mass = massViews[activeMassIndex].massEntity;
+            const massId = mass.name;
+
+            let dir = 'C';
+            if(e.code === 'ArrowLeft' && !e.repeat) dir = 'P';
+            else if(e.code === 'ArrowRight' && !e.repeat) dir = 'S';
+            
+            if(dir === 'C') { // Space
+                logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
+                setTimeout(() => {
+                    if(interventionState !== 'ACTIVE') return;
+                    const currentMass = massViews[activeMassIndex].massEntity;
+                    if(currentMass.name !== massId) return;
+                    currentMass.targetRudder = 0; 
+                    logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
+                }, latencyMs);
+            } else {
+                applySteer(dir);
+            }
+        }
+    });
+
+    function logEvent(action, payload) {
+        systemLogs.push({ time: ((performance.now() - lastTime)/1000).toFixed(2), action: action, data: payload });
+    }
+
+    // ==========================================
+    // 5. LIGHTWEIGHT 3D ENGINE
+    // ==========================================
+    function initThreeJS_Lightweight() {
+        const fpvArea = document.getElementById('fpv-area');
+        scene = new THREE.Scene();
+        if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
+        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
+
+        osShipGroup = new THREE.Group(); scene.add(osShipGroup);
+        camera3D = new THREE.PerspectiveCamera(60, fpvArea.clientWidth / (fpvArea.clientHeight||1), 1, 80000);
+        osShipGroup.add(camera3D); 
+        
+        renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); 
+        renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight || 1);
+        fpvArea.insertBefore(renderer3D.domElement, fpvArea.firstChild);
+        
+        layoutObserver.observe(fpvArea);
+
+        scene.add(new THREE.AmbientLight(0x707070, 1.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
+
+        const waterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(200, 200); 
+        });
+        seaMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshPhongMaterial({ 
+                color: 0x050a10, 
+                normalMap: waterNormals,
+                normalScale: new THREE.Vector2(1.0, 1.0), 
+                specular: 0x334455, 
+                shininess: 30,
+                transparent: true, 
+                opacity: 0.8 
+            })
+        );
+        seaMesh.rotation.x = -Math.PI / 2;
+        scene.add(seaMesh);
+
+        fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
+        window.addEventListener('mouseup', () => { isDraggingCam = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingCam && isSplitMode) { camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); }
+        });
+    }
+
+    function getModelForShip(type) {
+        if (parsedModels[type]) {
+            const clone = parsedModels[type].group.clone();
+            const savedCalib = localStorage.getItem('model_calib_' + type);
+            if(savedCalib) { 
+                const calib = JSON.parse(savedCalib); 
+                clone.position.copy(calib.pos); clone.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z);
+            }
+            return clone;
+        }
+        const group = new THREE.Group();
+        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
+        group.add(hull); return group;
+    }
+
+    function setup3DSceneForMass(idx) {
+        const mass = massViews[idx].massEntity;
+        document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
+
+        if (mass.skybox) { scene.background = mass.skybox; } 
+        else { scene.background = new THREE.Color(0x5a6a79); }
+
+        for(let i = osShipGroup.children.length - 1; i >= 0; i--) { if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); }
+        targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
+        
+        const osModel = getModelForShip(mass.type);
+        osShipGroup.add(osModel);
+
+        const savedCamStr = localStorage.getItem('bridgeCam_' + mass.type);
+        if (savedCamStr) { 
+            const savedPos = JSON.parse(savedCamStr); 
+            camera3D.position.set(savedPos.x, savedPos.y, savedPos.z);
+        } else {
+            camera3D.position.set(0, 20, 15);
+        }
+        camAngleX = -0.05; camAngleY = 0;
+
+        simEntities.forEach((tgt) => { 
+            if(tgt.isMASS && tgt !== mass) return; 
+            if(tgt === mass) return; 
+            const tModel = getModelForShip(tgt.type); 
+            const tGroup = new THREE.Group(); tGroup.add(tModel);
+            scene.add(tGroup); targetMeshes.push({ entity: tgt, mesh: tGroup }); 
+        });
+    }
+
+    // ==========================================
+    // 6. RENDER LOOP (2D & 3D Sync & Physics)
+    // ==========================================
+    function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
+        const cx = panX + x * viewScale; const cy = panY + z * viewScale;
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(heading * DEG2RAD); ctx.scale(viewScale, viewScale); 
+        ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fillStyle = color;
+        const halfLen = SHIP_LEN_UNIT / 2; const halfWid = SHIP_WID_UNIT / 2; 
+        ctx.beginPath(); ctx.moveTo(0, -halfLen); ctx.lineTo(halfWid, -halfLen + 12); ctx.lineTo(halfWid, halfLen); ctx.lineTo(-halfWid, halfLen); ctx.lineTo(-halfWid, -halfLen + 12); ctx.closePath(); ctx.fill();
+        ctx.lineWidth = 1 / viewScale; ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
+        if (label) { ctx.fillStyle = color; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * viewScale + 15)); }
+    }
+    
+    function drawVectorArrowLocal(ctx, panX, panY, viewScale, x, z, heading, distUnit, color) {
+        if (distUnit <= 0) return;
+        const cx = panX + x * viewScale; const cy = panY + z * viewScale; const rad = (heading - 90) * DEG2RAD;
+        const wpX = cx + Math.cos(rad) * (distUnit * viewScale); const wpY = cy + Math.sin(rad) * (distUnit * viewScale);
+        
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(wpX, wpY); ctx.stroke(); ctx.setLineDash([]);
+        
+        ctx.save(); ctx.translate(wpX, wpY); ctx.rotate(heading * DEG2RAD);
+        ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+
+    function render2D() {
+        massViews.forEach((v, idx) => {
+            const canvas = document.getElementById(v.canvasId); 
+            const vp = canvas.parentElement;
+            if(!canvas || vp.classList.contains('hidden-vp') || canvas.width === 0) return;
+            
+            const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, v.panY); ctx.lineTo(canvas.width, v.panY); ctx.moveTo(v.panX, 0); ctx.lineTo(v.panX, canvas.height); ctx.stroke();
+            
+            const rangeNM = 1 / v.viewScale;
+            let stepCbl = rangeNM <= 1.5 ? 1 : (rangeNM <= 3.5 ? 5 : (rangeNM <= 8.0 ? 10 : 20));   
+            let majorCbl = rangeNM <= 1.5 ? 5 : (rangeNM <= 3.5 ? 10 : (rangeNM <= 8.0 ? 20 : 50)); 
+            const maxCables = Math.ceil((Math.max(Math.hypot(v.panX, v.panY), Math.hypot(canvas.width - v.panX, v.panY), Math.hypot(v.panX, canvas.height - v.panY), Math.hypot(canvas.width - v.panX, canvas.height - v.panY)) / v.viewScale) / 40);
+            
+            ctx.setLineDash([4, 4]);
+            for (let i = stepCbl; i <= maxCables; i += stepCbl) { const radius_px = (i * 40) * v.viewScale; ctx.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a'; ctx.lineWidth = (i % majorCbl === 0) ? 1.5 : 1; ctx.beginPath(); ctx.arc(v.panX, v.panY, radius_px, 0, Math.PI * 2); ctx.stroke(); }
+            ctx.setLineDash([]);
+            
+            simEntities.forEach((s, tIdx) => {
+                // 💡 경로(Route) 그리기
+                if (s.waypoints && s.waypoints.length > 0) {
+                    const isOwnShip = s === v.massEntity;
+                    const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+                    
+                    ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    
+                    const startWpIdx = Math.min(s.currentWpIndex, s.waypoints.length - 1);
+                    const cx = v.panX + (s.x - v.massEntity.x) * v.viewScale;
+                    const cy = v.panY + (s.z - v.massEntity.z) * v.viewScale;
+                    ctx.moveTo(cx, cy);
+
+                    for(let i = startWpIdx; i < s.waypoints.length; i++) {
+                        const wp = s.waypoints[i];
+                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
+                        ctx.lineTo(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale);
+                    }
+                    ctx.stroke(); ctx.setLineDash([]);
+                    
+                    ctx.fillStyle = isOwnShip ? '#10b981' : '#ef4444';
+                    for(let i = startWpIdx; i < s.waypoints.length; i++) {
+                        const wp = s.waypoints[i];
+                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
+                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 2.5, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+
+                if(s.isMASS && s !== v.massEntity) return; 
+                
+                const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
+                const isOwnShip = s === v.massEntity;
+                const color = isOwnShip ? '#10b981' : '#ef4444';
+                
+                // 💡 타선 기본 윤곽선(Cyan) 및 선택 시 오렌지색 하이라이트
+                if (v.selectedTargetIndex === tIdx && !isOwnShip) {
+                    ctx.beginPath();
+                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.stroke();
+                } else if (!isOwnShip) {
+                    ctx.beginPath();
+                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
+                }
+
+                drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
+                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "OS" : s.name);
+            });
+        });
+    }
+
+    function mainLoop() {
+        requestAnimationFrame(mainLoop);
+        if(!isSimulationRunning) return;
+        const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
+        
+        simEntities.forEach(s => { 
+            let rDiff = s.targetRudder - s.actualRudder; 
+            let rStep = 1.5 * dt; 
+            if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
+            else s.actualRudder += Math.sign(rDiff) * rStep;
+            
+            const K_nom = 2.0; const T_nom = 25.0; 
+            const targetRot = K_nom * s.actualRudder; 
+            const rotDerivative = (targetRot - s.rot) / T_nom; 
+            
+            s.rot += rotDerivative * dt; 
+            s.hdg = (s.hdg + (s.rot / 60.0) * dt * 3) % 360; 
+            if (s.hdg < 0) s.hdg += 360;
+            
+            const speedLossFactor = 0.008; 
+            const targetSpeed = s.cmdSpeed * (1.0 - speedLossFactor * Math.abs(s.rot));
+            const T_surge = 15.0; 
+            s.spd += (targetSpeed - s.spd) * (dt / T_surge);
+
+            const speedUnits = s.spd * (400 / 3600);
+
+            let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt;
+            let moveZ = -speedUnits * Math.cos(s.hdg * DEG2RAD) * dt;
+
+            if (globalEnv.currentSpd > 0) {
+                const currUnits = globalEnv.currentSpd * (400 / 3600);
+                moveX += currUnits * Math.sin(globalEnv.currentDir * DEG2RAD) * dt;
+                moveZ -= currUnits * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
+            }
+            if (globalEnv.windSpd > 0) {
+                let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - s.hdg + 360) % 360 * DEG2RAD);
+                const windUnits = windDriftSpeed * (400 / 3600);
+                moveX += windUnits * Math.cos(s.hdg * DEG2RAD) * dt;
+                moveZ -= windUnits * -Math.sin(s.hdg * DEG2RAD) * dt;
+            }
+
+            s.x += moveX; s.z += moveZ;
+            let actualVx = moveX / dt; let actualVz = -moveZ / dt;
+            s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
+
+            if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
+                const nextWp = s.waypoints[s.currentWpIndex];
+                const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
+                if (distToWp < 100) { s.currentWpIndex++; }
+            }
+        });
+        
+        render2D();
+        updateSidebar();
+        
+        if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
+            const mass = massViews[activeMassIndex].massEntity;
+            
+            // 💡 바다 물결 애니메이션 방향 수정
+            if (seaMesh && seaMesh.material.normalMap) {
+                const hdgRad = mass.hdg * DEG2RAD;
+                const speedFact = Math.max(0.002, mass.spd * 0.001); 
+                seaMesh.material.normalMap.offset.x += dt * speedFact * Math.sin(hdgRad);
+                seaMesh.material.normalMap.offset.y -= dt * speedFact * Math.cos(hdgRad);
+            }
+
+            const meterScale = 4.63; 
+
+            osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
+            osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
+            
+            camera3D.rotation.order = 'YXZ';
+            camera3D.rotation.y = camAngleY; 
+            camera3D.rotation.x = camAngleX;
+
+            targetMeshes.forEach(t => { 
+                t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
+                t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
+            });
+
+            renderer3D.render(scene, camera3D);
+        }
+    }
+
+</script>
+</body>
 </html>
