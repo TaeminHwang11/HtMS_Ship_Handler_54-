@@ -122,8 +122,8 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <!-- 💡 버저닝: 테스터_v2 -->
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v2" />
+                <!-- 💡 버전 V3 적용 완료 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v3" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -168,11 +168,13 @@
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
                     <div class="data-row"><span>NAME:</span> <b id="ui-os-name" style="color: var(--accent-yellow);">-</b></div>
-                    <div class="data-row"><span>HDG:</span> <b id="ui-os-hdg">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-os-hdgcog">-</b></div>
                     <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
                     <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
                     <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
-                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">2026-09-15 14:00</b></div>
+                    <!-- 💡 XTD, ETA 추가 -->
+                    <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
                     <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
                 </div>
 
@@ -189,6 +191,8 @@
                     <div class="data-row"><span>BRG:</span> <b id="ui-tgt-brg">-</b></div>
                     <div class="data-row"><span>HDG / COG:</span> <b id="ui-tgt-hdgcog">-</b></div>
                     <div class="data-row"><span>SOG / STW:</span> <b id="ui-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="ui-tgt-xtd">-</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-tgt-eta">-</b></div>
                     <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
                     <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
                     <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
@@ -212,6 +216,8 @@
                     <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0 °/min</b></div>
                     <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
                     <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="split-os-xtd" class="hud-val">0.00 NM</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
 
                 <div class="info-box" style="border-left-color: var(--accent-red);">
@@ -221,6 +227,8 @@
                     <div class="data-row"><span>BRG:</span> <b id="split-tgt-brg">-</b></div>
                     <div class="data-row"><span>HDG / COG:</span> <b id="split-tgt-hdgcog">-</b></div>
                     <div class="data-row"><span>SOG / STW:</span> <b id="split-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>XTD:</span> <b id="split-tgt-xtd">-</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="split-tgt-eta">-</b></div>
                     <div class="data-row"><span>CPA:</span> <b id="split-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
                     <div class="data-row"><span>TCPA:</span> <b id="split-tgt-tcpa">-</b></div>
                     <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
@@ -234,7 +242,6 @@
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
                 
-                <!-- 💡 Step 2: 사이드바 조타 버튼 (개입 시 나타남) -->
                 <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
                     <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
                     <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
@@ -274,9 +281,9 @@
             { "mmsi": 444, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "BULK", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
         ],
         "WayPointSet": [
-            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }] },
-            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }] },
-            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }] },
+            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
+            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }, { "Latitude": 34.95, "Longitude": 126.50 }] },
+            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
             { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.850000, "Longitude": 126.450000 }] }
         ]
     };
@@ -406,7 +413,7 @@
     }
 
     // ==========================================
-    // 3. MATH & PHYSICS
+    // 3. MATH & PHYSICS & WAYPOINT LOGIC
     // ==========================================
     function latLonToUnits(lat, lon, refLat, refLon) {
         const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
@@ -417,7 +424,6 @@
     function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
         const unitSpeedOS = voSpd * (400 / 3600); 
         const unitSpeedTS = vtSpd * (400 / 3600);
-        
         const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); const voZ = -unitSpeedOS * Math.cos(voHdg * DEG2RAD); 
         const vtX = unitSpeedTS * Math.sin(vtHdg * DEG2RAD); const vtZ = -unitSpeedTS * Math.cos(vtHdg * DEG2RAD); 
         const dvX = vtX - voX; const dvZ = vtZ - voZ; 
@@ -434,12 +440,44 @@
         let bcr = -1; 
         if (Math.abs(dvX_stbd) > 0.0001) { 
             const t_cross = -relX_stbd / dvX_stbd; 
-            if (t_cross > 0) { 
-                const bcr_units = relZ_fwd + dvZ_fwd * t_cross; 
-                if (bcr_units > 0) bcr = bcr_units / 400; 
-            } 
+            if (t_cross > 0) { const bcr_units = relZ_fwd + dvZ_fwd * t_cross; if (bcr_units > 0) bcr = bcr_units / 400; } 
         } 
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
+    }
+
+    // 💡 Step 3: XTD 및 ETA 계산 알고리즘 추가
+    function calculateXTDAndETA(ship) {
+        if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
+            return { xtd: 0, etaMinutes: 0, nextWpName: "N/A" };
+        }
+        
+        const prevWp = ship.waypoints[ship.currentWpIndex - 1] || ship.waypoints[0];
+        const nextWp = ship.waypoints[ship.currentWpIndex];
+        
+        const dx = nextWp.x - prevWp.x; const dz = nextWp.z - prevWp.z;
+        const routeLen = Math.hypot(dx, dz);
+        
+        let xtd = 0;
+        if (routeLen > 0) {
+            xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
+        }
+        
+        let distRemaining = Math.hypot(nextWp.x - ship.x, nextWp.z - ship.z);
+        for (let i = ship.currentWpIndex; i < ship.waypoints.length - 1; i++) {
+            distRemaining += Math.hypot(ship.waypoints[i+1].x - ship.waypoints[i].x, ship.waypoints[i+1].z - ship.waypoints[i].z);
+        }
+        
+        const distNM = distRemaining / 400;
+        const spd = Math.max(0.1, ship.spd); 
+        const etaHours = distNM / spd;
+        
+        return { xtd: xtd / 400, etaMinutes: etaHours * 60 };
+    }
+
+    function formatETA(minutes) {
+        if (minutes === 0 || !isFinite(minutes)) return "ARRIVED";
+        const d = new Date(); d.setMinutes(d.getMinutes() + minutes);
+        return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
     const layoutObserver = new ResizeObserver(entries => {
@@ -483,6 +521,14 @@
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
             
+            // 💡 경로(Waypoint) 저장
+            let wps = [];
+            if (wpSet && wpSet.WayPoints) {
+                wpSet.WayPoints.forEach(wp => {
+                    wps.push(latLonToUnits(Number(wp.Latitude), Number(wp.Longitude), refLat, refLon));
+                });
+            }
+            
             let isMass = s.isMASS === 1;
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
@@ -492,7 +538,8 @@
                 name: s.shipName, type: finalType, isMASS: isMass, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
-                skybox: finalSkybox
+                skybox: finalSkybox,
+                waypoints: wps, currentWpIndex: 1
             });
         });
 
@@ -610,9 +657,14 @@
         document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
 
+        // 💡 본선(OS) XTD / ETA 업데이트
+        const osRouteData = calculateXTDAndETA(mass);
+
         document.getElementById('ui-os-name').innerText = mass.name;
-        document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
+        document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+        document.getElementById('ui-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
+        document.getElementById('ui-os-eta').innerText = formatETA(osRouteData.etaMinutes);
         
         const updateTgtPanel = (prefix) => {
             const tgtIdx = vObj.selectedTargetIndex;
@@ -622,12 +674,15 @@
                 const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
                 let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
                 const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
+                const tgtRouteData = calculateXTDAndETA(tgt); // 💡 타선 XTD / ETA 업데이트
                 
                 document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
                 document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
                 document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
-                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.cog.toFixed(1)}°`;
                 document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
+                document.getElementById(`${prefix}-tgt-xtd`).innerText = `${tgtRouteData.xtd.toFixed(2)} NM`;
+                document.getElementById(`${prefix}-tgt-eta`).innerText = formatETA(tgtRouteData.etaMinutes);
                 document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
                 document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
                 document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
@@ -637,6 +692,8 @@
                 document.getElementById(`${prefix}-tgt-brg`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-hdgcog`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-sogstw`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-xtd`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-eta`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-cpa`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-tcpa`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-bcr`).innerText = '-';
@@ -650,6 +707,8 @@
             document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`;
             document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
             document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
+            document.getElementById('split-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
+            document.getElementById('split-os-eta').innerText = formatETA(osRouteData.etaMinutes);
             updateTgtPanel('split');
         } else {
             updateTgtPanel('ui');
@@ -787,26 +846,33 @@
         }, latencyMs);
     }
 
+    // 💡 키보드 조향 컨트롤 원상 복구 및 스크롤 고정 방지
     window.addEventListener('keydown', (e) => {
-        if(interventionState !== 'ACTIVE') return;
-        if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
-        if(e.code === 'ArrowRight' && !e.repeat) { applySteer('S'); e.preventDefault(); }
-        if(e.code === 'Space') { 
+        if(e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space') {
+            if(interventionState !== 'ACTIVE') return;
+            e.preventDefault(); // 화면 스크롤 방지
+            
             const latencySec = parseFloat(document.getElementById('latency-slider').value);
             const latencyMs = latencySec * 1000;
             const mass = massViews[activeMassIndex].massEntity;
             const massId = mass.name;
-            
-            logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
-            setTimeout(() => {
-                if(interventionState !== 'ACTIVE') return;
-                const currentMass = massViews[activeMassIndex].massEntity;
-                if(currentMass.name !== massId) return;
 
-                currentMass.targetRudder = 0; 
-                logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
-            }, latencyMs);
-            e.preventDefault(); 
+            let dir = 'C';
+            if(e.code === 'ArrowLeft' && !e.repeat) dir = 'P';
+            else if(e.code === 'ArrowRight' && !e.repeat) dir = 'S';
+            
+            if(dir === 'C') { // Space
+                logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
+                setTimeout(() => {
+                    if(interventionState !== 'ACTIVE') return;
+                    const currentMass = massViews[activeMassIndex].massEntity;
+                    if(currentMass.name !== massId) return;
+                    currentMass.targetRudder = 0; 
+                    logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
+                }, latencyMs);
+            } else {
+                applySteer(dir);
+            }
         }
     });
 
@@ -850,9 +916,10 @@
                 specular: 0x334455, 
                 shininess: 30,
                 transparent: true, 
-                opacity: 0.8 // 💡 불투명도 0.8 적용 완료
+                opacity: 0.8 
             })
         );
+        // 평면이 항상 -Z(북쪽)을 바라보게 하지 않고, 일단 누워있게 둡니다.
         seaMesh.rotation.x = -Math.PI / 2;
         scene.add(seaMesh);
 
@@ -953,6 +1020,37 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
+                // 💡 경로(Route) 그리기 로직 추가
+                if (s.waypoints && s.waypoints.length > 0) {
+                    const isOwnShip = s === v.massEntity;
+                    const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+                    
+                    ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    // 본선/타선의 위치에서 첫 웨이포인트(또는 현재 타겟 웨이포인트)로 선 연결
+                    const startWpIdx = Math.min(s.currentWpIndex, s.waypoints.length - 1);
+                    
+                    // 현재 위치를 출발점으로
+                    const cx = v.panX + (s.x - v.massEntity.x) * v.viewScale;
+                    const cy = v.panY + (s.z - v.massEntity.z) * v.viewScale;
+                    ctx.moveTo(cx, cy);
+
+                    for(let i = startWpIdx; i < s.waypoints.length; i++) {
+                        const wp = s.waypoints[i];
+                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
+                        ctx.lineTo(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale);
+                    }
+                    ctx.stroke(); ctx.setLineDash([]);
+                    
+                    // 웨이포인트 동그라미
+                    ctx.fillStyle = isOwnShip ? '#10b981' : '#ef4444';
+                    for(let i = startWpIdx; i < s.waypoints.length; i++) {
+                        const wp = s.waypoints[i];
+                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
+                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 2.5, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+
                 if(s.isMASS && s !== v.massEntity) return; 
                 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
@@ -1015,18 +1113,32 @@
             s.x += moveX; s.z += moveZ;
             let actualVx = moveX / dt; let actualVz = -moveZ / dt;
             s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
+
+            // 💡 웨이포인트(Route) 도달 처리
+            if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
+                const nextWp = s.waypoints[s.currentWpIndex];
+                const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
+                if (distToWp < 100) { // 반경 내 진입 시 다음 WP로 전환 (약 0.25 NM)
+                    s.currentWpIndex++;
+                }
+            }
         });
         
         render2D();
         updateSidebar();
         
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
+            const mass = massViews[activeMassIndex].massEntity;
+            
+            // 💡 바다 물결 애니메이션 방향 수정 (선박 Heading 방향과 속도에 비례)
             if (seaMesh && seaMesh.material.normalMap) {
-                seaMesh.material.normalMap.offset.x += dt * 0.015;
-                seaMesh.material.normalMap.offset.y += dt * 0.025;
+                const hdgRad = mass.hdg * DEG2RAD;
+                // 속도가 0이어도 아주 미세하게는 일렁이도록 최소값 세팅
+                const speedFact = Math.max(0.002, mass.spd * 0.001); 
+                seaMesh.material.normalMap.offset.x += dt * speedFact * Math.sin(hdgRad);
+                seaMesh.material.normalMap.offset.y += dt * speedFact * Math.cos(hdgRad);
             }
 
-            const mass = massViews[activeMassIndex].massEntity;
             const meterScale = 4.63; 
 
             osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
