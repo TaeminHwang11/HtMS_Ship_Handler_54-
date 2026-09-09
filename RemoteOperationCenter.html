@@ -250,7 +250,7 @@
 
 <script>
     // ==========================================
-    // 0. CONSTANTS & FALLBACK DATA
+    // 0. CONSTANTS
     // ==========================================
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
     const GITHUB_BASE_URL = "./"; 
@@ -264,23 +264,6 @@
         "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
     ];
 
-    const fallbackScenarioData = {
-        "ScenarioName": "Exported_MASS_Scenario",
-        "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
-        "ships": [
-            { "mmsi": 111, "isMASS": 1, "shipName": "MASS_1", "shipType": "CNTR_2700", "initSpeed": 15, "initHeading": 45, "waypointSetID": 0 },
-            { "mmsi": 222, "isMASS": 1, "shipName": "MASS_2", "shipType": "CNTR_2700", "initSpeed": 12, "initHeading": 0, "waypointSetID": 1 },
-            { "mmsi": 333, "isMASS": 1, "shipName": "MASS_3", "shipType": "CNTR_2700", "initSpeed": 18, "initHeading": 315, "waypointSetID": 2 },
-            { "mmsi": 444, "isMASS": 1, "shipName": "ALPHA_1", "shipType": "BULK", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
-        ],
-        "WayPointSet": [
-            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.80, "Longitude": 126.40 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
-            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.80, "Longitude": 126.50 }, { "Latitude": 34.95, "Longitude": 126.50 }] },
-            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.80, "Longitude": 126.60 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
-            { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.85, "Longitude": 126.45 }, { "Latitude": 34.85, "Longitude": 126.35 }] }
-        ]
-    };
-
     // ==========================================
     // 1. STATE VARIABLES
     // ==========================================
@@ -292,8 +275,9 @@
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
-    // 💡 원격 운항 통신 지연(1 FPS) 효과를 위한 렌더링 타이머 변수
-    let lastRenderTime = 0; 
+    // 💡 렌더링 프레임 분리 (3D: 3FPS, 2D: 1FPS)
+    let last2DRenderTime = 0; 
+    let last3DRenderTime = 0;
 
     let interventionState = 'NONE'; 
     let interventionTimer = null;
@@ -325,7 +309,7 @@
                 const opt = document.createElement('option'); opt.value = file.id; opt.textContent = String(file.name).replace('.json', ''); select.appendChild(opt);
             });
         } catch (err) {
-            select.innerHTML = '<option value="local_test">[Local Test] Exported_MASS_Scenario</option>';
+            select.innerHTML = '<option value="">통신 오류. 다시 시도해주세요.</option>';
         }
     }
     window.addEventListener('DOMContentLoaded', fetchScenarioList);
@@ -345,16 +329,22 @@
         const btnStart = document.getElementById('btn-start');
         
         if(!document.getElementById('student-id').value) { alert("학번을 입력해주세요."); return; }
-        btnStart.style.display = 'none'; loadMsg.style.display = 'block';
+        if(!scnId) { alert("시나리오를 선택해주세요."); return; }
+        
+        btnStart.style.display = 'none'; 
+        loadMsg.style.display = 'block';
 
+        // 💡 임시 시나리오 삭제 및 데이터 로드 예외 처리
         let scenarioData;
-        if(scnId === "local_test") scenarioData = fallbackScenarioData;
-        else {
-            try {
-                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
-                scenarioData = await res.json();
-                if(scenarioData.error) throw new Error(scenarioData.error);
-            } catch (err) { scenarioData = fallbackScenarioData; }
+        try {
+            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
+            scenarioData = await res.json();
+            if(scenarioData.error) throw new Error(scenarioData.error);
+        } catch (err) { 
+            alert("시나리오를 불러오는데 실패했습니다. 네트워크 상태나 스크립트 주소를 확인하세요.");
+            btnStart.style.display = 'block';
+            loadMsg.style.display = 'none';
+            return;
         }
 
         if(scenarioData.environment) {
@@ -584,7 +574,6 @@
                         vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; 
                         vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; 
                         
-                        // 💡 1FPS 고정이지만 사용자가 지도를 움직일 땐 렉이 없도록 즉시 화면 갱신
                         render2D(); 
                     }
                 });
@@ -614,7 +603,6 @@
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
                     
-                    // 💡 줌 인/아웃 할 때 렉이 없도록 즉시 화면 갱신
                     render2D(); 
                 }, { passive: false });
             }, 100);
@@ -876,7 +864,9 @@
         else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
 
-        osShipGroup = new THREE.Group(); scene.add(osShipGroup);
+        osShipGroup = new THREE.Group(); 
+        scene.add(osShipGroup);
+        
         camera3D = new THREE.PerspectiveCamera(60, fpvArea.clientWidth / (fpvArea.clientHeight||1), 1, 80000);
         osShipGroup.add(camera3D); 
         
@@ -907,7 +897,9 @@
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
-        scene.add(seaMesh);
+        
+        // 💡 바다를 월드가 아닌 본선(osShipGroup)에 부착하여 항상 배와 함께 회전하도록 고정
+        osShipGroup.add(seaMesh);
 
         fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
         window.addEventListener('mouseup', () => { isDraggingCam = false; });
@@ -917,7 +909,6 @@
                 camAngleX -= e.movementY * 0.003; 
                 camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
                 
-                // 💡 1FPS 고정이지만 마우스로 카메라 시점을 회전할 때는 즉각 렌더링
                 if(renderer3D && scene && camera3D) renderer3D.render(scene, camera3D); 
             }
         });
@@ -945,7 +936,11 @@
         if (mass.skybox) { scene.background = mass.skybox; } 
         else { scene.background = new THREE.Color(0x5a6a79); }
 
-        for(let i = osShipGroup.children.length - 1; i >= 0; i--) { if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); }
+        for(let i = osShipGroup.children.length - 1; i >= 0; i--) { 
+            if(osShipGroup.children[i] !== camera3D && osShipGroup.children[i] !== seaMesh) {
+                osShipGroup.remove(osShipGroup.children[i]); 
+            }
+        }
         targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
         
         const osModel = getModelForShip(mass.type);
@@ -1065,7 +1060,7 @@
         const dt = Math.min((now - lastTime) / 1000, 0.1); 
         lastTime = now;
         
-        // 💡 1. 물리 연산 (정확도 유지를 위해 60FPS 속도로 기존처럼 계속 계산)
+        // 물리 연산 (계속 60FPS로 정밀 계산)
         simEntities.forEach(s => { 
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
@@ -1120,20 +1115,18 @@
             }
         });
         
-        // 💡 2. 영상 및 데이터 렌더링 (1FPS 제한 = 1000ms 마다 실행)
-        if (now - lastRenderTime >= 1000) {
-            render2D();
-            updateSidebar();
+        // 💡 3D 영상 렌더링 (3 FPS 제한 = 333ms 마다)
+        if (now - last3DRenderTime >= 333) {
+            const dt3d = (now - last3DRenderTime) / 1000;
+            last3DRenderTime = now;
             
             if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
                 const mass = massViews[activeMassIndex].massEntity;
                 
-                // 바다 물결 애니메이션도 1초 단위로 점프
                 if (seaMesh && seaMesh.material.normalMap) {
-                    const hdgRad = mass.hdg * DEG2RAD;
-                    const speedFact = Math.max(0.002, mass.spd * 0.001); 
-                    seaMesh.material.normalMap.offset.x += 1.0 * speedFact * Math.sin(hdgRad);
-                    seaMesh.material.normalMap.offset.y -= 1.0 * speedFact * Math.cos(hdgRad);
+                    const speedFact = Math.max(0.5, mass.spd * 0.1); 
+                    // 로컬 좌표계 적용으로 무조건 위에서 아래로 물결 흐름
+                    seaMesh.material.normalMap.offset.y -= speedFact * dt3d; 
                 }
 
                 const meterScale = 4.63; 
@@ -1151,9 +1144,13 @@
 
                 renderer3D.render(scene, camera3D);
             }
-            
-            // 타이머 리셋
-            lastRenderTime = now;
+        }
+
+        // 💡 2D 관제 모니터 및 패널 렌더링 (1 FPS 제한 = 1000ms 마다)
+        if (now - last2DRenderTime >= 1000) {
+            last2DRenderTime = now;
+            render2D();
+            updateSidebar();
         }
     }
 
