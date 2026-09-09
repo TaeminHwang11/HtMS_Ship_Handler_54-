@@ -84,20 +84,20 @@
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* 사이드바 조타 버튼 */
+        .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
+        .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
+
         /* ================= 사이드바 컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
         #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
         #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
-
-        /* Step 2: 사이드바 조타 버튼 */
-        .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
-        .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
@@ -122,8 +122,8 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <!-- 💡 버전 V3 적용 완료 -->
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v3" />
+                <!-- 💡 버전 V4 적용 완료 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v4" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -139,7 +139,7 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 뷰 컬럼 (상/하단 분할 처리) -->
+        <!-- 좌측 뷰 컬럼 -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
@@ -154,14 +154,14 @@
             <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 뷰어 -->
+            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 -->
             <div id="grid-area"></div>
         </div>
         
         <!-- 우측 사이드바 -->
         <div id="sidebar">
             
-            <!-- MACRO 모드 패널 -->
+            <!-- 💡 MACRO 모드 패널 (누락된 HTML 태그 완벽 복구) -->
             <div id="panel-macro" style="display: flex; flex-direction: column; height: 100%;">
                 <div class="panel-title">MACRO DASHBOARD</div>
                 
@@ -172,7 +172,6 @@
                     <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
                     <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
                     <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
-                    <!-- 💡 XTD, ETA 추가 -->
                     <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
                     <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
                     <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
@@ -413,7 +412,7 @@
     }
 
     // ==========================================
-    // 3. MATH & PHYSICS & WAYPOINT LOGIC
+    // 3. MATH & PHYSICS
     // ==========================================
     function latLonToUnits(lat, lon, refLat, refLon) {
         const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
@@ -445,7 +444,6 @@
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
     }
 
-    // 💡 Step 3: XTD 및 ETA 계산 알고리즘 추가
     function calculateXTDAndETA(ship) {
         if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
             return { xtd: 0, etaMinutes: 0, nextWpName: "N/A" };
@@ -521,7 +519,6 @@
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
             
-            // 💡 경로(Waypoint) 저장
             let wps = [];
             if (wpSet && wpSet.WayPoints) {
                 wpSet.WayPoints.forEach(wp => {
@@ -575,6 +572,10 @@
 
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
+                if(canvas.parentElement.clientWidth > 0) {
+                    canvas.width = canvas.parentElement.clientWidth;
+                    canvas.height = canvas.parentElement.clientHeight;
+                }
                 vObj.panX = canvas.width / 2; vObj.panY = canvas.height / 2;
                 
                 canvas.addEventListener('mousedown', (e) => {
@@ -629,6 +630,7 @@
         mainLoop();
     }
 
+    // 💡 MACRO 뷰의 그리드 비율 초기화 처리 (SPLIT 복귀 시 중요)
     function updateGridLayout() {
         const grid = document.getElementById('grid-area');
         if(isSplitMode) {
@@ -647,6 +649,26 @@
         
         grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        // 안전 장치: 리사이즈 강제 적용
+        setTimeout(() => {
+            massViews.forEach(v => {
+                const canvas = document.getElementById(v.canvasId);
+                const vp = canvas.parentElement;
+                if(!vp.classList.contains('hidden-vp') && vp.clientWidth > 0) {
+                    canvas.width = vp.clientWidth;
+                    canvas.height = vp.clientHeight;
+                }
+            });
+            if(isSplitMode && camera3D && renderer3D) {
+                const fpvArea = document.getElementById('fpv-area');
+                if(fpvArea.clientWidth > 0) {
+                    camera3D.aspect = fpvArea.clientWidth / fpvArea.clientHeight;
+                    camera3D.updateProjectionMatrix();
+                    renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+                }
+            }
+        }, 50);
     }
 
     function updateSidebar() {
@@ -657,11 +679,10 @@
         document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
 
-        // 💡 본선(OS) XTD / ETA 업데이트
         const osRouteData = calculateXTDAndETA(mass);
 
         document.getElementById('ui-os-name').innerText = mass.name;
-        document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`;
+        document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`; // 💡 ID 누락 픽스 완료
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
         document.getElementById('ui-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
         document.getElementById('ui-os-eta').innerText = formatETA(osRouteData.etaMinutes);
@@ -674,7 +695,7 @@
                 const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
                 let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
                 const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                const tgtRouteData = calculateXTDAndETA(tgt); // 💡 타선 XTD / ETA 업데이트
+                const tgtRouteData = calculateXTDAndETA(tgt); 
                 
                 document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
                 document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
@@ -752,6 +773,7 @@
             else { vp.classList.add('hidden-vp'); vp.classList.remove('active-vp'); }
         });
 
+        // 그리드 1분할 강제 적용
         updateGridLayout();
 
         logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
@@ -919,7 +941,6 @@
                 opacity: 0.8 
             })
         );
-        // 평면이 항상 -Z(북쪽)을 바라보게 하지 않고, 일단 누워있게 둡니다.
         seaMesh.rotation.x = -Math.PI / 2;
         scene.add(seaMesh);
 
@@ -1020,17 +1041,15 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 경로(Route) 그리기 로직 추가
+                // 💡 경로(Route) 그리기
                 if (s.waypoints && s.waypoints.length > 0) {
                     const isOwnShip = s === v.massEntity;
                     const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
                     
                     ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
                     ctx.beginPath();
-                    // 본선/타선의 위치에서 첫 웨이포인트(또는 현재 타겟 웨이포인트)로 선 연결
-                    const startWpIdx = Math.min(s.currentWpIndex, s.waypoints.length - 1);
                     
-                    // 현재 위치를 출발점으로
+                    const startWpIdx = Math.min(s.currentWpIndex, s.waypoints.length - 1);
                     const cx = v.panX + (s.x - v.massEntity.x) * v.viewScale;
                     const cy = v.panY + (s.z - v.massEntity.z) * v.viewScale;
                     ctx.moveTo(cx, cy);
@@ -1042,7 +1061,6 @@
                     }
                     ctx.stroke(); ctx.setLineDash([]);
                     
-                    // 웨이포인트 동그라미
                     ctx.fillStyle = isOwnShip ? '#10b981' : '#ef4444';
                     for(let i = startWpIdx; i < s.waypoints.length; i++) {
                         const wp = s.waypoints[i];
@@ -1057,10 +1075,15 @@
                 const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
                 
+                // 💡 타선 기본 윤곽선(Cyan) 및 선택 시 오렌지색 하이라이트
                 if (v.selectedTargetIndex === tIdx && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
                     ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.stroke();
+                } else if (!isOwnShip) {
+                    ctx.beginPath();
+                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
                 }
 
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
@@ -1114,13 +1137,10 @@
             let actualVx = moveX / dt; let actualVz = -moveZ / dt;
             s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
 
-            // 💡 웨이포인트(Route) 도달 처리
             if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
                 const nextWp = s.waypoints[s.currentWpIndex];
                 const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
-                if (distToWp < 100) { // 반경 내 진입 시 다음 WP로 전환 (약 0.25 NM)
-                    s.currentWpIndex++;
-                }
+                if (distToWp < 100) { s.currentWpIndex++; }
             }
         });
         
@@ -1130,13 +1150,12 @@
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
             const mass = massViews[activeMassIndex].massEntity;
             
-            // 💡 바다 물결 애니메이션 방향 수정 (선박 Heading 방향과 속도에 비례)
+            // 💡 바다 물결 애니메이션 방향 수정
             if (seaMesh && seaMesh.material.normalMap) {
                 const hdgRad = mass.hdg * DEG2RAD;
-                // 속도가 0이어도 아주 미세하게는 일렁이도록 최소값 세팅
                 const speedFact = Math.max(0.002, mass.spd * 0.001); 
                 seaMesh.material.normalMap.offset.x += dt * speedFact * Math.sin(hdgRad);
-                seaMesh.material.normalMap.offset.y += dt * speedFact * Math.cos(hdgRad);
+                seaMesh.material.normalMap.offset.y -= dt * speedFact * Math.cos(hdgRad);
             }
 
             const meterScale = 4.63; 
