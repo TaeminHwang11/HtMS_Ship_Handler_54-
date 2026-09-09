@@ -299,6 +299,7 @@
     let osShipGroup, targetMeshes = [];
     let isDraggingCam = false; 
     let camAngleX = -0.05, camAngleY = 0; 
+    let seaMesh; // 💡 반투명 바다 매쉬 객체 추가
 
     // ==========================================
     // 2. FETCH & INITIALIZATION
@@ -564,7 +565,6 @@
         mainLoop();
     }
 
-    // 💡 MACRO 뷰의 그리드 비율 초기화 처리 (SPLIT 복귀 시 중요)
     function updateGridLayout() {
         const grid = document.getElementById('grid-area');
         if(isSplitMode) {
@@ -676,7 +676,6 @@
             else { vp.classList.add('hidden-vp'); vp.classList.remove('active-vp'); }
         });
 
-        // 그리드 1분할 강제 적용
         updateGridLayout();
 
         logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
@@ -761,7 +760,6 @@
         logEvent("MANUAL_STEERING", { massId: mass.name, cmd: mass.targetRudder, dir: dir });
     }
 
-    // 💡 키보드 조작 로직 (ACTIVE 상태일 때 화살표 좌우 / 스페이스바로 조향)
     window.addEventListener('keydown', (e) => {
         if(interventionState !== 'ACTIVE') return;
         if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
@@ -779,7 +777,7 @@
     }
 
     // ==========================================
-    // 5. LIGHTWEIGHT 3D ENGINE
+    // 5. LIGHTWEIGHT 3D ENGINE (💡 바다 렌더링 업데이트)
     // ==========================================
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
@@ -801,7 +799,25 @@
         scene.add(new THREE.AmbientLight(0x707070, 1.5));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
 
-        // 💡 simpleSea(단색 바다) 코드를 삭제하여 Skybox 이미지가 그대로 드러나도록 수정했습니다.
+        // 💡 투명한 물결(Normal Map) 바다 생성
+        const waterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(200, 200); 
+        });
+        seaMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshPhongMaterial({ 
+                color: 0x050a10, 
+                normalMap: waterNormals,
+                normalScale: new THREE.Vector2(1.0, 1.0), 
+                specular: 0x334455, 
+                shininess: 30,
+                transparent: true, 
+                opacity: 0.6 
+            })
+        );
+        seaMesh.rotation.x = -Math.PI / 2;
+        scene.add(seaMesh);
 
         fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
         window.addEventListener('mouseup', () => { isDraggingCam = false; });
@@ -827,7 +843,7 @@
 
     function setup3DSceneForMass(idx) {
         const mass = massViews[idx].massEntity;
-        document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
+        document.getElementById('fpv-label').innerText = `MASS_${idx + 1} FPV CAM`;
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); }
         targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
@@ -835,7 +851,6 @@
         const osModel = getModelForShip(mass.type);
         osShipGroup.add(osModel);
 
-        // 💡 캘리브레이션 세팅값이 있다면 불러오고, 없다면 기본 조타실(브릿지) 높이로 조정
         const savedCamStr = localStorage.getItem('bridgeCam_' + mass.type);
         if (savedCamStr) { 
             const savedPos = JSON.parse(savedCamStr); 
@@ -921,7 +936,6 @@
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         
-        // 💡 물리엔진 연산: 단위 변환 계수(400/3600) 재적용하여 정상 속도로 복구
         simEntities.forEach(s => { 
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
@@ -941,7 +955,7 @@
             const T_surge = 15.0; 
             s.spd += (targetSpeed - s.spd) * (dt / T_surge);
 
-            // 1 knot = 1852m/h, 내부 Unit 400 = 1852m. 초당 변환계수(400/3600)
+            // 💡 속도 계산 단위 복구
             const speedUnits = s.spd * (400 / 3600);
 
             let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt;
@@ -968,6 +982,12 @@
         updateSidebar();
         
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
+            // 💡 바다 물결 애니메이션
+            if (seaMesh && seaMesh.material.normalMap) {
+                seaMesh.material.normalMap.offset.x += dt * 0.015;
+                seaMesh.material.normalMap.offset.y += dt * 0.025;
+            }
+
             const mass = massViews[activeMassIndex].massEntity;
             const meterScale = 4.63; 
 
