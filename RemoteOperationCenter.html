@@ -84,21 +84,20 @@
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .steer-btn { position: absolute; bottom: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 24px; font-family: 'Rajdhani', sans-serif; font-weight: bold; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 60; transition: 0.1s; backdrop-filter: blur(4px); user-select: none; }
-        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); }
-        #btn-steer-port { left: 30px; }
-        #btn-steer-stbd { right: 30px; }
-
         /* ================= 사이드바 컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
         #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
         #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
+
+        /* Step 2: 사이드바 조타 버튼 */
+        .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
+        .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
@@ -123,7 +122,8 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v1" />
+                <!-- 💡 버저닝: 테스터_v2 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v2" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -149,8 +149,6 @@
                     <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
                     <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
                 </div>
-                <div id="btn-steer-port" class="steer-btn" onmousedown="applySteer('P')">P</div>
-                <div id="btn-steer-stbd" class="steer-btn" onmousedown="applySteer('S')">S</div>
             </div>
             
             <!-- 상하 크기 조절바 -->
@@ -236,6 +234,12 @@
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
                 
+                <!-- 💡 Step 2: 사이드바 조타 버튼 (개입 시 나타남) -->
+                <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
+                    <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
+                </div>
+
                 <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
                 <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
             </div>
@@ -295,7 +299,7 @@
     // 3D Variables
     let scene, camera3D, renderer3D;
     let parsedModels = {};
-    let loadedSkyboxes = []; // 무작위로 적용될 스카이박스 배열
+    let loadedSkyboxes = []; 
     let osShipGroup, targetMeshes = [];
     let isDraggingCam = false; 
     let camAngleX = -0.05, camAngleY = 0; 
@@ -744,8 +748,7 @@
         document.getElementById('intervention-overlay').style.display = 'none';
         document.getElementById('btn-intervention').style.display = 'none';
         document.getElementById('btn-end-intervention').style.display = 'block';
-        document.getElementById('btn-steer-port').style.display = 'flex';
-        document.getElementById('btn-steer-stbd').style.display = 'flex';
+        document.getElementById('steering-controls').style.display = 'flex';
         
         logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
     }
@@ -758,8 +761,7 @@
         document.getElementById('btn-intervention').style.display = 'block';
         document.getElementById('btn-intervention').disabled = false;
         document.getElementById('btn-end-intervention').style.display = 'none';
-        document.getElementById('btn-steer-port').style.display = 'none';
-        document.getElementById('btn-steer-stbd').style.display = 'none';
+        document.getElementById('steering-controls').style.display = 'none';
         
         if(massViews[activeMassIndex]) { massViews[activeMassIndex].massEntity.targetRudder = 0; }
         logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
@@ -818,7 +820,7 @@
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x5a6a79);
+        if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
 
         osShipGroup = new THREE.Group(); scene.add(osShipGroup);
@@ -848,7 +850,7 @@
                 specular: 0x334455, 
                 shininess: 30,
                 transparent: true, 
-                opacity: 0.9 
+                opacity: 0.8 // 💡 불투명도 0.8 적용 완료
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
@@ -880,12 +882,8 @@
         const mass = massViews[idx].massEntity;
         document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
 
-        // 💡 배경 스카이박스 랜덤 적용 세팅
-        if (mass.skybox) {
-            scene.background = mass.skybox;
-        } else {
-            scene.background = new THREE.Color(0x5a6a79);
-        }
+        if (mass.skybox) { scene.background = mass.skybox; } 
+        else { scene.background = new THREE.Color(0x5a6a79); }
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); }
         targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
