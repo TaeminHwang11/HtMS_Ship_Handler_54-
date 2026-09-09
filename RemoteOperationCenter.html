@@ -25,8 +25,8 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
-        /* ================= 메인 메뉴 (로그인) ================= */
-        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        /* 💡 1번 반영: 모바일 주소창 높이를 감안하는 100dvh 추가 적용 */
+        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
         
@@ -42,32 +42,26 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 및 3-Tier 모드 ================= */
-        #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
-        
+        /* 💡 1번 반영: 하단 잘림 해결을 위한 100dvh */
+        #main-wrapper { display: none; width: 100%; height: 100vh; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        /* 뷰포트 상태 제어 */
         #surveillance-area, #fpv-area, #h-resizer, #grid-area { display: none; }
         
-        /* Tier 1: Surveillance Mode */
         #main-wrapper.surveillance-mode #surveillance-area { display: block; flex: 1; position: relative; background: #050a10; }
         #world-map-canvas { width: 100%; height: 100%; display: block; }
 
-        /* Tier 2: General Mode */
         #main-wrapper.general-mode #grid-area { display: grid; flex: 1; gap: 4px; background: #000; padding: 4px; height: 100%; min-height: 0; }
 
-        /* Tier 3: Split Mode (Detailed) */
         #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         #main-wrapper.split-mode #h-resizer { display: block; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
         #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
 
-        /* 우측 사이드바 (대시보드 패널) */
-        #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
+        /* 💡 1번 반영: 사이드바 너비를 반응형 clamp로 조정 (최소 280px ~ 최대 380px) */
+        #sidebar { width: clamp(280px, 35vw, 380px); background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
-        /* ================= 2D 뷰포트 내부 스타일 ================= */
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; transition: all 0.2s ease; height: 100%; width: 100%; box-sizing: border-box; }
         .viewport:hover { border: 1px solid rgba(255, 255, 255, 0.6); }
         .viewport.active-vp { border: 2px solid #f97316; box-shadow: inset 0 0 20px rgba(249, 115, 22, 0.15), 0 0 15px rgba(249, 115, 22, 0.4); z-index: 5; }
@@ -80,14 +74,12 @@
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
         .hud-cursor-info { color: #fca5a5; margin-top: 2px; }
         
-        /* ================= 3D FPV 내부 UI ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
         
         #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ================= 사이드바 컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; flex-shrink: 0; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
@@ -118,7 +110,6 @@
 </head>
 <body>
 
-    <!-- 1. 로그인 (메인 화면) -->
     <div id="login-overlay">
         <h1>[HTMS] Remote Operation Center</h1>
         <h2>PORTABLE REMOTE OPERATION SIMULATOR</h2>
@@ -130,7 +121,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_17" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -143,20 +134,15 @@
         </div>
     </div>
 
-    <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper" class="surveillance-mode">
-        
         <div id="view-column">
-            <!-- Tier 1: 글로벌 전도 모니터링 창 -->
             <div id="surveillance-area">
                 <canvas id="world-map-canvas"></canvas>
             </div>
 
-            <!-- Tier 3: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">MASS_1 FPV CAM</div>
                 
-                <!-- 💡 2번 반영: 3D 영상 우측 상단으로 이동한 반투명 흰색 통신 상태 박스 -->
                 <div id="fpv-network-status" style="position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.85); padding: 10px 15px; border-radius: 6px; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 4px; text-align: right; min-width: 140px; border: 1px solid rgba(255,255,255,0.5);">
                     <div style="font-size: 11px; color: #334155; font-weight: bold; letter-spacing: 1px;">NETWORK STATUS</div>
                     <div id="val-net-status" style="font-size: 16px; font-family: monospace; font-weight: bold; margin-top: 2px;">-</div>
@@ -172,18 +158,17 @@
             
             <div id="h-resizer"></div>
 
-            <!-- Tier 2 & 3: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
         <div id="sidebar">
-            <div id="panel-surveillance" style="display: flex; flex-direction: column; height: 100%;">
+            <div id="panel-surveillance" style="display: flex; flex-direction: column; height: 100%; min-height: 0;">
                 <div class="panel-title">GLOBAL SURVEILLANCE</div>
-                <div id="surveillance-fleet-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto;"></div>
+                <div id="surveillance-fleet-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
                 <button id="btn-general-monitoring" onclick="enterGeneralMode()">General Monitoring (2D)</button>
             </div>
 
-            <div id="panel-macro" style="display: none; flex-direction: column; height: 100%;">
+            <div id="panel-macro" style="display: none; flex-direction: column; height: 100%; min-height: 0;">
                 <div class="panel-title">MACRO DASHBOARD</div>
                 <button class="btn-return" onclick="enterSurveillanceMode()">GLOBAL SURVEILLANCE (복귀)</button>
                 
@@ -202,13 +187,13 @@
                     <div class="data-row"><span>WIND:</span> <b id="ui-env-wind">-</b></div>
                     <div class="data-row"><span>CURRENT:</span> <b id="ui-env-curr">-</b></div>
                 </div>
-                <div id="macro-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
-                <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
+                <div id="macro-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
+                <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5; flex-shrink: 0;">
                     상세 관찰 및 개입을 원하시면<br>특정 선박 화면을 <b>더블클릭</b> 하세요.
                 </div>
             </div>
 
-            <div id="panel-split" style="display: none; flex-direction: column; height: 100%;">
+            <div id="panel-split" style="display: none; flex-direction: column; height: 100%; min-height: 0;">
                 <div class="panel-title">집중관찰모드</div>
                 <button class="btn-return" onclick="exitSplitMode()">MACRO VIEW (복귀)</button>
                 <button id="btn-intervention" onclick="requestIntervention()" style="margin-bottom: 10px;">원격 개입 (Intervention)</button>
@@ -231,9 +216,7 @@
                     <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
 
-                <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
-                
-                <!-- 💡 사이드바 하단에 있던 통신 지연 박스는 삭제됨 -->
+                <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
             </div>
 
         </div>
@@ -396,7 +379,6 @@
         btnStart.style.display = 'none'; 
         loadMsg.style.display = 'block';
         
-        // 💡 1번 반영: 커스텀 로딩 배열 적용
         let currentStep = 0;
         const customProgress = [12, 25, 39, 42, 55, 62, 80, 95, 100];
         const addProgress = () => {
@@ -650,10 +632,18 @@
                 activeMassIndex = idx; updateSidebar();
             });
 
+            // 💡 1번 터치 연동: 활성 뷰포트 변경
+            vp.addEventListener('touchstart', () => {
+                document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
+                vp.classList.add('active-vp');
+                activeMassIndex = idx; updateSidebar();
+            }, {passive: true});
+
             vp.addEventListener('dblclick', () => { enterSplitMode(idx); });
 
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
+                let lastTap = 0;
                 
                 canvas.addEventListener('mousedown', (e) => {
                     const rect = canvas.getBoundingClientRect();
@@ -692,6 +682,16 @@
                 
                 canvas.addEventListener('touchstart', (e) => {
                     if (e.touches.length === 1) {
+                        // 💡 1번 터치 연동: 커스텀 더블 탭 (300ms 이내)
+                        const currentTime = new Date().getTime();
+                        const tapLength = currentTime - lastTap;
+                        if (tapLength < 300 && tapLength > 0) {
+                            enterSplitMode(idx);
+                            e.preventDefault();
+                            return;
+                        }
+                        lastTap = currentTime;
+
                         const rect = canvas.getBoundingClientRect();
                         vObj.isDragging = true; vObj.hasDragged = false;
                         vObj.dragStartX = (e.touches[0].clientX - rect.left) - vObj.panOffsetX;
@@ -1030,7 +1030,6 @@
             document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanels('split-targets-container');
 
-            // 💡 2번 반영: FPV 영역 내 통신 박스로 상태 렌더링
             document.getElementById('val-latency').innerText = `통신 지연: ${mass.latencySec} s`;
             document.getElementById('val-net-status').innerText = `${mass.connStatus} (${mass.fps3D} FPS)`;
             document.getElementById('val-net-status').style.color = mass.connStatus === '좋음' ? '#10b981' : (mass.connStatus === '보통' ? '#eab308' : '#ef4444');
