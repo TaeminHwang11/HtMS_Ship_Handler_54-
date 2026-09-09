@@ -88,13 +88,14 @@
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
         #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
         #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
 
+        /* Step 2: 사이드바 조타 버튼 */
         .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); }
         .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
 
@@ -121,8 +122,8 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <!-- 💡 버전 V6 복구 완료 -->
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v6" />
+                <!-- 💡 버전 V7 적용 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v7" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -297,7 +298,6 @@
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
-    // 💡 최적화를 위한 렌더링 프레임 카운터
     let frameCount = 0;
 
     let interventionState = 'NONE'; 
@@ -433,7 +433,7 @@
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: -1 }; 
     }
 
-    // 💡 최적화: 경로 거리 중복 연산(루프 폭탄) 방지
+    // 💡 최적화: 이 함수는 이제 1초에 한 번만 호출됩니다.
     function calculateXTDAndETA(ship) {
         if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
             return { xtd: 0, etaMinutes: 0 };
@@ -447,7 +447,6 @@
         let xtd = 0;
         if (routeLen > 0) xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
         
-        // 반복 루프를 5개까지만 제한하여 무한 연산 렉 방지
         let distRemaining = Math.hypot(nextWp.x - ship.x, nextWp.z - ship.z);
         let maxLookahead = Math.min(ship.waypoints.length - 1, ship.currentWpIndex + 5);
         for (let i = ship.currentWpIndex; i < maxLookahead; i++) {
@@ -521,7 +520,9 @@
                 name: s.shipName, type: finalType, isMASS: isMass, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
-                skybox: finalSkybox, waypoints: wps, currentWpIndex: 1
+                skybox: finalSkybox, waypoints: wps, currentWpIndex: 1,
+                // 💡 XTD, ETA 캐시 및 계산 주기 조절을 위한 변수 추가
+                xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0
             });
         });
 
@@ -550,8 +551,7 @@
             vp.addEventListener('mousedown', () => {
                 document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
                 vp.classList.add('active-vp');
-                activeMassIndex = idx; 
-                updateSidebar(); // 클릭 직각 반응을 위해 1회 수동 업데이트
+                activeMassIndex = idx; updateSidebar();
             });
 
             vp.addEventListener('dblclick', () => { enterSplitMode(idx); });
@@ -636,7 +636,6 @@
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     }
 
-    // 💡 최적화: UI 쓰로틀링 함수 (프레임 단위로 조절되어 가벼워짐)
     function updateSidebar() {
         if(massViews.length === 0) return;
         const vObj = massViews[activeMassIndex];
@@ -645,13 +644,12 @@
         document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
 
-        const osRouteData = calculateXTDAndETA(mass);
-
+        // 💡 1초마다 갱신된 캐시 데이터로 UI 업데이트 (연산 부하 제거)
         document.getElementById('ui-os-name').innerText = mass.name;
         document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
-        document.getElementById('ui-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
-        document.getElementById('ui-os-eta').innerText = formatETA(osRouteData.etaMinutes);
+        document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
+        document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
         const updateTgtPanel = (prefix) => {
             const tgtIdx = vObj.selectedTargetIndex;
@@ -661,15 +659,14 @@
                 const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
                 let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
                 const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                const tgtRouteData = calculateXTDAndETA(tgt); 
                 
                 document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
                 document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
                 document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
                 document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.cog.toFixed(1)}°`;
                 document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
-                document.getElementById(`${prefix}-tgt-xtd`).innerText = `${tgtRouteData.xtd.toFixed(2)} NM`;
-                document.getElementById(`${prefix}-tgt-eta`).innerText = formatETA(tgtRouteData.etaMinutes);
+                document.getElementById(`${prefix}-tgt-xtd`).innerText = `${tgt.xtd.toFixed(2)} NM`;
+                document.getElementById(`${prefix}-tgt-eta`).innerText = formatETA(tgt.etaMinutes);
                 document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
                 document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
                 document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
@@ -694,8 +691,8 @@
             document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`;
             document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
             document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
-            document.getElementById('split-os-xtd').innerText = `${osRouteData.xtd.toFixed(2)} NM`;
-            document.getElementById('split-os-eta').innerText = formatETA(osRouteData.etaMinutes);
+            document.getElementById('split-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
+            document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanel('split');
         } else {
             updateTgtPanel('ui');
@@ -1000,7 +997,6 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 최적화: 경로(Route) 그리기 제한 (무한 루프 렉 방지)
                 if (s.waypoints && s.waypoints.length > 0) {
                     const isOwnShip = s === v.massEntity;
                     const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
@@ -1013,7 +1009,6 @@
                     const cy = v.panY + (s.z - v.massEntity.z) * v.viewScale;
                     ctx.moveTo(cx, cy);
 
-                    // 화면에 그릴 경로를 최대 50개까지만으로 제한
                     const maxDrawWp = Math.min(s.waypoints.length, startWpIdx + 50);
                     for(let i = startWpIdx; i < maxDrawWp; i++) {
                         const wp = s.waypoints[i];
@@ -1102,11 +1097,18 @@
                 const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
                 if (distToWp < 100) { s.currentWpIndex++; }
             }
+
+            // 💡 최적화: XTD 및 ETA 연산은 1초(1000ms)에 한 번만 수행
+            if (now - s.lastRouteCalcTime >= 1000) {
+                const routeData = calculateXTDAndETA(s);
+                s.xtd = routeData.xtd;
+                s.etaMinutes = routeData.etaMinutes;
+                s.lastRouteCalcTime = now;
+            }
         });
         
         render2D();
 
-        // 💡 최적화: 텍스트 UI 쓰로틀링 (1초에 10번만 텍스트 갱신하여 브라우저 렉 해결)
         frameCount++;
         if (frameCount % 6 === 0) {
             updateSidebar();
