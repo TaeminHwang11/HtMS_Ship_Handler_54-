@@ -42,26 +42,26 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 ================= */
+        /* ================= 메인 레이아웃 및 3-Tier 모드 ================= */
         #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         
-        /* 좌측 뷰 컬럼 */
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        /* 스플릿 모드 상단: 3D 집중관찰(FPV) 창 */
-        #fpv-area { display: none; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
+        /* 뷰포트 상태 제어 */
+        #surveillance-area, #fpv-area, #h-resizer, #grid-area { display: none; }
         
-        /* 상하 크기 조절바 */
-        #h-resizer { display: none; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
-        #h-resizer:hover, #h-resizer:active { background: var(--accent-cyan); }
-        
-        /* 하단: 2D 그리드 영역 */
-        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; min-height: 0; }
+        /* Tier 1: Surveillance Mode */
+        #main-wrapper.surveillance-mode #surveillance-area { display: block; flex: 1; position: relative; background: #050a10; }
+        #world-map-canvas { width: 100%; height: 100%; display: block; }
 
-        /* Split Mode State Classes */
-        #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; }
-        #main-wrapper.split-mode #h-resizer { display: block; }
-        #main-wrapper.split-mode #grid-area { flex: 1; min-height: 20%; display: grid; } 
+        /* Tier 2: General Mode */
+        #main-wrapper.general-mode #grid-area { display: grid; flex: 1; gap: 2px; background: var(--border-color); height: 100%; min-height: 0; }
+
+        /* Tier 3: Split Mode (Detailed) */
+        #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
+        #main-wrapper.split-mode #h-resizer { display: block; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
+        #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
+        #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 2px; background: var(--border-color); }
 
         /* 우측 사이드바 (대시보드 패널) */
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
@@ -76,7 +76,7 @@
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
-        .hud-cursor-info { color: #fca5a5; margin-top: 2px; } /* 커서 방위/거리 텍스트 색상 */
+        .hud-cursor-info { color: #fca5a5; margin-top: 2px; }
         
         /* ================= 3D FPV 내부 UI ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
@@ -86,7 +86,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* ================= 사이드바 컴포넌트 ================= */
-        .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
+        .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; flex-shrink: 0; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
         #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
@@ -95,6 +95,9 @@
 
         #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
         #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
+
+        #btn-general-monitoring { width: 100%; padding: 18px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: rgba(6, 182, 212, 0.2); border: 2px solid var(--accent-cyan); color: var(--accent-cyan); transition: 0.2s; flex-shrink: 0; margin-top: auto; }
+        #btn-general-monitoring:hover { background: var(--accent-cyan); color: #000; box-shadow: 0 0 20px rgba(6,182,212,0.4); transform: translateY(-2px); }
 
         .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); touch-action: none; }
         .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
@@ -125,7 +128,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_5" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_6" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -139,11 +142,17 @@
     </div>
 
     <!-- 2. 메인 관제 레이아웃 -->
-    <div id="main-wrapper">
+    <div id="main-wrapper" class="surveillance-mode">
         
         <!-- 좌측 뷰 컬럼 -->
         <div id="view-column">
-            <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
+            
+            <!-- Tier 1: 글로벌 전도 모니터링 창 -->
+            <div id="surveillance-area">
+                <canvas id="world-map-canvas"></canvas>
+            </div>
+
+            <!-- Tier 3: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">MASS_1 FPV CAM</div>
                 <div id="intervention-overlay">
@@ -153,27 +162,38 @@
                 </div>
             </div>
             
-            <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 하단: 2D 멀티 그리드 뷰어 -->
+            <!-- Tier 2 & 3: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
         <!-- 우측 사이드바 -->
         <div id="sidebar">
             
-            <!-- MACRO 모드 패널 -->
-            <div id="panel-macro" style="display: flex; flex-direction: column; height: 100%;">
+            <!-- Tier 1: SURVEILLANCE 모드 패널 -->
+            <div id="panel-surveillance" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="panel-title">GLOBAL SURVEILLANCE</div>
+                
+                <div id="surveillance-fleet-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto;">
+                    <!-- 선박 동적 리스트가 여기에 생성됨 -->
+                </div>
+
+                <button id="btn-general-monitoring" onclick="enterGeneralMode()">General Monitoring (2D)</button>
+            </div>
+
+            <!-- Tier 2: MACRO 모드 패널 -->
+            <div id="panel-macro" style="display: none; flex-direction: column; height: 100%;">
                 <div class="panel-title">MACRO DASHBOARD</div>
+                <button class="btn-return" onclick="enterSurveillanceMode()">GLOBAL SURVEILLANCE (복귀)</button>
                 
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
                     <div class="data-row"><span>NAME:</span> <b id="ui-os-name" style="color: var(--accent-yellow);">-</b></div>
                     <div class="data-row"><span>HDG:</span> <b id="ui-os-hdg">-</b></div>
                     <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
-                    <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
-                    <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
+                    <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">-</b></div>
+                    <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">-</b></div>
                     <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
                     <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
                     <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
@@ -192,7 +212,7 @@
                 </div>
             </div>
 
-            <!-- SPLIT (집중관찰) 모드 패널 -->
+            <!-- Tier 3: SPLIT (집중관찰) 모드 패널 -->
             <div id="panel-split" style="display: none; flex-direction: column; height: 100%;">
                 <div class="panel-title" style="color: var(--accent-yellow);">집중관찰모드</div>
                 <button class="btn-return" onclick="exitSplitMode()">MACRO VIEW (복귀)</button>
@@ -219,7 +239,6 @@
 
                 <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
 
-                <!-- 💡 3, 4번 반영: 랜덤 통신 상태/지연 UI (슬라이더 제거) -->
                 <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK STATUS</span>
@@ -238,7 +257,7 @@
 
 <script>
     // ==========================================
-    // 0. CONSTANTS
+    // 0. CONSTANTS & PORTS
     // ==========================================
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
     const GITHUB_BASE_URL = "./"; 
@@ -252,14 +271,32 @@
         "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
     ];
 
+    // 💡 전 세계 주요 항구 코드 및 대략적 좌표 데이터 추가
+    const WORLD_PORTS = [
+        {code: 'HKG', lat: 22.3, lon: 114.1},
+        {code: 'ICN', lat: 37.4, lon: 126.6},
+        {code: 'PUS', lat: 35.1, lon: 129.0},
+        {code: 'SHA', lat: 31.2, lon: 121.5},
+        {code: 'SGP', lat: 1.2, lon: 103.8},
+        {code: 'LAX', lat: 33.7, lon: -118.2},
+        {code: 'ROT', lat: 51.9, lon: 4.4},
+        {code: 'DXB', lat: 25.2, lon: 55.2},
+        {code: 'SYD', lat: -33.8, lon: 151.2},
+        {code: 'JFK', lat: 40.6, lon: -73.7},
+        {code: 'LHR', lat: 51.5, lon: -0.4}
+    ];
+
     // ==========================================
     // 1. STATE VARIABLES
     // ==========================================
     let simEntities = []; 
     let massViews = [];   
     let activeMassIndex = 0;
+    
+    let currentMode = 'SURVEILLANCE'; // SURVEILLANCE, GENERAL, SPLIT
     let isSplitMode = false;
     let isSimulationRunning = false;
+    
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
@@ -280,6 +317,9 @@
     let seaMesh; 
 
     let lastTouchX = 0, lastTouchY = 0;
+    
+    // 로컬 좌표계를 글로벌 지도로 변환하기 위한 기준점
+    let refLat = 34.8; let refLon = 126.4;
 
     // ==========================================
     // 2. FETCH & INITIALIZATION
@@ -389,9 +429,9 @@
     // ==========================================
     // 3. MATH & PHYSICS
     // ==========================================
-    function latLonToUnits(lat, lon, refLat, refLon) {
-        const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
-        const dzM = -(lat - refLat) * 111111;
+    function latLonToUnits(lat, lon, rLat, rLon) {
+        const dxM = (lon - rLon) * 111111 * Math.cos(rLat * Math.PI / 180);
+        const dzM = -(lat - rLat) * 111111;
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
     }
 
@@ -470,10 +510,21 @@
                     renderer3D.setSize(entry.contentRect.width, entry.contentRect.height);
                 }
             }
+            // 💡 Surveillance 캔버스 사이즈 옵저버 등록
+            else if (entry.target.id === 'surveillance-area') {
+                const canvas = document.getElementById('world-map-canvas');
+                if(canvas && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                    canvas.width = entry.contentRect.width;
+                    canvas.height = entry.contentRect.height;
+                }
+            }
         }
         if(isSimulationRunning) {
-            render2D();
-            if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+            if (currentMode === 'SURVEILLANCE') renderWorldMap();
+            else {
+                render2D();
+                if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+            }
         }
     });
 
@@ -481,7 +532,6 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-wrapper').style.display = 'flex';
         
-        let refLat = 34.8; let refLon = 126.4;
         if(data.WayPointSet && data.WayPointSet.length > 0) { 
             refLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
             refLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); 
@@ -504,7 +554,11 @@
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
 
-            // 💡 랜덤 딜레이 및 프레임 초기 속성 추가
+            // 💡 무작위 항구 지정
+            let pOrigin = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)];
+            let pDest = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)];
+            while(pOrigin.code === pDest.code) { pDest = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)]; }
+
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: finalType, isMASS: isMass, 
@@ -512,7 +566,8 @@
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
                 skybox: finalSkybox,
                 waypoints: wps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0,
-                latencySec: 3.0, connStatus: '보통', fps3D: 30, frameInterval: 33, lastCommUpdate: performance.now()
+                latencySec: 3.0, connStatus: '보통', fps3D: 30, frameInterval: 33, lastCommUpdate: performance.now(),
+                originPort: pOrigin, destPort: pDest, globalProgress: Math.random() * 0.8 + 0.1 // 세계지도상 현재 진행도
             });
         });
 
@@ -525,7 +580,6 @@
             vp.className = `viewport ${idx === 0 ? 'active-vp' : ''}`;
             vp.id = `vp-${idx}`;
             
-            // 💡 2번 반영: 커서 위치 기준 BRG/DST 표시용 엘리먼트 추가
             vp.innerHTML = `
                 <div class="vp-label">${mass.name}</div>
                 <div class="coord-hud" id="hud-${idx}">
@@ -563,11 +617,10 @@
                     const mx = e.clientX - rect.left;
                     const my = e.clientY - rect.top;
 
-                    // 💡 커서 Hover 방위/거리 연산
                     if (!vObj.isDragging) {
                         const dx = mx - vObj.panX; 
                         const dy = my - vObj.panY;
-                        const dist = Math.sqrt(dx*dx + dy*dy) / vObj.viewScale / 400; // NM
+                        const dist = Math.sqrt(dx*dx + dy*dy) / vObj.viewScale / 400;
                         let brg = Math.atan2(dx, -dy) * 180 / Math.PI; 
                         if (brg < 0) brg += 360;
                         const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
@@ -580,7 +633,7 @@
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
                         vObj.panOffsetX = mx - vObj.dragStartX; 
                         vObj.panOffsetY = my - vObj.dragStartY; 
-                        render2D(); 
+                        if(currentMode !== 'SURVEILLANCE') render2D(); 
                     }
                 });
                 canvas.addEventListener('mouseout', () => {
@@ -619,7 +672,7 @@
                         const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
                         if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
 
-                        render2D();
+                        if(currentMode !== 'SURVEILLANCE') render2D();
                     } else if (e.touches.length === 2 && vObj.initialPinchDistance > 0) {
                         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                         const scaleDiff = dist / vObj.initialPinchDistance;
@@ -628,7 +681,7 @@
                         range = Math.min(30, Math.max(0.5, range));
                         vObj.viewScale = 1 / range; 
                         document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
-                        render2D();
+                        if(currentMode !== 'SURVEILLANCE') render2D();
                     }
                 }, {passive: false});
 
@@ -636,7 +689,7 @@
                 window.addEventListener('touchend', () => { vObj.isDragging = false; vObj.initialPinchDistance = 0; });
                 
                 canvas.addEventListener('click', (e) => {
-                    if(vObj.hasDragged) return;
+                    if(vObj.hasDragged || currentMode === 'SURVEILLANCE') return;
                     const rect = canvas.getBoundingClientRect();
                     const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
                     
@@ -660,6 +713,7 @@
                 });
 
                 canvas.addEventListener('wheel', (e) => {
+                    if(currentMode === 'SURVEILLANCE') return;
                     e.preventDefault();
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
@@ -668,14 +722,103 @@
             }, 100);
         });
 
-        updateGridLayout();
+        // 💡 Surveillance 화면 리사이즈 옵저버
+        layoutObserver.observe(document.getElementById('surveillance-area'));
+        
         initThreeJS_Lightweight();
         
         logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
         isSimulationRunning = true;
+        
+        // 💡 로그인 직후 Tier 1(Surveillance)로 전환
+        enterSurveillanceMode();
         mainLoop();
     }
 
+    // ==========================================
+    // 💡 Tier 1: World Map Rendering
+    // ==========================================
+    function renderWorldMap() {
+        if(currentMode !== 'SURVEILLANCE') return;
+        const canvas = document.getElementById('world-map-canvas');
+        const parent = canvas.parentElement;
+        if(!canvas || canvas.clientWidth === 0) return;
+        if(canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
+            canvas.width = parent.clientWidth; canvas.height = parent.clientHeight;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width; const H = canvas.height;
+        ctx.clearRect(0,0,W,H);
+        
+        ctx.fillStyle = '#050a10';
+        ctx.fillRect(0,0,W,H);
+
+        // 배경 그리드
+        ctx.strokeStyle = 'rgba(30, 41, 59, 0.8)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let x=0; x<=W; x+=W/18) { ctx.moveTo(x,0); ctx.lineTo(x,H); }
+        for(let y=0; y<=H; y+=H/9) { ctx.moveTo(0,y); ctx.lineTo(W,y); }
+        ctx.stroke();
+
+        // 적도 & 본초 자오선
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.2)';
+        ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+        const getXY = (lat, lon) => { return { x: (lon + 180) * (W / 360), y: (90 - lat) * (H / 180) }; };
+
+        // 세계 주요 항구 점찍기
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
+        WORLD_PORTS.forEach(p => {
+            const xy = getXY(p.lat, p.lon);
+            ctx.beginPath(); ctx.arc(xy.x, xy.y, 1.5, 0, Math.PI*2); ctx.fill();
+        });
+
+        // 각 선박의 항로 및 현재 위치 그리기
+        simEntities.forEach(s => {
+            if(!s.isMASS) return;
+            const p1 = s.originPort; const p2 = s.destPort;
+            const xy1 = getXY(p1.lat, p1.lon);
+            const xy2 = getXY(p2.lat, p2.lon);
+            
+            // 점선 항로
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(xy1.x, xy1.y); ctx.lineTo(xy2.x, xy2.y); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 양 끝 항구
+            ctx.fillStyle = '#88c0d0';
+            ctx.beginPath(); ctx.arc(xy1.x, xy1.y, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(xy2.x, xy2.y, 4, 0, Math.PI*2); ctx.fill();
+            ctx.font = 'bold 12px monospace'; 
+            ctx.fillText(p1.code, xy1.x + 6, xy1.y + 4);
+            ctx.fillText(p2.code, xy2.x + 6, xy2.y + 4);
+
+            // 선박 현재 위치 (Global Progress 비율로 보간)
+            const curLat = p1.lat + (p2.lat - p1.lat) * s.globalProgress;
+            const curLon = p1.lon + (p2.lon - p1.lon) * s.globalProgress;
+            const sXY = getXY(curLat, curLon);
+            
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 6, 0, Math.PI*2); ctx.fill();
+            
+            // 레이더 링 이펙트
+            ctx.strokeStyle = '#10b981';
+            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 12 + (Math.sin(performance.now()*0.005)*3), 0, Math.PI*2); ctx.stroke();
+            
+            ctx.fillStyle = '#fff';
+            ctx.fillText(s.name, sXY.x + 15, sXY.y + 4);
+        });
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '24px Rajdhani';
+        ctx.textAlign = 'left';
+        ctx.fillText('GLOBAL SURVEILLANCE MAP', 20, 40);
+    }
+
+    // 💡 타겟 삭제 기능 함수
     window.removeTarget = function(vIdx, tIdx) {
         const vObj = massViews[vIdx];
         vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
@@ -703,7 +846,29 @@
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     }
 
+    function updateSurveillanceSidebar() {
+        const container = document.getElementById('surveillance-fleet-container');
+        container.innerHTML = '';
+        simEntities.forEach(s => {
+            if(!s.isMASS) return;
+            const html = `
+            <div class="info-box" style="border-left-color: var(--accent-cyan);">
+                <div class="info-header" style="color: var(--accent-cyan); font-size:14px;">${s.name}</div>
+                <div class="data-row"><span>ROUTE:</span> <b>${s.originPort.code} ➔ ${s.destPort.code}</b></div>
+                <div class="data-row"><span>SOG:</span> <b>${s.spd.toFixed(1)} Kn</b></div>
+                <div class="data-row"><span>HDG:</span> <b>${s.hdg.toFixed(1)}°</b></div>
+                <div class="data-row"><span>STATUS:</span> <b style="color:${s.connStatus === '좋음' ? '#10b981' : (s.connStatus === '보통' ? '#eab308' : '#ef4444')}">${s.connStatus}</b></div>
+            </div>`;
+            container.innerHTML += html;
+        });
+    }
+
     function updateSidebar() {
+        if(currentMode === 'SURVEILLANCE') {
+            updateSurveillanceSidebar();
+            return;
+        }
+
         if(massViews.length === 0) return;
         const vObj = massViews[activeMassIndex];
         const mass = vObj.massEntity;
@@ -715,6 +880,9 @@
         document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
         
+        document.getElementById('ui-os-prev').innerText = mass.originPort.name;
+        document.getElementById('ui-os-next').innerText = mass.destPort.name;
+
         document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
         document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
@@ -762,7 +930,6 @@
             document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanels('split-targets-container');
 
-            // 💡 네트워크 상태 UI 업데이트
             document.getElementById('val-latency').innerText = `통신 지연: ${mass.latencySec} s`;
             document.getElementById('val-net-status').innerText = `${mass.connStatus} (${mass.fps3D} FPS)`;
             document.getElementById('val-net-status').style.color = mass.connStatus === '좋음' ? '#10b981' : (mass.connStatus === '보통' ? '#eab308' : '#ef4444');
@@ -773,7 +940,7 @@
     }
 
     // ==========================================
-    // 4. UX FLOW: SPLIT MODE TOGGLE & RESIZER
+    // 4. UX FLOW: STATE TRANSITIONS (3-Tier)
     // ==========================================
     const hResizer = document.getElementById('h-resizer');
     const fpvArea = document.getElementById('fpv-area');
@@ -795,19 +962,57 @@
     window.addEventListener('mouseup', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
     window.addEventListener('touchend', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
 
-    function enterSplitMode(idx) {
+    // 💡 Tier 1 진입
+    window.enterSurveillanceMode = function() {
+        if(interventionState !== 'NONE') endIntervention();
+        currentMode = 'SURVEILLANCE';
+        isSplitMode = false;
+        
+        document.getElementById('main-wrapper').className = 'surveillance-mode';
+        document.getElementById('panel-surveillance').style.display = 'flex';
+        document.getElementById('panel-macro').style.display = 'none';
+        document.getElementById('panel-split').style.display = 'none';
+        
+        updateSidebar();
+        renderWorldMap();
+    }
+
+    // 💡 Tier 2 진입
+    window.enterGeneralMode = function() {
+        currentMode = 'GENERAL';
+        isSplitMode = false;
+        
+        document.getElementById('main-wrapper').className = 'general-mode';
+        document.getElementById('panel-surveillance').style.display = 'none';
+        document.getElementById('panel-macro').style.display = 'flex';
+        document.getElementById('panel-split').style.display = 'none';
+        
+        massViews.forEach((v) => { 
+            v.panOffsetX = 0; v.panOffsetY = 0; 
+            document.getElementById(`vp-${massViews.indexOf(v)}`).classList.remove('hidden-vp'); 
+        });
+
+        updateGridLayout();
+        updateSidebar();
+        render2D();
+    }
+
+    // 💡 Tier 3 진입 (집중관찰모드)
+    window.enterSplitMode = function(idx) {
         if(isSplitMode) return;
         activeMassIndex = idx;
         isSplitMode = true;
+        currentMode = 'SPLIT';
         
         massViews[idx].panOffsetX = 0;
         massViews[idx].panOffsetY = 0;
 
         const wrapper = document.getElementById('main-wrapper');
-        wrapper.classList.add('split-mode');
+        wrapper.className = 'split-mode';
         
         fpvArea.style.flex = '1'; fpvArea.style.height = 'auto';
 
+        document.getElementById('panel-surveillance').style.display = 'none';
         document.getElementById('panel-macro').style.display = 'none';
         document.getElementById('panel-split').style.display = 'flex';
 
@@ -818,7 +1023,6 @@
         });
 
         updateGridLayout();
-
         logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
         setup3DSceneForMass(idx);
         updateSidebar();
@@ -826,32 +1030,16 @@
 
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
-        isSplitMode = false;
+        if(interventionState !== 'NONE') endIntervention();
         
-        if(interventionState !== 'NONE') { endIntervention(); }
-        
-        if(massViews[activeMassIndex]) {
-            massViews[activeMassIndex].panOffsetX = 0;
-            massViews[activeMassIndex].panOffsetY = 0;
-        }
-
-        const wrapper = document.getElementById('main-wrapper');
-        wrapper.classList.remove('split-mode');
-        
-        document.getElementById('panel-split').style.display = 'none';
-        document.getElementById('panel-macro').style.display = 'flex';
-
-        massViews.forEach((v, i) => { document.getElementById(`vp-${i}`).classList.remove('hidden-vp'); });
-
         logEvent("MACRO_MODE_RETURN", {});
-        updateGridLayout();
+        enterGeneralMode();
     }
 
     // ==========================================
     // 💡 Step 2: INTERVENTION & KEYBOARD CONTROL
     // ==========================================
     window.requestIntervention = function() {
-        // 💡 딜레이를 슬라이더가 아닌 해당 본선의 랜덤 딜레이 값에서 가져옴
         const latency = parseFloat(massViews[activeMassIndex].massEntity.latencySec);
         const massName = massViews[activeMassIndex].massEntity.name;
         
@@ -1097,6 +1285,8 @@
     }
 
     function render2D() {
+        if (currentMode === 'SURVEILLANCE') return;
+
         massViews.forEach((v, idx) => {
             const canvas = document.getElementById(v.canvasId); 
             const vp = canvas.parentElement;
@@ -1117,10 +1307,15 @@
             for (let i = stepCbl; i <= maxCables; i += stepCbl) { const radius_px = (i * 40) * v.viewScale; ctx.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a'; ctx.lineWidth = (i % majorCbl === 0) ? 1.5 : 1; ctx.beginPath(); ctx.arc(v.panX, v.panY, radius_px, 0, Math.PI * 2); ctx.stroke(); }
             ctx.setLineDash([]);
             
+            // 💡 1번 반영: 우측 하단 항로 코드 표시
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.8)';
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${v.massEntity.originPort.code} ➔ ${v.massEntity.destPort.code}`, canvas.width - 15, canvas.height - 15);
+
             simEntities.forEach((s, tIdx) => {
                 const isOwnShip = s === v.massEntity;
 
-                // 💡 5번 반영: 타선 항로 숨김 처리 (본선일 때만 항로 렌더링)
                 if (isOwnShip && s.waypoints && s.waypoints.length > 0) {
                     const routeColor = 'rgba(16, 185, 129, 0.4)';
                     ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
@@ -1172,9 +1367,12 @@
         lastTime = now;
         
         simEntities.forEach(s => { 
-            // 💡 3, 4번 반영: 5초마다 랜덤 통신 지연 및 FPS 업데이트
+            // 💡 Surveillance World Map 진행도 연산
+            s.globalProgress += (s.spd / 3600) * 0.00005 * dt; 
+            if (s.globalProgress > 1) s.globalProgress = 0;
+
             if (now - s.lastCommUpdate >= 5000) {
-                s.latencySec = (Math.random() * 9 + 1).toFixed(1); // 1.0 ~ 10.0초 사이 딜레이
+                s.latencySec = (Math.random() * 9 + 1).toFixed(1); 
                 let latVal = parseFloat(s.latencySec);
                 if (latVal <= 3.0) { s.connStatus = '좋음'; s.fps3D = 60; s.frameInterval = 16; }
                 else if (latVal <= 7.0) { s.connStatus = '보통'; s.fps3D = 30; s.frameInterval = 33; }
@@ -1235,7 +1433,6 @@
             }
         });
         
-        // 💡 1, 4번 반영: 3D 동적 프레임 및 바다 방향 역전 렌더링
         if (isSplitMode && massViews[activeMassIndex] && renderer3D) {
             const mass = massViews[activeMassIndex].massEntity;
             
@@ -1245,7 +1442,6 @@
                 
                 if (seaMesh && seaMesh.material.normalMap) {
                     const speedFact = Math.max(0.5, mass.spd * 0.1); 
-                    // 💡 바다 물결 애니메이션 부호 변경 (앞에서 뒤로)
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
@@ -1266,11 +1462,15 @@
             }
         }
 
-        // 2D 관제 렌더링 (고정 1 FPS)
         if (now - last2DRenderTime >= 1000) {
             last2DRenderTime = now;
-            render2D();
-            updateSidebar();
+            if (currentMode === 'SURVEILLANCE') {
+                renderWorldMap();
+                updateSidebar();
+            } else {
+                render2D();
+                updateSidebar();
+            }
         }
     }
 
