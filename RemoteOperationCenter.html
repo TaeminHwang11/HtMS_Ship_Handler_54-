@@ -58,7 +58,6 @@
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
-        /* 💡 4번 반영: 뷰포트 비선택/선택 경계선 스타일 강화 */
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; transition: all 0.2s ease; height: 100%; width: 100%; box-sizing: border-box; }
         .viewport:hover { border: 1px solid rgba(255, 255, 255, 0.6); }
         .viewport.active-vp { border: 2px solid #f97316; box-shadow: inset 0 0 20px rgba(249, 115, 22, 0.15), 0 0 15px rgba(249, 115, 22, 0.4); z-index: 5; }
@@ -118,7 +117,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_8" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_9" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -237,52 +236,50 @@
 
     const modelFiles = ["Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"];
 
-    // 💡 30개 전세계 주요 항구 노드 그래프 추가 (육지 회피용 Ocean Nodes 포함)
+    // 💡 30개 전세계 주요 항구 노드 및 코드(식별자) 명시
     const NAV_GRAPH = {
-        'HKG': { name: 'Hong Kong', lat: 22.3, lon: 114.1, edges: ['PUS', 'SHA', 'SGP', 'O_NPAC', 'SYD'] },
-        'ICN': { name: 'Incheon', lat: 37.4, lon: 126.6, edges: ['PUS', 'SHA'] },
-        'PUS': { name: 'Busan', lat: 35.1, lon: 129.0, edges: ['ICN', 'HKG', 'O_NPAC', 'SYD'] },
-        'SHA': { name: 'Shanghai', lat: 31.2, lon: 121.5, edges: ['ICN', 'HKG', 'O_NPAC'] },
-        'SGP': { name: 'Singapore', lat: 1.2, lon: 103.8, edges: ['HKG', 'O_IND', 'SYD'] },
-        'LAX': { name: 'Los Angeles', lat: 33.7, lon: -118.2, edges: ['O_NPAC', 'O_PANAMA'] },
-        'SFO': { name: 'San Francisco', lat: 37.7, lon: -122.4, edges: ['O_NPAC', 'LAX'] },
-        'YVR': { name: 'Vancouver', lat: 49.2, lon: -123.1, edges: ['O_NPAC', 'SFO'] },
-        'ROT': { name: 'Rotterdam', lat: 51.9, lon: 4.4, edges: ['LHR', 'O_NANT', 'O_SUEZ'] },
-        'DXB': { name: 'Dubai', lat: 25.2, lon: 55.2, edges: ['O_IND', 'O_SUEZ'] },
-        'SYD': { name: 'Sydney', lat: -33.8, lon: 151.2, edges: ['SGP', 'HKG', 'O_SPAC'] },
-        'JFK': { name: 'New York', lat: 40.6, lon: -73.7, edges: ['O_NANT', 'O_PANAMA'] },
-        'LHR': { name: 'London', lat: 51.5, lon: -0.4, edges: ['ROT', 'O_NANT'] },
-        'MIA': { name: 'Miami', lat: 25.7, lon: -80.1, edges: ['JFK', 'O_PANAMA', 'O_NANT'] },
-        'RIO': { name: 'Rio de Janeiro', lat: -22.9, lon: -43.1, edges: ['O_SANT', 'O_NANT'] },
-        'CPT': { name: 'Cape Town', lat: -33.9, lon: 18.4, edges: ['O_SANT', 'O_IND'] },
-        'BOM': { name: 'Mumbai', lat: 18.9, lon: 72.8, edges: ['O_IND', 'DXB'] },
-        'CMB': { name: 'Colombo', lat: 6.9, lon: 79.8, edges: ['O_IND', 'SGP'] },
-        'JKT': { name: 'Jakarta', lat: -6.2, lon: 106.8, edges: ['SGP', 'O_IND', 'SYD'] },
-        'AKL': { name: 'Auckland', lat: -36.8, lon: 174.7, edges: ['SYD', 'O_SPAC'] },
-        'HNL': { name: 'Honolulu', lat: 21.3, lon: -157.8, edges: ['O_NPAC', 'LAX'] },
-        'TYO': { name: 'Tokyo', lat: 35.6, lon: 139.6, edges: ['PUS', 'O_NPAC'] },
-        'MNL': { name: 'Manila', lat: 14.5, lon: 120.9, edges: ['HKG', 'SGP'] },
-        'SGN': { name: 'Ho Chi Minh', lat: 10.8, lon: 106.6, edges: ['SGP', 'HKG'] },
-        'BKK': { name: 'Bangkok', lat: 13.7, lon: 100.5, edges: ['SGP'] },
-        'KHI': { name: 'Karachi', lat: 24.8, lon: 67.0, edges: ['DXB', 'O_IND'] },
-        'HAM': { name: 'Hamburg', lat: 53.5, lon: 9.9, edges: ['ROT'] },
-        'BCN': { name: 'Barcelona', lat: 41.3, lon: 2.1, edges: ['O_SUEZ', 'ROT'] },
-        'IST': { name: 'Istanbul', lat: 41.0, lon: 28.9, edges: ['O_SUEZ'] },
-        'ATH': { name: 'Athens', lat: 37.9, lon: 23.7, edges: ['O_SUEZ', 'BCN'] },
+        'HKG': { code: 'HKG', name: 'Hong Kong', lat: 22.3, lon: 114.1, edges: ['PUS', 'SHA', 'SGP', 'O_NPAC', 'SYD'] },
+        'ICN': { code: 'ICN', name: 'Incheon', lat: 37.4, lon: 126.6, edges: ['PUS', 'SHA'] },
+        'PUS': { code: 'PUS', name: 'Busan', lat: 35.1, lon: 129.0, edges: ['ICN', 'HKG', 'O_NPAC', 'SYD', 'TYO'] },
+        'SHA': { code: 'SHA', name: 'Shanghai', lat: 31.2, lon: 121.5, edges: ['ICN', 'HKG', 'O_NPAC'] },
+        'SGP': { code: 'SGP', name: 'Singapore', lat: 1.2, lon: 103.8, edges: ['HKG', 'O_IND', 'SYD', 'JKT', 'CMB', 'SGN', 'BKK', 'MNL'] },
+        'LAX': { code: 'LAX', name: 'Los Angeles', lat: 33.7, lon: -118.2, edges: ['O_NPAC', 'O_PANAMA', 'SFO', 'HNL'] },
+        'SFO': { code: 'SFO', name: 'San Francisco', lat: 37.7, lon: -122.4, edges: ['O_NPAC', 'LAX', 'YVR'] },
+        'YVR': { code: 'YVR', name: 'Vancouver', lat: 49.2, lon: -123.1, edges: ['O_NPAC', 'SFO'] },
+        'ROT': { code: 'ROT', name: 'Rotterdam', lat: 51.9, lon: 4.4, edges: ['LHR', 'O_NANT', 'O_SUEZ', 'HAM'] },
+        'DXB': { code: 'DXB', name: 'Dubai', lat: 25.2, lon: 55.2, edges: ['O_IND', 'O_SUEZ', 'BOM', 'KHI'] },
+        'SYD': { code: 'SYD', name: 'Sydney', lat: -33.8, lon: 151.2, edges: ['SGP', 'HKG', 'O_SPAC', 'AKL'] },
+        'JFK': { code: 'JFK', name: 'New York', lat: 40.6, lon: -73.7, edges: ['O_NANT', 'O_PANAMA', 'MIA'] },
+        'LHR': { code: 'LHR', name: 'London', lat: 51.5, lon: -0.4, edges: ['ROT', 'O_NANT'] },
+        'MIA': { code: 'MIA', name: 'Miami', lat: 25.7, lon: -80.1, edges: ['JFK', 'O_PANAMA', 'O_NANT'] },
+        'RIO': { code: 'RIO', name: 'Rio de Janeiro', lat: -22.9, lon: -43.1, edges: ['O_SANT', 'O_NANT'] },
+        'CPT': { code: 'CPT', name: 'Cape Town', lat: -33.9, lon: 18.4, edges: ['O_SANT', 'O_IND'] },
+        'BOM': { code: 'BOM', name: 'Mumbai', lat: 18.9, lon: 72.8, edges: ['O_IND', 'DXB'] },
+        'CMB': { code: 'CMB', name: 'Colombo', lat: 6.9, lon: 79.8, edges: ['O_IND', 'SGP'] },
+        'JKT': { code: 'JKT', name: 'Jakarta', lat: -6.2, lon: 106.8, edges: ['SGP', 'O_IND', 'SYD'] },
+        'AKL': { code: 'AKL', name: 'Auckland', lat: -36.8, lon: 174.7, edges: ['SYD', 'O_SPAC'] },
+        'HNL': { code: 'HNL', name: 'Honolulu', lat: 21.3, lon: -157.8, edges: ['O_NPAC', 'LAX'] },
+        'TYO': { code: 'TYO', name: 'Tokyo', lat: 35.6, lon: 139.6, edges: ['PUS', 'O_NPAC'] },
+        'MNL': { code: 'MNL', name: 'Manila', lat: 14.5, lon: 120.9, edges: ['HKG', 'SGP'] },
+        'SGN': { code: 'SGN', name: 'Ho Chi Minh', lat: 10.8, lon: 106.6, edges: ['SGP', 'HKG'] },
+        'BKK': { code: 'BKK', name: 'Bangkok', lat: 13.7, lon: 100.5, edges: ['SGP'] },
+        'KHI': { code: 'KHI', name: 'Karachi', lat: 24.8, lon: 67.0, edges: ['DXB', 'O_IND'] },
+        'HAM': { code: 'HAM', name: 'Hamburg', lat: 53.5, lon: 9.9, edges: ['ROT'] },
+        'BCN': { code: 'BCN', name: 'Barcelona', lat: 41.3, lon: 2.1, edges: ['O_SUEZ', 'ROT'] },
+        'IST': { code: 'IST', name: 'Istanbul', lat: 41.0, lon: 28.9, edges: ['O_SUEZ'] },
+        'ATH': { code: 'ATH', name: 'Athens', lat: 37.9, lon: 23.7, edges: ['O_SUEZ', 'BCN'] },
         // 해상 가상 노드 (Ocean Nodes for routing)
-        'O_NPAC': { name: 'North Pacific', lat: 30, lon: -160, edges: ['TYO', 'PUS', 'HKG', 'LAX', 'SFO', 'YVR', 'HNL'] },
-        'O_SPAC': { name: 'South Pacific', lat: -20, lon: -130, edges: ['SYD', 'AKL', 'O_PANAMA'] },
-        'O_IND': { name: 'Indian Ocean', lat: -5, lon: 80, edges: ['SGP', 'JKT', 'CMB', 'BOM', 'DXB', 'KHI', 'CPT'] },
-        'O_NANT': { name: 'North Atlantic', lat: 40, lon: -40, edges: ['JFK', 'MIA', 'ROT', 'LHR', 'RIO'] },
-        'O_SANT': { name: 'South Atlantic', lat: -20, lon: -20, edges: ['RIO', 'CPT'] },
-        'O_SUEZ': { name: 'Suez Canal / Red Sea', lat: 20, lon: 38, edges: ['DXB', 'ROT', 'BCN', 'IST', 'ATH'] },
-        'O_PANAMA': { name: 'Panama Canal', lat: 9, lon: -80, edges: ['LAX', 'MIA', 'JFK', 'O_SPAC'] }
+        'O_NPAC': { code: 'O_NPAC', name: 'North Pacific', lat: 30, lon: -160, edges: ['TYO', 'PUS', 'HKG', 'LAX', 'SFO', 'YVR', 'HNL'] },
+        'O_SPAC': { code: 'O_SPAC', name: 'South Pacific', lat: -20, lon: -130, edges: ['SYD', 'AKL', 'O_PANAMA'] },
+        'O_IND': { code: 'O_IND', name: 'Indian Ocean', lat: -5, lon: 80, edges: ['SGP', 'JKT', 'CMB', 'BOM', 'DXB', 'KHI', 'CPT'] },
+        'O_NANT': { code: 'O_NANT', name: 'North Atlantic', lat: 40, lon: -40, edges: ['JFK', 'MIA', 'ROT', 'LHR', 'RIO'] },
+        'O_SANT': { code: 'O_SANT', name: 'South Atlantic', lat: -20, lon: -20, edges: ['RIO', 'CPT'] },
+        'O_SUEZ': { code: 'O_SUEZ', name: 'Suez Canal / Red Sea', lat: 20, lon: 38, edges: ['DXB', 'ROT', 'BCN', 'IST', 'ATH'] },
+        'O_PANAMA': { code: 'O_PANAMA', name: 'Panama Canal', lat: 9, lon: -80, edges: ['LAX', 'MIA', 'JFK', 'O_SPAC'] }
     };
 
-    // 컬러 팔레트 (선박 1~4용)
     const SHIP_COLORS = ['#06b6d4', '#10b981', '#f43f5e', '#eab308'];
 
-    // 💡 1번 반영: 실제 고해상도 세계 지도 GeoJSON 데이터 페칭
     let worldGeoJSON = null;
 
     let simEntities = []; 
@@ -312,9 +309,7 @@
     let seaMesh; 
 
     let lastTouchX = 0, lastTouchY = 0;
-    let refLat = 34.8; let refLon = 126.4;
 
-    // 💡 다익스트라(Dijkstra) 최단 경로 해상 라우팅 함수
     function findSeaRoute(startCode, endCode) {
         let distances = {}; let prev = {}; let pq = [];
         for(let node in NAV_GRAPH) { distances[node] = Infinity; prev[node] = null; pq.push(node); }
@@ -329,7 +324,7 @@
             NAV_GRAPH[curr].edges.forEach(neighbor => {
                 if(!NAV_GRAPH[neighbor]) return;
                 let dx = NAV_GRAPH[neighbor].lon - NAV_GRAPH[curr].lon;
-                if (dx > 180) dx -= 360; if (dx < -180) dx += 360; // 날짜변경선 고려
+                if (dx > 180) dx -= 360; if (dx < -180) dx += 360; 
                 let dy = NAV_GRAPH[neighbor].lat - NAV_GRAPH[curr].lat;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 let alt = distances[curr] + dist;
@@ -339,7 +334,7 @@
         
         let path = []; let u = endCode;
         if(prev[u] !== null || u === startCode) {
-            while(u !== null) { path.unshift({code: u, ...NAV_GRAPH[u]}); u = prev[u]; }
+            while(u !== null) { path.unshift(NAV_GRAPH[u]); u = prev[u]; }
         }
         return path.length > 0 ? path : [NAV_GRAPH[startCode], NAV_GRAPH[endCode]];
     }
@@ -347,9 +342,10 @@
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
-            // 세계 지도 데이터 로드 (CDN 활용)
             document.getElementById('loading-screen').style.display = 'block';
-            fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+            
+            // 💡 1번 반영: 로컬 Jsons 폴더에서 GeoJSON 파일 로드
+            fetch(GITHUB_BASE_URL + 'Jsons/countries.geo.json')
                 .then(r => r.json())
                 .then(data => { worldGeoJSON = data; if(currentMode==='SURVEILLANCE') renderWorldMap(); })
                 .catch(e => console.error("지도 로드 실패", e));
@@ -557,8 +553,15 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-wrapper').style.display = 'flex';
 
+        // 💡 2번 반영: 덮어쓰기 치명적 오류 수정을 위해 지역 변수화
+        let baseRefLat = 34.8; let baseRefLon = 126.4;
+        if(data.WayPointSet && data.WayPointSet.length > 0) { 
+            baseRefLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
+            baseRefLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); 
+        }
+
         const randomMassModels = ["ContainerShip1.glb", "GasCarrier1.glb", "BulkCarrier.glb"];
-        const portsKeys = Object.keys(NAV_GRAPH).filter(k => !k.startsWith('O_')); // 실제 육지 항구만 추출
+        const portsKeys = Object.keys(NAV_GRAPH).filter(k => !k.startsWith('O_'));
 
         simEntities = [];
         let massCount = 0;
@@ -568,32 +571,34 @@
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
 
-            let pOriginCode, pDestCode, routeNodes;
+            // 💡 로컬 2D 좌표와 글로벌 3D 맵핑 데이터의 분리
+            const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
+            const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: baseRefLat, Longitude: baseRefLon };
+            const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, baseRefLat, baseRefLon);
+            
+            let localWps = [];
+            if (wpSet && wpSet.WayPoints) {
+                wpSet.WayPoints.forEach(wp => localWps.push(latLonToUnits(Number(wp.Latitude), Number(wp.Longitude), baseRefLat, baseRefLon)));
+            }
+
+            let pOriginCode = 'PUS', pDestCode = 'ICN', routeNodes = [];
             if(isMass) {
                 pOriginCode = portsKeys[Math.floor(Math.random() * portsKeys.length)];
                 pDestCode = portsKeys[Math.floor(Math.random() * portsKeys.length)];
                 while(pOriginCode === pDestCode) { pDestCode = portsKeys[Math.floor(Math.random() * portsKeys.length)]; }
                 routeNodes = findSeaRoute(pOriginCode, pDestCode);
             } else {
-                pOriginCode = 'PUS'; pDestCode = 'ICN';
                 routeNodes = [NAV_GRAPH['PUS'], NAV_GRAPH['ICN']];
             }
-
-            // 2D 맵용 로컬 웨이포인트(단위환산) 생성
-            let wps = [];
-            refLat = routeNodes[0].lat; refLon = routeNodes[0].lon;
-            routeNodes.forEach(rn => wps.push(latLonToUnits(rn.lat, rn.lon, refLat, refLon)));
-
-            const uPos = latLonToUnits(routeNodes[0].lat, routeNodes[0].lon, refLat, refLon);
 
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: finalType, isMASS: isMass, 
-                color: isMass ? SHIP_COLORS[massCount++ % SHIP_COLORS.length] : '#ef4444', // 💡 MASS 고유 색상 배정
+                color: isMass ? SHIP_COLORS[massCount++ % SHIP_COLORS.length] : '#ef4444', 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
                 skybox: finalSkybox,
-                waypoints: wps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0,
+                waypoints: localWps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0,
                 latencySec: 3.0, connStatus: '보통', fps3D: 30, frameInterval: 33, lastCommUpdate: performance.now(),
                 originPort: NAV_GRAPH[pOriginCode], destPort: NAV_GRAPH[pDestCode], globalRoute: routeNodes, globalProgress: Math.random() * 0.8 + 0.1 
             });
@@ -782,7 +787,6 @@
 
         const getXY = (lat, lon) => { return { x: (lon + 180) * (W / 360), y: (90 - lat) * (H / 180) }; };
 
-        // 💡 고해상도 지형 데이터(GeoJSON) 렌더링
         if (worldGeoJSON) {
             ctx.save();
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; 
@@ -810,24 +814,21 @@
             ctx.restore();
         }
 
-        // 💡 백그라운드 30개 글로벌 항구 그리기
         ctx.save();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         Object.keys(NAV_GRAPH).forEach(key => {
-            if (key.startsWith('O_')) return; // Ocean Node 제외
+            if (key.startsWith('O_')) return; 
             const p = NAV_GRAPH[key];
             const xy = getXY(p.lat, p.lon);
             ctx.beginPath(); ctx.arc(xy.x, xy.y, 1.5, 0, Math.PI*2); ctx.fill();
         });
         ctx.restore();
 
-        // 💡 4척의 선박, 항로, 도착항을 각각 고유 색상으로 매핑
         simEntities.forEach(s => {
             if(!s.isMASS) return;
             const rNodes = s.globalRoute;
             if(!rNodes || rNodes.length < 2) return;
 
-            // 전체 경로의 선분별 거리 합산
             let totalDist = 0; let segDists = [];
             for(let i=0; i<rNodes.length-1; i++) {
                 let dx = rNodes[i+1].lon - rNodes[i].lon;
@@ -837,45 +838,30 @@
                 totalDist += d; segDists.push(d);
             }
 
-            // 현재 진행률(0~1)에 해당하는 정확한 점 탐색
             let targetDist = totalDist * s.globalProgress;
             let curLat = rNodes[0].lat; let curLon = rNodes[0].lon;
             let accum = 0;
+            let angle = 0;
             
             for(let i=0; i<segDists.length; i++) {
                 if(accum + segDists[i] >= targetDist) {
                     let localRatio = (targetDist - accum) / segDists[i];
                     let dx = rNodes[i+1].lon - rNodes[i].lon;
                     if (dx > 180) dx -= 360; if (dx < -180) dx += 360;
+                    
                     curLon = rNodes[i].lon + dx * localRatio;
                     curLat = rNodes[i].lat + (rNodes[i+1].lat - rNodes[i].lat) * localRatio;
+                    
+                    let pA = getXY(rNodes[i].lat, rNodes[i].lon);
+                    let pB = getXY(rNodes[i+1].lat, rNodes[i+1].lon);
+                    angle = Math.atan2(pB.y - pA.y, pB.x - pA.x) + Math.PI/2; 
                     break;
                 }
                 accum += segDists[i];
             }
 
-            // 경로선 그리기 (고유 색상 적용)
-            ctx.save();
-            ctx.strokeStyle = s.color;
-            ctx.globalAlpha = 0.5;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
+            // 💡 1번 반영: 점선 항로 그리기 삭제 (깔끔한 화면 유지)
             
-            let prevXY = getXY(rNodes[0].lat, rNodes[0].lon);
-            ctx.moveTo(prevXY.x, prevXY.y);
-            for(let i=1; i<rNodes.length; i++) {
-                let nextXY = getXY(rNodes[i].lat, rNodes[i].lon);
-                if (Math.abs(nextXY.x - prevXY.x) > W/2) {
-                    ctx.moveTo(nextXY.x, nextXY.y); // 태평양 횡단 시 선 끊기
-                } else {
-                    ctx.lineTo(nextXY.x, nextXY.y);
-                }
-                prevXY = nextXY;
-            }
-            ctx.stroke();
-            ctx.restore();
-            
-            // 목적지 항구 하이라이트
             const destNode = rNodes[rNodes.length-1];
             const destXY = getXY(destNode.lat, destNode.lon);
             ctx.save();
@@ -884,16 +870,24 @@
             ctx.shadowBlur = 10;
             ctx.beginPath(); ctx.arc(destXY.x, destXY.y, 4, 0, Math.PI*2); ctx.fill();
             ctx.font = 'bold 12px monospace'; 
-            ctx.fillText(s.destPort.name, destXY.x + 8, destXY.y + 4);
+            ctx.fillText(s.destPort.code, destXY.x + 8, destXY.y + 4);
             ctx.restore();
 
-            // 선박 현재 위치
+            // 💡 1번 반영: MASS 선박 아이콘 적용
             const sXY = getXY(curLat, curLon);
+            ctx.save();
+            ctx.translate(sXY.x, sXY.y);
+            ctx.rotate(angle);
             ctx.fillStyle = s.color;
-            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 5, 0, Math.PI*2); ctx.fill();
-            
-            ctx.strokeStyle = s.color;
-            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 10 + (Math.sin(performance.now()*0.005)*4), 0, Math.PI*2); ctx.stroke();
+            ctx.shadowColor = s.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(5, 6);
+            ctx.lineTo(-5, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
             
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 11px monospace'; 
@@ -1545,7 +1539,8 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    const speedFact = Math.max(0.1, mass.spd * 0.02); 
+                    // 💡 3번 반영: 파도 속도 기존 5배 감소
+                    const speedFact = Math.max(0.02, mass.spd * 0.004); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
