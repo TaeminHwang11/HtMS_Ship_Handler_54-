@@ -139,7 +139,7 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 뷰 컬럼 -->
+        <!-- 좌측 뷰 컬럼 (상/하단 분할 처리) -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
@@ -156,7 +156,7 @@
             <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 하단 영역: 2D 멀티 그리드 -->
+            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
@@ -216,7 +216,6 @@
                     <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
                 </div>
 
-                <!-- 💡 SPLIT 모드 타선 정보 박스 추가 -->
                 <div class="info-box" style="border-left-color: var(--accent-red);">
                     <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
                     <div class="data-row"><span>NAME:</span> <b id="split-tgt-name" style="color: #fca5a5;">-</b></div>
@@ -565,9 +564,15 @@
         mainLoop();
     }
 
+    // 💡 MACRO 뷰의 그리드 비율 초기화 처리 (SPLIT 복귀 시 중요)
     function updateGridLayout() {
-        if(isSplitMode) return;
         const grid = document.getElementById('grid-area');
+        if(isSplitMode) {
+            grid.style.gridTemplateColumns = '1fr'; 
+            grid.style.gridTemplateRows = '1fr';
+            return;
+        }
+        
         const count = massViews.length;
         if (count === 0) return;
         let cols = 1, rows = 1;
@@ -639,7 +644,6 @@
     // ==========================================
     const hResizer = document.getElementById('h-resizer');
     const fpvArea = document.getElementById('fpv-area');
-    const gridArea = document.getElementById('grid-area');
     let isHResizing = false;
 
     hResizer.addEventListener('mousedown', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); });
@@ -661,10 +665,7 @@
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.add('split-mode');
         
-        // 💡 상하 50:50 분할 세팅
-        fpvArea.style.flex = 'none'; fpvArea.style.height = '50%';
-        gridArea.style.gridTemplateColumns = '1fr'; 
-        gridArea.style.gridTemplateRows = '1fr'; 
+        fpvArea.style.flex = '1'; fpvArea.style.height = 'auto';
 
         document.getElementById('panel-macro').style.display = 'none';
         document.getElementById('panel-split').style.display = 'flex';
@@ -674,6 +675,9 @@
             if(i === idx) { vp.classList.remove('hidden-vp'); vp.classList.add('active-vp'); } 
             else { vp.classList.add('hidden-vp'); vp.classList.remove('active-vp'); }
         });
+
+        // 그리드 1분할 강제 적용
+        updateGridLayout();
 
         logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
         setup3DSceneForMass(idx);
@@ -699,7 +703,7 @@
     }
 
     // ==========================================
-    // 💡 Step 2: INTERVENTION LOGIC
+    // 💡 Step 2: INTERVENTION & KEYBOARD CONTROL
     // ==========================================
     window.requestIntervention = function() {
         const latency = parseFloat(document.getElementById('latency-slider').value);
@@ -757,6 +761,19 @@
         logEvent("MANUAL_STEERING", { massId: mass.name, cmd: mass.targetRudder, dir: dir });
     }
 
+    // 💡 키보드 조작 로직 (ACTIVE 상태일 때 화살표 좌우 / 스페이스바로 조향)
+    window.addEventListener('keydown', (e) => {
+        if(interventionState !== 'ACTIVE') return;
+        if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
+        if(e.code === 'ArrowRight' && !e.repeat) { applySteer('S'); e.preventDefault(); }
+        if(e.code === 'Space') { 
+            const mass = massViews[activeMassIndex].massEntity;
+            mass.targetRudder = 0; 
+            logEvent("MANUAL_STEERING", { massId: mass.name, cmd: 0, dir: 'C' });
+            e.preventDefault(); 
+        }
+    });
+
     function logEvent(action, payload) {
         systemLogs.push({ time: ((performance.now() - lastTime)/1000).toFixed(2), action: action, data: payload });
     }
@@ -784,8 +801,7 @@
         scene.add(new THREE.AmbientLight(0x707070, 1.5));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
 
-        const simpleSea = new THREE.Mesh( new THREE.PlaneGeometry(80000, 80000), new THREE.MeshBasicMaterial({ color: 0x004488, transparent: true, opacity: 0.9 }) );
-        simpleSea.rotation.x = -Math.PI / 2; scene.add(simpleSea);
+        // 💡 simpleSea(단색 바다) 코드를 삭제하여 Skybox 이미지가 그대로 드러나도록 수정했습니다.
 
         fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
         window.addEventListener('mouseup', () => { isDraggingCam = false; });
@@ -819,6 +835,7 @@
         const osModel = getModelForShip(mass.type);
         osShipGroup.add(osModel);
 
+        // 💡 캘리브레이션 세팅값이 있다면 불러오고, 없다면 기본 조타실(브릿지) 높이로 조정
         const savedCamStr = localStorage.getItem('bridgeCam_' + mass.type);
         if (savedCamStr) { 
             const savedPos = JSON.parse(savedCamStr); 
@@ -904,7 +921,7 @@
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         
-        // Physics Engine
+        // 💡 물리엔진 연산: 단위 변환 계수(400/3600) 재적용하여 정상 속도로 복구
         simEntities.forEach(s => { 
             let rDiff = s.targetRudder - s.actualRudder; 
             let rStep = 1.5 * dt; 
@@ -924,18 +941,22 @@
             const T_surge = 15.0; 
             s.spd += (targetSpeed - s.spd) * (dt / T_surge);
 
-            // Calculate COG based on wind/current drift
-            let moveX = s.spd * Math.sin(s.hdg * DEG2RAD) * dt;
-            let moveZ = -s.spd * Math.cos(s.hdg * DEG2RAD) * dt;
+            // 1 knot = 1852m/h, 내부 Unit 400 = 1852m. 초당 변환계수(400/3600)
+            const speedUnits = s.spd * (400 / 3600);
+
+            let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt;
+            let moveZ = -speedUnits * Math.cos(s.hdg * DEG2RAD) * dt;
 
             if (globalEnv.currentSpd > 0) {
-                moveX += globalEnv.currentSpd * Math.sin(globalEnv.currentDir * DEG2RAD) * dt;
-                moveZ -= globalEnv.currentSpd * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
+                const currUnits = globalEnv.currentSpd * (400 / 3600);
+                moveX += currUnits * Math.sin(globalEnv.currentDir * DEG2RAD) * dt;
+                moveZ -= currUnits * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
             }
             if (globalEnv.windSpd > 0) {
                 let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - s.hdg + 360) % 360 * DEG2RAD);
-                moveX += windDriftSpeed * Math.cos(s.hdg * DEG2RAD) * dt;
-                moveZ -= windDriftSpeed * -Math.sin(s.hdg * DEG2RAD) * dt;
+                const windUnits = windDriftSpeed * (400 / 3600);
+                moveX += windUnits * Math.cos(s.hdg * DEG2RAD) * dt;
+                moveZ -= windUnits * -Math.sin(s.hdg * DEG2RAD) * dt;
             }
 
             s.x += moveX; s.z += moveZ;
