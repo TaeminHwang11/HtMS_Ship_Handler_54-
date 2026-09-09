@@ -169,6 +169,7 @@
             cursor: move;
             transition: all 0.2s;
             flex-shrink: 0;
+            touch-action: none; /* 터치 스크롤 방지 */
         }
         .sync-control-pad:hover {
             background: rgba(30, 41, 59, 0.95);
@@ -290,7 +291,7 @@
         <div class="instruction">
             • <b>선박 조작</b>: <u>화살표 끝(회전)</u> 또는 <u>몸체(이동)</u> 드래그<br>
             • <b>선속 조절</b>: 선박을 누른 채로 마우스 휠 스크롤<br>
-            • <b>화면 조작</b>: 빈 공간 휠(확대축소) 및 드래그(패닝)<br>
+            • <b>화면 조작</b>: 빈 공간 휠/핀치(확대축소) 및 드래그(패닝)<br>
             • <b>뷰포트</b>: 분할 창 클릭 시 <span style="color:var(--accent-yellow)">노란색</span> 활성화
         </div>
         
@@ -329,7 +330,7 @@
         <textarea id="jsonOutput" readonly></textarea>
         
         <!-- 에디터용 올씽크 패드 (margin-top: auto 를 통해 바닥에 고정) -->
-        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="드래그: 전체 화면 동시 패닝&#10;휠: 전체 화면 동시 확대/축소">
+        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
             <div class="gvc-icon">✥</div>
             <div class="gvc-text">ALL SYNC CONTROL</div>
         </div>
@@ -339,7 +340,7 @@
     <div id="panel-replay" class="panel">
         <div class="instruction">
             • <b>다중 선택 가능:</b> <code>Ctrl</code> 또는 <code>Shift</code>를 누른 채 여러 파일을 선택해 동시 비교 재생이 가능합니다.<br>
-            • 각 뷰포트 창마다 개별적으로 <b>드래그(패닝)</b> 및 <b>휠(확대/축소)</b>을 지원합니다.
+            • 각 뷰포트 창마다 개별적으로 <b>드래그(패닝)</b> 및 <b>휠/핀치(확대/축소)</b>를 지원합니다.
         </div>
         
         <div class="btn-group">
@@ -374,7 +375,7 @@
         </div>
 
         <!-- 리플레이용 와이드 올씽크 패드 4:3 비율 (재생 컨트롤 아래 고정) -->
-        <div id="replaySyncControl" class="sync-control-pad" title="드래그: 전체 화면 동시 패닝&#10;휠: 전체 화면 동시 확대/축소">
+        <div id="replaySyncControl" class="sync-control-pad" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
             <div class="gvc-icon">✥</div>
             <div class="gvc-text">ALL SYNC CONTROL</div>
         </div>
@@ -455,8 +456,8 @@
         });
     });
 
-    // 글로벌 마우스 이벤트
-    window.addEventListener('mouseup', () => { 
+    // 글로벌 마우스/터치 이벤트 통합
+    function handleGlobalUp() {
         massList.forEach((mass, idx) => {
             mass.draggingObj = null;
             const hud = document.querySelector(`#hud-${idx} .hud-target`);
@@ -464,14 +465,19 @@
         });
         replayList.forEach(r => { r.dragObj = null; });
         globalDrag = false; 
+    }
+
+    window.addEventListener('mouseup', handleGlobalUp);
+    window.addEventListener('touchend', (e) => {
+        if (e.touches.length === 0) handleGlobalUp();
     });
 
-    window.addEventListener('mousemove', (e) => {
+    function handleGlobalMove(clientX, clientY) {
         if (!globalDrag) return;
-        const dx = e.clientX - globalStartX;
-        const dy = e.clientY - globalStartY;
-        globalStartX = e.clientX;
-        globalStartY = e.clientY;
+        const dx = clientX - globalStartX;
+        const dy = clientY - globalStartY;
+        globalStartX = clientX;
+        globalStartY = clientY;
 
         if (currentMode === 'replay') {
             replayList.forEach(r => {
@@ -486,19 +492,73 @@
             });
             updateAllCanvases();
         }
-    });
+    }
 
-    // 와이드 글로벌 컨트롤 패드 이벤트 연동 함수
+    window.addEventListener('mousemove', (e) => handleGlobalMove(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => {
+        if (globalDrag && e.touches.length === 1) {
+            handleGlobalMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, {passive: false});
+
+    // 와이드 글로벌 컨트롤 패드 이벤트 연동 함수 (마우스 + 터치 핀치/패닝 적용)
     function bindSyncControl(elementId) {
         const el = document.getElementById(elementId);
         if (!el) return;
 
-        el.addEventListener('mousedown', (e) => {
+        function handleDown(clientX, clientY) {
             globalDrag = true;
-            globalStartX = e.clientX;
-            globalStartY = e.clientY;
+            globalStartX = clientX;
+            globalStartY = clientY;
+        }
+
+        el.addEventListener('mousedown', (e) => {
+            handleDown(e.clientX, e.clientY);
             e.stopPropagation();
         });
+
+        el.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                handleDown(e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.touches.length === 2) {
+                el._initialPinch = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+            e.stopPropagation();
+        }, { passive: false });
+
+        el.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                if (!el._initialPinch) return;
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const diff = currentDist - el._initialPinch;
+                if (Math.abs(diff) > 10) {
+                    const zoomFactor = diff > 0 ? 0.9 : 1.1;
+                    if (currentMode === 'replay') {
+                        replayList.forEach(r => {
+                            r.viewScale = Math.min(1/0.5, Math.max(1/30, r.viewScale / zoomFactor));
+                        });
+                        drawAllReplayCanvases();
+                    } else {
+                        massList.forEach((m, i) => {
+                            m.radarRange = Math.min(30, Math.max(0.5, m.radarRange * zoomFactor));
+                            m.viewScale = 1 / m.radarRange;
+                            const hudRange = document.querySelector(`#hud-${i} .hud-range`);
+                            if (hudRange) hudRange.textContent = `VIEW RANGE: ${m.radarRange.toFixed(1)} NM`;
+                        });
+                        updateAllCanvases();
+                        generateJSONOutput();
+                    }
+                    el._initialPinch = currentDist;
+                }
+            }
+        }, { passive: false });
 
         el.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -699,7 +759,8 @@
         if (simMode !== 'MASS') return false;
         let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
         if (total + addCount > 20) {
-            return true;
+            alert("20척이 넘었습니다!");
+            return false; // 제한 품. 추가 가능하게 유지
         }
         return false;
     }
@@ -734,6 +795,15 @@
             `;
             
             vp.addEventListener('mousedown', () => {
+                if (activeMassIndex !== i) {
+                    activeMassIndex = i;
+                    document.querySelectorAll('.viewport').forEach((el, idx) => {
+                        el.classList.toggle('active-vp', idx === i);
+                    });
+                    updateSidebarForActiveMass();
+                }
+            });
+            vp.addEventListener('touchstart', () => {
                 if (activeMassIndex !== i) {
                     activeMassIndex = i;
                     document.querySelectorAll('.viewport').forEach((el, idx) => {
@@ -912,38 +982,10 @@
     }
 
     function bindCanvasEvents(canvas, idx) {
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const mass = massList[idx];
-            
-            if (mass.draggingObj && mass.draggingObj.type === 'ship' && !isDeleteMode) {
-                if (mass.draggingObj.index === 'OS') {
-                    if (e.deltaY < 0) mass.osData.spd += 1;
-                    else if (e.deltaY > 0) mass.osData.spd -= 1;
-                    mass.osData.spd = Math.min(MAX_TARGET_SPD, Math.max(0, mass.osData.spd));
-                    updateTargetHudLocal(mass, idx, {type: 'ship', index: 'OS'});
-                } else {
-                    const target = mass.targets[mass.draggingObj.index];
-                    if (e.deltaY < 0) target.spd += 1;
-                    else if (e.deltaY > 0) target.spd -= 1;
-                    target.spd = Math.min(MAX_TARGET_SPD, Math.max(0, target.spd));
-                    target.wpDist = target.spd * VECTOR_SCALE; 
-                    updateTargetHudLocal(mass, idx, {type: 'ship', index: mass.draggingObj.index});
-                }
-            } else {
-                const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
-                mass.radarRange = Math.min(30, Math.max(0.5, mass.radarRange * zoomFactor)); 
-                mass.viewScale = 1 / mass.radarRange;
-                document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${mass.radarRange.toFixed(1)} NM`;
-            }
-            updateCanvas(idx);
-            generateJSONOutput();
-        }, { passive: false });
-
-        canvas.addEventListener('mousemove', (e) => {
+        function handleCanvasMove(clientX, clientY) {
             const mass = massList[idx];
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+            const mx = clientX - rect.left; const my = clientY - rect.top;
 
             const simX = Math.round((mx - mass.panX) / mass.viewScale);
             const simZ = Math.round((my - mass.panY) / mass.viewScale);
@@ -984,12 +1026,12 @@
             updateTargetHudLocal(mass, idx, mass.draggingObj);
             updateCanvas(idx);
             generateJSONOutput();
-        });
+        }
 
-        canvas.addEventListener('mousedown', (e) => {
+        function handleCanvasDown(clientX, clientY) {
             const mass = massList[idx];
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+            const mx = clientX - rect.left; const my = clientY - rect.top;
 
             const checkWp = (wpArray) => {
                 for (let i = wpArray.length - 1; i >= 0; i--) {
@@ -1061,7 +1103,74 @@
             if (!isDeleteMode) {
                 mass.draggingObj = { type: 'pan', startX: mx - mass.panX, startY: my - mass.panY };
             }
-        });
+        }
+
+        canvas.addEventListener('mousedown', (e) => handleCanvasDown(e.clientX, e.clientY));
+        canvas.addEventListener('mousemove', (e) => handleCanvasMove(e.clientX, e.clientY));
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                handleCanvasDown(e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.touches.length === 2) {
+                canvas._initialPinch = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                handleCanvasMove(e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.touches.length === 2) {
+                e.preventDefault();
+                if (!canvas._initialPinch) return;
+                const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const diff = currentDist - canvas._initialPinch;
+                if (Math.abs(diff) > 10) {
+                    const zoomFactor = diff > 0 ? 0.9 : 1.1;
+                    const mass = massList[idx];
+                    mass.radarRange = Math.min(30, Math.max(0.5, mass.radarRange * zoomFactor)); 
+                    mass.viewScale = 1 / mass.radarRange;
+                    document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${mass.radarRange.toFixed(1)} NM`;
+                    updateCanvas(idx);
+                    generateJSONOutput();
+                    canvas._initialPinch = currentDist;
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const mass = massList[idx];
+            
+            if (mass.draggingObj && mass.draggingObj.type === 'ship' && !isDeleteMode) {
+                if (mass.draggingObj.index === 'OS') {
+                    if (e.deltaY < 0) mass.osData.spd += 1;
+                    else if (e.deltaY > 0) mass.osData.spd -= 1;
+                    mass.osData.spd = Math.min(MAX_TARGET_SPD, Math.max(0, mass.osData.spd));
+                    updateTargetHudLocal(mass, idx, {type: 'ship', index: 'OS'});
+                } else {
+                    const target = mass.targets[mass.draggingObj.index];
+                    if (e.deltaY < 0) target.spd += 1;
+                    else if (e.deltaY > 0) target.spd -= 1;
+                    target.spd = Math.min(MAX_TARGET_SPD, Math.max(0, target.spd));
+                    target.wpDist = target.spd * VECTOR_SCALE; 
+                    updateTargetHudLocal(mass, idx, {type: 'ship', index: mass.draggingObj.index});
+                }
+            } else {
+                const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1;
+                mass.radarRange = Math.min(30, Math.max(0.5, mass.radarRange * zoomFactor)); 
+                mass.viewScale = 1 / mass.radarRange;
+                document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${mass.radarRange.toFixed(1)} NM`;
+            }
+            updateCanvas(idx);
+            generateJSONOutput();
+        }, { passive: false });
     }
 
     function updateTargetHudLocal(mass, idx, objInfo) {
@@ -1861,19 +1970,55 @@
                         drawAllReplayCanvases();
                     }, { passive: false });
 
-                    canvas.addEventListener('mousedown', (e) => {
+                    function handleReplayDown(clientX, clientY) {
                         const rect = canvas.getBoundingClientRect();
-                        replay.dragObj = { startX: e.clientX - rect.left - replay.panX, startY: e.clientY - rect.top - replay.panY };
-                    });
+                        replay.dragObj = { startX: clientX - rect.left - replay.panX, startY: clientY - rect.top - replay.panY };
+                    }
+
+                    canvas.addEventListener('mousedown', (e) => handleReplayDown(e.clientX, e.clientY));
                     
-                    canvas.addEventListener('mousemove', (e) => {
+                    canvas.addEventListener('touchstart', (e) => {
+                        if (e.touches.length === 1) {
+                            handleReplayDown(e.touches[0].clientX, e.touches[0].clientY);
+                        } else if (e.touches.length === 2) {
+                            canvas._initialPinch = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                            );
+                        }
+                    }, { passive: false });
+
+                    function handleReplayMove(clientX, clientY) {
                         if(replay.dragObj) {
                             const rect = canvas.getBoundingClientRect();
-                            replay.panX = (e.clientX - rect.left) - replay.dragObj.startX; 
-                            replay.panY = (e.clientY - rect.top) - replay.dragObj.startY;
+                            replay.panX = (clientX - rect.left) - replay.dragObj.startX; 
+                            replay.panY = (clientY - rect.top) - replay.dragObj.startY;
                             drawAllReplayCanvases();
                         }
-                    });
+                    }
+
+                    canvas.addEventListener('mousemove', (e) => handleReplayMove(e.clientX, e.clientY));
+
+                    canvas.addEventListener('touchmove', (e) => {
+                        if (e.touches.length === 1) {
+                            e.preventDefault();
+                            handleReplayMove(e.touches[0].clientX, e.touches[0].clientY);
+                        } else if (e.touches.length === 2) {
+                            e.preventDefault();
+                            if (!canvas._initialPinch) return;
+                            const currentDist = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                            );
+                            const diff = currentDist - canvas._initialPinch;
+                            if (Math.abs(diff) > 10) {
+                                const zoomFactor = diff > 0 ? 0.9 : 1.1;
+                                replay.viewScale = Math.min(1/0.5, Math.max(1/30, replay.viewScale / zoomFactor)); 
+                                drawAllReplayCanvases();
+                                canvas._initialPinch = currentDist;
+                            }
+                        }
+                    }, { passive: false });
                     
                     drawAllReplayCanvases();
                 });
