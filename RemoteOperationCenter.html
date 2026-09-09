@@ -88,7 +88,7 @@
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
@@ -122,8 +122,8 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <!-- 💡 버전 V7 적용 -->
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v7" />
+                <!-- 💡 버저닝: 테스터_v2 -->
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_v2" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -139,7 +139,7 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 뷰 컬럼 -->
+        <!-- 좌측 뷰 컬럼 (상/하단 분할 처리) -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
@@ -154,7 +154,7 @@
             <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 -->
+            <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
@@ -168,12 +168,11 @@
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
                     <div class="data-row"><span>NAME:</span> <b id="ui-os-name" style="color: var(--accent-yellow);">-</b></div>
-                    <div class="data-row"><span>HDG / COG:</span> <b id="ui-os-hdgcog">-</b></div>
+                    <div class="data-row"><span>HDG:</span> <b id="ui-os-hdg">-</b></div>
                     <div class="data-row"><span>SOG:</span> <b id="ui-os-sog">-</b></div>
                     <div class="data-row"><span>PREV PORT:</span> <b id="ui-os-prev">BUSAN</b></div>
                     <div class="data-row"><span>NEXT PORT:</span> <b id="ui-os-next">SINGAPORE</b></div>
-                    <div class="data-row"><span>XTD:</span> <b id="ui-os-xtd">0.00 NM</b></div>
-                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">--:--</b></div>
+                    <div class="data-row"><span>ETA:</span> <b id="ui-os-eta">2026-09-15 14:00</b></div>
                     <div class="data-row"><span>CARGO:</span> <b id="ui-os-cargo">12,500 TEU</b></div>
                 </div>
 
@@ -190,8 +189,6 @@
                     <div class="data-row"><span>BRG:</span> <b id="ui-tgt-brg">-</b></div>
                     <div class="data-row"><span>HDG / COG:</span> <b id="ui-tgt-hdgcog">-</b></div>
                     <div class="data-row"><span>SOG / STW:</span> <b id="ui-tgt-sogstw">-</b></div>
-                    <div class="data-row"><span>XTD:</span> <b id="ui-tgt-xtd">-</b></div>
-                    <div class="data-row"><span>ETA:</span> <b id="ui-tgt-eta">-</b></div>
                     <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
                     <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
                     <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
@@ -215,8 +212,6 @@
                     <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0 °/min</b></div>
                     <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
                     <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
-                    <div class="data-row"><span>XTD:</span> <b id="split-os-xtd" class="hud-val">0.00 NM</b></div>
-                    <div class="data-row"><span>ETA:</span> <b id="split-os-eta" class="hud-val">--:--</b></div>
                 </div>
 
                 <div class="info-box" style="border-left-color: var(--accent-red);">
@@ -226,8 +221,6 @@
                     <div class="data-row"><span>BRG:</span> <b id="split-tgt-brg">-</b></div>
                     <div class="data-row"><span>HDG / COG:</span> <b id="split-tgt-hdgcog">-</b></div>
                     <div class="data-row"><span>SOG / STW:</span> <b id="split-tgt-sogstw">-</b></div>
-                    <div class="data-row"><span>XTD:</span> <b id="split-tgt-xtd">-</b></div>
-                    <div class="data-row"><span>ETA:</span> <b id="split-tgt-eta">-</b></div>
                     <div class="data-row"><span>CPA:</span> <b id="split-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
                     <div class="data-row"><span>TCPA:</span> <b id="split-tgt-tcpa">-</b></div>
                     <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
@@ -241,6 +234,7 @@
                     <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
                 </div>
                 
+                <!-- 💡 Step 2: 사이드바 조타 버튼 (개입 시 나타남) -->
                 <div id="steering-controls" style="display: none; justify-content: space-between; margin-bottom: 10px; gap: 10px;">
                     <div class="steer-btn-sidebar" onmousedown="applySteer('P')">PORT (P)</div>
                     <div class="steer-btn-sidebar" onmousedown="applySteer('S')">STBD (S)</div>
@@ -280,9 +274,9 @@
             { "mmsi": 444, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "BULK", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
         ],
         "WayPointSet": [
-            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
-            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }, { "Latitude": 34.95, "Longitude": 126.50 }] },
-            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }, { "Latitude": 34.90, "Longitude": 126.50 }] },
+            { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }] },
+            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }] },
+            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }] },
             { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.850000, "Longitude": 126.450000 }] }
         ]
     };
@@ -297,13 +291,12 @@
     let isSimulationRunning = false;
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
-    
-    let frameCount = 0;
 
     let interventionState = 'NONE'; 
     let interventionTimer = null;
     let systemLogs = []; 
 
+    // 3D Variables
     let scene, camera3D, renderer3D;
     let parsedModels = {};
     let loadedSkyboxes = []; 
@@ -424,45 +417,29 @@
     function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
         const unitSpeedOS = voSpd * (400 / 3600); 
         const unitSpeedTS = vtSpd * (400 / 3600);
+        
         const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); const voZ = -unitSpeedOS * Math.cos(voHdg * DEG2RAD); 
         const vtX = unitSpeedTS * Math.sin(vtHdg * DEG2RAD); const vtZ = -unitSpeedTS * Math.cos(vtHdg * DEG2RAD); 
         const dvX = vtX - voX; const dvZ = vtZ - voZ; 
         const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); 
         const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
         const cpaUnits = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
-        return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: -1 }; 
-    }
-
-    // 💡 최적화: 이 함수는 이제 1초에 한 번만 호출됩니다.
-    function calculateXTDAndETA(ship) {
-        if (!ship.waypoints || ship.waypoints.length < 2 || ship.currentWpIndex >= ship.waypoints.length) {
-            return { xtd: 0, etaMinutes: 0 };
-        }
         
-        const prevWp = ship.waypoints[ship.currentWpIndex - 1] || ship.waypoints[0];
-        const nextWp = ship.waypoints[ship.currentWpIndex];
+        const radH = voHdg * DEG2RAD; 
+        const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); 
+        const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); 
+        const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); 
+        const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); 
         
-        const dx = nextWp.x - prevWp.x; const dz = nextWp.z - prevWp.z;
-        const routeLen = Math.hypot(dx, dz);
-        let xtd = 0;
-        if (routeLen > 0) xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
-        
-        let distRemaining = Math.hypot(nextWp.x - ship.x, nextWp.z - ship.z);
-        let maxLookahead = Math.min(ship.waypoints.length - 1, ship.currentWpIndex + 5);
-        for (let i = ship.currentWpIndex; i < maxLookahead; i++) {
-            distRemaining += Math.hypot(ship.waypoints[i+1].x - ship.waypoints[i].x, ship.waypoints[i+1].z - ship.waypoints[i].z);
-        }
-        
-        const distNM = distRemaining / 400;
-        const spd = Math.max(0.1, ship.spd); 
-        const etaHours = distNM / spd;
-        return { xtd: xtd / 400, etaMinutes: etaHours * 60 };
-    }
-
-    function formatETA(minutes) {
-        if (minutes === 0 || !isFinite(minutes)) return "ARRIVED";
-        const d = new Date(); d.setMinutes(d.getMinutes() + minutes);
-        return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        let bcr = -1; 
+        if (Math.abs(dvX_stbd) > 0.0001) { 
+            const t_cross = -relX_stbd / dvX_stbd; 
+            if (t_cross > 0) { 
+                const bcr_units = relZ_fwd + dvZ_fwd * t_cross; 
+                if (bcr_units > 0) bcr = bcr_units / 400; 
+            } 
+        } 
+        return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
     }
 
     const layoutObserver = new ResizeObserver(entries => {
@@ -506,11 +483,6 @@
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
             
-            let wps = [];
-            if (wpSet && wpSet.WayPoints) {
-                wpSet.WayPoints.forEach(wp => { wps.push(latLonToUnits(Number(wp.Latitude), Number(wp.Longitude), refLat, refLon)); });
-            }
-            
             let isMass = s.isMASS === 1;
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
@@ -520,9 +492,7 @@
                 name: s.shipName, type: finalType, isMASS: isMass, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
-                skybox: finalSkybox, waypoints: wps, currentWpIndex: 1,
-                // 💡 XTD, ETA 캐시 및 계산 주기 조절을 위한 변수 추가
-                xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0
+                skybox: finalSkybox
             });
         });
 
@@ -558,10 +528,6 @@
 
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
-                if(canvas.parentElement.clientWidth > 0) {
-                    canvas.width = canvas.parentElement.clientWidth;
-                    canvas.height = canvas.parentElement.clientHeight;
-                }
                 vObj.panX = canvas.width / 2; vObj.panY = canvas.height / 2;
                 
                 canvas.addEventListener('mousedown', (e) => {
@@ -644,12 +610,9 @@
         document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
 
-        // 💡 1초마다 갱신된 캐시 데이터로 UI 업데이트 (연산 부하 제거)
         document.getElementById('ui-os-name').innerText = mass.name;
-        document.getElementById('ui-os-hdgcog').innerText = `${mass.hdg.toFixed(1)}° / ${mass.cog.toFixed(1)}°`;
+        document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
-        document.getElementById('ui-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
-        document.getElementById('ui-os-eta').innerText = formatETA(mass.etaMinutes);
         
         const updateTgtPanel = (prefix) => {
             const tgtIdx = vObj.selectedTargetIndex;
@@ -663,10 +626,8 @@
                 document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
                 document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
                 document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
-                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.cog.toFixed(1)}°`;
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
                 document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
-                document.getElementById(`${prefix}-tgt-xtd`).innerText = `${tgt.xtd.toFixed(2)} NM`;
-                document.getElementById(`${prefix}-tgt-eta`).innerText = formatETA(tgt.etaMinutes);
                 document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
                 document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
                 document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
@@ -676,8 +637,6 @@
                 document.getElementById(`${prefix}-tgt-brg`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-hdgcog`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-sogstw`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-xtd`).innerText = '-';
-                document.getElementById(`${prefix}-tgt-eta`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-cpa`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-tcpa`).innerText = '-';
                 document.getElementById(`${prefix}-tgt-bcr`).innerText = '-';
@@ -691,8 +650,6 @@
             document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`;
             document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
             document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
-            document.getElementById('split-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`;
-            document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanel('split');
         } else {
             updateTgtPanel('ui');
@@ -831,31 +788,25 @@
     }
 
     window.addEventListener('keydown', (e) => {
-        if(e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'Space') {
-            if(interventionState !== 'ACTIVE') return;
-            e.preventDefault();
-            
+        if(interventionState !== 'ACTIVE') return;
+        if(e.code === 'ArrowLeft' && !e.repeat) { applySteer('P'); e.preventDefault(); }
+        if(e.code === 'ArrowRight' && !e.repeat) { applySteer('S'); e.preventDefault(); }
+        if(e.code === 'Space') { 
             const latencySec = parseFloat(document.getElementById('latency-slider').value);
             const latencyMs = latencySec * 1000;
             const mass = massViews[activeMassIndex].massEntity;
             const massId = mass.name;
-
-            let dir = 'C';
-            if(e.code === 'ArrowLeft' && !e.repeat) dir = 'P';
-            else if(e.code === 'ArrowRight' && !e.repeat) dir = 'S';
             
-            if(dir === 'C') {
-                logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
-                setTimeout(() => {
-                    if(interventionState !== 'ACTIVE') return;
-                    const currentMass = massViews[activeMassIndex].massEntity;
-                    if(currentMass.name !== massId) return;
-                    currentMass.targetRudder = 0; 
-                    logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
-                }, latencyMs);
-            } else {
-                applySteer(dir);
-            }
+            logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
+            setTimeout(() => {
+                if(interventionState !== 'ACTIVE') return;
+                const currentMass = massViews[activeMassIndex].massEntity;
+                if(currentMass.name !== massId) return;
+
+                currentMass.targetRudder = 0; 
+                logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
+            }, latencyMs);
+            e.preventDefault(); 
         }
     });
 
@@ -893,8 +844,13 @@
         seaMesh = new THREE.Mesh(
             new THREE.PlaneGeometry(80000, 80000),
             new THREE.MeshPhongMaterial({ 
-                color: 0x050a10, normalMap: waterNormals, normalScale: new THREE.Vector2(1.0, 1.0), 
-                specular: 0x334455, shininess: 30, transparent: true, opacity: 0.8 
+                color: 0x050a10, 
+                normalMap: waterNormals,
+                normalScale: new THREE.Vector2(1.0, 1.0), 
+                specular: 0x334455, 
+                shininess: 30,
+                transparent: true, 
+                opacity: 0.8 // 💡 불투명도 0.8 적용 완료
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
@@ -997,34 +953,6 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                if (s.waypoints && s.waypoints.length > 0) {
-                    const isOwnShip = s === v.massEntity;
-                    const routeColor = isOwnShip ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
-                    
-                    ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
-                    
-                    const startWpIdx = Math.min(s.currentWpIndex, s.waypoints.length - 1);
-                    const cx = v.panX + (s.x - v.massEntity.x) * v.viewScale;
-                    const cy = v.panY + (s.z - v.massEntity.z) * v.viewScale;
-                    ctx.moveTo(cx, cy);
-
-                    const maxDrawWp = Math.min(s.waypoints.length, startWpIdx + 50);
-                    for(let i = startWpIdx; i < maxDrawWp; i++) {
-                        const wp = s.waypoints[i];
-                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
-                        ctx.lineTo(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale);
-                    }
-                    ctx.stroke(); ctx.setLineDash([]);
-                    
-                    ctx.fillStyle = isOwnShip ? '#10b981' : '#ef4444';
-                    for(let i = startWpIdx; i < maxDrawWp; i++) {
-                        const wp = s.waypoints[i];
-                        const wRelX = wp.x - v.massEntity.x; const wRelZ = wp.z - v.massEntity.z;
-                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 2.5, 0, Math.PI*2); ctx.fill();
-                    }
-                }
-
                 if(s.isMASS && s !== v.massEntity) return; 
                 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
@@ -1035,10 +963,6 @@
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
                     ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.stroke();
-                } else if (!isOwnShip) {
-                    ctx.beginPath();
-                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
                 }
 
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
@@ -1091,39 +1015,18 @@
             s.x += moveX; s.z += moveZ;
             let actualVx = moveX / dt; let actualVz = -moveZ / dt;
             s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
-
-            if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
-                const nextWp = s.waypoints[s.currentWpIndex];
-                const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
-                if (distToWp < 100) { s.currentWpIndex++; }
-            }
-
-            // 💡 최적화: XTD 및 ETA 연산은 1초(1000ms)에 한 번만 수행
-            if (now - s.lastRouteCalcTime >= 1000) {
-                const routeData = calculateXTDAndETA(s);
-                s.xtd = routeData.xtd;
-                s.etaMinutes = routeData.etaMinutes;
-                s.lastRouteCalcTime = now;
-            }
         });
         
         render2D();
-
-        frameCount++;
-        if (frameCount % 6 === 0) {
-            updateSidebar();
-        }
+        updateSidebar();
         
         if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
-            const mass = massViews[activeMassIndex].massEntity;
-            
             if (seaMesh && seaMesh.material.normalMap) {
-                const hdgRad = mass.hdg * DEG2RAD;
-                const speedFact = Math.max(0.002, mass.spd * 0.001); 
-                seaMesh.material.normalMap.offset.x += dt * speedFact * Math.sin(hdgRad);
-                seaMesh.material.normalMap.offset.y -= dt * speedFact * Math.cos(hdgRad);
+                seaMesh.material.normalMap.offset.x += dt * 0.015;
+                seaMesh.material.normalMap.offset.y += dt * 0.025;
             }
 
+            const mass = massViews[activeMassIndex].massEntity;
             const meterScale = 4.63; 
 
             osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
