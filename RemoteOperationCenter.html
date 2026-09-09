@@ -128,7 +128,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_6" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_7" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -271,7 +271,6 @@
         "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
     ];
 
-    // 💡 전 세계 주요 항구 코드 및 대략적 좌표 데이터 추가
     const WORLD_PORTS = [
         {code: 'HKG', lat: 22.3, lon: 114.1},
         {code: 'ICN', lat: 37.4, lon: 126.6},
@@ -286,6 +285,17 @@
         {code: 'LHR', lat: 51.5, lon: -0.4}
     ];
 
+    // 💡 심플한 나노바나나 세계 대륙 윤곽선 데이터 (형광맵용)
+    const CONTINENT_POLYGONS = [
+        [[-168,70],[-130,70],[-100,80],[-70,80],[-50,50],[-70,40],[-80,10],[-100,15],[-120,30],[-168,60],[-168,70]], // 북미
+        [[-80,10],[-50,10],[-35,-5],[-40,-50],[-70,-55],[-80,-20],[-80,10]], // 남미
+        [[-10,35],[30,35],[50,10],[40,-35],[10,-35],[-20,10],[-10,35],[-10,70],[60,80],[180,75],[180,60],[150,60],[150,30],[140,5],[120,-10],[100,10],[80,5],[60,15],[40,15],[30,35]], // 유라시아 & 아프리카
+        [[115,-15],[150,-15],[150,-40],[115,-40],[115,-15]], // 호주
+        [[-5,50],[5,50],[5,60],[-5,60],[-5,50]], // 영국
+        [[130,30],[145,30],[145,45],[130,45],[130,30]], // 일본
+        [[100,-5],[120,-5],[120,5],[100,5],[100,-5]] // 동남아 일부
+    ];
+
     // ==========================================
     // 1. STATE VARIABLES
     // ==========================================
@@ -293,7 +303,7 @@
     let massViews = [];   
     let activeMassIndex = 0;
     
-    let currentMode = 'SURVEILLANCE'; // SURVEILLANCE, GENERAL, SPLIT
+    let currentMode = 'SURVEILLANCE';
     let isSplitMode = false;
     let isSimulationRunning = false;
     
@@ -318,7 +328,6 @@
 
     let lastTouchX = 0, lastTouchY = 0;
     
-    // 로컬 좌표계를 글로벌 지도로 변환하기 위한 기준점
     let refLat = 34.8; let refLon = 126.4;
 
     // ==========================================
@@ -510,7 +519,6 @@
                     renderer3D.setSize(entry.contentRect.width, entry.contentRect.height);
                 }
             }
-            // 💡 Surveillance 캔버스 사이즈 옵저버 등록
             else if (entry.target.id === 'surveillance-area') {
                 const canvas = document.getElementById('world-map-canvas');
                 if(canvas && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
@@ -554,7 +562,6 @@
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
             let finalSkybox = isMass && loadedSkyboxes.length > 0 ? loadedSkyboxes[Math.floor(Math.random() * loadedSkyboxes.length)] : (loadedSkyboxes[0] || null);
 
-            // 💡 무작위 항구 지정
             let pOrigin = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)];
             let pDest = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)];
             while(pOrigin.code === pDest.code) { pDest = WORLD_PORTS[Math.floor(Math.random() * WORLD_PORTS.length)]; }
@@ -567,7 +574,7 @@
                 skybox: finalSkybox,
                 waypoints: wps, currentWpIndex: 1, xtd: 0, etaMinutes: 0, lastRouteCalcTime: 0,
                 latencySec: 3.0, connStatus: '보통', fps3D: 30, frameInterval: 33, lastCommUpdate: performance.now(),
-                originPort: pOrigin, destPort: pDest, globalProgress: Math.random() * 0.8 + 0.1 // 세계지도상 현재 진행도
+                originPort: pOrigin, destPort: pDest, globalProgress: Math.random() * 0.8 + 0.1 
             });
         });
 
@@ -722,7 +729,6 @@
             }, 100);
         });
 
-        // 💡 Surveillance 화면 리사이즈 옵저버
         layoutObserver.observe(document.getElementById('surveillance-area'));
         
         initThreeJS_Lightweight();
@@ -730,13 +736,12 @@
         logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
         isSimulationRunning = true;
         
-        // 💡 로그인 직후 Tier 1(Surveillance)로 전환
         enterSurveillanceMode();
         mainLoop();
     }
 
     // ==========================================
-    // 💡 Tier 1: World Map Rendering
+    // 💡 Tier 1: World Map Rendering (형광 나노바나나)
     // ==========================================
     function renderWorldMap() {
         if(currentMode !== 'SURVEILLANCE') return;
@@ -754,28 +759,38 @@
         ctx.fillStyle = '#050a10';
         ctx.fillRect(0,0,W,H);
 
-        // 배경 그리드
-        ctx.strokeStyle = 'rgba(30, 41, 59, 0.8)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for(let x=0; x<=W; x+=W/18) { ctx.moveTo(x,0); ctx.lineTo(x,H); }
-        for(let y=0; y<=H; y+=H/9) { ctx.moveTo(0,y); ctx.lineTo(W,y); }
-        ctx.stroke();
-
-        // 적도 & 본초 자오선
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.2)';
-        ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-
         const getXY = (lat, lon) => { return { x: (lon + 180) * (W / 360), y: (90 - lat) * (H / 180) }; };
 
-        // 세계 주요 항구 점찍기
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
+        // 💡 하얀색 형광 대륙 윤곽선 그리기
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 1.2;
+        
+        CONTINENT_POLYGONS.forEach(poly => {
+            ctx.beginPath();
+            poly.forEach((pt, i) => {
+                const xy = getXY(pt[1], pt[0]);
+                if(i===0) ctx.moveTo(xy.x, xy.y);
+                else ctx.lineTo(xy.x, xy.y);
+            });
+            ctx.stroke();
+        });
+        ctx.restore();
+
+        // 💡 빛나는 주요 항구(Port) 동그라미 표시
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#06b6d4'; // 시안색 네온 효과
+        ctx.shadowBlur = 12;
         WORLD_PORTS.forEach(p => {
             const xy = getXY(p.lat, p.lon);
-            ctx.beginPath(); ctx.arc(xy.x, xy.y, 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(xy.x, xy.y, 2.5, 0, Math.PI*2); ctx.fill();
         });
+        ctx.restore();
 
-        // 각 선박의 항로 및 현재 위치 그리기
+        // 💡 선박, 항로 및 현재 위치 매핑 (점선 바로 위에 정확히 고정)
         simEntities.forEach(s => {
             if(!s.isMASS) return;
             const p1 = s.originPort; const p2 = s.destPort;
@@ -783,33 +798,31 @@
             const xy2 = getXY(p2.lat, p2.lon);
             
             // 점선 항로
-            ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
             ctx.setLineDash([4, 4]);
             ctx.beginPath(); ctx.moveTo(xy1.x, xy1.y); ctx.lineTo(xy2.x, xy2.y); ctx.stroke();
             ctx.setLineDash([]);
             
-            // 양 끝 항구
+            // 항구 라벨
             ctx.fillStyle = '#88c0d0';
-            ctx.beginPath(); ctx.arc(xy1.x, xy1.y, 4, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(xy2.x, xy2.y, 4, 0, Math.PI*2); ctx.fill();
             ctx.font = 'bold 12px monospace'; 
             ctx.fillText(p1.code, xy1.x + 6, xy1.y + 4);
             ctx.fillText(p2.code, xy2.x + 6, xy2.y + 4);
 
-            // 선박 현재 위치 (Global Progress 비율로 보간)
+            // 선박 현재 위치 (직선 보간으로 점선 위에 완벽히 고정)
             const curLat = p1.lat + (p2.lat - p1.lat) * s.globalProgress;
             const curLon = p1.lon + (p2.lon - p1.lon) * s.globalProgress;
             const sXY = getXY(curLat, curLon);
             
             ctx.fillStyle = '#10b981';
-            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 5, 0, Math.PI*2); ctx.fill();
             
-            // 레이더 링 이펙트
+            // 레이더 핑 애니메이션
             ctx.strokeStyle = '#10b981';
-            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 12 + (Math.sin(performance.now()*0.005)*3), 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(sXY.x, sXY.y, 10 + (Math.sin(performance.now()*0.005)*4), 0, Math.PI*2); ctx.stroke();
             
             ctx.fillStyle = '#fff';
-            ctx.fillText(s.name, sXY.x + 15, sXY.y + 4);
+            ctx.fillText(s.name, sXY.x + 12, sXY.y + 4);
         });
         
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -818,7 +831,6 @@
         ctx.fillText('GLOBAL SURVEILLANCE MAP', 20, 40);
     }
 
-    // 💡 타겟 삭제 기능 함수
     window.removeTarget = function(vIdx, tIdx) {
         const vObj = massViews[vIdx];
         vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
@@ -851,13 +863,23 @@
         container.innerHTML = '';
         simEntities.forEach(s => {
             if(!s.isMASS) return;
+            // 💡 써베일런스 모드 우측 패널에서도 실시간 딜레이/프레임 깜빡이도록 상세 반영
+            let color = s.connStatus === '좋음' ? '#10b981' : (s.connStatus === '보통' ? '#eab308' : '#ef4444');
             const html = `
             <div class="info-box" style="border-left-color: var(--accent-cyan);">
-                <div class="info-header" style="color: var(--accent-cyan); font-size:14px;">${s.name}</div>
+                <div class="info-header" style="color: var(--accent-cyan); font-size:14px; margin-bottom: 12px;">${s.name}</div>
                 <div class="data-row"><span>ROUTE:</span> <b>${s.originPort.code} ➔ ${s.destPort.code}</b></div>
                 <div class="data-row"><span>SOG:</span> <b>${s.spd.toFixed(1)} Kn</b></div>
                 <div class="data-row"><span>HDG:</span> <b>${s.hdg.toFixed(1)}°</b></div>
-                <div class="data-row"><span>STATUS:</span> <b style="color:${s.connStatus === '좋음' ? '#10b981' : (s.connStatus === '보통' ? '#eab308' : '#ef4444')}">${s.connStatus}</b></div>
+                <div style="height:1px; background:#1e293b; margin:10px 0;"></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="font-size:12px; color:var(--text-muted); font-weight:bold;">NET STATUS</span>
+                    <span style="font-size:13px; color:${color}; font-family:monospace; font-weight:bold;">${s.connStatus} (${s.fps3D} FPS)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-size:12px; color:var(--text-muted); font-weight:bold;">LATENCY</span>
+                    <span style="font-size:13px; color:#ef4444; font-family:monospace; font-weight:bold;">${s.latencySec} s</span>
+                </div>
             </div>`;
             container.innerHTML += html;
         });
@@ -962,7 +984,6 @@
     window.addEventListener('mouseup', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
     window.addEventListener('touchend', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
 
-    // 💡 Tier 1 진입
     window.enterSurveillanceMode = function() {
         if(interventionState !== 'NONE') endIntervention();
         currentMode = 'SURVEILLANCE';
@@ -977,7 +998,6 @@
         renderWorldMap();
     }
 
-    // 💡 Tier 2 진입
     window.enterGeneralMode = function() {
         currentMode = 'GENERAL';
         isSplitMode = false;
@@ -997,7 +1017,6 @@
         render2D();
     }
 
-    // 💡 Tier 3 진입 (집중관찰모드)
     window.enterSplitMode = function(idx) {
         if(isSplitMode) return;
         activeMassIndex = idx;
@@ -1307,7 +1326,6 @@
             for (let i = stepCbl; i <= maxCables; i += stepCbl) { const radius_px = (i * 40) * v.viewScale; ctx.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a'; ctx.lineWidth = (i % majorCbl === 0) ? 1.5 : 1; ctx.beginPath(); ctx.arc(v.panX, v.panY, radius_px, 0, Math.PI * 2); ctx.stroke(); }
             ctx.setLineDash([]);
             
-            // 💡 1번 반영: 우측 하단 항로 코드 표시
             ctx.fillStyle = 'rgba(6, 182, 212, 0.8)';
             ctx.font = 'bold 16px monospace';
             ctx.textAlign = 'right';
@@ -1367,7 +1385,6 @@
         lastTime = now;
         
         simEntities.forEach(s => { 
-            // 💡 Surveillance World Map 진행도 연산
             s.globalProgress += (s.spd / 3600) * 0.00005 * dt; 
             if (s.globalProgress > 1) s.globalProgress = 0;
 
@@ -1441,7 +1458,8 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    const speedFact = Math.max(0.5, mass.spd * 0.1); 
+                    // 💡 4번 반영: 거대 상선의 무게감을 위해 파도 흐름 속도를 5배 감소
+                    const speedFact = Math.max(0.1, mass.spd * 0.02); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
