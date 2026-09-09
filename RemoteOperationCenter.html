@@ -83,7 +83,7 @@
             z-index: 1000; background: #000; border: 2px solid var(--accent-cyan);
             border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.8);
             
-            /* 💡 화면에 보이지 않아도 렌더링되게끔 처리 (display:none 안씀) */
+            /* 화면에 보이지 않아도 렌더링되게끔 처리 (display:none 안씀) */
             display: flex; flex-direction: column; overflow: hidden;
             visibility: hidden; opacity: 0; pointer-events: none;
             transform: scale(0.95); transition: opacity 0.2s, transform 0.2s;
@@ -110,7 +110,7 @@
         #fpv-content { position: relative; flex: 1; width: 100%; height: 100%; overflow: hidden; }
         #fpv-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
 
-        /* 💡 원본 시뮬레이터 상단 HUD 완벽 유지 */
+        /* 원본 시뮬레이터 상단 HUD 완벽 유지 */
         #digital-hud-container { 
             top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; 
             padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; 
@@ -260,7 +260,6 @@
     const SHIP_WID_UNIT = 10.8; 
     const VECTOR_SCALE = 8;     
 
-    // 💡 원본 시뮬레이터와 완벽히 동일한 전체 에셋 리스트 적용
     const modelFiles = [
         "Models/AircraftCarrier1.glb", "Models/AircraftCarrier2.glb", "Models/BulkCarrier.glb", 
         "Models/CargoShip1.glb", "Models/CargoShip2.glb", "Models/ContainerShip1.glb", 
@@ -307,30 +306,36 @@
     let globalEnv = { windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
 
     // ==========================================
-    // 2. GOOGLE DRIVE FETCH & LOGIN
+    // 2. GOOGLE DRIVE FETCH & LOGIN (디버깅 완료)
     // ==========================================
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
             const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
-            const files = await res.json();
-            if (files.error) throw new Error(files.error);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
 
+            // 💡 [이슈1 해결] Apps Script 응답이 배열이 아닐 수 있음을 감안하여 안전한 배열 추출 및 방어 로직 추가
+            let files = Array.isArray(data) ? data : (data.files || data.data || []);
             select.innerHTML = '';
-            // 💡 "MASS" 가 포함된 시나리오만 렌더링하도록 필터 100% 수정
-            const filteredFiles = files.filter(f => f.name.toUpperCase().includes('MASS'));
+            
+            // 💡 [이슈1 해결] name 속성이 없거나 문자열이 아닌 경우를 대비한 안전한 필터링 정규식
+            const filteredFiles = files.filter(f => f && f.name && String(f.name).toUpperCase().includes('MASS'));
+            
             if(filteredFiles.length === 0) select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
             else filteredFiles.forEach(file => {
-                const opt = document.createElement('option'); opt.value = file.id; opt.textContent = file.name.replace('.json', ''); select.appendChild(opt);
+                const opt = document.createElement('option'); opt.value = file.id; opt.textContent = String(file.name).replace('.json', ''); select.appendChild(opt);
             });
         } catch (err) {
+            console.error("Fetch Error:", err);
             select.innerHTML = '<option value="local_test">[Local Test] Exported_MASS_Scenario</option>';
         }
     }
 
+    // 💡 [이슈2 방어] shipType 매핑 시 런타임 에러 방지를 위한 String 형변환
     function getValidShipType(rawType) {
         if (!rawType) return "CargoShip1.glb";
-        const t = rawType.toUpperCase();
+        const t = String(rawType).toUpperCase();
         if (t.includes("CNTR")) return "ContainerShip1.glb";
         if (t.includes("BULK")) return "BulkCarrier.glb";
         if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1.glb";
@@ -376,7 +381,6 @@
         initializeSimulation(scenarioData);
     }
 
-    // 💡 원본 시뮬레이터 10개 에셋 순차 로딩 과정 완벽 복구
     async function load3DAssets() {
         const gltfLoader = new THREE.GLTFLoader();
         const loadMsg = document.getElementById('loading-screen');
@@ -390,8 +394,9 @@
                 gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
                     storeLoadedModel(fileName, gltf); 
                     resolve();
-                }, undefined, () => {
-                    resolve(); 
+                }, undefined, (err) => {
+                    console.warn(`[에셋 로드 실패 방어] ${filePath} 로드 실패, 건너뜁니다.`);
+                    resolve(); // 💡 에러 발생해도 Promise를 정상 종료시켜 로딩 사이클이 깨지지 않도록 방어
                 });
             });
             await new Promise(r => setTimeout(r, 50)); 
@@ -399,6 +404,7 @@
     }
 
     function storeLoadedModel(type, gltf) {
+        if (!gltf || !gltf.scene) return;
         const rawModel = gltf.scene;
         rawModel.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(rawModel); 
@@ -561,7 +567,7 @@
         updateSidebar(); 
         
         isSimulationRunning = true;
-        initThreeJS(); // 💡 3D 엔진을 미리 실행해 백그라운드에 대기시킴
+        initThreeJS(); 
         mainLoop();
     }
 
@@ -599,7 +605,6 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 뷰포트 주인 MASS와 다른 MASS 필터링 (본선 두 개씩 생기는 버그 해결)
                 if (s.isMASS && s !== v.massEntity) return;
 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
@@ -691,7 +696,7 @@
         osShip = new THREE.Group(); scene.add(osShip);
 
         camera3D = new THREE.PerspectiveCamera(60, contentDiv.clientWidth / contentDiv.clientHeight, 1, 80000);
-        osShip.add(camera3D); // 💡 카메라를 본선에 귀속시킴
+        osShip.add(camera3D); 
         
         renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
@@ -727,7 +732,6 @@
         if(selectedMassIndex < 0) return;
         const mass = massViews[selectedMassIndex].massEntity;
         
-        // 💡 백그라운드 엔진을 화면에 드러내는 방식 (display 대신 classList 이용)
         document.getElementById('fpv-container').classList.add('active');
         document.getElementById('fpv-title').innerText = `${mass.name} FPV CAMERA`;
         is3DMode = true;
@@ -740,7 +744,6 @@
         const osModel = getModelForShip(mass.type);
         osShip.add(osModel);
         
-        // 💡 1인칭 카메라 브릿지 위치로 복구
         camera3D.position.set(0, 60, 0); 
         camAngleX = -0.05; camAngleY = 0;
 
@@ -753,7 +756,6 @@
         document.getElementById('val-wind').innerText = `${globalEnv.windDir}° / ${globalEnv.windSpd}`;
         document.getElementById('val-current').innerText = `${globalEnv.currentDir}° / ${globalEnv.currentSpd}`;
         
-        // 💡 화면 렌더링 강제 업데이트로 검은 화면 방지
         const contentDiv = document.getElementById('fpv-content');
         camera3D.aspect = contentDiv.clientWidth / contentDiv.clientHeight;
         camera3D.updateProjectionMatrix();
@@ -792,9 +794,13 @@
             if(cpaData.tcpa > 0 && cpaData.cpa < minCPA) minCPA = cpaData.cpa;
         });
 
+        // 💡 [이슈2 해결] HTML에 존재하지 않는 val-cpa DOM 요소 참조로 인한 TypeError 발생 방어 
         const cpaEl = document.getElementById('val-cpa');
-        if(minCPA < 1.5) { cpaEl.innerText = `${minCPA.toFixed(2)} NM`; cpaEl.classList.add('danger'); } 
-        else { cpaEl.innerText = `SAFE`; cpaEl.classList.remove('danger'); }
+        if (cpaEl) {
+            if(minCPA < 1.5) { cpaEl.innerText = `${minCPA.toFixed(2)} NM`; cpaEl.classList.add('danger'); } 
+            else { cpaEl.innerText = `SAFE`; cpaEl.classList.remove('danger'); }
+        }
+
         renderer3D.render(scene, camera3D);
     }
 
@@ -811,7 +817,6 @@
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         updatePhysics(dt);
         
-        // 💡 3D 엔진은 백그라운드에서도 항상 실행됨 (창을 켜면 즉시 보이도록)
         sync3DScene(dt);
         
         render2D(); updateSidebar();
