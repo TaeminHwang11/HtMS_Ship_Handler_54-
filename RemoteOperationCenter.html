@@ -21,7 +21,6 @@
             --accent-yellow: #eab308;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
-            --radar-bg: #050810;
         }
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
@@ -43,46 +42,33 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 (좌측: 뷰 영역 / 우측: 사이드바) ================= */
+        /* ================= 메인 레이아웃 ================= */
         #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         
-        /* 좌측 뷰 컬럼 (위: 3D / 아래: 2D & 레이더) */
+        /* 좌측 뷰 컬럼 */
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        /* 상단: 3D 집중관찰(FPV) 창 (평소엔 숨김) */
+        /* 스플릿 모드 상단: 3D 집중관찰(FPV) 창 */
         #fpv-area { display: none; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         
-        /* 하단 영역 (매크로 땐 100% / 스플릿 땐 하단에 배치되며 내부에서 좌/우 분할) */
-        #bottom-area { flex: 1; display: flex; flex-direction: row; min-height: 0; width: 100%; }
-        
-        /* 2D 그리드 영역 (MACRO 땐 전체 100%, SPLIT 땐 좌측 50%) */
-        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; }
-
-        /* 레이더 영역 (SPLIT 땐 우측 50%, 평소엔 숨김) */
-        #radar-area { display: none; background: var(--radar-bg); position: relative; border-left: 2px solid var(--accent-cyan); overflow: hidden; }
-        #radar-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
-
-        /* 분할바 (Resizers) */
+        /* 상하 크기 조절바 */
         #h-resizer { display: none; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
         #h-resizer:hover, #h-resizer:active { background: var(--accent-cyan); }
+        
+        /* 하단: 2D 그리드 영역 */
+        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; min-height: 0; }
 
-        #v-resizer { display: none; width: 8px; background: #1e293b; cursor: col-resize; z-index: 30; border-left: 1px solid #0f172a; border-right: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
-        #v-resizer:hover, #v-resizer:active { background: var(--accent-cyan); }
-
-        /* Split Mode State Classes (상하 분할 및 하단 좌우 분할 활성화) */
+        /* Split Mode State Classes */
         #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; }
         #main-wrapper.split-mode #h-resizer { display: block; }
-        #main-wrapper.split-mode #bottom-area { flex: 1; min-height: 20%; }
-        #main-wrapper.split-mode #grid-area { flex: none; width: 50%; } 
-        #main-wrapper.split-mode #v-resizer { display: block; }
-        #main-wrapper.split-mode #radar-area { display: block; flex: 1; } 
+        #main-wrapper.split-mode #grid-area { flex: 1; min-height: 20%; display: block; } 
 
         /* 우측 사이드바 (대시보드 패널) */
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
-        /* ================= 2D 뷰포트 & 레이더 UI ================= */
-        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; }
+        /* ================= 2D 뷰포트 내부 스타일 ================= */
+        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; height: 100%; width: 100%; }
         .viewport.active-vp { border: 2px solid var(--accent-yellow); }
         .viewport.hidden-vp { display: none !important; } 
         .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
@@ -91,15 +77,28 @@
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
         
-        /* ================= 3D FPV 내부 라벨 ================= */
+        /* ================= 3D FPV 내부 UI ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
+        
+        #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
+        .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* ================= 사이드바 공통/컴포넌트 ================= */
+        .steer-btn { position: absolute; bottom: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 24px; font-family: 'Rajdhani', sans-serif; font-weight: bold; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 60; transition: 0.1s; backdrop-filter: blur(4px); user-select: none; }
+        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); }
+        #btn-steer-port { left: 30px; }
+        #btn-steer-stbd { right: 30px; }
+
+        /* ================= 사이드바 컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
+        #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
+        #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
+        #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
@@ -142,30 +141,23 @@
         
         <!-- 좌측 뷰 컬럼 -->
         <div id="view-column">
-            
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">MASS_1 FPV CAM</div>
+                <div id="intervention-overlay">
+                    <div class="latency-spinner"></div>
+                    <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
+                    <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
+                </div>
+                <div id="btn-steer-port" class="steer-btn" onmousedown="applySteer('P')">P</div>
+                <div id="btn-steer-stbd" class="steer-btn" onmousedown="applySteer('S')">S</div>
             </div>
             
             <!-- 상하 크기 조절바 -->
             <div id="h-resizer"></div>
 
-            <!-- 하단 영역 (2D & 레이더) -->
-            <div id="bottom-area">
-                <!-- 2D 멀티 그리드 (ECDIS 역할) -->
-                <div id="grid-area"></div>
-                
-                <!-- 좌우 크기 조절바 -->
-                <div id="v-resizer"></div>
-                
-                <!-- 레이더 창 -->
-                <div id="radar-area">
-                    <div class="vp-label" style="border-color: #334155; color: #94a3b8; background: var(--radar-bg);">RADAR</div>
-                    <canvas id="radar-canvas"></canvas>
-                </div>
-            </div>
-
+            <!-- 하단 영역: 2D 멀티 그리드 -->
+            <div id="grid-area"></div>
         </div>
         
         <!-- 우측 사이드바 -->
@@ -205,7 +197,7 @@
                 </div>
 
                 <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5;">
-                    💡 <b>상세 관찰 및 개입</b><br>특정 선박의 화면을 <b>더블클릭</b> 하세요.
+                    상세 관찰 및 개입을 원하시면<br>특정 선박 화면을 <b>더블클릭</b> 하세요.
                 </div>
             </div>
 
@@ -217,18 +209,36 @@
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) HUD</div>
                     <div class="data-row"><span>HEADING:</span> <b id="split-hdg" class="hud-val">000.0°</b></div>
+                    <div class="data-row"><span>COG:</span> <b id="split-cog" class="hud-val">000.0°</b></div>
                     <div class="data-row"><span>SOG:</span> <b id="split-sog" class="hud-val">0.0 Kn</b></div>
+                    <div class="data-row"><span>ROT:</span> <b id="split-rot" class="hud-val">0.0 °/min</b></div>
+                    <div class="data-row"><span>RUD CMD:</span> <b id="split-rud-cmd" class="hud-val">0.0°</b></div>
+                    <div class="data-row"><span>RUD ACT:</span> <b id="split-rud-act" class="hud-val">0.0°</b></div>
                 </div>
 
+                <!-- 💡 SPLIT 모드 타선 정보 박스 추가 -->
                 <div class="info-box" style="border-left-color: var(--accent-red);">
-                    <div class="info-header" style="color: var(--accent-red);">THREAT ALARM</div>
-                    <div style="text-align: center; color: #fca5a5; font-size: 14px; font-weight: bold; margin-top: 10px;">
-                        NO COLLISION RISK
-                    </div>
+                    <div class="info-header" style="color: var(--accent-red);">TARGET SHIP INFO</div>
+                    <div class="data-row"><span>NAME:</span> <b id="split-tgt-name" style="color: #fca5a5;">-</b></div>
+                    <div class="data-row"><span>MMSI:</span> <b id="split-tgt-mmsi">-</b></div>
+                    <div class="data-row"><span>BRG:</span> <b id="split-tgt-brg">-</b></div>
+                    <div class="data-row"><span>HDG / COG:</span> <b id="split-tgt-hdgcog">-</b></div>
+                    <div class="data-row"><span>SOG / STW:</span> <b id="split-tgt-sogstw">-</b></div>
+                    <div class="data-row"><span>CPA:</span> <b id="split-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
+                    <div class="data-row"><span>TCPA:</span> <b id="split-tgt-tcpa">-</b></div>
+                    <div class="data-row"><span>BCR:</span> <b id="split-tgt-bcr">-</b></div>
                 </div>
 
-                <!-- 임시 개입 버튼 -->
-                <button id="btn-intervention" onclick="alert('Step 2: 통신 지연(Latency) 로직 구현 대기 중입니다.')">원격 개입 (Intervention)</button>
+                <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK LATENCY</span>
+                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-latency">3.0 s</span>
+                    </div>
+                    <input type="range" id="latency-slider" min="0" max="10" step="0.5" value="3.0" style="width:100%; accent-color: var(--accent-cyan);" oninput="document.getElementById('val-latency').innerText = this.value + ' s'">
+                </div>
+                
+                <button id="btn-intervention" onclick="requestIntervention()">원격 개입 (Intervention)</button>
+                <button id="btn-end-intervention" onclick="endIntervention()">개입 종료 (AUTO RETURN)</button>
             </div>
 
         </div>
@@ -279,14 +289,17 @@
     let lastTime = performance.now();
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
 
-    // 3D & Radar Variables
+    let interventionState = 'NONE'; 
+    let interventionTimer = null;
+    let systemLogs = []; 
+
+    // 3D Variables
     let scene, camera3D, renderer3D;
     let parsedModels = {};
     let daySkybox = null;
     let osShipGroup, targetMeshes = [];
     let isDraggingCam = false; 
     let camAngleX = -0.05, camAngleY = 0; 
-    let radarTrueBrg = 0; // 레이더 스윕용 변수
 
     // ==========================================
     // 2. FETCH & INITIALIZATION
@@ -422,8 +435,8 @@
 
     const layoutObserver = new ResizeObserver(entries => {
         for(let entry of entries) {
-            if(entry.target.classList.contains('viewport') || entry.target.id === 'radar-area') {
-                const canvas = entry.target.querySelector('canvas');
+            if(entry.target.classList.contains('viewport')) {
+                const canvas = entry.target.querySelector('.vp-canvas');
                 if(canvas && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
                     canvas.width = entry.contentRect.width;
                     canvas.height = entry.contentRect.height;
@@ -461,7 +474,8 @@
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, 
-                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed 
+                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
+                targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading
             });
         });
 
@@ -527,7 +541,9 @@
                         if(s === vObj.massEntity) return;
                         const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
                         const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
-                        if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) { clickedIndex = tIdx; }
+                        if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
+                            clickedIndex = tIdx;
+                        }
                     });
                     vObj.selectedTargetIndex = clickedIndex;
                     activeMassIndex = idx; updateSidebar(); render2D();
@@ -541,11 +557,10 @@
             }, 100);
         });
 
-        layoutObserver.observe(document.getElementById('radar-area'));
-
         updateGridLayout();
         initThreeJS_Lightweight();
         
+        logEvent("SIMULATION_STARTED", { scenarioId: data.ScenarioName });
         isSimulationRunning = true;
         mainLoop();
     }
@@ -573,39 +588,49 @@
         document.getElementById('ui-env-wind').innerText = `${Math.round(globalEnv.windDir).toString().padStart(3,'0')}° / ${globalEnv.windSpd.toFixed(1)} m/s`;
         document.getElementById('ui-env-curr').innerText = `${Math.round(globalEnv.currentDir).toString().padStart(3,'0')}° / ${globalEnv.currentSpd.toFixed(1)} Kn`;
 
-        // MACRO Panel Update
         document.getElementById('ui-os-name').innerText = mass.name;
         document.getElementById('ui-os-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
         document.getElementById('ui-os-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
         
-        const tgtIdx = vObj.selectedTargetIndex;
-        if(tgtIdx >= 0 && simEntities[tgtIdx]) {
-            const tgt = simEntities[tgtIdx];
-            const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
-            const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
-            let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
+        const updateTgtPanel = (prefix) => {
+            const tgtIdx = vObj.selectedTargetIndex;
+            if(tgtIdx >= 0 && simEntities[tgtIdx]) {
+                const tgt = simEntities[tgtIdx];
+                const relX = tgt.x - mass.x; const relZ = tgt.z - mass.z;
+                const dist = Math.sqrt(relX*relX + relZ*relZ) / 400;
+                let brg = (Math.atan2(relX, -relZ) * 180 / Math.PI); if(brg < 0) brg += 360;
+                const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
+                
+                document.getElementById(`${prefix}-tgt-name`).innerText = tgt.name;
+                document.getElementById(`${prefix}-tgt-mmsi`).innerText = tgt.id;
+                document.getElementById(`${prefix}-tgt-brg`).innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
+                document.getElementById(`${prefix}-tgt-sogstw`).innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
+                document.getElementById(`${prefix}-tgt-cpa`).innerText = `${cpaData.cpa.toFixed(2)} NM`;
+                document.getElementById(`${prefix}-tgt-tcpa`).innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
+                document.getElementById(`${prefix}-tgt-bcr`).innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
+            } else {
+                document.getElementById(`${prefix}-tgt-name`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-mmsi`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-brg`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-hdgcog`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-sogstw`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-cpa`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-tcpa`).innerText = '-';
+                document.getElementById(`${prefix}-tgt-bcr`).innerText = '-';
+            }
+        };
 
-            const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, relX, relZ);
-            
-            document.getElementById('ui-tgt-name').innerText = tgt.name;
-            document.getElementById('ui-tgt-mmsi').innerText = tgt.id;
-            document.getElementById('ui-tgt-brg').innerText = `${brg.toFixed(1)}° (DST: ${dist.toFixed(1)}NM)`;
-            document.getElementById('ui-tgt-hdgcog').innerText = `${tgt.hdg.toFixed(1)}° / ${tgt.hdg.toFixed(1)}°`;
-            document.getElementById('ui-tgt-sogstw').innerText = `${tgt.spd.toFixed(1)} / ${tgt.spd.toFixed(1)}`;
-            document.getElementById('ui-tgt-cpa').innerText = `${cpaData.cpa.toFixed(2)} NM`;
-            document.getElementById('ui-tgt-tcpa').innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
-            document.getElementById('ui-tgt-bcr').innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
-        } else {
-            document.getElementById('ui-tgt-name').innerText = '-'; document.getElementById('ui-tgt-mmsi').innerText = '-';
-            document.getElementById('ui-tgt-brg').innerText = '-'; document.getElementById('ui-tgt-hdgcog').innerText = '-';
-            document.getElementById('ui-tgt-sogstw').innerText = '-'; document.getElementById('ui-tgt-cpa').innerText = '-';
-            document.getElementById('ui-tgt-tcpa').innerText = '-'; document.getElementById('ui-tgt-bcr').innerText = '-';
-        }
-        
-        // SPLIT Panel Update
         if(isSplitMode) {
             document.getElementById('split-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
+            document.getElementById('split-cog').innerText = `${mass.cog.toFixed(1)}°`;
             document.getElementById('split-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+            document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`;
+            document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`;
+            document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
+            updateTgtPanel('split');
+        } else {
+            updateTgtPanel('ui');
         }
     }
 
@@ -613,33 +638,19 @@
     // 4. UX FLOW: SPLIT MODE TOGGLE & RESIZER
     // ==========================================
     const hResizer = document.getElementById('h-resizer');
-    const vResizer = document.getElementById('v-resizer');
     const fpvArea = document.getElementById('fpv-area');
     const gridArea = document.getElementById('grid-area');
-    const radarArea = document.getElementById('radar-area');
-    
     let isHResizing = false;
-    let isVResizing = false;
 
     hResizer.addEventListener('mousedown', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); });
-    vResizer.addEventListener('mousedown', (e) => { isVResizing = true; document.body.style.cursor = 'col-resize'; e.preventDefault(); });
-    
     window.addEventListener('mousemove', (e) => {
-        if (isHResizing) {
-            let newHeight = (e.clientY / window.innerHeight) * 100;
-            if(newHeight < 20) newHeight = 20; if(newHeight > 80) newHeight = 80;
-            fpvArea.style.flex = 'none'; fpvArea.style.height = `${newHeight}%`;
-        }
-        if (isVResizing) {
-            const containerWidth = document.getElementById('bottom-area').clientWidth;
-            let newWidth = (e.clientX / containerWidth) * 100;
-            if(newWidth < 20) newWidth = 20; if(newWidth > 80) newWidth = 80;
-            gridArea.style.flex = 'none'; gridArea.style.width = `${newWidth}%`;
-        }
+        if (!isHResizing) return;
+        let newHeight = (e.clientY / window.innerHeight) * 100;
+        if(newHeight < 20) newHeight = 20; if(newHeight > 80) newHeight = 80;
+        fpvArea.style.flex = 'none'; fpvArea.style.height = `${newHeight}%`;
     });
     window.addEventListener('mouseup', () => {
         if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; }
-        if(isVResizing) { isVResizing = false; document.body.style.cursor = 'default'; }
     });
 
     function enterSplitMode(idx) {
@@ -650,8 +661,10 @@
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.add('split-mode');
         
-        fpvArea.style.flex = '1'; fpvArea.style.height = 'auto';
-        gridArea.style.flex = 'none'; gridArea.style.width = '50%'; // 50:50 좌우 분할
+        // 💡 상하 50:50 분할 세팅
+        fpvArea.style.flex = 'none'; fpvArea.style.height = '50%';
+        gridArea.style.gridTemplateColumns = '1fr'; 
+        gridArea.style.gridTemplateRows = '1fr'; 
 
         document.getElementById('panel-macro').style.display = 'none';
         document.getElementById('panel-split').style.display = 'flex';
@@ -662,6 +675,7 @@
             else { vp.classList.add('hidden-vp'); vp.classList.remove('active-vp'); }
         });
 
+        logEvent("SPLIT_MODE_ENTER", { massId: massViews[idx].massEntity.name });
         setup3DSceneForMass(idx);
         updateSidebar();
     }
@@ -669,22 +683,89 @@
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         isSplitMode = false;
+        
+        if(interventionState !== 'NONE') { endIntervention(); }
 
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.remove('split-mode');
-        gridArea.style.flex = '1'; gridArea.style.width = '100%';
         
         document.getElementById('panel-split').style.display = 'none';
         document.getElementById('panel-macro').style.display = 'flex';
 
         massViews.forEach((v, i) => { document.getElementById(`vp-${i}`).classList.remove('hidden-vp'); });
+
+        logEvent("MACRO_MODE_RETURN", {});
         updateGridLayout();
     }
 
     // ==========================================
-    // 5. LIGHTWEIGHT 3D ENGINE & RADAR ENGINE
+    // 💡 Step 2: INTERVENTION LOGIC
+    // ==========================================
+    window.requestIntervention = function() {
+        const latency = parseFloat(document.getElementById('latency-slider').value);
+        const massName = massViews[activeMassIndex].massEntity.name;
+        
+        document.getElementById('btn-intervention').disabled = true;
+        document.getElementById('intervention-overlay').style.display = 'flex';
+        
+        logEvent("INTERVENTION_REQUESTED", { massId: massName, latencySec: latency });
+        interventionState = 'CONNECTING';
+
+        let remaining = latency;
+        document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's';
+        
+        if (remaining <= 0) { startIntervention(); return; }
+
+        interventionTimer = setInterval(() => {
+            remaining -= 0.1;
+            if(remaining <= 0) { clearInterval(interventionTimer); startIntervention(); } 
+            else { document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's'; }
+        }, 100);
+    }
+
+    function startIntervention() {
+        interventionState = 'ACTIVE';
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'none';
+        document.getElementById('btn-end-intervention').style.display = 'block';
+        document.getElementById('btn-steer-port').style.display = 'flex';
+        document.getElementById('btn-steer-stbd').style.display = 'flex';
+        
+        logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    window.endIntervention = function() {
+        if (interventionTimer) clearInterval(interventionTimer);
+        interventionState = 'NONE';
+        
+        document.getElementById('intervention-overlay').style.display = 'none';
+        document.getElementById('btn-intervention').style.display = 'block';
+        document.getElementById('btn-intervention').disabled = false;
+        document.getElementById('btn-end-intervention').style.display = 'none';
+        document.getElementById('btn-steer-port').style.display = 'none';
+        document.getElementById('btn-steer-stbd').style.display = 'none';
+        
+        if(massViews[activeMassIndex]) { massViews[activeMassIndex].massEntity.targetRudder = 0; }
+        logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
+    }
+
+    window.applySteer = function(dir) {
+        if(interventionState !== 'ACTIVE') return;
+        const mass = massViews[activeMassIndex].massEntity;
+        mass.targetRudder = Math.max(-35, Math.min(35, mass.targetRudder + (dir === 'P' ? -5 : 5))); 
+        mass.targetRudder = Math.round(mass.targetRudder/5)*5; 
+        logEvent("MANUAL_STEERING", { massId: mass.name, cmd: mass.targetRudder, dir: dir });
+    }
+
+    function logEvent(action, payload) {
+        systemLogs.push({ time: ((performance.now() - lastTime)/1000).toFixed(2), action: action, data: payload });
+    }
+
+    // ==========================================
+    // 5. LIGHTWEIGHT 3D ENGINE
     // ==========================================
     function initThreeJS_Lightweight() {
+        const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
         if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
@@ -738,13 +819,12 @@
         const osModel = getModelForShip(mass.type);
         osShipGroup.add(osModel);
 
-        // 💡 브릿지 카메라 세팅 적용
         const savedCamStr = localStorage.getItem('bridgeCam_' + mass.type);
         if (savedCamStr) { 
             const savedPos = JSON.parse(savedCamStr); 
             camera3D.position.set(savedPos.x, savedPos.y, savedPos.z);
         } else {
-            camera3D.position.set(0, 20, 15); // 현실적인 브릿지 시점 기본값
+            camera3D.position.set(0, 20, 15);
         }
         camAngleX = -0.05; camAngleY = 0;
 
@@ -757,81 +837,8 @@
         });
     }
 
-    // 💡 레이더 렌더링 로직 이식
-    function renderRadarCanvas(idx) {
-        const canvas = document.getElementById('radar-canvas');
-        if (!canvas || canvas.width === 0) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width, h = canvas.height;
-        const cx = w / 2, cy = h / 2;
-        const displayRadius = Math.min(cx, cy) - 10;
-        const rangeNM = 3.0; // 레이더 스케일 고정 (또는 향후 연동)
-
-        ctx.clearRect(0, 0, w, h);
-        
-        // 배경 및 클리핑
-        ctx.save();
-        ctx.beginPath(); ctx.arc(cx, cy, displayRadius, 0, Math.PI * 2); ctx.clip();
-        
-        // Range Rings
-        ctx.strokeStyle = '#224422'; ctx.lineWidth = 1;
-        for(let i=1; i<=6; i++) {
-            ctx.beginPath(); ctx.arc(cx, cy, (displayRadius/6)*i, 0, Math.PI*2); ctx.stroke();
-        }
-
-        // Crosshair
-        ctx.strokeStyle = '#224422';
-        ctx.beginPath(); ctx.moveTo(cx, cy-displayRadius); ctx.lineTo(cx, cy+displayRadius); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx-displayRadius, cy); ctx.lineTo(cx+displayRadius, cy); ctx.stroke();
-
-        const os = massViews[idx].massEntity;
-        const osHdgRad = os.hdg * Math.PI/180;
-
-        // Targets Blips & Vectors
-        simEntities.forEach(tgt => {
-            if(tgt === os || (tgt.isMASS && tgt !== os)) return;
-            const dx = tgt.x - os.x; const dz = tgt.z - os.z;
-            const distNM = Math.sqrt(dx*dx + dz*dz) / 400; 
-            if(distNM > rangeNM) return;
-
-            let trueBrg = Math.atan2(dx, -dz);
-            let relBrg = trueBrg - osHdgRad; // H-UP
-            
-            const px = cx + Math.sin(relBrg) * (distNM/rangeNM) * displayRadius;
-            const py = cy - Math.cos(relBrg) * (distNM/rangeNM) * displayRadius;
-
-            ctx.fillStyle = '#55ff55'; ctx.shadowBlur = 10; ctx.shadowColor = '#55ff55';
-            ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-            
-            // True Vector
-            const tgtVx = tgt.spd * Math.sin(tgt.hdg * Math.PI/180); const tgtVy = -tgt.spd * Math.cos(tgt.hdg * Math.PI/180); 
-            const vecLen = (tgt.spd / rangeNM) * displayRadius * 0.1; 
-            const relVecAngle = Math.atan2(tgtVx, -tgtVy) - osHdgRad;
-
-            ctx.strokeStyle = '#55ff55'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.sin(relVecAngle)*vecLen, py - Math.cos(relVecAngle)*vecLen); ctx.stroke();
-        });
-
-        // Sweep Animation
-        radarTrueBrg += 1.5; if(radarTrueBrg >= 360) radarTrueBrg -= 360;
-        const sweepRad = (radarTrueBrg - os.hdg) * Math.PI/180;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.sin(sweepRad)*displayRadius, cy - Math.cos(sweepRad)*displayRadius);
-        ctx.strokeStyle = 'rgba(85,255,85,0.6)'; ctx.stroke();
-        
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, displayRadius, sweepRad - 0.6, sweepRad, false); ctx.closePath();
-        const grad = ctx.createLinearGradient(cx, cy, cx + Math.sin(sweepRad)*displayRadius, cy - Math.cos(sweepRad)*displayRadius);
-        grad.addColorStop(0, 'rgba(85,255,85,0)'); grad.addColorStop(1, 'rgba(85,255,85,0.2)');
-        ctx.fillStyle = grad; ctx.fill();
-
-        ctx.restore();
-        
-        // OS Blip & Heading Line
-        ctx.fillStyle = '#55ff55'; ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - displayRadius); ctx.stroke();
-    }
-
     // ==========================================
-    // 6. RENDER LOOP (2D & 3D Sync)
+    // 6. RENDER LOOP (2D & 3D Sync & Physics)
     // ==========================================
     function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; const cy = panY + z * viewScale;
@@ -883,9 +890,7 @@
                 if (v.selectedTargetIndex === tIdx && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#f97316';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
@@ -899,36 +904,65 @@
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         
+        // Physics Engine
         simEntities.forEach(s => { 
-            const speedUnits = s.spd * (400 / 3600); 
-            s.x += speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; 
-            s.z -= speedUnits * Math.cos(s.hdg * DEG2RAD) * dt; 
+            let rDiff = s.targetRudder - s.actualRudder; 
+            let rStep = 1.5 * dt; 
+            if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
+            else s.actualRudder += Math.sign(rDiff) * rStep;
+            
+            const K_nom = 2.0; const T_nom = 25.0; 
+            const targetRot = K_nom * s.actualRudder; 
+            const rotDerivative = (targetRot - s.rot) / T_nom; 
+            
+            s.rot += rotDerivative * dt; 
+            s.hdg = (s.hdg + (s.rot / 60.0) * dt * 3) % 360; 
+            if (s.hdg < 0) s.hdg += 360;
+            
+            const speedLossFactor = 0.008; 
+            const targetSpeed = s.cmdSpeed * (1.0 - speedLossFactor * Math.abs(s.rot));
+            const T_surge = 15.0; 
+            s.spd += (targetSpeed - s.spd) * (dt / T_surge);
+
+            // Calculate COG based on wind/current drift
+            let moveX = s.spd * Math.sin(s.hdg * DEG2RAD) * dt;
+            let moveZ = -s.spd * Math.cos(s.hdg * DEG2RAD) * dt;
+
+            if (globalEnv.currentSpd > 0) {
+                moveX += globalEnv.currentSpd * Math.sin(globalEnv.currentDir * DEG2RAD) * dt;
+                moveZ -= globalEnv.currentSpd * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
+            }
+            if (globalEnv.windSpd > 0) {
+                let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - s.hdg + 360) % 360 * DEG2RAD);
+                moveX += windDriftSpeed * Math.cos(s.hdg * DEG2RAD) * dt;
+                moveZ -= windDriftSpeed * -Math.sin(s.hdg * DEG2RAD) * dt;
+            }
+
+            s.x += moveX; s.z += moveZ;
+            let actualVx = moveX / dt; let actualVz = -moveZ / dt;
+            s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
         });
         
         render2D();
         updateSidebar();
         
-        if(isSplitMode) {
-            renderRadarCanvas(activeMassIndex);
+        if(isSplitMode && massViews[activeMassIndex] && renderer3D) {
+            const mass = massViews[activeMassIndex].massEntity;
+            const meterScale = 4.63; 
+
+            osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
+            osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
             
-            if(massViews[activeMassIndex] && renderer3D) {
-                const mass = massViews[activeMassIndex].massEntity;
-                const meterScale = 4.63; 
+            camera3D.rotation.order = 'YXZ';
+            camera3D.rotation.y = camAngleY; 
+            camera3D.rotation.x = camAngleX;
 
-                osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
-                osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
-                
-                camera3D.rotation.order = 'YXZ';
-                camera3D.rotation.y = camAngleY; 
-                camera3D.rotation.x = camAngleX;
+            targetMeshes.forEach(t => { 
+                t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
+                t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
+            });
 
-                targetMeshes.forEach(t => { 
-                    t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
-                    t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
-                });
-
-                renderer3D.render(scene, camera3D);
-            }
+            renderer3D.render(scene, camera3D);
         }
     }
 
