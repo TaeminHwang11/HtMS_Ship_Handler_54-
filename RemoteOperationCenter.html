@@ -42,10 +42,8 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* 💡 1번 반영: 우측 패널 밀림 해결 (100vw, overflow hidden 적용) */
+        /* ================= 메인 레이아웃 ================= */
         #main-wrapper { display: none; width: 100vw; max-width: 100%; height: 100vh; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
-        
-        /* 💡 1번 반영: min-width: 0 추가 (Canvas가 Flex item 밖으로 패널을 밀어내는 현상 완벽 방지) */
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
         #surveillance-area, #fpv-area, #h-resizer, #grid-area { display: none; }
@@ -60,7 +58,7 @@
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
         #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
 
-        /* 💡 모바일 화면에서도 비율에 맞게 딱 떨어지도록 clamp값 미세 조정 */
+        /* 반응형 사이드바 너비 고정 */
         #sidebar { width: clamp(260px, 33vw, 380px); background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
@@ -165,7 +163,6 @@
         
         <div id="sidebar">
             <div id="panel-surveillance" style="display: flex; flex-direction: column; height: 100%; min-height: 0;">
-                <!-- 💡 2번 반영: 패널 타이틀 영문화 반영 -->
                 <div class="panel-title">SURVEILLANCE MONITORING</div>
                 <div id="surveillance-fleet-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
                 <button id="btn-general-monitoring" onclick="enterGeneralMode()">GENERAL MONITORING</button>
@@ -904,7 +901,6 @@
             ctx.font = 'bold 11px monospace'; 
             ctx.fillText(s.name, sXY.x + 12, sXY.y + 4);
         });
-        
     }
 
     window.removeTarget = function(vIdx, tIdx) {
@@ -1122,25 +1118,13 @@
         updateSidebar();
     }
 
+    // 💡 1번 반영: 집중 관찰 모드 복귀 시 General 모드로 상태 초기화 함수 실행
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         if(interventionState !== 'NONE') endIntervention();
         
-        if(massViews[activeMassIndex]) {
-            massViews[activeMassIndex].panOffsetX = 0;
-            massViews[activeMassIndex].panOffsetY = 0;
-        }
-
-        const wrapper = document.getElementById('main-wrapper');
-        wrapper.classList.remove('split-mode');
-        
-        document.getElementById('panel-split').style.display = 'none';
-        document.getElementById('panel-macro').style.display = 'flex';
-
-        massViews.forEach((v, i) => { document.getElementById(`vp-${i}`).classList.remove('hidden-vp'); });
-
         logEvent("MACRO_MODE_RETURN", {});
-        updateGridLayout();
+        enterGeneralMode();
     }
 
     // ==========================================
@@ -1546,7 +1530,8 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    const speedFact = Math.max(0.01, mass.spd * 0.002); 
+                    // 💡 2번 반영: 파도 속도 기존 5배속 추가 감속
+                    const speedFact = Math.max(0.005, mass.spd * 0.001); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
