@@ -68,6 +68,19 @@
         .hud-range { color: var(--accent-yellow); font-weight: bold; }
         .hud-target { color: var(--accent-red); font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); display: none; }
 
+        /* === 리사이저 (크기 조절 핸들) 스타일 === */
+        #resizer {
+            width: 6px;
+            background-color: var(--border-color);
+            cursor: col-resize;
+            z-index: 30;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        #resizer:hover, #resizer.active-resizer {
+            background-color: var(--accent-cyan);
+        }
+
         #sidebar {
             width: 380px; max-width: 100%; height: 100%;
             background-color: var(--panel-bg); 
@@ -201,6 +214,7 @@
         @media (max-width: 768px), (max-aspect-ratio: 4/5) {
             body { flex-direction: column; }
             #canvas-wrapper { flex: 0 0 45%; height: 45%; min-height: 250px; }
+            #resizer { width: 100%; height: 6px; cursor: row-resize; }
             #sidebar { 
                 flex: 1 1 55%; height: 55%; width: 100%; 
                 border-left: none; border-top: 1px solid var(--border-color); 
@@ -226,6 +240,9 @@
         </div>
     </div>
 </div>
+
+<!-- 너비 조절 리사이저 추가 -->
+<div id="resizer" title="드래그하여 크기 조절"></div>
 
 <div id="sidebar">
     <div id="main-title">[HTMS] SCENARIO GENERATOR</div>
@@ -2325,6 +2342,65 @@
             });
         });
     }
+
+    // ==========================================
+    // SIDEBAR RESIZE LOGIC
+    // ==========================================
+    const resizer = document.getElementById('resizer');
+    const sidebar = document.getElementById('sidebar');
+    let isResizingSidebar = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizingSidebar = true;
+        resizer.classList.add('active-resizer');
+        e.preventDefault(); // 텍스트 선택 방지
+    });
+    resizer.addEventListener('touchstart', (e) => {
+        isResizingSidebar = true;
+        resizer.classList.add('active-resizer');
+    }, { passive: true });
+
+    function handleResizerMove(clientX, clientY) {
+        if (!isResizingSidebar) return;
+        const isMobile = window.innerWidth <= 768 || (window.innerWidth / window.innerHeight <= 4/5);
+        
+        if (!isMobile) {
+            // 데스크톱: 좌우 너비 조절
+            let newWidth = window.innerWidth - clientX;
+            if (newWidth < 300) newWidth = 300;
+            if (newWidth > window.innerWidth - 300) newWidth = window.innerWidth - 300;
+            sidebar.style.width = newWidth + 'px';
+            sidebar.style.flex = 'none'; // flex 덮어쓰기
+        } else {
+            // 모바일: 상하 높이 조절
+            let newHeight = window.innerHeight - clientY;
+            if (newHeight < 200) newHeight = 200;
+            if (newHeight > window.innerHeight - 200) newHeight = window.innerHeight - 200;
+            sidebar.style.height = newHeight + 'px';
+            sidebar.style.flex = 'none';
+            document.getElementById('canvas-wrapper').style.flex = '1';
+            document.getElementById('canvas-wrapper').style.height = 'auto';
+        }
+        // 캔버스 크기 재계산을 위해 이벤트 발생
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    window.addEventListener('mousemove', (e) => handleResizerMove(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => {
+        if (isResizingSidebar && e.touches.length > 0) {
+            handleResizerMove(e.touches[0].clientX, e.touches[0].clientY);
+            e.preventDefault(); // 스크롤 방지
+        }
+    }, { passive: false });
+
+    function stopResizer() {
+        if (isResizingSidebar) {
+            isResizingSidebar = false;
+            resizer.classList.remove('active-resizer');
+        }
+    }
+    window.addEventListener('mouseup', stopResizer);
+    window.addEventListener('touchend', stopResizer);
 
     initSystem();
 </script>
