@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>[HTMS] Remote Operation Center</title>
+    <!-- Three.js 및 에셋 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
@@ -24,6 +25,7 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
+        /* ================= 메인 메뉴 (로그인) ================= */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
@@ -40,24 +42,32 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
+        /* ================= 메인 레이아웃 및 3-Tier 모드 ================= */
         #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
+        
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
+        /* 뷰포트 상태 제어 */
         #surveillance-area, #fpv-area, #h-resizer, #grid-area { display: none; }
         
+        /* Tier 1: Surveillance Mode */
         #main-wrapper.surveillance-mode #surveillance-area { display: block; flex: 1; position: relative; background: #050a10; }
         #world-map-canvas { width: 100%; height: 100%; display: block; }
 
+        /* Tier 2: General Mode */
         #main-wrapper.general-mode #grid-area { display: grid; flex: 1; gap: 4px; background: #000; padding: 4px; height: 100%; min-height: 0; }
 
+        /* Tier 3: Split Mode (Detailed) */
         #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         #main-wrapper.split-mode #h-resizer { display: block; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
         #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
 
+        /* 우측 사이드바 (대시보드 패널) */
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
+        /* ================= 2D 뷰포트 내부 스타일 ================= */
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; transition: all 0.2s ease; height: 100%; width: 100%; box-sizing: border-box; }
         .viewport:hover { border: 1px solid rgba(255, 255, 255, 0.6); }
         .viewport.active-vp { border: 2px solid #f97316; box-shadow: inset 0 0 20px rgba(249, 115, 22, 0.15), 0 0 15px rgba(249, 115, 22, 0.4); z-index: 5; }
@@ -70,12 +80,14 @@
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
         .hud-cursor-info { color: #fca5a5; margin-top: 2px; }
         
+        /* ================= 3D FPV 내부 UI ================= */
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
         
         #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* ================= 사이드바 컴포넌트 ================= */
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; flex-shrink: 0; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
@@ -106,6 +118,7 @@
 </head>
 <body>
 
+    <!-- 1. 로그인 (메인 화면) -->
     <div id="login-overlay">
         <h1>[HTMS] Remote Operation Center</h1>
         <h2>PORTABLE REMOTE OPERATION SIMULATOR</h2>
@@ -117,7 +130,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_11" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_17" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -130,7 +143,9 @@
         </div>
     </div>
 
+    <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper" class="surveillance-mode">
+        
         <div id="view-column">
             <!-- Tier 1: 글로벌 전도 모니터링 창 -->
             <div id="surveillance-area">
@@ -140,6 +155,14 @@
             <!-- Tier 3: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">MASS_1 FPV CAM</div>
+                
+                <!-- 💡 2번 반영: 3D 영상 우측 상단으로 이동한 반투명 흰색 통신 상태 박스 -->
+                <div id="fpv-network-status" style="position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.85); padding: 10px 15px; border-radius: 6px; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 4px; text-align: right; min-width: 140px; border: 1px solid rgba(255,255,255,0.5);">
+                    <div style="font-size: 11px; color: #334155; font-weight: bold; letter-spacing: 1px;">NETWORK STATUS</div>
+                    <div id="val-net-status" style="font-size: 16px; font-family: monospace; font-weight: bold; margin-top: 2px;">-</div>
+                    <div id="val-latency" style="font-size: 14px; color: #ef4444; font-family: monospace; font-weight: bold;">-</div>
+                </div>
+
                 <div id="intervention-overlay">
                     <div class="latency-spinner"></div>
                     <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
@@ -209,17 +232,8 @@
                 </div>
 
                 <div id="split-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
-
-                <div style="margin-top: auto; margin-bottom: 10px; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid #1e293b;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span style="font-size:12px; color:var(--accent-cyan); font-weight:bold;">NETWORK STATUS</span>
-                        <span style="font-size:13px; color:var(--accent-yellow); font-family:monospace; font-weight:bold;" id="val-net-status">보통 (30 FPS)</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="font-size:12px; color:var(--text-muted); font-weight:bold;">LATENCY</span>
-                        <span style="font-size:13px; color:#ef4444; font-family:monospace; font-weight:bold;" id="val-latency">통신 지연: 3.0 s</span>
-                    </div>
-                </div>
+                
+                <!-- 💡 사이드바 하단에 있던 통신 지연 박스는 삭제됨 -->
             </div>
 
         </div>
@@ -381,13 +395,14 @@
         
         btnStart.style.display = 'none'; 
         loadMsg.style.display = 'block';
-        loadMsg.innerText = "로딩 중... 0%";
-
-        let totalLoadingSteps = 2 + 3 + modelFiles.length; 
+        
+        // 💡 1번 반영: 커스텀 로딩 배열 적용
         let currentStep = 0;
+        const customProgress = [12, 25, 39, 42, 55, 62, 80, 95, 100];
         const addProgress = () => {
+            let pct = customProgress[Math.min(currentStep, customProgress.length - 1)];
+            loadMsg.innerText = `로딩 중... ${pct}%`;
             currentStep++;
-            loadMsg.innerText = `로딩 중... ${Math.floor((currentStep / totalLoadingSteps) * 100)}%`;
         };
 
         let scenarioData;
@@ -1015,6 +1030,7 @@
             document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             updateTgtPanels('split-targets-container');
 
+            // 💡 2번 반영: FPV 영역 내 통신 박스로 상태 렌더링
             document.getElementById('val-latency').innerText = `통신 지연: ${mass.latencySec} s`;
             document.getElementById('val-net-status').innerText = `${mass.connStatus} (${mass.fps3D} FPS)`;
             document.getElementById('val-net-status').style.color = mass.connStatus === '좋음' ? '#10b981' : (mass.connStatus === '보통' ? '#eab308' : '#ef4444');
