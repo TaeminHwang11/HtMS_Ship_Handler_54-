@@ -76,13 +76,21 @@
             #sidebar { width: 100%; height: 45vh; border-left: none; border-top: 2px solid var(--border-color); padding: 15px; }
         }
 
-        /* ================= 3D FPV 모드 레이아웃 (독립된 창 형태) ================= */
+        /* ================= 3D FPV 모드 레이아웃 (백그라운드 렌더링 지원) ================= */
         #fpv-container { 
-            display: none; position: absolute; top: 15%; left: 10%; 
-            width: 80%; height: 70%; min-width: 320px; min-height: 250px;
+            position: absolute; top: 10%; left: 10%; 
+            width: 80%; height: 80%; min-width: 320px; min-height: 250px;
             z-index: 1000; background: #000; border: 2px solid var(--accent-cyan);
             border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-            flex-direction: column; overflow: hidden;
+            
+            /* 💡 화면에 보이지 않아도 렌더링되게끔 처리 (display:none 안씀) */
+            display: flex; flex-direction: column; overflow: hidden;
+            visibility: hidden; opacity: 0; pointer-events: none;
+            transform: scale(0.95); transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        #fpv-container.active {
+            visibility: visible; opacity: 1; pointer-events: auto; transform: scale(1);
         }
 
         #fpv-header {
@@ -92,7 +100,6 @@
         }
         #fpv-header:active { cursor: grabbing; }
 
-        /* 터치 및 마우스 창 크기 조절 핸들 */
         #fpv-resize-handle {
             position: absolute; bottom: 0; right: 0; width: 30px; height: 30px;
             cursor: se-resize; z-index: 10000;
@@ -103,7 +110,7 @@
         #fpv-content { position: relative; flex: 1; width: 100%; height: 100%; overflow: hidden; }
         #fpv-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
 
-        /* 💡 원본 시뮬레이터 상단 디지털 HUD 완벽 유지 */
+        /* 💡 원본 시뮬레이터 상단 HUD 완벽 유지 */
         #digital-hud-container { 
             top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; 
             padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; 
@@ -184,7 +191,7 @@
         </div>
     </div>
 
-    <!-- 3. 3D FPV 뷰어 (크기 조절/터치 지원 독립 창) -->
+    <!-- 3. 3D FPV 뷰어 (백그라운드에서 상시 대기하는 창) -->
     <div id="fpv-container">
         <div id="fpv-header">
             <span id="fpv-title" style="color: var(--accent-cyan); font-weight: bold; font-size: 16px;">MASS FPV CAMERA</span>
@@ -193,7 +200,6 @@
         
         <div id="fpv-content">
             <div id="fpv-ui">
-                <!-- 💡 원본 최상단 디지털 HUD 복구 -->
                 <div id="digital-hud-container">
                     <div class="hud-side-controls" style="border-right: 1px solid rgba(0,255,255,0.3); padding-right: 15px;">
                         <div class="btn-group-small">
@@ -254,11 +260,12 @@
     const SHIP_WID_UNIT = 10.8; 
     const VECTOR_SCALE = 8;     
 
-    // 💡 원본 시뮬레이터와 동일한 전체 에셋 리스트
+    // 💡 원본 시뮬레이터와 완벽히 동일한 전체 에셋 리스트 적용
     const modelFiles = [
-        "AircraftCarrier1", "AircraftCarrier2", "BulkCarrier", 
-        "CargoShip1", "CargoShip2", "ContainerShip1", "ContainerShip2", 
-        "FishingBoat1", "GasCarrier1", "PassengerShip1", "SteamShip", "Warship"
+        "Models/AircraftCarrier1.glb", "Models/AircraftCarrier2.glb", "Models/BulkCarrier.glb", 
+        "Models/CargoShip1.glb", "Models/CargoShip2.glb", "Models/ContainerShip1.glb", 
+        "Models/ContainerShip2.glb", "Models/FishingBoat1.glb", "Models/GasCarrier1.glb", 
+        "Models/PassengerShip1.glb", "Models/SteamShip.glb"
     ];
 
     const fallbackScenarioData = {
@@ -287,11 +294,7 @@
     let selectedTargetIndex = -1;
     let is3DMode = false;
     let lastTime = performance.now();
-    
-    // 이중 루프 방지 플래그
     let isSimulationRunning = false;
-    let threeJsInitialized = false;
-    let loopStarted = false;
 
     let isDraggingCam = false; 
     let camAngleX = -0.05; 
@@ -314,7 +317,8 @@
             if (files.error) throw new Error(files.error);
 
             select.innerHTML = '';
-            const filteredFiles = files.filter(f => f.name.includes('MASS') || f.name.includes('Scenario'));
+            // 💡 "MASS" 가 포함된 시나리오만 렌더링하도록 필터 100% 수정
+            const filteredFiles = files.filter(f => f.name.toUpperCase().includes('MASS'));
             if(filteredFiles.length === 0) select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
             else filteredFiles.forEach(file => {
                 const opt = document.createElement('option'); opt.value = file.id; opt.textContent = file.name.replace('.json', ''); select.appendChild(opt);
@@ -325,19 +329,16 @@
     }
 
     function getValidShipType(rawType) {
-        if (!rawType) return "CargoShip1";
-        const exactMatch = modelFiles.find(f => f.toUpperCase() === rawType.toUpperCase());
-        if (exactMatch) return exactMatch;
-        
+        if (!rawType) return "CargoShip1.glb";
         const t = rawType.toUpperCase();
-        if (t.includes("CNTR")) return "ContainerShip1";
-        if (t.includes("BULK")) return "BulkCarrier";
-        if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1";
-        if (t.includes("FISH")) return "FishingBoat1";
-        if (t.includes("PASS")) return "PassengerShip1";
-        if (t.includes("CARRIER")) return "AircraftCarrier1";
-        if (t.includes("WAR")) return "Warship";
-        return "CargoShip1"; 
+        if (t.includes("CNTR")) return "ContainerShip1.glb";
+        if (t.includes("BULK")) return "BulkCarrier.glb";
+        if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1.glb";
+        if (t.includes("FISH")) return "FishingBoat1.glb";
+        if (t.includes("PASS")) return "PassengerShip1.glb";
+        if (t.includes("CARRIER")) return "AircraftCarrier1.glb";
+        if (t.includes("WAR")) return "Warship.glb";
+        return "CargoShip1.glb"; 
     }
 
     async function loadScenarioAndStart() {
@@ -350,7 +351,7 @@
 
         btnStart.style.display = 'none';
         loadMsg.style.display = 'block';
-        
+
         let scenarioData;
         if(scnId === "local_test") scenarioData = fallbackScenarioData;
         else {
@@ -371,23 +372,24 @@
             });
         } catch(e) {}
 
-        await load3DAssets(); // 💡 12개 에셋 완벽하게 순차 로딩 복원
+        await load3DAssets();
         initializeSimulation(scenarioData);
     }
 
-    // 💡 원본 시뮬레이터의 12종 에셋 로드 과정 완벽 복원
+    // 💡 원본 시뮬레이터 10개 에셋 순차 로딩 과정 완벽 복구
     async function load3DAssets() {
         const gltfLoader = new THREE.GLTFLoader();
         const loadMsg = document.getElementById('loading-screen');
         
         for (let i = 0; i < modelFiles.length; i++) {
-            const shipName = modelFiles[i];
-            const filePath = `Models/${shipName}.glb`;
+            const filePath = modelFiles[i]; 
+            const fileName = filePath.split('/').pop(); 
             loadMsg.innerText = `3D 선박 모델 다운로드 중... (${i+1}/${modelFiles.length})`;
             
             await new Promise((resolve) => {
                 gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
-                    storeLoadedModel(shipName, gltf); resolve();
+                    storeLoadedModel(fileName, gltf); 
+                    resolve();
                 }, undefined, () => {
                     resolve(); 
                 });
@@ -512,7 +514,7 @@
                     const mx = clientX - rect.left; const my = clientY - rect.top;
                     let clicked = false;
                     for(let i=0; i<simEntities.length; i++) {
-                        const s = simEntities[i]; if(s.isMASS && s !== mass) continue; // 💡 다른 MASS는 판정에서 제외
+                        const s = simEntities[i]; if(s.isMASS && s !== mass) continue; 
                         if(s === mass) continue;
                         const cx = vObj.panX + (s.x - mass.x) * vObj.viewScale; const cy = vObj.panY + (s.z - mass.z) * vObj.viewScale;
                         if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) { selectedTargetIndex = i; clicked = true; updateSidebar(); break; }
@@ -532,7 +534,6 @@
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${range.toFixed(1)} NM`;
                 }, { passive: false });
 
-                // 💡 터치(드래그 & 핀치줌) 지원
                 let initialPinchDist = null;
                 canvas.addEventListener('touchstart', (e) => {
                     if(e.touches.length === 1) startPan(e.touches[0].clientX, e.touches[0].clientY);
@@ -560,8 +561,8 @@
         updateSidebar(); 
         
         isSimulationRunning = true;
-        initThreeJS(); 
-        if(!loopStarted) { loopStarted = true; mainLoop(); }
+        initThreeJS(); // 💡 3D 엔진을 미리 실행해 백그라운드에 대기시킴
+        mainLoop();
     }
 
     // ==========================================
@@ -598,7 +599,7 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                // 💡 해당 뷰포트의 주인이 아닌 다른 MASS는 렌더링하지 않음 (이중 렌더링 버그 해결)
+                // 💡 뷰포트 주인 MASS와 다른 MASS 필터링 (본선 두 개씩 생기는 버그 해결)
                 if (s.isMASS && s !== v.massEntity) return;
 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
@@ -640,7 +641,6 @@
     // ==========================================
     // 7. FPV WINDOW & THREE.JS
     // ==========================================
-    // FPV 창 마우스 & 터치 드래그 로직
     const fpvWin = document.getElementById('fpv-container');
     const fpvHeader = document.getElementById('fpv-header');
     const fpvResize = document.getElementById('fpv-resize-handle');
@@ -658,7 +658,6 @@
     fpvResize.addEventListener('mousedown', startResz); window.addEventListener('mousemove', doResz); window.addEventListener('mouseup', stopResz);
     fpvResize.addEventListener('touchstart', startResz, {passive: false}); window.addEventListener('touchmove', doResz, {passive: false}); window.addEventListener('touchend', stopResz);
 
-    // 💡 카메라 현장 마우스 & 터치 드래그 로직
     const fpvContent = document.getElementById('fpv-content');
     fpvContent.addEventListener('mousedown', (e) => { if (!e.target.closest('#digital-hud-container') && !e.target.classList.contains('steer-btn')) isDraggingCam = true; });
     window.addEventListener('mouseup', () => { isDraggingCam = false; });
@@ -684,9 +683,6 @@
 
 
     function initThreeJS() {
-        if (threeJsInitialized) return;
-        threeJsInitialized = true;
-
         const contentDiv = document.getElementById('fpv-content');
         scene = new THREE.Scene();
         if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
@@ -730,11 +726,12 @@
     function enter3DMode() {
         if(selectedMassIndex < 0) return;
         const mass = massViews[selectedMassIndex].massEntity;
-        document.getElementById('fpv-container').style.display = 'flex';
+        
+        // 💡 백그라운드 엔진을 화면에 드러내는 방식 (display 대신 classList 이용)
+        document.getElementById('fpv-container').classList.add('active');
         document.getElementById('fpv-title').innerText = `${mass.name} FPV CAMERA`;
         is3DMode = true;
 
-        // 본선(OS) 구성 완벽 복원
         for(let i = osShip.children.length - 1; i >= 0; i--) { 
             if(osShip.children[i] !== camera3D) osShip.remove(osShip.children[i]); 
         }
@@ -748,28 +745,36 @@
         camAngleX = -0.05; camAngleY = 0;
 
         simEntities.forEach((tgt) => { 
-            if(tgt.isMASS && tgt !== mass) return; // 3D 시야에서도 다른 MASS는 숨김 처리
+            if(tgt.isMASS && tgt !== mass) return; 
             if(tgt === mass) return; 
             const tMesh = getModelForShip(tgt.type); scene.add(tMesh); targetMeshes.push({ entity: tgt, mesh: tMesh }); 
         });
         
         document.getElementById('val-wind').innerText = `${globalEnv.windDir}° / ${globalEnv.windSpd}`;
         document.getElementById('val-current').innerText = `${globalEnv.currentDir}° / ${globalEnv.currentSpd}`;
+        
+        // 💡 화면 렌더링 강제 업데이트로 검은 화면 방지
+        const contentDiv = document.getElementById('fpv-content');
+        camera3D.aspect = contentDiv.clientWidth / contentDiv.clientHeight;
+        camera3D.updateProjectionMatrix();
+        renderer3D.setSize(contentDiv.clientWidth, contentDiv.clientHeight);
+        sync3DScene(0);
     }
 
-    function exit3DMode() { is3DMode = false; document.getElementById('fpv-container').style.display = 'none'; }
+    function exit3DMode() { 
+        is3DMode = false; 
+        document.getElementById('fpv-container').classList.remove('active'); 
+    }
 
     function sync3DScene(dt) {
-        if(!is3DMode || selectedMassIndex < 0) return;
+        if(selectedMassIndex < 0) return;
         const mass = massViews[selectedMassIndex].massEntity;
         water.material.uniforms['time'].value += dt * 0.3;
         const meterScale = 4.63;
 
-        // OS 좌표 동기화
         osShip.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
         osShip.rotation.y = -mass.hdg * DEG2RAD;
         
-        // 카메라 시점 동기화
         camera3D.rotation.order = 'YXZ';
         camera3D.rotation.y = camAngleY; 
         camera3D.rotation.x = camAngleX;
@@ -805,7 +810,10 @@
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
         updatePhysics(dt);
-        if(is3DMode) sync3DScene(dt);
+        
+        // 💡 3D 엔진은 백그라운드에서도 항상 실행됨 (창을 켜면 즉시 보이도록)
+        sync3DScene(dt);
+        
         render2D(); updateSidebar();
     }
 
