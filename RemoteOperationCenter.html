@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>[HTMS] Remote Operation Center Simulator</title>
+    <title>[HTMS] Portable Remote Operation Center</title>
     <!-- Three.js 및 에셋 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/objects/Water.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <style>
@@ -28,8 +27,8 @@
 
         /* ================= 메인 메뉴 (로그인) ================= */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); }
-        #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 16px; font-weight: normal; margin-bottom: 40px; }
+        #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
+        #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
         
         .menu-box { background: rgba(0,0,0,0.6); border: 1px solid var(--accent-cyan); border-radius: 12px; padding: 40px; width: 90%; max-width: 400px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(6,182,212,0.1); }
         .form-row { margin-bottom: 20px; text-align: left; }
@@ -42,108 +41,60 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 2D 관제 센터 레이아웃 ================= */
-        #scc-container { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); display: flex; flex-direction: row; }
+        /* ================= 메인 레이아웃 (매크로 뷰 vs 스플릿 뷰) ================= */
+        #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         
-        #grid-container { flex: 1; display: grid; gap: 2px; background: var(--border-color); width: 100%; height: 100%; }
+        /* 좌측 2D 그리드 영역 */
+        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); width: 100%; height: 100%; transition: flex 0.3s ease; }
         
-        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid var(--accent-cyan); transition: border 0.2s; }
+        /* 우측 사이드바 (대시보드) */
+        #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; transition: width 0.3s ease, padding 0.3s ease; overflow-y: auto; }
+        .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
+        
+        /* 우측 3D 집중관찰(FPV) 영역 */
+        #fpv-area { display: none; width: 50%; height: 100%; background: #050a10; position: relative; border-left: 2px solid var(--accent-cyan); flex-direction: column; overflow: hidden; box-shadow: inset 10px 0 30px rgba(0,0,0,0.8); }
+
+        /* Split Mode State Classes */
+        #main-wrapper.split-mode #grid-area { flex: none; width: 50%; }
+        #main-wrapper.split-mode #sidebar { width: 0; padding: 0; border: none; overflow: hidden; }
+        #main-wrapper.split-mode #fpv-area { display: flex; }
+
+        /* ================= 2D 뷰포트 내부 스타일 ================= */
+        .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 2px solid transparent; transition: border 0.2s; }
         .viewport.active-vp { border: 2px solid var(--accent-yellow); }
-        .vp-canvas { width: 100%; height: 100%; display: block; }
+        .viewport.hidden-vp { display: none !important; } /* 스플릿 뷰 시 선택되지 않은 창 숨김 */
+        .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
         
         .vp-label { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
-        .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+        .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
-
-        /* 우측 정보 패널 */
-        #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; box-shadow: -5px 0 25px rgba(0,0,0,0.5); z-index: 20; overflow-y: auto; }
-        .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; }
+        .hud-cursor { color: var(--text-muted); }
         
+        /* ================= 3D FPV UI 스타일 ================= */
+        #fpv-header { position: absolute; top: 0; left: 0; width: 100%; padding: 10px 20px; background: linear-gradient(to bottom, rgba(5,10,15,0.9), transparent); display: flex; justify-content: space-between; align-items: center; z-index: 50; box-sizing: border-box; pointer-events: none;}
+        #fpv-title { color: var(--accent-cyan); font-weight: bold; font-size: 20px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; }
+        
+        .btn-return { pointer-events: auto; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 6px 12px; border-radius: 4px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .btn-return:hover { background: #ef4444; color: #fff; }
+
+        /* Step 1 임시 개입 버튼 */
+        #btn-intervention { position: absolute; bottom: 30px; right: 30px; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 15px 30px; font-size: 18px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; z-index: 50; transition: all 0.2s; backdrop-filter: blur(4px); box-shadow: 0 0 15px rgba(16,185,129,0.2); }
+        #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.6); transform: scale(1.05); }
+
+        /* 사이드바 데이터 박스 */
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 15px; margin-bottom: 15px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
-        .info-box.danger { border-left: 3px solid var(--accent-red); }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; font-weight: bold; }
         .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; align-items: center; }
         .data-row span { color: #94a3b8; font-weight: bold; }
         .data-row b { color: #fff; font-family: monospace; font-size: 16px; }
-
-        .btn-main { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: #0ea5e9; border: 1px solid #0284c7; color: #fff; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-top: auto; flex-shrink: 0; }
-        .btn-main:hover { background: #38bdf8; }
-        .btn-main:disabled { background: #334155; border-color: #475569; color: #94a3b8; cursor: not-allowed; }
-
-        @media (max-width: 768px), (max-aspect-ratio: 1/1) {
-            #scc-container { flex-direction: column !important; }
-            #grid-container { flex: 1; height: 55vh; }
-            #sidebar { width: 100%; height: 45vh; border-left: none; border-top: 2px solid var(--border-color); padding: 15px; }
-        }
-
-        /* ================= 3D FPV 모드 레이아웃 (백그라운드 렌더링 지원) ================= */
-        #fpv-container { 
-            position: absolute; top: 10%; left: 10%; 
-            width: 80%; height: 80%; min-width: 320px; min-height: 250px;
-            z-index: 1000; background: #000; border: 2px solid var(--accent-cyan);
-            border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-            
-            /* 화면에 보이지 않아도 렌더링되게끔 처리 (display:none 안씀) */
-            display: flex; flex-direction: column; overflow: hidden;
-            visibility: hidden; opacity: 0; pointer-events: none;
-            transform: scale(0.95); transition: opacity 0.2s, transform 0.2s;
-        }
-        
-        #fpv-container.active {
-            visibility: visible; opacity: 1; pointer-events: auto; transform: scale(1);
-        }
-
-        #fpv-header {
-            height: 35px; background: #111827; border-bottom: 1px solid var(--accent-cyan);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 15px; cursor: grab; user-select: none; flex-shrink: 0; touch-action: none;
-        }
-        #fpv-header:active { cursor: grabbing; }
-
-        #fpv-resize-handle {
-            position: absolute; bottom: 0; right: 0; width: 30px; height: 30px;
-            cursor: se-resize; z-index: 10000;
-            background: linear-gradient(135deg, transparent 50%, var(--accent-cyan) 50%);
-            touch-action: none;
-        }
-
-        #fpv-content { position: relative; flex: 1; width: 100%; height: 100%; overflow: hidden; }
-        #fpv-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
-
-        /* 원본 시뮬레이터 상단 HUD 완벽 유지 */
-        #digital-hud-container { 
-            top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; 
-            padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; 
-            border-radius: 0 0 12px 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); position: absolute; pointer-events: auto; 
-            white-space: nowrap; backdrop-filter: blur(8px); transform-origin: top center;
-        }
-
-        .hud-side-controls { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
-        .btn-group-small { display: flex; gap: 5px; justify-content: center;}
-        .btn-ctrl-small { background: rgba(0, 100, 200, 0.2); border: 1px solid rgba(0,255,255,0.3); color: #ccc; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; padding: 4px 8px; transition: 0.2s; height: 24px; display: flex; align-items: center; justify-content: center;}
-        .btn-ctrl-small.active { background: rgba(0, 255, 255, 0.25); border-color: #00ffff; color: #00ffff;}
-        .btn-exit { background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc; }
-
-        .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 55px; }
-        .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px; }
-        .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace; }
-        .digital-val.danger { color: #ff3333 !important; text-shadow: 0 0 10px rgba(255,51,51,0.5); }
-
-        @media (max-width: 1024px) { #digital-hud-container { transform: translateX(-50%) scale(0.85); } }
-        @media (max-width: 768px) { #digital-hud-container { transform: translateX(-50%) scale(0.65); } }
-
-        .steer-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; backdrop-filter: blur(4px); transition: 0.1s; touch-action: none; }
-        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: translateY(-50%) scale(0.95); }
-        #btn-steer-port { left: 15px; }
-        #btn-steer-stbd { right: 15px; }
     </style>
 </head>
 <body>
 
     <!-- 1. 로그인 (메인 화면) -->
     <div id="login-overlay">
-        <h1>[HTMS] Remote Operation Center</h1>
-        <h2>SHORE CONTROL CENTER SIMULATOR</h2>
+        <h1>[HTMS] Portable Remote Operation Center</h1>
+        <h2>REMOTE OPERATION SIMULATOR</h2>
         
         <div class="menu-box">
             <div class="form-row">
@@ -165,87 +116,38 @@
         </div>
     </div>
 
-    <!-- 2. 2D 다중 관제 센터 -->
-    <div id="scc-container">
-        <div id="grid-container"></div>
+    <!-- 2. 메인 관제 레이아웃 (매크로 & 스플릿 뷰 공용) -->
+    <div id="main-wrapper">
+        
+        <!-- 좌측: 2D 멀티 그리드 뷰어 -->
+        <div id="grid-area"></div>
+        
+        <!-- 우측: 매크로 모드 시 대시보드 사이드바 -->
         <div id="sidebar">
-            <div class="panel-title">SCC DASHBOARD</div>
-            
+            <div class="panel-title">MACRO DASHBOARD</div>
             <div class="info-box">
                 <div class="info-header" style="color: var(--accent-cyan);">SELECTED MASS INFO</div>
                 <div class="data-row"><span>NAME:</span> <b id="ui-mass-name" style="color: var(--accent-yellow);">-</b></div>
-                <div class="data-row"><span>HDG / COG:</span> <b id="ui-mass-hdg">-</b></div>
+                <div class="data-row"><span>HDG:</span> <b id="ui-mass-hdg">-</b></div>
                 <div class="data-row"><span>SOG:</span> <b id="ui-mass-sog">-</b></div>
             </div>
-
-            <div class="info-box danger">
-                <div class="info-header" style="color: var(--accent-red);">TARGET THREAT ANALYSIS</div>
-                <div class="data-row"><span>TARGET:</span> <b id="ui-tgt-name" style="color: var(--accent-red);">-</b></div>
-                <div class="data-row"><span>DIST:</span> <b id="ui-tgt-dist">-</b></div>
-                <div class="data-row"><span>CPA:</span> <b id="ui-tgt-cpa" style="color: var(--accent-yellow);">-</b></div>
-                <div class="data-row"><span>TCPA:</span> <b id="ui-tgt-tcpa">-</b></div>
-                <div class="data-row"><span>BCR:</span> <b id="ui-tgt-bcr">-</b></div>
+            <div style="font-size: 12px; color: #64748b; background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto;">
+                💡 <b>TIP:</b> 상세 상황을 보려면<br>특정 화면을 <b>더블클릭</b> 하세요.
             </div>
-
-            <button id="btn-enter-3d" class="btn-main" disabled>🚀 3D 전방 카메라 접속</button>
         </div>
-    </div>
 
-    <!-- 3. 3D FPV 뷰어 (백그라운드에서 상시 대기하는 창) -->
-    <div id="fpv-container">
-        <div id="fpv-header">
-            <span id="fpv-title" style="color: var(--accent-cyan); font-weight: bold; font-size: 16px;">MASS FPV CAMERA</span>
-            <button class="btn-exit" onclick="exit3DMode()" style="background:none; border:none; color:#fca5a5; font-size:16px; font-weight:bold; cursor:pointer;">✖</button>
-        </div>
-        
-        <div id="fpv-content">
-            <div id="fpv-ui">
-                <div id="digital-hud-container">
-                    <div class="hud-side-controls" style="border-right: 1px solid rgba(0,255,255,0.3); padding-right: 15px;">
-                        <div class="btn-group-small">
-                            <button class="btn-ctrl-small">CAS AI</button>
-                            <button class="btn-ctrl-small">RADAR</button>
-                            <div style="padding: 0 10px; font-size: 11px; font-weight: bold; border-radius: 4px; border: 1px solid #00ffaa; background: rgba(0,255,170,0.1); color: #00ffaa; display: flex; align-items: center; justify-content: center; height: 24px;">COLLISION CLEAR</div>
-                        </div>
-                        <div class="btn-group-small">
-                            <button class="btn-ctrl-small">PAUSE</button>
-                            <button class="btn-ctrl-small">CAM</button>
-                            <button class="btn-ctrl-small">TOUCH STR</button>
-                        </div>
-                    </div>
-
-                    <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
-                    <div class="digital-item"><div class="digital-label">CRS</div><div id="val-crs" class="digital-val">000.0°</div></div>
-                    <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
-                    <div class="digital-item"><div class="digital-label">DRIFT</div><div id="val-lat" class="digital-val">0.0</div></div>
-                    <div class="digital-item"><div class="digital-label">ROT</div><div id="val-rot" class="digital-val">00.0</div></div>
-                    <div class="digital-item"><div class="digital-label">RUD CMD</div><div id="val-rud-cmd" class="digital-val">00.0°</div></div>
-                    <div class="digital-item"><div class="digital-label">RUD ACT</div><div id="val-rud-act" class="digital-val">00.0°</div></div>
-                    <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5</div></div>
-                    <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0</div></div>
-
-                    <div class="hud-side-controls" style="border-left: 1px solid rgba(0,255,255,0.3); padding-left: 15px;">
-                        <div class="btn-group-small">
-                            <button class="btn-ctrl-small active">CALM</button>
-                            <button class="btn-ctrl-small">ROUGH</button>
-                            <button class="btn-ctrl-small">NIGHT</button>
-                            <button class="btn-ctrl-small btn-exit" onclick="exit3DMode()">CLOSE FPV</button>
-                        </div>
-                        <div class="btn-group-small">
-                            <button class="btn-ctrl-small">BRIGHT SEA</button>
-                            <button class="btn-ctrl-small active">NORM SEA</button>
-                            <button class="btn-ctrl-small">DARK SEA</button>
-                            <button class="btn-ctrl-small active">GFX: HIGH</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="btn-steer-port" class="steer-btn">P</div>
-                <div id="btn-steer-stbd" class="steer-btn">S</div>
+        <!-- 우측: 스플릿 모드 시 3D 집중관찰(FPV) 창 -->
+        <div id="fpv-area">
+            <div id="fpv-header">
+                <div id="fpv-title">MASS_1 FPV CAMERA</div>
+                <button class="btn-return" onclick="exitSplitMode()">🔙 MACRO VIEW (복귀)</button>
             </div>
+            <!-- 3D Canvas가 들어갈 자리 -->
             
-            <div id="fpv-resize-handle"></div>
+            <!-- 임시 개입 버튼 (Step 2에서 기능 연동) -->
+            <button id="btn-intervention" onclick="alert('Step 2에서 통신 지연(Latency) 로직과 함께 활성화될 예정입니다.')">원격 개입 (Intervention)</button>
         </div>
+
     </div>
 
 <script>
@@ -261,88 +163,73 @@
     const VECTOR_SCALE = 8;     
 
     const modelFiles = [
-        "Models/AircraftCarrier1.glb", "Models/AircraftCarrier2.glb", "Models/BulkCarrier.glb", 
-        "Models/CargoShip1.glb", "Models/CargoShip2.glb", "Models/ContainerShip1.glb", 
-        "Models/ContainerShip2.glb", "Models/FishingBoat1.glb", "Models/GasCarrier1.glb", 
-        "Models/PassengerShip1.glb", "Models/SteamShip.glb"
+        "Models/ContainerShip1.glb", "Models/BulkCarrier.glb", "Models/GasCarrier1.glb", "Models/CargoShip1.glb"
     ];
 
     const fallbackScenarioData = {
         "ScenarioName": "Exported_MASS_Scenario",
         "environment": { "wind": { "dir": 45, "spd": 12.5 }, "current": { "dir": 0, "spd": 0 } },
         "ships": [
-            { "mmsi": 156836315, "isMASS": 1, "shipName": "MASS_1", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 0 },
-            { "mmsi": 386492446, "isMASS": 1, "shipName": "MASS_2", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 1 },
-            { "mmsi": 991047364, "isMASS": 1, "shipName": "MASS_3", "shipType": "CNTR_2700", "initSpeed": 17, "initHeading": 0, "waypointSetID": 2 },
-            { "mmsi": 578307389, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "CNTR_2700", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
+            { "mmsi": 111, "isMASS": 1, "shipName": "MASS_1", "shipType": "CNTR_2700", "initSpeed": 15, "initHeading": 45, "waypointSetID": 0 },
+            { "mmsi": 222, "isMASS": 1, "shipName": "MASS_2", "shipType": "CNTR_2700", "initSpeed": 12, "initHeading": 0, "waypointSetID": 1 },
+            { "mmsi": 333, "isMASS": 1, "shipName": "MASS_3", "shipType": "CNTR_2700", "initSpeed": 18, "initHeading": 315, "waypointSetID": 2 },
+            { "mmsi": 444, "isMASS": 0, "shipName": "ALPHA_1", "shipType": "BULK", "initSpeed": 10, "initHeading": 180, "waypointSetID": 3 }
         ],
         "WayPointSet": [
             { "WayPointSetID": 0, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.400000 }] },
-            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.602984 }] },
-            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.805968 }] },
-            { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.810709, "Longitude": 126.394164 }] }
+            { "WayPointSetID": 1, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.500000 }] },
+            { "WayPointSetID": 2, "WayPoints": [{ "Latitude": 34.800000, "Longitude": 126.600000 }] },
+            { "WayPointSetID": 3, "WayPoints": [{ "Latitude": 34.850000, "Longitude": 126.450000 }] }
         ]
     };
 
     // ==========================================
-    // 1. STATE & PHYSICS
+    // 1. STATE VARIABLES
     // ==========================================
     let simEntities = []; 
     let massViews = [];   
-    let selectedMassIndex = -1;
-    let selectedTargetIndex = -1;
-    let is3DMode = false;
-    let lastTime = performance.now();
+    let activeMassIndex = 0;
+    let isSplitMode = false;
     let isSimulationRunning = false;
+    let lastTime = performance.now();
 
-    let isDraggingCam = false; 
-    let camAngleX = -0.05; 
-    let camAngleY = 0; 
-    let lastCamTouchX = 0, lastCamTouchY = 0;
-
+    // 3D Variables
+    let scene, camera3D, renderer3D;
     let parsedModels = {};
     let daySkybox = null;
-    let water, osShip;
-    let globalEnv = { windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
+    let osShipGroup, targetMeshes = [];
+    let isDraggingCam = false; 
+    let camAngleX = -0.05, camAngleY = 0; 
+    let lastCamTouchX = 0, lastCamTouchY = 0;
 
     // ==========================================
-    // 2. GOOGLE DRIVE FETCH & LOGIN (디버깅 완료)
+    // 2. FETCH & INITIALIZATION
     // ==========================================
     async function fetchScenarioList() {
         const select = document.getElementById('scenario-select');
         try {
             const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
             const data = await res.json();
-            if (data.error) throw new Error(data.error);
-
-            // 💡 [이슈1 해결] Apps Script 응답이 배열이 아닐 수 있음을 감안하여 안전한 배열 추출 및 방어 로직 추가
             let files = Array.isArray(data) ? data : (data.files || data.data || []);
             select.innerHTML = '';
             
-            // 💡 [이슈1 해결] name 속성이 없거나 문자열이 아닌 경우를 대비한 안전한 필터링 정규식
             const filteredFiles = files.filter(f => f && f.name && String(f.name).toUpperCase().includes('MASS'));
-            
             if(filteredFiles.length === 0) select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
             else filteredFiles.forEach(file => {
                 const opt = document.createElement('option'); opt.value = file.id; opt.textContent = String(file.name).replace('.json', ''); select.appendChild(opt);
             });
         } catch (err) {
-            console.error("Fetch Error:", err);
             select.innerHTML = '<option value="local_test">[Local Test] Exported_MASS_Scenario</option>';
         }
     }
+    window.addEventListener('DOMContentLoaded', fetchScenarioList);
 
-    // 💡 [이슈2 방어] shipType 매핑 시 런타임 에러 방지를 위한 String 형변환
     function getValidShipType(rawType) {
         if (!rawType) return "CargoShip1.glb";
         const t = String(rawType).toUpperCase();
         if (t.includes("CNTR")) return "ContainerShip1.glb";
         if (t.includes("BULK")) return "BulkCarrier.glb";
         if (t.includes("CHEM") || t.includes("LNG") || t.includes("GAS") || t.includes("TANK")) return "GasCarrier1.glb";
-        if (t.includes("FISH")) return "FishingBoat1.glb";
-        if (t.includes("PASS")) return "PassengerShip1.glb";
-        if (t.includes("CARRIER")) return "AircraftCarrier1.glb";
-        if (t.includes("WAR")) return "Warship.glb";
         return "CargoShip1.glb"; 
     }
 
@@ -351,11 +238,8 @@
         const loadMsg = document.getElementById('loading-screen');
         const btnStart = document.getElementById('btn-start');
         
-        if(!document.getElementById('student-id').value || !document.getElementById('student-name').value) { alert("학번과 이름을 입력해주세요."); return; }
-        if(!scnId) { alert("시나리오를 선택해주세요."); return; }
-
-        btnStart.style.display = 'none';
-        loadMsg.style.display = 'block';
+        if(!document.getElementById('student-id').value) { alert("학번을 입력해주세요."); return; }
+        btnStart.style.display = 'none'; loadMsg.style.display = 'block';
 
         let scenarioData;
         if(scnId === "local_test") scenarioData = fallbackScenarioData;
@@ -368,7 +252,7 @@
         }
 
         const texLoader = new THREE.TextureLoader();
-        loadMsg.innerText = "스카이박스 불러오는 중... (1/4)";
+        loadMsg.innerText = "스카이박스 불러오는 중... (1/2)";
         try {
             daySkybox = await new Promise((resolve) => {
                 texLoader.load(GITHUB_BASE_URL + "Environment/NiceSky.jpg", (tex) => { 
@@ -377,54 +261,30 @@
             });
         } catch(e) {}
 
-        await load3DAssets();
+        const gltfLoader = new THREE.GLTFLoader();
+        for (let i = 0; i < modelFiles.length; i++) {
+            loadMsg.innerText = `3D 선박 로드 중... (${i+1}/${modelFiles.length})`;
+            await new Promise((resolve) => {
+                gltfLoader.load(GITHUB_BASE_URL + modelFiles[i], (gltf) => {
+                    const model = gltf.scene;
+                    const box = new THREE.Box3().setFromObject(model); 
+                    const size = new THREE.Vector3(); box.getSize(size); 
+                    const center = new THREE.Vector3(); box.getCenter(center);
+                    model.position.set(-center.x, -center.y, -center.z); 
+                    const scale = 150 / Math.max(size.x, size.y, size.z); 
+                    const wrapper = new THREE.Group(); wrapper.add(model); wrapper.scale.set(scale, scale, scale);
+                    parsedModels[modelFiles[i].split('/').pop()] = { group: wrapper };
+                    resolve();
+                }, undefined, () => resolve());
+            });
+            await new Promise(r => setTimeout(r, 20)); 
+        }
+
         initializeSimulation(scenarioData);
     }
 
-    async function load3DAssets() {
-        const gltfLoader = new THREE.GLTFLoader();
-        const loadMsg = document.getElementById('loading-screen');
-        
-        for (let i = 0; i < modelFiles.length; i++) {
-            const filePath = modelFiles[i]; 
-            const fileName = filePath.split('/').pop(); 
-            loadMsg.innerText = `3D 선박 모델 다운로드 중... (${i+1}/${modelFiles.length})`;
-            
-            await new Promise((resolve) => {
-                gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
-                    storeLoadedModel(fileName, gltf); 
-                    resolve();
-                }, undefined, (err) => {
-                    console.warn(`[에셋 로드 실패 방어] ${filePath} 로드 실패, 건너뜁니다.`);
-                    resolve(); // 💡 에러 발생해도 Promise를 정상 종료시켜 로딩 사이클이 깨지지 않도록 방어
-                });
-            });
-            await new Promise(r => setTimeout(r, 50)); 
-        }
-    }
-
-    function storeLoadedModel(type, gltf) {
-        if (!gltf || !gltf.scene) return;
-        const rawModel = gltf.scene;
-        rawModel.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(rawModel); 
-        const size = new THREE.Vector3(); box.getSize(size); 
-        const center = new THREE.Vector3(); box.getCenter(center);
-        
-        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
-        if (!isFinite(center.x)) center.set(0, 0, 0);
-        rawModel.position.set(-center.x, -center.y, -center.z); 
-        
-        const scale = 150 / Math.max(size.x, size.y, size.z); 
-        const wrapper = new THREE.Group(); 
-        wrapper.add(rawModel); wrapper.scale.set(scale, scale, scale);
-        parsedModels[type] = { group: wrapper };
-    }
-
-    window.addEventListener('DOMContentLoaded', fetchScenarioList);
-
     // ==========================================
-    // 3. UTILS (좌표 변환 & 물리)
+    // 3. SIMULATION LOGIC & GRID SETUP
     // ==========================================
     function latLonToUnits(lat, lon, refLat, refLon) {
         const dxM = (lon - refLon) * 111111 * Math.cos(refLat * Math.PI / 180);
@@ -432,147 +292,258 @@
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
     }
 
-    function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
-        const unitSpeedOS = voSpd * (400 / 3600); 
-        const unitSpeedTS = vtSpd * (400 / 3600);
-        
-        const voX = unitSpeedOS * Math.sin(voHdg * DEG2RAD); const voZ = -unitSpeedOS * Math.cos(voHdg * DEG2RAD); 
-        const vtX = unitSpeedTS * Math.sin(vtHdg * DEG2RAD); const vtZ = -unitSpeedTS * Math.cos(vtHdg * DEG2RAD); 
-        const dvX = vtX - voX; const dvZ = vtZ - voZ; 
-        const dotP = (relX * dvX) + (relZ * dvZ); const vrelSq = (dvX * dvX) + (dvZ * dvZ); 
-        const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
-        const cpaUnits = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
-        return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: -1 }; 
-    }
-
-    // ==========================================
-    // 4. VIEWPORT & TOUCH INTERACTIONS
-    // ==========================================
-    function updateGridLayout() {
-        const grid = document.getElementById('grid-container');
-        const count = massViews.length;
-        if (count === 0) return;
-        const isPortrait = window.innerWidth < window.innerHeight;
-        let cols = 1, rows = 1;
-        
-        if (isPortrait) {
-            cols = count === 1 ? 1 : 2;
-            rows = Math.ceil(count / cols);
-        } else {
-            if (count === 1) { cols = 1; rows = 1; }
-            else if (count === 2) { cols = 2; rows = 1; }
-            else if (count === 3) { cols = 3; rows = 1; }
-            else if (count === 4) { cols = 2; rows = 2; }
-            else { cols = 3; rows = Math.ceil(count / 3); }
-        }
-        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-
-        setTimeout(() => {
-            massViews.forEach(v => {
-                const canvas = document.getElementById(v.canvasId);
-                if(canvas && canvas.parentElement) { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-            });
-        }, 50);
-    }
-    window.addEventListener('resize', updateGridLayout);
-
     function initializeSimulation(data) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('scc-container').style.display = 'flex';
+        document.getElementById('main-wrapper').style.display = 'flex';
         
-        if(data.environment && data.environment.wind) {
-            globalEnv.windDir = data.environment.wind.dir; globalEnv.windSpd = data.environment.wind.spd;
+        let refLat = 34.8; let refLon = 126.4;
+        if(data.WayPointSet && data.WayPointSet.length > 0) { 
+            refLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
+            refLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); 
         }
 
-        const grid = document.getElementById('grid-container'); grid.innerHTML = '';
-        massViews = []; simEntities = [];
-        let refLat = 34.8; let refLon = 126.4;
-        if(data.WayPointSet && data.WayPointSet.length > 0) { refLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); refLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); }
-
+        simEntities = [];
         data.ships.forEach(s => {
             const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: refLat, Longitude: refLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, refLat, refLon);
-            simEntities.push({ id: s.mmsi, name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed });
+            simEntities.push({ 
+                id: s.mmsi, name: s.shipName, type: getValidShipType(s.shipType), isMASS: s.isMASS === 1, 
+                x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed 
+            });
         });
 
         const massShips = simEntities.filter(s => s.isMASS);
-        
+        const grid = document.getElementById('grid-area');
+        grid.innerHTML = ''; massViews = [];
+
         massShips.forEach((mass, idx) => {
             const vp = document.createElement('div');
             vp.className = `viewport ${idx === 0 ? 'active-vp' : ''}`;
-            vp.innerHTML = `<div class="vp-label">${mass.name}</div><div class="coord-hud" id="hud-${idx}"><div class="hud-range">VIEW RANGE: 3.0 NM</div></div><canvas class="vp-canvas" id="canvas-mass-${idx}"></canvas>`;
+            vp.id = `vp-${idx}`;
+            vp.innerHTML = `
+                <div class="vp-label">${mass.name}</div>
+                <div class="coord-hud" id="hud-${idx}">
+                    <div class="hud-range">RANGE: 3.0 NM</div>
+                </div>
+                <canvas class="vp-canvas" id="canvas-mass-${idx}"></canvas>
+            `;
             grid.appendChild(vp);
 
             const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0 };
             massViews.push(vObj);
 
+            // 이벤트 바인딩 (단일클릭: 활성화, 더블클릭: 스플릿 뷰 진입)
+            vp.addEventListener('mousedown', () => {
+                document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
+                vp.classList.add('active-vp');
+                activeMassIndex = idx; updateSidebar();
+            });
+
+            vp.addEventListener('dblclick', () => {
+                enterSplitMode(idx);
+            });
+
             setTimeout(() => {
                 const canvas = document.getElementById(vObj.canvasId);
-                canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+                canvas.width = vp.clientWidth; canvas.height = vp.clientHeight;
                 vObj.panX = canvas.width / 2; vObj.panY = canvas.height / 2;
-
-                const startPan = (clientX, clientY) => {
-                    document.querySelectorAll('.viewport').forEach(v => v.classList.remove('active-vp'));
-                    vp.classList.add('active-vp'); selectedMassIndex = idx; selectedTargetIndex = -1; updateSidebar();
+                
+                // 패닝 로직
+                canvas.addEventListener('mousedown', (e) => {
                     const rect = canvas.getBoundingClientRect();
-                    const mx = clientX - rect.left; const my = clientY - rect.top;
-                    let clicked = false;
-                    for(let i=0; i<simEntities.length; i++) {
-                        const s = simEntities[i]; if(s.isMASS && s !== mass) continue; 
-                        if(s === mass) continue;
-                        const cx = vObj.panX + (s.x - mass.x) * vObj.viewScale; const cy = vObj.panY + (s.z - mass.z) * vObj.viewScale;
-                        if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) { selectedTargetIndex = i; clicked = true; updateSidebar(); break; }
-                    }
-                    if(!clicked) { vObj.isDragging = true; vObj.dragStartX = mx - vObj.panX; vObj.dragStartY = my - vObj.panY; }
-                };
-                const doPan = (clientX, clientY) => {
-                    if(vObj.isDragging) { const rect = canvas.getBoundingClientRect(); vObj.panX = (clientX - rect.left) - vObj.dragStartX; vObj.panY = (clientY - rect.top) - vObj.dragStartY; }
-                };
-
-                canvas.addEventListener('mousedown', (e) => startPan(e.clientX, e.clientY));
-                canvas.addEventListener('mousemove', (e) => doPan(e.clientX, e.clientY));
+                    vObj.isDragging = true; vObj.dragStartX = (e.clientX - rect.left) - vObj.panX; vObj.dragStartY = (e.clientY - rect.top) - vObj.panY;
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if(vObj.isDragging) { const rect = canvas.getBoundingClientRect(); vObj.panX = (e.clientX - rect.left) - vObj.dragStartX; vObj.panY = (e.clientY - rect.top) - vObj.dragStartY; }
+                });
                 window.addEventListener('mouseup', () => vObj.isDragging = false);
+                
+                // 줌(휠) 로직
                 canvas.addEventListener('wheel', (e) => {
                     e.preventDefault();
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
-                    vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${range.toFixed(1)} NM`;
+                    vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
                 }, { passive: false });
-
-                let initialPinchDist = null;
-                canvas.addEventListener('touchstart', (e) => {
-                    if(e.touches.length === 1) startPan(e.touches[0].clientX, e.touches[0].clientY);
-                    else if (e.touches.length === 2) {
-                        vObj.isDragging = false;
-                        initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    }
-                }, {passive: true});
-                canvas.addEventListener('touchmove', (e) => {
-                    if(e.touches.length === 1 && vObj.isDragging) doPan(e.touches[0].clientX, e.touches[0].clientY);
-                    else if (e.touches.length === 2 && initialPinchDist) {
-                        e.preventDefault();
-                        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                        let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range / (dist > initialPinchDist ? 1.05 : 0.95)));
-                        initialPinchDist = dist; vObj.viewScale = 1 / range;
-                        document.querySelector(`#hud-${idx} .hud-range`).textContent = `VIEW RANGE: ${range.toFixed(1)} NM`;
-                    }
-                }, {passive: false});
-                canvas.addEventListener('touchend', () => { vObj.isDragging = false; initialPinchDist = null; });
             }, 50);
         });
 
         updateGridLayout();
-        if(massViews.length > 0) selectedMassIndex = 0;
-        updateSidebar(); 
+        initThreeJS_Lightweight();
         
         isSimulationRunning = true;
-        initThreeJS(); 
         mainLoop();
     }
 
+    function updateGridLayout() {
+        if(isSplitMode) return; // 스플릿 모드일때는 CSS로 처리되므로 그리드 계산 생략
+        const grid = document.getElementById('grid-area');
+        const count = massViews.length;
+        if (count === 0) return;
+        let cols = 1, rows = 1;
+        if (count === 2) { cols = 2; rows = 1; }
+        else if (count === 3) { cols = 3; rows = 1; }
+        else if (count === 4) { cols = 2; rows = 2; }
+        else if (count > 4) { cols = 3; rows = Math.ceil(count / 3); }
+        
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        // 리사이즈 시 캔버스 크기 재조정
+        setTimeout(() => {
+            massViews.forEach(v => {
+                const canvas = document.getElementById(v.canvasId);
+                const vp = canvas.parentElement;
+                if(vp.classList.contains('hidden-vp')) return;
+                canvas.width = vp.clientWidth; canvas.height = vp.clientHeight;
+            });
+        }, 50);
+    }
+    window.addEventListener('resize', updateGridLayout);
+
+    function updateSidebar() {
+        if(massViews.length === 0) return;
+        const mass = massViews[activeMassIndex].massEntity;
+        document.getElementById('ui-mass-name').innerText = mass.name;
+        document.getElementById('ui-mass-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
+        document.getElementById('ui-mass-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
+    }
+
     // ==========================================
-    // 5. 2D RENDERING
+    // 4. UX FLOW: SPLIT MODE TOGGLE
+    // ==========================================
+    function enterSplitMode(idx) {
+        if(isSplitMode) return;
+        activeMassIndex = idx;
+        isSplitMode = true;
+        
+        const wrapper = document.getElementById('main-wrapper');
+        wrapper.classList.add('split-mode');
+
+        // 선택되지 않은 뷰포트 숨기기
+        massViews.forEach((v, i) => {
+            const vp = document.getElementById(`vp-${i}`);
+            if(i === idx) {
+                vp.classList.remove('hidden-vp');
+                vp.classList.add('active-vp');
+            } else {
+                vp.classList.add('hidden-vp');
+                vp.classList.remove('active-vp');
+            }
+        });
+
+        // 3D 씬 선박 세팅 
+        setup3DSceneForMass(idx);
+
+        // 레이아웃 변경 후 캔버스 리사이즈 
+        setTimeout(() => {
+            const canvas = document.getElementById(massViews[idx].canvasId);
+            canvas.width = canvas.parentElement.clientWidth; 
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            const fpvArea = document.getElementById('fpv-area');
+            camera3D.aspect = fpvArea.clientWidth / fpvArea.clientHeight;
+            camera3D.updateProjectionMatrix();
+            renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+        }, 350); // CSS 트랜지션(0.3s) 대기
+    }
+
+    window.exitSplitMode = function() {
+        if(!isSplitMode) return;
+        isSplitMode = false;
+
+        const wrapper = document.getElementById('main-wrapper');
+        wrapper.classList.remove('split-mode');
+
+        // 숨겼던 뷰포트 복구
+        massViews.forEach((v, i) => {
+            const vp = document.getElementById(`vp-${i}`);
+            vp.classList.remove('hidden-vp');
+        });
+
+        updateGridLayout();
+    }
+
+    // ==========================================
+    // 5. LIGHTWEIGHT 3D ENGINE (Step 1)
+    // ==========================================
+    function initThreeJS_Lightweight() {
+        const fpvArea = document.getElementById('fpv-area');
+        scene = new THREE.Scene();
+        if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
+        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
+
+        osShipGroup = new THREE.Group(); scene.add(osShipGroup);
+        camera3D = new THREE.PerspectiveCamera(60, fpvArea.clientWidth / fpvArea.clientHeight, 1, 80000);
+        osShipGroup.add(camera3D); // 카메라는 본선에 종속
+        
+        renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); // 경량화
+        renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+        fpvArea.insertBefore(renderer3D.domElement, document.getElementById('btn-intervention'));
+
+        scene.add(new THREE.AmbientLight(0x707070, 1.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
+
+        // Water.js 대신 단순한 단색 Plane (가벼움)
+        const simpleSea = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshBasicMaterial({ color: 0x004488, transparent: true, opacity: 0.9 })
+        );
+        simpleSea.rotation.x = -Math.PI / 2;
+        scene.add(simpleSea);
+
+        // 카메라 마우스 드래그 조작 로직
+        fpvArea.addEventListener('mousedown', (e) => { if(e.target.tagName === 'CANVAS') isDraggingCam = true; });
+        window.addEventListener('mouseup', () => { isDraggingCam = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingCam && isSplitMode) { 
+                camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
+            }
+        });
+        
+        new ResizeObserver(() => {
+            if(!isSplitMode) return;
+            camera3D.aspect = fpvArea.clientWidth / fpvArea.clientHeight;
+            camera3D.updateProjectionMatrix();
+            renderer3D.setSize(fpvArea.clientWidth, fpvArea.clientHeight);
+        }).observe(fpvArea);
+    }
+
+    function getModelForShip(type) {
+        if (parsedModels[type]) return parsedModels[type].group.clone();
+        // Fallback 박스 모델
+        const group = new THREE.Group();
+        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
+        group.add(hull); return group;
+    }
+
+    function setup3DSceneForMass(idx) {
+        const mass = massViews[idx].massEntity;
+        document.getElementById('fpv-title').innerText = `${mass.name} FPV CAMERA`;
+
+        // 기존 자식 정리
+        for(let i = osShipGroup.children.length - 1; i >= 0; i--) { 
+            if(osShipGroup.children[i] !== camera3D) osShipGroup.remove(osShipGroup.children[i]); 
+        }
+        targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
+        
+        // 본선 추가
+        const osModel = getModelForShip(mass.type);
+        osShipGroup.add(osModel);
+        camera3D.position.set(0, 50, -10); // 브릿지 위치
+        camAngleX = -0.05; camAngleY = 0;
+
+        // 타선 추가
+        simEntities.forEach((tgt) => { 
+            if(tgt === mass) return; 
+            const tMesh = getModelForShip(tgt.type); scene.add(tMesh); 
+            targetMeshes.push({ entity: tgt, mesh: tMesh }); 
+        });
+    }
+
+    // ==========================================
+    // 6. RENDER LOOP (2D & 3D Sync)
     // ==========================================
     function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; const cy = panY + z * viewScale;
@@ -583,243 +554,78 @@
         ctx.lineWidth = 1 / viewScale; ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
         if (label) { ctx.fillStyle = color; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * viewScale + 15)); }
     }
+    
     function drawVectorArrowLocal(ctx, panX, panY, viewScale, x, z, heading, distUnit, color) {
         if (distUnit <= 0) return;
         const cx = panX + x * viewScale; const cy = panY + z * viewScale; const rad = (heading - 90) * DEG2RAD;
         const wpX = cx + Math.cos(rad) * (distUnit * viewScale); const wpY = cy + Math.sin(rad) * (distUnit * viewScale);
         ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(wpX, wpY); ctx.stroke(); ctx.setLineDash([]);
-        ctx.save(); ctx.translate(wpX, wpY); ctx.rotate(heading * DEG2RAD); ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(4, 6); ctx.lineTo(-4, 6); ctx.closePath(); ctx.fill(); ctx.restore();
     }
+
     function render2D() {
         massViews.forEach((v, idx) => {
-            const canvas = document.getElementById(v.canvasId); if(!canvas) return;
+            const canvas = document.getElementById(v.canvasId); 
+            const vp = canvas.parentElement;
+            // 스플릿 뷰에서 숨겨진 캔버스는 그리지 않음 (성능 최적화)
+            if(!canvas || vp.classList.contains('hidden-vp')) return;
+            
             const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, v.panY); ctx.lineTo(canvas.width, v.panY); ctx.moveTo(v.panX, 0); ctx.lineTo(v.panX, canvas.height); ctx.stroke();
+            
             const rangeNM = 1 / v.viewScale;
             let stepCbl = rangeNM <= 1.5 ? 1 : (rangeNM <= 3.5 ? 5 : (rangeNM <= 8.0 ? 10 : 20));   
             let majorCbl = rangeNM <= 1.5 ? 5 : (rangeNM <= 3.5 ? 10 : (rangeNM <= 8.0 ? 20 : 50)); 
             const maxCables = Math.ceil((Math.max(Math.hypot(v.panX, v.panY), Math.hypot(canvas.width - v.panX, v.panY), Math.hypot(v.panX, canvas.height - v.panY), Math.hypot(canvas.width - v.panX, canvas.height - v.panY)) / v.viewScale) / 40);
+            
             ctx.setLineDash([4, 4]);
             for (let i = stepCbl; i <= maxCables; i += stepCbl) { const radius_px = (i * 40) * v.viewScale; ctx.strokeStyle = (i % majorCbl === 0) ? '#2d3f5a' : '#1d283a'; ctx.lineWidth = (i % majorCbl === 0) ? 1.5 : 1; ctx.beginPath(); ctx.arc(v.panX, v.panY, radius_px, 0, Math.PI * 2); ctx.stroke(); }
             ctx.setLineDash([]);
             
-            simEntities.forEach((s, tIdx) => {
-                if (s.isMASS && s !== v.massEntity) return;
-
+            simEntities.forEach((s) => {
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
-                const isOwnShip = s === v.massEntity; const isSelected = (selectedMassIndex === idx && selectedTargetIndex === tIdx);
+                const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
-                
-                if (isSelected && !isOwnShip) { ctx.beginPath(); ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 10, 0, Math.PI * 2); ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2; ctx.stroke(); }
-                
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
-                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "" : s.name);
+                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "OS" : s.name);
             });
         });
-    }
-
-    // ==========================================
-    // 6. UI & Sidebar Updates
-    // ==========================================
-    function updateSidebar() {
-        if(selectedMassIndex < 0) return;
-        const mass = massViews[selectedMassIndex].massEntity;
-        document.getElementById('ui-mass-name').innerText = mass.name;
-        document.getElementById('ui-mass-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
-        document.getElementById('ui-mass-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
-        document.getElementById('btn-enter-3d').disabled = false;
-
-        if(selectedTargetIndex >= 0) {
-            const tgt = simEntities[selectedTargetIndex];
-            const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, tgt.x - mass.x, tgt.z - mass.z);
-            document.getElementById('ui-tgt-name').innerText = tgt.name;
-            document.getElementById('ui-tgt-dist').innerText = `${(Math.sqrt(Math.pow(tgt.x - mass.x, 2) + Math.pow(tgt.z - mass.z, 2)) / 400).toFixed(2)} NM`;
-            document.getElementById('ui-tgt-cpa').innerText = `${cpaData.cpa.toFixed(2)} NM`;
-            document.getElementById('ui-tgt-tcpa').innerText = cpaData.tcpa > 0 ? `${(cpaData.tcpa/60).toFixed(1)} MIN` : '-';
-            document.getElementById('ui-tgt-bcr').innerText = cpaData.bcr > 0 ? `${cpaData.bcr.toFixed(2)} NM` : '-';
-        } else {
-            document.getElementById('ui-tgt-name').innerText = '-'; document.getElementById('ui-tgt-dist').innerText = '-'; document.getElementById('ui-tgt-cpa').innerText = '-'; document.getElementById('ui-tgt-tcpa').innerText = '-'; document.getElementById('ui-tgt-bcr').innerText = '-';
-        }
-    }
-
-    // ==========================================
-    // 7. FPV WINDOW & THREE.JS
-    // ==========================================
-    const fpvWin = document.getElementById('fpv-container');
-    const fpvHeader = document.getElementById('fpv-header');
-    const fpvResize = document.getElementById('fpv-resize-handle');
-    let isDragWin = false, isReszWin = false, stX, stY, stL, stT, stW, stH;
-
-    const startDrag = (e) => { if(e.target.tagName==='BUTTON') return; isDragWin = true; const t = e.touches ? e.touches[0] : e; stX = t.clientX; stY = t.clientY; stL = fpvWin.offsetLeft; stT = fpvWin.offsetTop; };
-    const doDrag = (e) => { if(!isDragWin) return; const t = e.touches ? e.touches[0] : e; fpvWin.style.left = (stL + (t.clientX - stX)) + 'px'; fpvWin.style.top = (stT + (t.clientY - stY)) + 'px'; };
-    const stopDrag = () => { isDragWin = false; };
-    fpvHeader.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', doDrag); window.addEventListener('mouseup', stopDrag);
-    fpvHeader.addEventListener('touchstart', startDrag, {passive: true}); window.addEventListener('touchmove', doDrag, {passive: true}); window.addEventListener('touchend', stopDrag);
-
-    const startResz = (e) => { e.preventDefault(); e.stopPropagation(); isReszWin = true; const t = e.touches ? e.touches[0] : e; stX = t.clientX; stY = t.clientY; stW = fpvWin.clientWidth; stH = fpvWin.clientHeight; };
-    const doResz = (e) => { if(!isReszWin) return; const t = e.touches ? e.touches[0] : e; fpvWin.style.width = (stW + (t.clientX - stX)) + 'px'; fpvWin.style.height = (stH + (t.clientY - stY)) + 'px'; };
-    const stopResz = () => { isReszWin = false; };
-    fpvResize.addEventListener('mousedown', startResz); window.addEventListener('mousemove', doResz); window.addEventListener('mouseup', stopResz);
-    fpvResize.addEventListener('touchstart', startResz, {passive: false}); window.addEventListener('touchmove', doResz, {passive: false}); window.addEventListener('touchend', stopResz);
-
-    const fpvContent = document.getElementById('fpv-content');
-    fpvContent.addEventListener('mousedown', (e) => { if (!e.target.closest('#digital-hud-container') && !e.target.classList.contains('steer-btn')) isDraggingCam = true; });
-    window.addEventListener('mouseup', () => { isDraggingCam = false; });
-    window.addEventListener('mousemove', (e) => {
-        if (isDraggingCam && is3DMode) { 
-            camAngleY -= e.movementX * 0.003; camAngleX -= e.movementY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
-        }
-    });
-
-    fpvContent.addEventListener('touchstart', (e) => {
-        if (!e.target.closest('#digital-hud-container') && !e.target.classList.contains('steer-btn') && e.touches.length === 1) {
-            isDraggingCam = true; lastCamTouchX = e.touches[0].clientX; lastCamTouchY = e.touches[0].clientY;
-        }
-    }, {passive: false});
-    window.addEventListener('touchend', () => { isDraggingCam = false; });
-    window.addEventListener('touchmove', (e) => {
-        if (isDraggingCam && is3DMode && e.touches.length === 1) {
-            let moveX = e.touches[0].clientX - lastCamTouchX; let moveY = e.touches[0].clientY - lastCamTouchY;
-            camAngleY -= moveX * 0.003; camAngleX -= moveY * 0.003; camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX));
-            lastCamTouchX = e.touches[0].clientX; lastCamTouchY = e.touches[0].clientY;
-        }
-    }, {passive: false});
-
-
-    function initThreeJS() {
-        const contentDiv = document.getElementById('fpv-content');
-        scene = new THREE.Scene();
-        if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
-        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
-
-        osShip = new THREE.Group(); scene.add(osShip);
-
-        camera3D = new THREE.PerspectiveCamera(60, contentDiv.clientWidth / contentDiv.clientHeight, 1, 80000);
-        osShip.add(camera3D); 
-        
-        renderer3D = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
-        renderer3D.setSize(contentDiv.clientWidth, contentDiv.clientHeight);
-        contentDiv.insertBefore(renderer3D.domElement, document.getElementById('fpv-ui'));
-
-        scene.add(new THREE.AmbientLight(0x707070, 1.5));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
-
-        water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), { textureWidth: 512, textureHeight: 512, waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }), sunDirection: new THREE.Vector3(1, 1, 1).normalize(), sunColor: 0xdddddd, waterColor: 0x00E5FF, distortionScale: 1.5, alpha: 1.0 });
-        water.rotation.x = -Math.PI / 2; scene.add(water);
-        const origWaterRender = water.onBeforeRender;
-        water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) { const originalBackground = scene.background; scene.background = new THREE.Color(0x000000); if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group ); scene.background = originalBackground; };
-
-        new ResizeObserver(() => {
-            if(!is3DMode) return;
-            camera3D.aspect = contentDiv.clientWidth / contentDiv.clientHeight;
-            camera3D.updateProjectionMatrix();
-            renderer3D.setSize(contentDiv.clientWidth, contentDiv.clientHeight);
-        }).observe(contentDiv);
-    }
-
-    function getModelForShip(type) {
-        if (parsedModels[type]) return parsedModels[type].group.clone();
-        const group = new THREE.Group();
-        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
-        const bridge = new THREE.Mesh( new THREE.BoxGeometry(10, 8, 10), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }) ); bridge.position.set(0, 14, 15);
-        group.add(hull); group.add(bridge); return group;
-    }
-
-    let targetMeshes = [];
-    function enter3DMode() {
-        if(selectedMassIndex < 0) return;
-        const mass = massViews[selectedMassIndex].massEntity;
-        
-        document.getElementById('fpv-container').classList.add('active');
-        document.getElementById('fpv-title').innerText = `${mass.name} FPV CAMERA`;
-        is3DMode = true;
-
-        for(let i = osShip.children.length - 1; i >= 0; i--) { 
-            if(osShip.children[i] !== camera3D) osShip.remove(osShip.children[i]); 
-        }
-        targetMeshes.forEach(m => scene.remove(m.mesh)); targetMeshes = [];
-        
-        const osModel = getModelForShip(mass.type);
-        osShip.add(osModel);
-        
-        camera3D.position.set(0, 60, 0); 
-        camAngleX = -0.05; camAngleY = 0;
-
-        simEntities.forEach((tgt) => { 
-            if(tgt.isMASS && tgt !== mass) return; 
-            if(tgt === mass) return; 
-            const tMesh = getModelForShip(tgt.type); scene.add(tMesh); targetMeshes.push({ entity: tgt, mesh: tMesh }); 
-        });
-        
-        document.getElementById('val-wind').innerText = `${globalEnv.windDir}° / ${globalEnv.windSpd}`;
-        document.getElementById('val-current').innerText = `${globalEnv.currentDir}° / ${globalEnv.currentSpd}`;
-        
-        const contentDiv = document.getElementById('fpv-content');
-        camera3D.aspect = contentDiv.clientWidth / contentDiv.clientHeight;
-        camera3D.updateProjectionMatrix();
-        renderer3D.setSize(contentDiv.clientWidth, contentDiv.clientHeight);
-        sync3DScene(0);
-    }
-
-    function exit3DMode() { 
-        is3DMode = false; 
-        document.getElementById('fpv-container').classList.remove('active'); 
-    }
-
-    function sync3DScene(dt) {
-        if(selectedMassIndex < 0) return;
-        const mass = massViews[selectedMassIndex].massEntity;
-        water.material.uniforms['time'].value += dt * 0.3;
-        const meterScale = 4.63;
-
-        osShip.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
-        osShip.rotation.y = -mass.hdg * DEG2RAD;
-        
-        camera3D.rotation.order = 'YXZ';
-        camera3D.rotation.y = camAngleY; 
-        camera3D.rotation.x = camAngleX;
-
-        targetMeshes.forEach(t => { t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; });
-
-        document.getElementById('val-hdg').innerText = `${mass.hdg.toFixed(1)}°`;
-        document.getElementById('val-crs').innerText = `${mass.hdg.toFixed(1)}°`;
-        document.getElementById('val-sog').innerText = `${mass.spd.toFixed(1)}`;
-        
-        let minCPA = Infinity;
-        simEntities.forEach(tgt => {
-            if(tgt === mass) return;
-            const cpaData = calculateCPA(mass.spd, mass.hdg, tgt.spd, tgt.hdg, tgt.x - mass.x, tgt.z - mass.z);
-            if(cpaData.tcpa > 0 && cpaData.cpa < minCPA) minCPA = cpaData.cpa;
-        });
-
-        // 💡 [이슈2 해결] HTML에 존재하지 않는 val-cpa DOM 요소 참조로 인한 TypeError 발생 방어 
-        const cpaEl = document.getElementById('val-cpa');
-        if (cpaEl) {
-            if(minCPA < 1.5) { cpaEl.innerText = `${minCPA.toFixed(2)} NM`; cpaEl.classList.add('danger'); } 
-            else { cpaEl.innerText = `SAFE`; cpaEl.classList.remove('danger'); }
-        }
-
-        renderer3D.render(scene, camera3D);
-    }
-
-    // ==========================================
-    // 8. MAIN EVENT LOOP
-    // ==========================================
-    function updatePhysics(dt) {
-        simEntities.forEach(s => { const speedUnits = s.spd * (400 / 3600); s.x += speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; s.z -= speedUnits * Math.cos(s.hdg * DEG2RAD) * dt; });
     }
 
     function mainLoop() {
         requestAnimationFrame(mainLoop);
         if(!isSimulationRunning) return;
         const now = performance.now(); const dt = Math.min((now - lastTime) / 1000, 0.1); lastTime = now;
-        updatePhysics(dt);
         
-        sync3DScene(dt);
+        // 간이 물리 업데이트 (Step 1에서는 등속 직진만 수행)
+        simEntities.forEach(s => { 
+            const speedUnits = s.spd * (400 / 3600); 
+            s.x += speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; 
+            s.z -= speedUnits * Math.cos(s.hdg * DEG2RAD) * dt; 
+        });
         
-        render2D(); updateSidebar();
+        // 2D 렌더링
+        render2D();
+        
+        // 3D 렌더링 (스플릿 모드일 때만 연산하여 부하 최소화)
+        if(isSplitMode && massViews[activeMassIndex]) {
+            const mass = massViews[activeMassIndex].massEntity;
+            const meterScale = 4.63; // unit to meter (약 4.63)
+
+            osShipGroup.position.set(mass.x * meterScale, 0, mass.z * meterScale); 
+            osShipGroup.rotation.y = -mass.hdg * DEG2RAD;
+            
+            camera3D.rotation.order = 'YXZ';
+            camera3D.rotation.y = camAngleY; 
+            camera3D.rotation.x = camAngleX;
+
+            targetMeshes.forEach(t => { 
+                t.mesh.position.set(t.entity.x * meterScale, 0, t.entity.z * meterScale); 
+                t.mesh.rotation.y = -t.entity.hdg * DEG2RAD; 
+            });
+
+            renderer3D.render(scene, camera3D);
+        }
     }
 
 </script>
