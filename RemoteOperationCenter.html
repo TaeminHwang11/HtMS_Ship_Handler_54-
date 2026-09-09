@@ -33,7 +33,6 @@
         .menu-box { background: rgba(0,0,0,0.6); border: 1px solid var(--accent-cyan); border-radius: 12px; padding: 40px; width: 90%; max-width: 400px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(6,182,212,0.1); }
         .form-row { margin-bottom: 20px; text-align: left; }
         .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold; }
-        /* 💡 드롭다운 흰 배경 버그 수정 */
         .form-row input, .form-row select { width: 100%; padding: 12px; background: #111827; border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; border-radius: 4px; outline: none; box-sizing: border-box; }
         .form-row select option { background: #111827; color: #fff; }
         .form-row input:focus, .form-row select:focus { border-color: var(--accent-cyan); }
@@ -43,21 +42,26 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 ================= */
+        /* ================= 메인 레이아웃 (좌측: 뷰 영역 / 우측: 사이드바) ================= */
         #main-wrapper { display: none; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; }
         
         /* 좌측 뷰 컬럼 (위: 3D / 아래: 2D) */
         #view-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        /* 스플릿 모드 상단: 3D FPV (평소엔 숨김) */
-        #fpv-area { display: none; background: #050a10; position: relative; border-bottom: 2px solid var(--accent-cyan); box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
+        /* 상단: 3D 집중관찰(FPV) 창 (평소엔 숨김) */
+        #fpv-area { display: none; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         
-        /* 스플릿 모드 하단 / 매크로 전체: 2D 그리드 영역 */
-        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; }
+        /* 상하 분할바 (Resizer) */
+        #h-resizer { display: none; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
+        #h-resizer:hover, #h-resizer:active { background: var(--accent-cyan); }
+        
+        /* 하단: 2D 그리드 영역 (매크로 땐 100%) */
+        #grid-area { flex: 1; display: grid; gap: 2px; background: var(--border-color); height: 100%; min-height: 0; }
 
-        /* Split Mode State Classes (상하 50:50 분할) */
-        #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; }
-        #main-wrapper.split-mode #grid-area { flex: 1; } 
+        /* Split Mode State Classes (상하 분할 활성화) */
+        #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; }
+        #main-wrapper.split-mode #h-resizer { display: block; }
+        #main-wrapper.split-mode #grid-area { flex: 1; min-height: 20%; } 
 
         /* 우측 사이드바 (대시보드 패널) */
         #sidebar { width: 380px; background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; flex-shrink: 0; }
@@ -80,7 +84,7 @@
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
         .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
 
-        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); }
+        #btn-intervention { width: 100%; margin-top: auto; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
         #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; }
@@ -122,17 +126,21 @@
     <!-- 2. 메인 관제 레이아웃 -->
     <div id="main-wrapper">
         
-        <!-- 좌측 뷰 컬럼: 위(3D) / 아래(2D) -->
+        <!-- 좌측 뷰 컬럼 (상/하단 분할 처리) -->
         <div id="view-column">
             <!-- 스플릿 모드 상단: 3D 집중관찰(FPV) 창 -->
             <div id="fpv-area">
                 <div id="fpv-label">📷 MASS_1 CAM</div>
             </div>
+            
+            <!-- 상하 크기 조절바 -->
+            <div id="h-resizer"></div>
+
             <!-- 매크로 모드 전체 / 스플릿 모드 하단: 2D 멀티 그리드 뷰어 -->
             <div id="grid-area"></div>
         </div>
         
-        <!-- 우측 사이드바 (패널 전환) -->
+        <!-- 우측 사이드바 (항상 우측 고정, 패널 내용만 전환) -->
         <div id="sidebar">
             
             <!-- MACRO 모드 패널 -->
@@ -389,7 +397,7 @@
         for(let entry of entries) {
             if(entry.target.classList.contains('viewport')) {
                 const canvas = entry.target.querySelector('.vp-canvas');
-                if(canvas && entry.contentRect.width > 0) {
+                if(canvas && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
                     canvas.width = entry.contentRect.width;
                     canvas.height = entry.contentRect.height;
                 }
@@ -447,7 +455,6 @@
             `;
             grid.appendChild(vp);
 
-            // 💡 selectedTargetIndex 변수 추가 (오렌지 원 선택용)
             const vObj = { massEntity: mass, canvasId: `canvas-mass-${idx}`, viewScale: 1 / 3.0, panX: 0, panY: 0, isDragging: false, dragStartX: 0, dragStartY: 0, hasDragged: false, selectedTargetIndex: -1 };
             massViews.push(vObj);
 
@@ -484,7 +491,6 @@
                 });
                 window.addEventListener('mouseup', () => vObj.isDragging = false);
                 
-                // 💡 타선 클릭 선택 로직
                 canvas.addEventListener('click', (e) => {
                     if(vObj.hasDragged) return;
                     const rect = canvas.getBoundingClientRect();
@@ -497,7 +503,6 @@
                         if(s === vObj.massEntity) return;
                         const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
                         const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
-                        // 클릭 반경 판단
                         if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
                             clickedIndex = tIdx;
                         }
@@ -538,7 +543,6 @@
         grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     }
 
-    // 💡 패널 및 타선 정보 업데이트 
     function updateSidebar() {
         if(massViews.length === 0) return;
         const vObj = massViews[activeMassIndex];
@@ -589,8 +593,27 @@
     }
 
     // ==========================================
-    // 4. UX FLOW: SPLIT MODE TOGGLE
+    // 4. UX FLOW: SPLIT MODE TOGGLE & RESIZER
     // ==========================================
+    const hResizer = document.getElementById('h-resizer');
+    const fpvArea = document.getElementById('fpv-area');
+    let isHResizing = false;
+
+    hResizer.addEventListener('mousedown', (e) => {
+        isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); 
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!isHResizing) return;
+        let newHeight = (e.clientY / window.innerHeight) * 100;
+        if(newHeight < 20) newHeight = 20;
+        if(newHeight > 80) newHeight = 80;
+        fpvArea.style.flex = 'none';
+        fpvArea.style.height = `${newHeight}%`;
+    });
+    window.addEventListener('mouseup', () => {
+        if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; }
+    });
+
     function enterSplitMode(idx) {
         if(isSplitMode) return;
         activeMassIndex = idx;
@@ -599,7 +622,10 @@
         const wrapper = document.getElementById('main-wrapper');
         wrapper.classList.add('split-mode');
         
-        // 패널 전환
+        // FPV 영역 높이 초기화
+        fpvArea.style.flex = '1';
+        fpvArea.style.height = 'auto';
+
         document.getElementById('panel-macro').style.display = 'none';
         document.getElementById('panel-split').style.display = 'flex';
 
@@ -639,7 +665,6 @@
     // 5. LIGHTWEIGHT 3D ENGINE
     // ==========================================
     function initThreeJS_Lightweight() {
-        const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
         if(daySkybox) { scene.background = daySkybox; } else { scene.background = new THREE.Color(0x5a6a79); }
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015);
@@ -705,7 +730,7 @@
         camAngleX = -0.05; camAngleY = 0;
 
         simEntities.forEach((tgt) => { 
-            if(tgt.isMASS && tgt !== mass) return; // 다른 MASS는 숨기거나 상황에 맞춰 그림
+            if(tgt.isMASS && tgt !== mass) return; 
             if(tgt === mass) return; 
             const tModel = getModelForShip(tgt.type); 
             const tGroup = new THREE.Group();
@@ -728,7 +753,6 @@
         if (label) { ctx.fillStyle = color; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * viewScale + 15)); }
     }
     
-    // 💡 벡터 끝부분 명확한 화살표(▶) 그리기 로직 추가
     function drawVectorArrowLocal(ctx, panX, panY, viewScale, x, z, heading, distUnit, color) {
         if (distUnit <= 0) return;
         const cx = panX + x * viewScale; const cy = panY + z * viewScale; const rad = (heading - 90) * DEG2RAD;
@@ -737,7 +761,6 @@
         ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(wpX, wpY); ctx.stroke(); ctx.setLineDash([]);
         
-        // 끝점 화살표 폴리곤
         ctx.save(); ctx.translate(wpX, wpY); ctx.rotate(heading * DEG2RAD);
         ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 6); ctx.lineTo(-6, 6); ctx.closePath(); ctx.fill(); ctx.restore();
     }
@@ -761,13 +784,12 @@
             ctx.setLineDash([]);
             
             simEntities.forEach((s, tIdx) => {
-                if(s.isMASS && s !== v.massEntity) return; // 매크로 뷰에서 타 MASS는 필터링하거나 그릴수도 있음 (기존로직 유지)
+                if(s.isMASS && s !== v.massEntity) return; 
                 
                 const relX = s.x - v.massEntity.x; const relZ = s.z - v.massEntity.z;
                 const isOwnShip = s === v.massEntity;
                 const color = isOwnShip ? '#10b981' : '#ef4444';
                 
-                // 💡 선택된 타선 오렌지색 원형 하이라이트
                 if (v.selectedTargetIndex === tIdx && !isOwnShip) {
                     ctx.beginPath();
                     ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
