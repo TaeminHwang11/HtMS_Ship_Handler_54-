@@ -1381,11 +1381,13 @@
                 } 
             } catch(e) { console.warn(e); }
 
+            // =============== 병렬 로딩 적용 구간 ===============
             const gltfLoader = new THREE.GLTFLoader();
-            for (let i = 0; i < modelFiles.length; i++) {
-                const filePath = modelFiles[i];
-                progressEl.innerText = `3D 선박 모델 다운로드 중... (${i+1}/${modelFiles.length})`;
-                await new Promise((resolve) => {
+            let loadedModelsCount = 0;
+            progressEl.innerText = `3D 선박 모델 다운로드 중... (0/${modelFiles.length})`;
+
+            const modelLoadPromises = modelFiles.map(filePath => {
+                return new Promise((resolve) => {
                     gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
                         const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
                         const box = new THREE.Box3().setFromObject(rawModel); 
@@ -1404,11 +1406,20 @@
                         
                         const fileName = filePath.split('/').pop(); 
                         parsedModels[fileName] = { group: wrapper, height: size.y * scale };
+                        
+                        loadedModelsCount++;
+                        progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length})`;
                         resolve();
-                    }, undefined, () => { resolve(); });
+                    }, undefined, () => { 
+                        loadedModelsCount++;
+                        progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length}) [오류]`;
+                        resolve(); 
+                    });
                 });
-                await new Promise(r => setTimeout(r, 50)); 
-            }
+            });
+
+            await Promise.all(modelLoadPromises);
+            // ===================================================
 
             document.getElementById('loading-screen').style.display = 'none';
             startSimulation(); 
