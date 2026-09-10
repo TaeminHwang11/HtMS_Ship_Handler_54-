@@ -25,6 +25,7 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
+        /* ================= 메인 메뉴 (로그인) ================= */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
@@ -41,6 +42,7 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
+        /* ================= 메인 레이아웃 ================= */
         #main-wrapper { display: none; width: 100vw; max-width: 100%; height: 100vh; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
@@ -118,7 +120,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_23" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_27" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -269,6 +271,8 @@
         'O_SUEZ': { code: 'O_SUEZ', name: 'Suez Canal / Red Sea', lat: 20, lon: 38, edges: ['DXB', 'ROT', 'BCN', 'IST', 'ATH'] },
         'O_PANAMA': { code: 'O_PANAMA', name: 'Panama Canal', lat: 9, lon: -80, edges: ['LAX', 'MIA', 'JFK', 'O_SPAC'] }
     };
+
+    const SHIP_COLORS = ['#06b6d4', '#10b981', '#f43f5e', '#eab308'];
 
     let worldGeoJSON = null;
 
@@ -596,6 +600,7 @@
             simEntities.push({ 
                 id: s.mmsi || Math.floor(Math.random()*900000000 + 100000000), 
                 name: s.shipName, type: finalType, isMASS: isMass, 
+                color: isMass ? '#10b981' : '#ef4444', 
                 riskLevel: 0, 
                 x: uPos.x, z: uPos.z, hdg: s.initHeading, spd: s.initSpeed, cmdSpeed: s.initSpeed,
                 targetRudder: 0, actualRudder: 0, rot: 0, cog: s.initHeading,
@@ -784,7 +789,6 @@
         mainLoop();
     }
 
-    // 💡 1 & 2번 반영: Surveillance World Map 렌더링 (지도 시인성 및 위험도 컬러 연동)
     function renderWorldMap() {
         if(currentMode !== 'SURVEILLANCE') return;
         const canvas = document.getElementById('world-map-canvas');
@@ -805,7 +809,7 @@
 
         if (worldGeoJSON) {
             ctx.save();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; // 지도 선명도 상향
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; 
             ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
             ctx.shadowBlur = 6;
             ctx.lineWidth = 1.2;
@@ -880,12 +884,10 @@
             const destXY = getXY(destNode.lat, destNode.lon);
             const sXY = getXY(curLat, curLon);
 
-            // 💡 2번 반영: 위험도 기반 색상 매핑 및 깜빡임 처리
             let shipColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let isBlinkOff = s.riskLevel === 2 && Math.sin(performance.now() * 0.01) < 0;
 
             if (!isBlinkOff) {
-                // 도착항 표시
                 ctx.save();
                 ctx.fillStyle = shipColor;
                 ctx.shadowColor = shipColor;
@@ -895,7 +897,6 @@
                 ctx.fillText(s.destPort.code, destXY.x + 8, destXY.y + 4);
                 ctx.restore();
 
-                // 선박 모양 아이콘 표시
                 ctx.save();
                 ctx.translate(sXY.x, sXY.y);
                 ctx.rotate(angle);
@@ -910,7 +911,6 @@
                 ctx.fill();
                 ctx.restore();
                 
-                // 이름 표시
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px monospace'; 
                 ctx.fillText(s.name, sXY.x + 12, sXY.y + 4);
@@ -952,7 +952,6 @@
             if(!s.isMASS) return;
 
             let commColor = s.connStatus === '좋음' ? '#10b981' : (s.connStatus === '보통' ? '#eab308' : '#ef4444');
-            // 💡 패널에도 현재 선박 상태 색상 연동
             let riskColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let riskText = s.riskLevel === 2 ? 'HIGH RISK' : (s.riskLevel === 1 ? 'WARNING' : 'SAFE');
 
@@ -1363,9 +1362,6 @@
         });
     }
 
-    // ==========================================
-    // 6. RENDER LOOP (2D & 3D Sync & Physics)
-    // ==========================================
     function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; const cy = panY + z * viewScale;
         ctx.save(); ctx.translate(cx, cy); ctx.rotate(heading * DEG2RAD); ctx.scale(viewScale, viewScale); 
@@ -1420,10 +1416,17 @@
                 const isOwnShip = s === v.massEntity;
 
                 if (isOwnShip && s.waypoints && s.waypoints.length > 0) {
-                    const routeColor = 'rgba(16, 185, 129, 0.4)';
-                    ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
+                    ctx.save();
+                    const routeColor = '#10b981';
                     
+                    ctx.strokeStyle = routeColor; 
+                    ctx.lineWidth = 2.5; 
+                    ctx.shadowColor = routeColor; 
+                    ctx.shadowBlur = 8;
+                    ctx.globalAlpha = 0.8;
+                    ctx.setLineDash([6, 4]);
+                    
+                    ctx.beginPath();
                     const w0RelX = s.waypoints[0].x - v.massEntity.x;
                     const w0RelZ = s.waypoints[0].z - v.massEntity.z;
                     ctx.moveTo(v.panX + w0RelX * v.viewScale, v.panY + w0RelZ * v.viewScale);
@@ -1434,15 +1437,17 @@
                         const wRelZ = wp.z - v.massEntity.z;
                         ctx.lineTo(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale);
                     }
-                    ctx.stroke(); ctx.setLineDash([]);
+                    ctx.stroke(); 
                     
                     ctx.fillStyle = '#10b981';
+                    ctx.setLineDash([]); 
                     for(let i = 0; i < s.waypoints.length; i++) {
                         const wp = s.waypoints[i];
                         const wRelX = wp.x - v.massEntity.x;
                         const wRelZ = wp.z - v.massEntity.z;
-                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 2.5, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 3.5, 0, Math.PI*2); ctx.fill();
                     }
+                    ctx.restore();
                 }
 
                 if(s.isMASS && !isOwnShip) return; 
@@ -1527,15 +1532,15 @@
                 if (distToWp < 100) { s.currentWpIndex++; }
             }
 
-            // 💡 2번 반영: 매 초 XTD 연산과 함께 CPA/TCPA 조건으로 위험도 실시간 업데이트
             if (now - s.lastRouteCalcTime >= 1000) {
                 const routeData = calculateXTDAndETA(s);
                 s.xtd = routeData.xtd;
                 s.etaMinutes = routeData.etaMinutes;
                 s.lastRouteCalcTime = now;
 
-                let conditionA = false; // CPA/TCPA 조건 만족 여부
-                let conditionB = s.xtd >= 1.0; // 항로 이탈 조건 만족 여부
+                // 💡 3x3x3 누적 합산(Sum Rule) 방식 위험도 평가 적용
+                let minCpa = Infinity;
+                let minTcpa = Infinity;
 
                 for (let i = 0; i < simEntities.length; i++) {
                     let tgt = simEntities[i];
@@ -1543,16 +1548,30 @@
                     let relX = tgt.x - s.x;
                     let relZ = tgt.z - s.z;
                     let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                    // tcpa가 양수(다가오는 중)이며, 600초(10분) 이내이고, cpa가 0.5 NM 미만일 때 위험
-                    if (cpaData.cpa < 0.5 && cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
-                        conditionA = true;
-                        break;
+                    
+                    if (cpaData.tcpa > 0) {
+                        if (cpaData.cpa < minCpa) minCpa = cpaData.cpa;
+                        if (cpaData.tcpa < minTcpa) minTcpa = cpaData.tcpa;
                     }
                 }
 
-                if (conditionA && conditionB) s.riskLevel = 2; // 빨강 (둘 다 만족)
-                else if (conditionA || conditionB) s.riskLevel = 1; // 노랑 (하나만 만족)
-                else s.riskLevel = 0; // 녹색 (안전)
+                let cpaScore = 1;
+                if (minCpa < 0.3) cpaScore = 3;
+                else if (minCpa < 0.7) cpaScore = 2;
+
+                let tcpaScore = 1;
+                if (minTcpa < 180) tcpaScore = 3; // 3분
+                else if (minTcpa < 420) tcpaScore = 2; // 7분
+
+                let xtdScore = 1;
+                if (s.xtd >= 1.0) xtdScore = 3; // 1NM 이탈
+                else if (s.xtd >= 0.5) xtdScore = 2; // 0.5NM 이탈
+
+                let totalScore = cpaScore + tcpaScore + xtdScore;
+
+                if (totalScore >= 7) s.riskLevel = 2; // 7~9점 (빨간색 - 고위험)
+                else if (totalScore >= 5) s.riskLevel = 1; // 5~6점 (노란색 - 주의)
+                else s.riskLevel = 0; // 3~4점 (녹색 - 안전)
             }
         });
         
@@ -1564,7 +1583,7 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    const speedFact = Math.max(0.01, mass.spd * 0.002); 
+                    const speedFact = Math.max(0.005, mass.spd * 0.001); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
