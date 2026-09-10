@@ -424,7 +424,7 @@
     let simMode = 'HTMS'; 
     let currentMode = 'editor'; 
     let isDeleteMode = false; 
-    let hasWarnedShipLimit = false; // 선박 수량 제한 경고 플래그
+    let hasWarnedShipLimit = false;
 
     // 글로벌 컨트롤 전용 변수
     let globalDrag = false;
@@ -897,9 +897,12 @@
     document.getElementById('addMassBtn').addEventListener('click', () => {
         if (massList.length >= 8) return;
         if (checkShipLimit(1)) return;
+        
+        // 마지막 생성된 MASS 기준으로 무조건 10NM(18520m) 띄움
         const lastOrigin = massList[massList.length - 1];
         const lat = lastOrigin.originLat;
         const lon = lastOrigin.originLon + (18520 / (111111 * Math.cos(lat * Math.PI / 180)));
+        
         massList.push(createMassState(lat, lon));
         activeMassIndex = massList.length - 1;
         renderGrid();
@@ -909,8 +912,13 @@
         if (massList.length >= 8) return;
         const activeMass = massList[activeMassIndex];
         if (checkShipLimit(1 + activeMass.targets.length)) return;
+        
         const newMass = JSON.parse(JSON.stringify(activeMass));
-        newMass.originLon += (18520 / (111111 * Math.cos(newMass.originLat * Math.PI / 180)));
+        
+        // 무조건 마지막 생성된 MASS 기준으로 10NM(18520m) 띄워서 겹침 현상 방지
+        const lastOrigin = massList[massList.length - 1];
+        newMass.originLon = lastOrigin.originLon + (18520 / (111111 * Math.cos(newMass.originLat * Math.PI / 180)));
+        
         newMass.panX = null; newMass.panY = null; newMass.draggingObj = null;
         massList.push(newMass);
         activeMassIndex = massList.length - 1;
@@ -1276,7 +1284,6 @@
 
             hudTarget.style.display = 'block';
             hudTarget.style.color = 'var(--accent-red)';
-            // 기존 텍스트에 CPA, TCPA 추가 (줄바꿈하여 깔끔하게 표시)
             hudTarget.innerHTML = `[T${objInfo.index + 1}] BRG:${formatBrg}° | DST:${tDistNM}NM | SPD:${target.spd}kt<br>CPA: ${cpaStr}NM | TCPA: ${tcpaStr}min`;
         }
     }
@@ -1595,13 +1602,21 @@
                 targetShips.forEach(s => {
                     let ws = parsed.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
                     if (!ws || ws.WayPoints.length === 0) return;
+                    
                     const tLat = Number(ws.WayPoints[0].Latitude); const tLon = Number(ws.WayPoints[0].Longitude);
-                    let bestMassIdx = 0; let minDist = Infinity;
-                    massList.forEach((mass, i) => {
-                        const dist = Math.hypot(mass.originLat - tLat, mass.originLon - tLon);
-                        if (dist < minDist) { minDist = dist; bestMassIdx = i; }
-                    });
-                    const targetMass = massList[bestMassIdx];
+                    
+                    // -- FIX: shipName을 이용한 정확한 소속 MASS 배정 --
+                    let targetMassIdx = 0; 
+                    if (s.shipName && s.shipName.includes('_')) {
+                        const parts = s.shipName.split('_');
+                        const num = parseInt(parts[parts.length - 1]);
+                        if (!isNaN(num) && num >= 1 && num <= massList.length) {
+                            targetMassIdx = num - 1;
+                        }
+                    }
+                    const targetMass = massList[targetMassIdx];
+                    // ---------------------------------------------------
+
                     const fromLatLon = (lat, lon) => {
                         const dxM = (lon - targetMass.originLon) * 111111 * Math.cos(targetMass.originLat * Math.PI / 180);
                         const dzM = -(lat - targetMass.originLat) * 111111;
