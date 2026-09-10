@@ -30,7 +30,7 @@
             background: #050a10; border-bottom: 1px solid #1f293d;
             z-index: 100; display: none; align-items: center; justify-content: center; box-sizing: border-box;
         }
-        #top-bar svg { width: 100%; height: 100%; max-height: 20px; }
+        #top-bar svg { width: 100%; height: 100%; max-height: 25px; }
 
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
@@ -48,7 +48,6 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* 💡 추가된 완료 화면 레이아웃 (Finish Overlay) */
         #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: #fff; }
@@ -90,14 +89,17 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .btn-return { width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; flex-shrink: 0; }
-        .btn-return:hover { background: #ef4444; color: #fff; transform: translateY(-2px); }
+        .btn-return:hover:not(:disabled) { background: #ef4444; color: #fff; transform: translateY(-2px); }
+        /* 💡 복귀 버튼 비활성화 시 스타일 */
+        .btn-return:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; opacity: 0.6; transform: none; box-shadow: none; }
 
         #btn-intervention { width: 100%; background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); color: var(--accent-green); padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.1); flex-shrink: 0;}
-        #btn-intervention:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
+        #btn-intervention:hover:not(:disabled) { background: var(--accent-green); color: #000; box-shadow: 0 0 25px rgba(16,185,129,0.5); transform: translateY(-2px); }
         #btn-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
         #btn-end-intervention { width: 100%; display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #ef4444; padding: 18px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(239,68,68,0.1); flex-shrink: 0;}
-        #btn-end-intervention:hover { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
+        #btn-end-intervention:hover:not(:disabled) { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
+        #btn-end-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
         #btn-general-monitoring { width: 100%; padding: 18px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: rgba(6, 182, 212, 0.2); border: 2px solid var(--accent-cyan); color: var(--accent-cyan); transition: 0.2s; flex-shrink: 0; margin-top: auto; }
         #btn-general-monitoring:hover { background: var(--accent-cyan); color: #000; box-shadow: 0 0 20px rgba(6,182,212,0.4); transform: translateY(-2px); }
@@ -121,11 +123,11 @@
 
     <div id="top-bar">
         <svg viewBox="0 0 1000 40" preserveAspectRatio="xMidYMid meet">
-            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Rajdhani', sans-serif" font-weight="bold" font-size="24" letter-spacing="1.5px">[HTMS] Portable Remote Operation Monitoring and Control System</text>
+            <!-- 💡 1번 반영: font-size 28 상향 적용으로 모드 패널 텍스트보다 분명하게 큼 -->
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Rajdhani', sans-serif" font-weight="bold" font-size="28" letter-spacing="1.5px">[HTMS] Portable Remote Operation Monitoring and Control System</text>
         </svg>
     </div>
 
-    <!-- 💡 추가된 완료 화면 -->
     <div id="finish-overlay">
         <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
         <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
@@ -142,7 +144,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_41" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -172,7 +174,7 @@
 
                 <div id="intervention-overlay">
                     <div class="latency-spinner"></div>
-                    <div style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
+                    <div id="intervention-status-text" style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
                     <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
                 </div>
             </div>
@@ -216,7 +218,8 @@
 
             <div id="panel-split" style="display: none; flex-direction: column; height: 100%; min-height: 0;">
                 <div class="panel-title">DETAILED MONITORING</div>
-                <button class="btn-return" onclick="exitSplitMode()">GENERAL MONITORING (RETURN)</button>
+                <!-- 💡 3번 반영: ID 부여하여 개입 중 비활성화 용이하게 처리 -->
+                <button class="btn-return" id="btn-return-split" onclick="exitSplitMode()">GENERAL MONITORING (RETURN)</button>
                 <button id="btn-intervention" onclick="requestIntervention()" style="margin-bottom: 10px;">INTERVENTION START</button>
                 <button id="btn-end-intervention" onclick="endIntervention()" style="margin-bottom: 10px;">INTERVENTION END (AUTO RETURN)</button>
                 
@@ -246,8 +249,6 @@
 
 <script>
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
-    
-    // 💡 2번 반영: 데이터 전송 전용 구글 스크립트 URL 분리
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxES_Tm6HaYhZkF5euk9OtFyLGbOVyhjYGR3LGSGZGVxbrIueF1jMOqYctdtpVx7JluGQ/exec";
     const GITHUB_BASE_URL = "./"; 
     const DEG2RAD = Math.PI / 180;
@@ -587,13 +588,12 @@
         }
     });
 
-    // 💡 2번 반영: 데이터 전송(Google Apps Script)과 파일 네이밍 룰 및 완료 오버레이 구현
     function finishSimulationAndSendData(shipName) {
         if (isLogSent || systemLogs.length === 0) return;
         isLogSent = true;
 
-        isSimulationRunning = false; // 물리 연산 정지
-        document.getElementById('finish-overlay').style.display = 'flex'; // 전체화면 알림 띄우기
+        isSimulationRunning = false; 
+        document.getElementById('finish-overlay').style.display = 'flex'; 
         
         logEvent("SIMULATION_FINISHED", { message: "Last waypoint reached" });
 
@@ -614,7 +614,6 @@
             scnName = scnSelect.options[scnSelect.selectedIndex].text;
         }
 
-        // M_학번_이름_선박명_시나리오명.json 포맷 적용 (요청 포맷 유지)
         const customFileName = `${scnName.replace('.json', '')}_M_${dateStr}_${studentId}_${studentName}.json`;
 
         const payload = { 
@@ -653,6 +652,7 @@
                 return { id: tgt.id, cpa: cpaData.cpa.toFixed(2), tcpa: cpaData.tcpa.toFixed(1) };
             }).filter(Boolean);
 
+            // 💡 2번 반영: latency, fps, netStatus 등 시계열 정보 확대 편입
             stateObj = {
                 hdg: mass.hdg.toFixed(1),
                 sog: mass.spd.toFixed(1),
@@ -661,6 +661,9 @@
                 actRud: mass.actualRudder.toFixed(1),
                 xtd: mass.xtd.toFixed(2),
                 riskLvl: mass.riskLevel,
+                latency: mass.latencySec,
+                fps: mass.fps3D,
+                netStatus: mass.connStatus,
                 targets: targetsInfo
             };
         }
@@ -1213,7 +1216,7 @@
     window.addEventListener('touchend', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
 
     window.enterSurveillanceMode = function() {
-        if(interventionState !== 'NONE') endIntervention();
+        if(interventionState !== 'NONE') return;
         currentMode = 'SURVEILLANCE';
         isSplitMode = false;
         
@@ -1228,6 +1231,7 @@
     }
 
     window.enterGeneralMode = function() {
+        if(interventionState !== 'NONE') return;
         currentMode = 'GENERAL';
         isSplitMode = false;
         
@@ -1279,7 +1283,7 @@
 
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
-        if(interventionState !== 'NONE') endIntervention();
+        if(interventionState !== 'NONE') return; // 💡 3번 반영: 개입 상태일 경우 복귀 방어 코드
         
         logEvent("MACRO_MODE_RETURN", {});
         enterGeneralMode();
@@ -1290,6 +1294,9 @@
         const massName = massViews[activeMassIndex].massEntity.name;
         
         document.getElementById('btn-intervention').disabled = true;
+        // 💡 3번 반영: 개입 시작 시 Return 버튼 비활성화 처리
+        document.getElementById('btn-return-split').disabled = true;
+
         document.getElementById('intervention-overlay').style.display = 'flex';
         
         logEvent("INTERVENTION_REQUESTED", { massId: massName, latencySec: latency });
@@ -1312,20 +1319,55 @@
         document.getElementById('intervention-overlay').style.display = 'none';
         document.getElementById('btn-intervention').style.display = 'none';
         document.getElementById('btn-end-intervention').style.display = 'block';
+        document.getElementById('btn-end-intervention').disabled = false;
         document.getElementById('steering-controls').style.display = 'flex';
         
         logEvent("INTERVENTION_ACTIVE", { massId: massViews[activeMassIndex].massEntity.name });
     }
 
+    // 💡 3번 반영: 종료 시 딜레이(카운트다운) 적용 및 종료 문구 노출
     window.endIntervention = function() {
         if (interventionTimer) clearInterval(interventionTimer);
+        
+        const latency = parseFloat(massViews[activeMassIndex].massEntity.latencySec);
+        const massName = massViews[activeMassIndex].massEntity.name;
+        
+        logEvent("INTERVENTION_END_REQUESTED", { massId: massName, latencySec: latency });
+        interventionState = 'DISCONNECTING';
+
+        document.getElementById('btn-end-intervention').disabled = true;
+        document.getElementById('steering-controls').style.display = 'none';
+        
+        const overlay = document.getElementById('intervention-overlay');
+        overlay.style.display = 'flex';
+        document.getElementById('intervention-status-text').innerText = 'DISCONNECTING...';
+        document.getElementById('intervention-status-text').style.color = '#eab308';
+        
+        let remaining = latency;
+        document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's';
+        
+        if (remaining <= 0) { finalizeEndIntervention(); return; }
+
+        interventionTimer = setInterval(() => {
+            remaining -= 0.1;
+            if(remaining <= 0) { clearInterval(interventionTimer); finalizeEndIntervention(); } 
+            else { document.getElementById('latency-countdown').innerText = remaining.toFixed(1) + 's'; }
+        }, 100);
+    }
+
+    // 💡 개입 완전 종료(타이머 완료) 시 UI 원복 함수 분리
+    function finalizeEndIntervention() {
         interventionState = 'NONE';
         
-        document.getElementById('intervention-overlay').style.display = 'none';
+        const overlay = document.getElementById('intervention-overlay');
+        overlay.style.display = 'none';
+        document.getElementById('intervention-status-text').innerText = 'CONNECTING...';
+        document.getElementById('intervention-status-text').style.color = '#00ffaa';
+        
         document.getElementById('btn-intervention').style.display = 'block';
         document.getElementById('btn-intervention').disabled = false;
         document.getElementById('btn-end-intervention').style.display = 'none';
-        document.getElementById('steering-controls').style.display = 'none';
+        document.getElementById('btn-return-split').disabled = false;
         
         logEvent("INTERVENTION_ENDED", { massId: massViews[activeMassIndex].massEntity.name });
     }
