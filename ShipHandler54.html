@@ -246,6 +246,8 @@
                 <button id="btn-env-calm" class="btn-ctrl-small active" onclick="setEnv('calm')">CALM</button>
                 <button id="btn-env-mod" class="btn-ctrl-small" onclick="setEnv('mod')">ROUGH</button>
                 <button id="btn-env-time" class="btn-ctrl-small" onclick="toggleDayNight()">NIGHT</button>
+                <!-- ADDED: Sky Cycle Button -->
+                <button id="btn-sky-cycle" class="btn-ctrl-small active" onclick="cycleSky()">SKY: NICE</button>
                 <button class="btn-ctrl-small btn-exit" onclick="returnToMenuFromSim()">MAIN MENU</button>
             </div>
             <div class="btn-group-small">
@@ -360,7 +362,15 @@
             "Models/PassengerShip1.glb", "Models/SteamShip.glb"
         ];
         
-        const skyImage = "Environment/NiceSky.jpg"; 
+        // 하늘 이미지 리스트 및 캐시 객체 추가
+        const skyList = [
+            { file: "Environment/NiceSky.jpg", name: "NICE" },
+            { file: "Environment/GraySky.jpg", name: "GRAY" },
+            { file: "Environment/SunsetSky.jpg", name: "SUNSET" }
+        ];
+        let currentSkyIndex = 0;
+        const cachedSkies = {};
+        
         const settingsFile = "Jsons/Settings.json"; 
         
         // ==========================================
@@ -473,6 +483,10 @@
         // ==========================================
         // 4. THREE.JS SETUP & ASSETS
         // ==========================================
+        
+        // 캐싱 강제 활성화 (Three.js 내장 캐싱 - 동일 세션 중복 다운로드 방지)
+        THREE.Cache.enabled = true;
+        
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015); 
         
@@ -710,6 +724,33 @@
         // 6. UI & EVENT HANDLERS
         // ==========================================
         
+        // 하늘색 (Skybox) 순환 변경 함수 
+        window.cycleSky = function() {
+            currentSkyIndex = (currentSkyIndex + 1) % skyList.length;
+            const btn = document.getElementById('btn-sky-cycle');
+            btn.innerText = 'SKY: ' + skyList[currentSkyIndex].name;
+            
+            if (cachedSkies[currentSkyIndex]) {
+                daySkybox = cachedSkies[currentSkyIndex];
+                if (!isNight) {
+                    scene.background = daySkybox;
+                    scene.environment = daySkybox;
+                }
+            } else {
+                // 아직 캐시되지 않은 경우 다운로드 후 캐싱 적용
+                const texLoader = new THREE.TextureLoader();
+                texLoader.load(GITHUB_BASE_URL + skyList[currentSkyIndex].file, (tex) => {
+                    tex.mapping = THREE.EquirectangularReflectionMapping;
+                    cachedSkies[currentSkyIndex] = tex;
+                    daySkybox = tex;
+                    if (!isNight) {
+                        scene.background = daySkybox;
+                        scene.environment = daySkybox;
+                    }
+                });
+            }
+        };
+
         // --- 레이더 토글 함수 ---
         let isRadarOpen = false;
         window.toggleRadar = function(forceState) {
@@ -1310,7 +1351,11 @@
             const texLoader = new THREE.TextureLoader();
             try {
                 daySkybox = await new Promise((resolve) => {
-                    texLoader.load(GITHUB_BASE_URL + skyImage, (tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; resolve(tex); }, undefined, () => resolve(null));
+                    texLoader.load(GITHUB_BASE_URL + skyList[currentSkyIndex].file, (tex) => { 
+                        tex.mapping = THREE.EquirectangularReflectionMapping; 
+                        cachedSkies[currentSkyIndex] = tex; 
+                        resolve(tex); 
+                    }, undefined, () => resolve(null));
                 });
             } catch(e) {}
             if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; }
@@ -1328,7 +1373,8 @@
 
             progressEl.innerText = "캘리브레이션 세팅 적용 중... (3/4)";
             try { 
-                const setRes = await fetch(GITHUB_BASE_URL + settingsFile); 
+                // Settings.json 파일에 캐시를 적용하지 않도록 변경 (매번 최신 데이터를 받아오게 함)
+                const setRes = await fetch(GITHUB_BASE_URL + settingsFile, { cache: 'no-store' }); 
                 if(setRes.ok) { 
                     const settingsData = await setRes.json(); 
                     for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
