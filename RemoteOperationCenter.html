@@ -58,7 +58,6 @@
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
         #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
 
-        /* 반응형 사이드바 너비 고정 */
         #sidebar { width: clamp(260px, 33vw, 380px); background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
@@ -121,7 +120,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_17" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -368,6 +367,7 @@
         return "CargoShip1.glb"; 
     }
 
+    // 💡 1번 반영: Promise.all을 활용한 병렬 다운로드 체계 구성
     async function loadScenarioAndStart() {
         const scnId = document.getElementById('scenario-select').value;
         const loadMsg = document.getElementById('loading-screen');
@@ -388,67 +388,82 @@
         };
 
         let scenarioData;
+        const loadPromises = [];
+
+        // 1. 시나리오 데이터 로드
+        loadPromises.push(
+            fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) throw new Error(data.error);
+                scenarioData = data;
+                addProgress();
+            })
+        );
+
+        // 2. 세팅 로드
+        loadPromises.push(
+            fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime())
+            .then(res => { if(res.ok) return res.json(); })
+            .then(data => {
+                if(data) { for (const key in data) localStorage.setItem(key, data[key]); }
+                addProgress();
+            }).catch(() => addProgress())
+        );
+
+        // 3. 환경 스카이박스 로드 (병렬 3개)
+        const texLoader = new THREE.TextureLoader();
+        loadedSkyboxes = [];
+        const skyboxFiles = ["NiceSky.jpg", "GraySky.jpg", "SunsetSky.jpg"];
+        skyboxFiles.forEach(sf => {
+            loadPromises.push(
+                new Promise(resolve => {
+                    texLoader.load(GITHUB_BASE_URL + "Environment/" + sf, (t) => { 
+                        t.mapping = THREE.EquirectangularReflectionMapping; 
+                        loadedSkyboxes.push(t);
+                        resolve(); 
+                    }, undefined, () => resolve());
+                }).then(() => addProgress())
+            );
+        });
+
+        // 4. 선박 모델 로드 (병렬 4개)
+        const gltfLoader = new THREE.GLTFLoader();
+        modelFiles.forEach(file => {
+            loadPromises.push(
+                new Promise(resolve => {
+                    gltfLoader.load(GITHUB_BASE_URL + file, (gltf) => {
+                        const model = gltf.scene;
+                        const box = new THREE.Box3().setFromObject(model); 
+                        const size = new THREE.Vector3(); box.getSize(size); 
+                        const center = new THREE.Vector3(); box.getCenter(center);
+                        model.position.set(-center.x, -center.y, -center.z); 
+                        const scale = 150 / Math.max(size.x, size.y, size.z); 
+                        const wrapper = new THREE.Group(); wrapper.add(model); wrapper.scale.set(scale, scale, scale);
+                        parsedModels[file.split('/').pop()] = { group: wrapper };
+                        resolve();
+                    }, undefined, () => resolve());
+                }).then(() => addProgress())
+            );
+        });
+
         try {
-            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${scnId}&t=${new Date().getTime()}`);
-            scenarioData = await res.json();
-            if(scenarioData.error) throw new Error(scenarioData.error);
-            addProgress();
+            // 모든 다운로드를 동시 병렬 실행
+            await Promise.all(loadPromises);
+
+            if(!scenarioData) throw new Error("Scenario loading failed");
+
+            if(scenarioData.environment) {
+                if(scenarioData.environment.wind) { globalEnv.windDir = scenarioData.environment.wind.dir; globalEnv.windSpd = scenarioData.environment.wind.spd; }
+                if(scenarioData.environment.current) { globalEnv.currentDir = scenarioData.environment.current.dir; globalEnv.currentSpd = scenarioData.environment.current.spd; }
+            }
+
+            initializeSimulation(scenarioData);
         } catch (err) { 
             alert("시나리오를 불러오는데 실패했습니다. 네트워크 상태나 스크립트 주소를 확인하세요.");
             btnStart.style.display = 'block';
             loadMsg.style.display = 'none';
-            return;
         }
-
-        if(scenarioData.environment) {
-            if(scenarioData.environment.wind) { globalEnv.windDir = scenarioData.environment.wind.dir; globalEnv.windSpd = scenarioData.environment.wind.spd; }
-            if(scenarioData.environment.current) { globalEnv.currentDir = scenarioData.environment.current.dir; globalEnv.currentSpd = scenarioData.environment.current.spd; }
-        }
-
-        try { 
-            const setRes = await fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime()); 
-            if(setRes.ok) { 
-                const settingsData = await setRes.json(); 
-                for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
-            } 
-            addProgress();
-        } catch(e) { addProgress(); }
-
-        const texLoader = new THREE.TextureLoader();
-        loadedSkyboxes = [];
-        const skyboxFiles = ["NiceSky.jpg", "GraySky.jpg", "SunsetSky.jpg"];
-        for(let sf of skyboxFiles) {
-            try {
-                let tex = await new Promise((resolve) => {
-                    texLoader.load(GITHUB_BASE_URL + "Environment/" + sf, (t) => { 
-                        t.mapping = THREE.EquirectangularReflectionMapping; resolve(t); 
-                    }, undefined, () => resolve(null));
-                });
-                if(tex) loadedSkyboxes.push(tex);
-            } catch(e) {}
-            addProgress();
-        }
-
-        const gltfLoader = new THREE.GLTFLoader();
-        for (let i = 0; i < modelFiles.length; i++) {
-            await new Promise((resolve) => {
-                gltfLoader.load(GITHUB_BASE_URL + modelFiles[i], (gltf) => {
-                    const model = gltf.scene;
-                    const box = new THREE.Box3().setFromObject(model); 
-                    const size = new THREE.Vector3(); box.getSize(size); 
-                    const center = new THREE.Vector3(); box.getCenter(center);
-                    model.position.set(-center.x, -center.y, -center.z); 
-                    const scale = 150 / Math.max(size.x, size.y, size.z); 
-                    const wrapper = new THREE.Group(); wrapper.add(model); wrapper.scale.set(scale, scale, scale);
-                    parsedModels[modelFiles[i].split('/').pop()] = { group: wrapper };
-                    resolve();
-                }, undefined, () => resolve());
-            });
-            addProgress();
-            await new Promise(r => setTimeout(r, 20)); 
-        }
-
-        initializeSimulation(scenarioData);
     }
 
     function latLonToUnits(lat, lon, rLat, rLon) {
@@ -1032,9 +1047,6 @@
         }
     }
 
-    // ==========================================
-    // 4. UX FLOW: STATE TRANSITIONS (3-Tier)
-    // ==========================================
     const hResizer = document.getElementById('h-resizer');
     const fpvArea = document.getElementById('fpv-area');
     let isHResizing = false;
@@ -1118,7 +1130,6 @@
         updateSidebar();
     }
 
-    // 💡 1번 반영: 집중 관찰 모드 복귀 시 General 모드로 상태 초기화 함수 실행
     window.exitSplitMode = function() {
         if(!isSplitMode) return;
         if(interventionState !== 'NONE') endIntervention();
@@ -1127,9 +1138,6 @@
         enterGeneralMode();
     }
 
-    // ==========================================
-    // 💡 Step 2: INTERVENTION & KEYBOARD CONTROL
-    // ==========================================
     window.requestIntervention = function() {
         const latency = parseFloat(massViews[activeMassIndex].massEntity.latencySec);
         const massName = massViews[activeMassIndex].massEntity.name;
@@ -1221,9 +1229,6 @@
         systemLogs.push({ time: ((performance.now() - lastTime)/1000).toFixed(2), action: action, data: payload });
     }
 
-    // ==========================================
-    // 5. LIGHTWEIGHT 3D ENGINE
-    // ==========================================
     function initThreeJS_Lightweight() {
         const fpvArea = document.getElementById('fpv-area');
         scene = new THREE.Scene();
@@ -1350,9 +1355,6 @@
         });
     }
 
-    // ==========================================
-    // 6. RENDER LOOP (2D & 3D Sync & Physics)
-    // ==========================================
     function drawShipHullLocal(ctx, panX, panY, viewScale, x, z, heading, color, isOwnShip, label) {
         const cx = panX + x * viewScale; const cy = panY + z * viewScale;
         ctx.save(); ctx.translate(cx, cy); ctx.rotate(heading * DEG2RAD); ctx.scale(viewScale, viewScale); 
@@ -1407,10 +1409,18 @@
                 const isOwnShip = s === v.massEntity;
 
                 if (isOwnShip && s.waypoints && s.waypoints.length > 0) {
-                    const routeColor = 'rgba(16, 185, 129, 0.4)';
-                    ctx.strokeStyle = routeColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
+                    ctx.save();
+                    const routeColor = '#10b981';
                     
+                    // 💡 1번 반영: 항로 굵게 및 네온 글로우 효과 추가
+                    ctx.strokeStyle = routeColor; 
+                    ctx.lineWidth = 2.5; 
+                    ctx.shadowColor = routeColor; 
+                    ctx.shadowBlur = 8;
+                    ctx.globalAlpha = 0.8;
+                    ctx.setLineDash([6, 4]);
+                    
+                    ctx.beginPath();
                     const w0RelX = s.waypoints[0].x - v.massEntity.x;
                     const w0RelZ = s.waypoints[0].z - v.massEntity.z;
                     ctx.moveTo(v.panX + w0RelX * v.viewScale, v.panY + w0RelZ * v.viewScale);
@@ -1421,15 +1431,17 @@
                         const wRelZ = wp.z - v.massEntity.z;
                         ctx.lineTo(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale);
                     }
-                    ctx.stroke(); ctx.setLineDash([]);
+                    ctx.stroke(); 
                     
                     ctx.fillStyle = '#10b981';
+                    ctx.setLineDash([]); 
                     for(let i = 0; i < s.waypoints.length; i++) {
                         const wp = s.waypoints[i];
                         const wRelX = wp.x - v.massEntity.x;
                         const wRelZ = wp.z - v.massEntity.z;
-                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 2.5, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, 3.5, 0, Math.PI*2); ctx.fill();
                     }
+                    ctx.restore();
                 }
 
                 if(s.isMASS && !isOwnShip) return; 
@@ -1530,8 +1542,7 @@
                 last3DRenderTime = now;
                 
                 if (seaMesh && seaMesh.material.normalMap) {
-                    // 💡 2번 반영: 파도 속도 기존 5배속 추가 감속
-                    const speedFact = Math.max(0.005, mass.spd * 0.001); 
+                    const speedFact = Math.max(0.01, mass.spd * 0.002); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
 
