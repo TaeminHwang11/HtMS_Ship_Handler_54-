@@ -1240,9 +1240,44 @@
             const formatBrg = Math.round(targetBearing).toString().padStart(3, '0');
             const tDistNM = (Math.hypot(target.x, target.z) / 400).toFixed(2);
             
+            // --- CPA / TCPA 계산 ---
+            const dx = target.x / 400; // NM
+            const dy = -target.z / 400; // NM (Z축은 아래가 양수이므로 북쪽을 양수로 변환)
+            const osSpd = mass.osData.spd;
+            const osHdgRad = mass.osData.hdg * Math.PI / 180;
+            const tsSpd = target.spd;
+            const tsHdgRad = target.hdg * Math.PI / 180;
+
+            // X(East), Y(North) 속도 벡터 (knots)
+            const vox = osSpd * Math.sin(osHdgRad);
+            const voy = osSpd * Math.cos(osHdgRad);
+            const vtx = tsSpd * Math.sin(tsHdgRad);
+            const vty = tsSpd * Math.cos(tsHdgRad);
+
+            // 상대 속도 벡터
+            const rx = vtx - vox;
+            const ry = vty - voy;
+            const relSpeedSq = rx * rx + ry * ry;
+
+            let tcpa = 0; // hours
+            let cpa = 0;  // NM
+
+            if (relSpeedSq === 0) {
+                tcpa = 0;
+                cpa = Math.hypot(dx, dy);
+            } else {
+                tcpa = -(dx * rx + dy * ry) / relSpeedSq;
+                cpa = Math.hypot(dx + tcpa * rx, dy + tcpa * ry);
+            }
+
+            let tcpaMin = tcpa * 60;
+            let cpaStr = cpa.toFixed(2);
+            let tcpaStr = tcpaMin.toFixed(1);
+
             hudTarget.style.display = 'block';
             hudTarget.style.color = 'var(--accent-red)';
-            hudTarget.textContent = `[T${objInfo.index + 1}] BRG:${formatBrg}° | DST:${tDistNM}NM | SPD:${target.spd}kt`;
+            // 기존 텍스트에 CPA, TCPA 추가 (줄바꿈하여 깔끔하게 표시)
+            hudTarget.innerHTML = `[T${objInfo.index + 1}] BRG:${formatBrg}° | DST:${tDistNM}NM | SPD:${target.spd}kt<br>CPA: ${cpaStr}NM | TCPA: ${tcpaStr}min`;
         }
     }
 
