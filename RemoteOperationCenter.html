@@ -25,7 +25,6 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
-        /* 💡 1번 반영: 상단 고정 헤더 바 추가 */
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 40px;
             background: #050a10; border-bottom: 1px solid #1f293d;
@@ -33,7 +32,6 @@
         }
         #top-bar svg { width: 100%; height: 100%; max-height: 20px; }
 
-        /* ================= 메인 메뉴 (로그인) ================= */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
@@ -50,8 +48,11 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 ================= */
-        /* 💡 1번 반영: top 40px 위치로 내리고 높이 조정 */
+        /* 💡 추가된 완료 화면 레이아웃 (Finish Overlay) */
+        #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
+        .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
+        .finish-desc { font-size: 18px; color: #fff; }
+
         #main-wrapper { display: none; width: 100vw; max-width: 100%; height: calc(100vh - 40px); height: calc(100dvh - 40px); position: absolute; top: 40px; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
@@ -118,11 +119,16 @@
 </head>
 <body>
 
-    <!-- 💡 1번 반영: 상단 고정 바 구조 추가 (SVG로 글씨 찌그러짐 방지) -->
     <div id="top-bar">
         <svg viewBox="0 0 1000 40" preserveAspectRatio="xMidYMid meet">
             <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Rajdhani', sans-serif" font-weight="bold" font-size="24" letter-spacing="1.5px">[HTMS] Portable Remote Operation Monitoring and Control System</text>
         </svg>
+    </div>
+
+    <!-- 💡 추가된 완료 화면 -->
+    <div id="finish-overlay">
+        <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
+        <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
     </div>
 
     <div id="login-overlay">
@@ -136,7 +142,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_37" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -240,6 +246,9 @@
 
 <script>
     const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+    
+    // 💡 2번 반영: 데이터 전송 전용 구글 스크립트 URL 분리
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxES_Tm6HaYhZkF5euk9OtFyLGbOVyhjYGR3LGSGZGVxbrIueF1jMOqYctdtpVx7JluGQ/exec";
     const GITHUB_BASE_URL = "./"; 
     const DEG2RAD = Math.PI / 180;
     const SHIP_LEN_UNIT = 64.8;  
@@ -301,7 +310,7 @@
     let isSimulationRunning = false;
     
     let lastTime = performance.now();
-    let simStartTime = 0; // 💡 2번 반영: 절대 시뮬레이션 시작 시간
+    let simStartTime = 0; 
     let globalEnv = { windDir: 45, windSpd: 0, currentDir: 0, currentSpd: 0 };
     
     let last2DRenderTime = 0; 
@@ -309,7 +318,8 @@
 
     let interventionState = 'NONE'; 
     let interventionTimer = null;
-    let systemLogs = []; // 💡 2번 반영: 시계열 JSON 로그 저장 배열
+    let systemLogs = []; 
+    let isLogSent = false; 
 
     let scene, camera3D, renderer3D;
     let parsedModels = {};
@@ -577,7 +587,57 @@
         }
     });
 
-    // 💡 2번 반영: 통합 시계열 JSON 로그 수집 함수
+    // 💡 2번 반영: 데이터 전송(Google Apps Script)과 파일 네이밍 룰 및 완료 오버레이 구현
+    function finishSimulationAndSendData(shipName) {
+        if (isLogSent || systemLogs.length === 0) return;
+        isLogSent = true;
+
+        isSimulationRunning = false; // 물리 연산 정지
+        document.getElementById('finish-overlay').style.display = 'flex'; // 전체화면 알림 띄우기
+        
+        logEvent("SIMULATION_FINISHED", { message: "Last waypoint reached" });
+
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+
+        const studentId = document.getElementById('student-id').value || "UnknownID";
+        const studentName = document.getElementById('student-name').value || "UnknownName";
+        const scnSelect = document.getElementById('scenario-select');
+        let scnName = "UnknownScenario";
+        if (scnSelect && scnSelect.selectedIndex >= 0) {
+            scnName = scnSelect.options[scnSelect.selectedIndex].text;
+        }
+
+        // M_학번_이름_선박명_시나리오명.json 포맷 적용 (요청 포맷 유지)
+        const customFileName = `${scnName.replace('.json', '')}_M_${dateStr}_${studentId}_${studentName}.json`;
+
+        const payload = { 
+            studentId: studentId, 
+            studentName: studentName, 
+            fileName: customFileName, 
+            logData: JSON.stringify(systemLogs) 
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+        .then(res => res.json())
+        .then(res => { 
+            document.getElementById('finish-title').innerText = "데이터 전송 성공!"; 
+            document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다."; 
+        })
+        .catch(err => { 
+            document.getElementById('finish-title').innerText = "전송 실패"; 
+            document.getElementById('finish-title').style.color = "#ff3333"; 
+            document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다."; 
+            console.error(err); 
+        });
+    }
+
     function logEvent(action, payload) {
         if (!isSimulationRunning) return;
         
@@ -585,7 +645,6 @@
         let stateObj = null;
 
         if (mass) {
-            // 현재 선택된 타겟들의 CPA/TCPA 정보 추출
             let targetsInfo = massViews[activeMassIndex].selectedTargets.map(tIdx => {
                 let tgt = simEntities[tIdx];
                 if (!tgt) return null;
@@ -619,10 +678,10 @@
 
     function initializeSimulation(data) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('top-bar').style.display = 'flex'; // 💡 1번 반영: 시작 시 탑바 표출
+        document.getElementById('top-bar').style.display = 'flex'; 
         document.getElementById('main-wrapper').style.display = 'flex';
 
-        simStartTime = performance.now(); // 💡 2번 반영: 시계열 측정을 위한 절대 시간 초기화
+        simStartTime = performance.now(); 
 
         let baseRefLat = 34.8; let baseRefLon = 126.4;
         if(data.WayPointSet && data.WayPointSet.length > 0) { 
@@ -800,14 +859,12 @@
                         vObj.viewScale = 1 / range; 
                         document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
                         
-                        // 💡 2번 반영: 줌 인/아웃 로깅
                         logEvent("MAP_ZOOMED", { newRangeNM: range.toFixed(2) });
 
                         if(currentMode !== 'SURVEILLANCE') render2D();
                     }
                 }, {passive: false});
 
-                // 💡 2번 반영: 마우스/터치 드래그 종료 시 패닝 로깅 추가
                 window.addEventListener('mouseup', () => { 
                     if(vObj.isDragging && vObj.hasDragged) {
                         logEvent("MAP_PANNED", { panX: vObj.panOffsetX, panY: vObj.panOffsetY });
@@ -841,7 +898,6 @@
                     if(clickedIndex !== -1) {
                         if(!vObj.selectedTargets.includes(clickedIndex)) {
                             vObj.selectedTargets.push(clickedIndex);
-                            // 💡 2번 반영: 타선택 클릭 로그
                             logEvent("TARGET_SELECTED", { targetId: simEntities[clickedIndex].name });
                         }
                     }
@@ -854,7 +910,6 @@
                     let range = 1 / vObj.viewScale; range = Math.min(30, Math.max(0.5, range * (e.deltaY < 0 ? 0.9 : 1.1)));
                     vObj.viewScale = 1 / range; document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
                     
-                    // 💡 2번 반영: 휠 줌 로깅
                     logEvent("MAP_ZOOMED", { newRangeNM: range.toFixed(2) });
 
                     render2D(); 
@@ -1003,7 +1058,6 @@
         const vObj = massViews[vIdx];
         const removedName = simEntities[tIdx].name;
         vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
-        // 💡 2번 반영: 타선 제거 로그
         logEvent("TARGET_REMOVED", { targetId: removedName });
         updateSidebar();
         render2D();
@@ -1227,6 +1281,7 @@
         if(!isSplitMode) return;
         if(interventionState !== 'NONE') endIntervention();
         
+        logEvent("MACRO_MODE_RETURN", {});
         enterGeneralMode();
     }
 
@@ -1316,7 +1371,6 @@
         }
     });
 
-    // 💡 2번 반영: 3D 화면 드래그(뷰 변경) 로깅 연결을 위한 이벤트 설정 추가
     window.addEventListener('mouseup', () => { 
         if (isDraggingCam) logEvent("FPV_CAM_MOVED", { camX: camAngleX.toFixed(3), camY: camAngleY.toFixed(3) });
         isDraggingCam = false; 
@@ -1635,7 +1689,13 @@
             if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
                 const nextWp = s.waypoints[s.currentWpIndex];
                 const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
-                if (distToWp < 100) { s.currentWpIndex++; }
+                if (distToWp < 100) { 
+                    s.currentWpIndex++; 
+                    
+                    if (s.currentWpIndex === s.waypoints.length && massViews[activeMassIndex] && s === massViews[activeMassIndex].massEntity && !isLogSent) {
+                        finishSimulationAndSendData(s.name);
+                    }
+                }
             }
 
             if (now - s.lastRouteCalcTime >= 1000) {
@@ -1713,7 +1773,6 @@
         if (now - last2DRenderTime >= 1000) {
             last2DRenderTime = now;
             
-            // 💡 2번 반영: 1초에 한 번씩 모든 상태 시계열 로깅 수행
             logEvent("PERIODIC_STATE_LOG", {});
 
             if (currentMode === 'SURVEILLANCE') {
