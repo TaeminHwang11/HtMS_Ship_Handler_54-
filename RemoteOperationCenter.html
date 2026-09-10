@@ -25,7 +25,6 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
-        /* 💡 수정: 상단 바 회색 배경(#4b5563) 적용 */
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 40px;
             background: #4b5563; border-bottom: 1px solid #1f293d;
@@ -72,12 +71,11 @@
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
         
         .viewport { position: relative; background: radial-gradient(circle at center, #111a2e 0%, #0d1322 100%); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; transition: border-color 0.3s, box-shadow 0.3s; height: 100%; width: 100%; box-sizing: border-box; }
-        .viewport.active-vp { border-width: 2px; z-index: 5; } /* 색상 및 효과는 JS로 제어 */
+        .viewport.active-vp { border-width: 2px; z-index: 5; } 
         .viewport.hidden-vp { display: none !important; } 
         
         .vp-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; border-radius: 2px; }
         
-        /* 💡 수정: 우측 동그란 경보등을 위해 라벨 위치 살짝 좌측으로 이동 */
         .vp-label { position: absolute; top: 10px; right: 40px; background: rgba(0,0,0,0.6); color: var(--accent-yellow); font-weight: bold; font-size: 14px; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--accent-yellow); z-index: 10; pointer-events: none; }
         .coord-hud { position: absolute; top: 10px; left: 10px; background: rgba(17, 24, 39, 0.85); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; backdrop-filter: blur(4px); pointer-events: none; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .hud-range { color: var(--accent-cyan); font-weight: bold; }
@@ -123,7 +121,6 @@
 
     <div id="top-bar">
         <svg viewBox="0 0 1000 40" preserveAspectRatio="xMidYMid meet">
-            <!-- 💡 1번 반영: font-size를 36으로 확대하여 우측 모드명보다 확연히 크게 설정 -->
             <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Rajdhani', sans-serif" font-weight="bold" font-size="36" letter-spacing="1.5px">[HTMS] Portable Remote Operation Monitoring and Control System</text>
         </svg>
     </div>
@@ -144,7 +141,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_5-47" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -742,7 +739,6 @@
             vp.className = `viewport ${idx === 0 ? 'active-vp' : ''}`;
             vp.id = `vp-${idx}`;
             
-            // 💡 1번 반영: 각 관제창 우측 상단에 동그란 위험도 경보등 추가
             vp.innerHTML = `
                 <div class="vp-label" id="vplabel-${idx}">${mass.name}</div>
                 <div id="risk-light-${idx}" style="position: absolute; top: 15px; right: 15px; width: 14px; height: 14px; border-radius: 50%; z-index: 10;"></div>
@@ -973,15 +969,15 @@
             ctx.restore();
         }
 
-        // 💡 1번 반영: 모든 등록된 항구를 노란색 원과 텍스트로 상시 출력 (깜빡임 없이 고정)
+        // 💡 수정: 모든 등록된 항구를 네온 보랏빛(#c084fc)으로 상시 출력
         ctx.save();
         Object.keys(NAV_GRAPH).forEach(key => {
             if (key.startsWith('O_')) return; 
             const p = NAV_GRAPH[key];
             const xy = getXY(p.lat, p.lon);
             
-            ctx.fillStyle = '#eab308';
-            ctx.shadowColor = '#eab308';
+            ctx.fillStyle = '#c084fc';
+            ctx.shadowColor = '#c084fc';
             ctx.shadowBlur = 8;
             ctx.beginPath(); ctx.arc(xy.x, xy.y, 3, 0, Math.PI*2); ctx.fill();
             
@@ -1028,13 +1024,23 @@
                 accum += segDists[i];
             }
             
+            const destNode = rNodes[rNodes.length-1];
+            const destXY = getXY(destNode.lat, destNode.lon);
             const sXY = getXY(curLat, curLon);
 
-            // 💡 1번 반영: MASS 선박 자체만 상태 색상으로 깜빡거리게 표시
             let shipColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let isBlinkOff = s.riskLevel === 2 && Math.sin(performance.now() * 0.01) < 0;
 
             if (!isBlinkOff) {
+                ctx.save();
+                ctx.fillStyle = shipColor;
+                ctx.shadowColor = shipColor;
+                ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.arc(destXY.x, destXY.y, 5, 0, Math.PI*2); ctx.fill();
+                ctx.font = 'bold 12px monospace'; 
+                ctx.fillText(s.destPort.code, destXY.x + 8, destXY.y + 4);
+                ctx.restore();
+
                 ctx.save();
                 ctx.translate(sXY.x, sXY.y);
                 ctx.rotate(angle);
@@ -1454,7 +1460,7 @@
                 specular: 0x334455, 
                 shininess: 30,
                 transparent: true, 
-                opacity: 0.75 /* 💡 1번 반영: 투명도 0.8 -> 0.7 */
+                opacity: 0.7 
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
@@ -1779,7 +1785,6 @@
             }
         });
         
-        // 💡 1번 반영: General, Detailed 모드 뷰포트 우측 상단에 동그란 경보등 업데이트 연동
         if (currentMode !== 'SURVEILLANCE') {
             massViews.forEach((v, idx) => {
                 const mass = v.massEntity;
