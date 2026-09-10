@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>[HTMS] Remote Operation Center</title>
-    <!-- Three.js 및 에셋 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
@@ -25,7 +24,6 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
-        /* ================= 메인 메뉴 (로그인) ================= */
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
@@ -42,7 +40,6 @@
 
         #loading-screen { display: none; margin-top: 20px; color: var(--accent-yellow); font-weight: bold; font-size: 16px; }
 
-        /* ================= 메인 레이아웃 ================= */
         #main-wrapper { display: none; width: 100vw; max-width: 100%; height: 100vh; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
@@ -120,7 +117,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_27" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_31" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -918,7 +915,7 @@
         });
     }
 
-    window.removeTarget = function(vIdx, tIdx) {
+    function removeTarget(vIdx, tIdx) {
         const vObj = massViews[vIdx];
         vObj.selectedTargets = vObj.selectedTargets.filter(id => id !== tIdx);
         updateSidebar();
@@ -1538,9 +1535,8 @@
                 s.etaMinutes = routeData.etaMinutes;
                 s.lastRouteCalcTime = now;
 
-                // 💡 3x3x3 누적 합산(Sum Rule) 방식 위험도 평가 적용
-                let minCpa = Infinity;
-                let minTcpa = Infinity;
+                // 💡 수정된 3x3x3 개별 타겟 평가 방식
+                let maxTargetRisk = 2; // 초기 기본값 (안전 1점 + 안전 1점)
 
                 for (let i = 0; i < simEntities.length; i++) {
                     let tgt = simEntities[i];
@@ -1550,28 +1546,30 @@
                     let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, relX, relZ);
                     
                     if (cpaData.tcpa > 0) {
-                        if (cpaData.cpa < minCpa) minCpa = cpaData.cpa;
-                        if (cpaData.tcpa < minTcpa) minTcpa = cpaData.tcpa;
+                        let currentCpaScore = 1;
+                        if (cpaData.cpa < 0.3) currentCpaScore = 3;
+                        else if (cpaData.cpa < 0.7) currentCpaScore = 2;
+
+                        let currentTcpaScore = 1;
+                        if (cpaData.tcpa < 180) currentTcpaScore = 3; 
+                        else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
+
+                        let targetRisk = currentCpaScore + currentTcpaScore;
+                        if (targetRisk > maxTargetRisk) {
+                            maxTargetRisk = targetRisk;
+                        }
                     }
                 }
 
-                let cpaScore = 1;
-                if (minCpa < 0.3) cpaScore = 3;
-                else if (minCpa < 0.7) cpaScore = 2;
-
-                let tcpaScore = 1;
-                if (minTcpa < 180) tcpaScore = 3; // 3분
-                else if (minTcpa < 420) tcpaScore = 2; // 7분
-
                 let xtdScore = 1;
-                if (s.xtd >= 1.0) xtdScore = 3; // 1NM 이탈
-                else if (s.xtd >= 0.5) xtdScore = 2; // 0.5NM 이탈
+                if (s.xtd >= 1.0) xtdScore = 3; 
+                else if (s.xtd >= 0.5) xtdScore = 2; 
 
-                let totalScore = cpaScore + tcpaScore + xtdScore;
+                let totalScore = maxTargetRisk + xtdScore; 
 
-                if (totalScore >= 7) s.riskLevel = 2; // 7~9점 (빨간색 - 고위험)
-                else if (totalScore >= 5) s.riskLevel = 1; // 5~6점 (노란색 - 주의)
-                else s.riskLevel = 0; // 3~4점 (녹색 - 안전)
+                if (totalScore >= 7) s.riskLevel = 2; 
+                else if (totalScore >= 5) s.riskLevel = 1; 
+                else s.riskLevel = 0; 
             }
         });
         
