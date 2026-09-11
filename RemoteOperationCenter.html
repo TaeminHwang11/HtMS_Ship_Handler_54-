@@ -54,17 +54,30 @@
         #main-wrapper { display: none; width: 100vw; max-width: 100%; height: calc(100vh - 40px); height: calc(100dvh - 40px); position: absolute; top: 40px; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
-        #surveillance-area, #fpv-area, #h-resizer, #grid-area { display: none; }
+        #surveillance-area, #fpv-area, #h-resizer, #grid-area, #bottom-view-wrapper { display: none; }
         
         #main-wrapper.surveillance-mode #surveillance-area { display: block; flex: 1; position: relative; background: #050a10; }
         #world-map-canvas { width: 100%; height: 100%; display: block; }
 
+        /* 하단 영역을 감싸는 새로운 래퍼 */
+        #bottom-view-wrapper { flex: 1; min-height: 20%; flex-direction: row; overflow: hidden; background: #000; }
+        #main-wrapper.general-mode #bottom-view-wrapper { display: flex; }
+        #main-wrapper.split-mode #bottom-view-wrapper { display: flex; }
+
         #main-wrapper.general-mode #grid-area { display: grid; flex: 1; gap: 4px; background: #000; padding: 4px; height: 100%; min-height: 0; }
+        #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 0; gap: 4px; background: #000; padding: 4px; }
 
         #main-wrapper.split-mode #fpv-area { display: flex; flex: 1; min-height: 20%; background: #050a10; position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); }
         #main-wrapper.split-mode #h-resizer { display: block; height: 8px; background: #1e293b; cursor: row-resize; z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; transition: background 0.2s; flex-shrink: 0; }
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
-        #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
+
+        /* 좌우 버튼 패널 CSS 추가 */
+        .split-side-panel { display: none; flex-direction: column; gap: 6px; background: var(--panel-bg); padding: 12px; overflow-y: auto; width: 160px; flex-shrink: 0; border-right: 1px solid var(--border-color); }
+        #split-right-panel { border-right: none; border-left: 1px solid var(--border-color); }
+        #main-wrapper.split-mode .split-side-panel { display: flex; }
+        
+        .placeholder-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 8px; border-radius: 4px; font-family: 'Rajdhani', sans-serif; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .placeholder-btn:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
 
         /* 💡 팝아웃 디테일 패널 CSS 렌더링 픽스 (역방향 SA 구조) */
         #surv-detail-panel { 
@@ -196,7 +209,49 @@
             
             <div id="h-resizer"></div>
 
-            <div id="grid-area"></div>
+            <div id="bottom-view-wrapper">
+                <div id="split-left-panel" class="split-side-panel">
+                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:10px; text-align:center; font-size: 14px; letter-spacing: 1px;">LEFT CONTROLS</div>
+                    <!-- 추후 기능 매핑을 위한 임시 버튼 15개 -->
+                    <button class="placeholder-btn">L_BTN 01</button>
+                    <button class="placeholder-btn">L_BTN 02</button>
+                    <button class="placeholder-btn">L_BTN 03</button>
+                    <button class="placeholder-btn">L_BTN 04</button>
+                    <button class="placeholder-btn">L_BTN 05</button>
+                    <button class="placeholder-btn">L_BTN 06</button>
+                    <button class="placeholder-btn">L_BTN 07</button>
+                    <button class="placeholder-btn">L_BTN 08</button>
+                    <button class="placeholder-btn">L_BTN 09</button>
+                    <button class="placeholder-btn">L_BTN 10</button>
+                    <button class="placeholder-btn">L_BTN 11</button>
+                    <button class="placeholder-btn">L_BTN 12</button>
+                    <button class="placeholder-btn">L_BTN 13</button>
+                    <button class="placeholder-btn">L_BTN 14</button>
+                    <button class="placeholder-btn">L_BTN 15</button>
+                </div>
+                
+                <div id="grid-area"></div>
+                
+                <div id="split-right-panel" class="split-side-panel">
+                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:10px; text-align:center; font-size: 14px; letter-spacing: 1px;">RIGHT CONTROLS</div>
+                    <!-- 추후 기능 매핑을 위한 임시 버튼 15개 -->
+                    <button class="placeholder-btn">R_BTN 01</button>
+                    <button class="placeholder-btn">R_BTN 02</button>
+                    <button class="placeholder-btn">R_BTN 03</button>
+                    <button class="placeholder-btn">R_BTN 04</button>
+                    <button class="placeholder-btn">R_BTN 05</button>
+                    <button class="placeholder-btn">R_BTN 06</button>
+                    <button class="placeholder-btn">R_BTN 07</button>
+                    <button class="placeholder-btn">R_BTN 08</button>
+                    <button class="placeholder-btn">R_BTN 09</button>
+                    <button class="placeholder-btn">R_BTN 10</button>
+                    <button class="placeholder-btn">R_BTN 11</button>
+                    <button class="placeholder-btn">R_BTN 12</button>
+                    <button class="placeholder-btn">R_BTN 13</button>
+                    <button class="placeholder-btn">R_BTN 14</button>
+                    <button class="placeholder-btn">R_BTN 15</button>
+                </div>
+            </div>
         </div>
         
         <div id="surv-detail-panel">
@@ -1936,30 +1991,30 @@
                     let relX = tgt.x - s.x;
                     let relZ = tgt.z - s.z;
                     let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                            if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
-            let currentCpaScore = 1;
-            if (cpaData.cpa < 0.3) currentCpaScore = 3;
-            else if (cpaData.cpa < 0.7) currentCpaScore = 2;
+                    
+                    if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
+                        let currentCpaScore = 1;
+                        if (cpaData.cpa < 0.3) currentCpaScore = 3;
+                        else if (cpaData.cpa < 0.7) currentCpaScore = 2;
 
-            let currentTcpaScore = 1;
-            if (cpaData.tcpa < 180) currentTcpaScore = 3; 
-            else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
+                        let currentTcpaScore = 1;
+                        if (cpaData.tcpa < 180) currentTcpaScore = 3; 
+                        else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
 
-            // 💡 수정된 부분: CPA가 충분히 안전(1점)하다면 불필요한 TCPA 위험도를 합산하지 않음
-            let targetRisk = currentCpaScore;
-            if (currentCpaScore > 1) {
-                targetRisk += currentTcpaScore;
-            } else {
-                targetRisk = 2; // 기본 안전 수치 유지
-            }
+                        // 💡 CPA가 충분히 안전(1점)하다면 불필요한 TCPA 위험도를 합산하지 않음
+                        let targetRisk = currentCpaScore;
+                        if (currentCpaScore > 1) {
+                            targetRisk += currentTcpaScore;
+                        } else {
+                            targetRisk = 2; // 기본 안전 수치 유지
+                        }
 
-            if (targetRisk > maxTargetRisk) {
-                maxTargetRisk = targetRisk;
-                cpaRisk = currentCpaScore;
-                tcpaRisk = currentTcpaScore;
-            }
-        }
-
+                        if (targetRisk > maxTargetRisk) {
+                            maxTargetRisk = targetRisk;
+                            cpaRisk = currentCpaScore;
+                            tcpaRisk = currentTcpaScore;
+                        }
+                    }
                 }
 
                 let xtdScore = 1;
