@@ -1163,7 +1163,9 @@
 
             let riskColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let riskText = s.riskLevel === 2 ? 'HIGH RISK' : (s.riskLevel === 1 ? 'WARNING' : 'SAFE');
-            let isActive = (survExpandedMassId === s.id);
+            
+            // ✅ 수정된 부분: String()으로 타입을 통일하여 비교 (또는 == 사용)
+            let isActive = (String(survExpandedMassId) === String(s.id));
             
             if (isActive) expandedMass = s;
 
