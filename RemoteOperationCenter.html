@@ -66,22 +66,23 @@
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
         #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 20%; gap: 4px; background: #000; padding: 4px; }
 
-        /* 💡 팝아웃 디테일 패널 CSS 렌더링 픽스 (해도 덮어씌우기 방식으로 변경) */
+        /* 💡 팝아웃 디테일 패널 CSS 렌더링 픽스 (역방향 SA 구조) */
         #surv-detail-panel { 
-            position: absolute; 
-            right: clamp(260px, 33vw, 380px); 
-            top: 0; 
-            height: 100%; 
-            width: 0; 
-            opacity: 0; 
-            overflow: hidden; 
-            display: flex; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 50; 
-            box-shadow: -10px 0 30px rgba(0,0,0,0.6); 
+            position: absolute; right: clamp(260px, 33vw, 380px); top: 0; height: 100%; width: auto; 
+            display: flex; flex-direction: row; justify-content: flex-end; z-index: 50; pointer-events: none;
         }
-        #surv-level-1 { width: 350px; flex-shrink: 0; padding: 20px; box-sizing: border-box; overflow-y: auto; border-left: 1px solid var(--accent-cyan); border-right: 1px solid #1f293d; background: rgba(11, 15, 25, 0.95); backdrop-filter: blur(4px); }
-        #surv-level-2 { width: 400px; flex-shrink: 0; padding: 20px; box-sizing: border-box; overflow-y: auto; background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(4px); }
+        .surv-panel-col { 
+            height: 100%; box-sizing: border-box; overflow-y: auto; overflow-x: hidden;
+            background: rgba(11, 15, 25, 0.95); backdrop-filter: blur(4px);
+            border-left: 1px solid var(--accent-cyan);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            opacity: 0; width: 0; padding: 0; pointer-events: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+        }
+        .surv-panel-col.active { opacity: 1; padding: 20px; }
+        .surv-panel-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid var(--accent-cyan); }
+        .surv-panel-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; margin-top: 15px; }
+        .panel-clickable { cursor: pointer; transition: background 0.2s; border-radius: 4px; height: 100%; }
+        .panel-clickable:hover { background: rgba(255, 255, 255, 0.05); }
 
         #sidebar { width: clamp(260px, 33vw, 380px); background: var(--panel-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; }
         .panel-title { font-size: 24px; font-weight: 800; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;}
@@ -158,7 +159,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_31" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_37" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -199,8 +200,9 @@
         </div>
         
         <div id="surv-detail-panel">
-            <div id="surv-level-1"></div>
-            <div id="surv-level-2"></div>
+            <div id="surv-sa-1" class="surv-panel-col"></div> <!-- Level 1 SA (Perception): 3번째 팝아웃 -->
+            <div id="surv-sa-2" class="surv-panel-col"></div> <!-- Level 2 SA (Comprehension): 2번째 팝아웃 -->
+            <div id="surv-sa-3" class="surv-panel-col"></div> <!-- Level 3 SA (Projection): 1번째 팝아웃 -->
         </div>
 
         <div id="sidebar">
@@ -1138,12 +1140,23 @@
     }
 
     window.toggleSurvPanel = function(massId) {
-        if (survExpandedMassId === massId) {
-            survExpandedLevel = (survExpandedLevel + 1) % 3;
+        if (survExpandedMassId === String(massId)) {
+            survExpandedLevel = (survExpandedLevel + 1) % 4; // 0, 1, 2, 3 순환
             if (survExpandedLevel === 0) survExpandedMassId = null;
         } else {
-            survExpandedMassId = massId;
-            survExpandedLevel = 1;
+            survExpandedMassId = String(massId);
+            survExpandedLevel = 1; // 새로운 선박 클릭 시 항상 Level-3(Projection)부터 시작
+        }
+        updateSidebar();
+    };
+
+    window.setSurvLevel = function(level, event) {
+        if(event) event.stopPropagation();
+        if(survExpandedLevel === level) {
+            survExpandedLevel = level - 1; // 현재 열린 최고 단계를 클릭하면 닫힘
+            if(survExpandedLevel === 0) survExpandedMassId = null;
+        } else {
+            survExpandedLevel = level; // 하위 단계를 클릭하면 그 위 단계들은 접힘
         }
         updateSidebar();
     };
@@ -1152,10 +1165,6 @@
         const container = document.getElementById('surveillance-fleet-container');
         container.innerHTML = '';
         
-        const detailPanel = document.getElementById('surv-detail-panel');
-        const lv1 = document.getElementById('surv-level-1');
-        const lv2 = document.getElementById('surv-level-2');
-        
         let expandedMass = null;
 
         simEntities.forEach(s => {
@@ -1163,8 +1172,6 @@
 
             let riskColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let riskText = s.riskLevel === 2 ? 'HIGH RISK' : (s.riskLevel === 1 ? 'WARNING' : 'SAFE');
-            
-            // ✅ 수정된 부분: String()으로 타입을 통일하여 비교 (또는 == 사용)
             let isActive = (String(survExpandedMassId) === String(s.id));
             
             if (isActive) expandedMass = s;
@@ -1179,72 +1186,102 @@
             container.innerHTML += html;
         });
 
+        let sa1 = document.getElementById('surv-sa-1');
+        let sa2 = document.getElementById('surv-sa-2');
+        let sa3 = document.getElementById('surv-sa-3');
+
         if (expandedMass && survExpandedLevel > 0) {
-            detailPanel.style.width = survExpandedLevel === 1 ? '350px' : '750px';
-            detailPanel.style.opacity = '1';
-            
-            let rColor = expandedMass.riskLevel === 2 ? '#ef4444' : (expandedMass.riskLevel === 1 ? '#eab308' : '#10b981');
-            
             let targetsWithin2NM = 0;
-            let targetsWithin1NM = 0;
+            let closestDistNM = Infinity;
             simEntities.forEach(tgt => {
                 if (tgt !== expandedMass) {
                     let dNM = Math.sqrt(Math.pow(tgt.x - expandedMass.x, 2) + Math.pow(tgt.z - expandedMass.z, 2)) / 400;
                     if (dNM < 2.0) targetsWithin2NM++;
-                    if (dNM < 1.0) targetsWithin1NM++;
+                    if (dNM < closestDistNM) closestDistNM = dNM;
                 }
             });
 
-            lv1.innerHTML = `
-                <div style="font-size:20px; font-weight:bold; color:${rColor}; margin-bottom:15px; border-bottom:1px solid ${rColor}; padding-bottom:5px;">${expandedMass.name} <span style="font-size:14px; float:right; color:#9ca3af;">(Level 1)</span></div>
-                <div class="data-row" style="margin-bottom:12px;"><span>ROUTE:</span> <b style="font-size:16px; color:#fff;">${expandedMass.originPort.name} ➔ ${expandedMass.destPort.name}</b></div>
-                <div class="data-row"><span>ETA:</span> <b>${formatETA(expandedMass.etaMinutes)}</b></div>
-                <div class="data-row"><span>REMAINING:</span> <b>${expandedMass.etaMinutes > 0 ? (expandedMass.etaMinutes/60).toFixed(1) + ' H' : '-'}</b></div>
-                <div class="data-row"><span>ETA SPEED:</span> <b>${expandedMass.spd.toFixed(1)} Kn</b></div>
-                <div class="data-row"><span>CURRENT COG:</span> <b>${expandedMass.cog.toFixed(1)}°</b></div>
-                <div style="height:1px; background:#1e293b; margin:15px 0;"></div>
-                <div class="data-row"><span>TARGETS (< 2NM):</span> <b style="color:#eab308;">${targetsWithin2NM}</b></div>
-                <div class="data-row"><span>TARGETS (< 1NM):</span> <b style="color:#ef4444;">${targetsWithin1NM}</b></div>
-                <div style="margin-top:20px; font-size:12px; color:#64748b; text-align:center;">우측 패널을 한 번 더 클릭하면 상세분석(L2)이 열립니다.</div>
-            `;
+            let cCol = expandedMass.cpaRisk === 3 ? '#ef4444' : (expandedMass.cpaRisk === 2 ? '#eab308' : '#10b981');
+            let tCol = expandedMass.tcpaRisk === 3 ? '#ef4444' : (expandedMass.tcpaRisk === 2 ? '#eab308' : '#10b981');
+            let xCol = expandedMass.xtdRisk === 3 ? '#ef4444' : (expandedMass.xtdRisk === 2 ? '#eab308' : '#10b981');
+            let latStr = `N 34° ${(expandedMass.z / 11111).toFixed(1)}'`;
+            let lonStr = `E 126° ${(expandedMass.x / 11111).toFixed(1)}'`;
 
-            if (survExpandedLevel === 2) {
-                let cCol = expandedMass.cpaRisk === 3 ? '#ef4444' : (expandedMass.cpaRisk === 2 ? '#eab308' : '#10b981');
-                let tCol = expandedMass.tcpaRisk === 3 ? '#ef4444' : (expandedMass.tcpaRisk === 2 ? '#eab308' : '#10b981');
-                let xCol = expandedMass.xtdRisk === 3 ? '#ef4444' : (expandedMass.xtdRisk === 2 ? '#eab308' : '#10b981');
-                let latStr = `N 34° ${(expandedMass.z / 11111).toFixed(1)}'`;
-                let lonStr = `E 126° ${(expandedMass.x / 11111).toFixed(1)}'`;
-
-                lv2.innerHTML = `
-                    <div style="font-size:20px; font-weight:bold; color:#06b6d4; margin-bottom:15px; border-bottom:1px solid #06b6d4; padding-bottom:5px;">RISK & SA METRICS <span style="font-size:14px; float:right; color:#9ca3af;">(Level 2/3)</span></div>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom:20px;">
-                        <div style="flex:1; background:${cCol}; padding:10px; border-radius:6px; text-align:center; font-weight:bold; color:#000;">CPA<br>LV ${expandedMass.cpaRisk}</div>
-                        <div style="flex:1; background:${tCol}; padding:10px; border-radius:6px; text-align:center; font-weight:bold; color:#000;">TCPA<br>LV ${expandedMass.tcpaRisk}</div>
-                        <div style="flex:1; background:${xCol}; padding:10px; border-radius:6px; text-align:center; font-weight:bold; color:#000;">XTD<br>LV ${expandedMass.xtdRisk}</div>
+            // 1단계(최초 클릭): Level-3 SA (Projection)
+            if (survExpandedLevel >= 1) {
+                sa3.style.width = '350px'; sa3.classList.add('active');
+                sa3.innerHTML = `
+                    <div class="panel-clickable" onclick="setSurvLevel(1, event)">
+                        <div class="surv-panel-title" style="color:var(--accent-cyan);">Level-3 SA (Projection) <span style="font-size:12px;float:right;color:#64748b;">(Click to collapse)</span></div>
+                        <div class="surv-panel-subtitle">Traffic and Route</div>
+                        <div class="data-row"><span>Projected Position:</span> <b>N 34° ${(expandedMass.z / 11111 + 0.1).toFixed(1)}' E 126° ${(expandedMass.x / 11111 + 0.1).toFixed(1)}'</b></div>
+                        <div class="data-row"><span>ETA to waypoints:</span> <b>${formatETA(expandedMass.etaMinutes)}</b></div>
+                        <div class="data-row"><span>Relative Separation (CPA Risk):</span> <b style="color:${cCol};">LV ${expandedMass.cpaRisk}</b></div>
+                        <div class="data-row"><span>Relative Separation (TCPA Risk):</span> <b style="color:${tCol};">LV ${expandedMass.tcpaRisk}</b></div>
+                        <div class="data-row"><span>Projected traffic congestion:</span> <b style="color:${targetsWithin2NM > 2 ? '#eab308' : '#10b981'};">${targetsWithin2NM > 2 ? 'HIGH' : 'LOW'}</b></div>
+                        
+                        <div class="surv-panel-subtitle">Meteorological Data</div>
+                        <div class="data-row"><span>Projected weather:</span> <b>Clear</b></div>
+                        <div class="data-row"><span>Projected wind speed:</span> <b>${globalEnv.windSpd.toFixed(1)} m/s</b></div>
+                        
+                        <div style="margin-top:20px; font-size:12px; color:#64748b; text-align:center;">우측 선박 버튼을 한번 더 누르면<br>Level-2 SA (Comprehension)로 확장됩니다.</div>
                     </div>
-
-                    <div style="color:#88c0d0; font-weight:bold; margin-bottom:5px;">[ Level-1 SA: Ship Status & Traffic ]</div>
-                    <div class="data-row"><span>Position:</span> <b>${latStr}, ${lonStr}</b></div>
-                    <div class="data-row"><span>Gyro Heading:</span> <b>${expandedMass.hdg.toFixed(1)}°</b></div>
-                    <div class="data-row"><span>Nav System Status:</span> <b>GPS: OK / ECDIS: OK</b></div>
-                    <div class="data-row"><span>Local Traffic Density:</span> <b>${targetsWithin2NM > 2 ? 'HIGH' : 'LOW'}</b></div>
-
-                    <div style="color:#eab308; font-weight:bold; margin-top:15px; margin-bottom:5px;">[ Level-2 SA: Deviations ]</div>
-                    <div class="data-row"><span>XTE (Cross Track Error):</span> <b style="color:${xCol};">${expandedMass.xtd.toFixed(2)} NM</b></div>
-                    <div class="data-row"><span>Course Deviation:</span> <b>${Math.abs(expandedMass.cog - expandedMass.hdg).toFixed(1)}°</b></div>
-
-                    <div style="color:#00ffaa; font-weight:bold; margin-top:15px; margin-bottom:5px;">[ Level-3 SA: Projections ]</div>
-                    <div class="data-row"><span>Projected ETA:</span> <b>${formatETA(expandedMass.etaMinutes)}</b></div>
-                    <div class="data-row"><span>Projected Weather:</span> <b>Wind ${globalEnv.windSpd.toFixed(1)}kn / Clear</b></div>
-                    <div class="data-row"><span>Projected Traffic:</span> <b>Stable (No immediate TSS conflict)</b></div>
                 `;
-            } else {
-                lv2.innerHTML = '';
-            }
+            } else { sa3.style.width = '0'; sa3.classList.remove('active'); sa3.innerHTML = ''; }
+
+            // 2단계: Level-2 SA (Comprehension)
+            if (survExpandedLevel >= 2) {
+                sa2.style.width = '350px'; sa2.classList.add('active');
+                sa2.innerHTML = `
+                    <div class="panel-clickable" onclick="setSurvLevel(2, event)">
+                        <div class="surv-panel-title" style="color:var(--accent-yellow);">Level-2 SA (Comprehension) <span style="font-size:12px;float:right;color:#64748b;">(Click to collapse)</span></div>
+                        <div class="surv-panel-subtitle">Route & Deviations</div>
+                        <div class="data-row"><span>XTE (Cross Track Error):</span> <b style="color:${xCol};">${expandedMass.xtd.toFixed(2)} NM</b></div>
+                        <div class="data-row"><span>Deviation (Course):</span> <b>${Math.abs(expandedMass.cog - expandedMass.hdg).toFixed(1)}°</b></div>
+                        <div class="data-row"><span>Deviation (Speed):</span> <b>${Math.abs(expandedMass.cmdSpeed - expandedMass.spd).toFixed(1)} Kn</b></div>
+                        
+                        <div class="surv-panel-subtitle">Ship & Equipment</div>
+                        <div class="data-row"><span>Validity of indicators:</span> <b style="color:#10b981;">Valid</b></div>
+                        <div class="data-row"><span>System emergencies:</span> <b style="color:#10b981;">Safe</b></div>
+                        
+                        <div class="surv-panel-subtitle">Traffic Impact</div>
+                        <div class="data-row"><span>Dist. to nearest obstacle:</span> <b style="color:${closestDistNM < 1.0 ? '#ef4444' : (closestDistNM < 2.0 ? '#eab308' : '#10b981')};">${closestDistNM === Infinity ? '-' : closestDistNM.toFixed(2)} NM</b></div>
+                        <div class="data-row"><span>Current separation (OS & TS):</span> <b>${targetsWithin2NM} targets < 2NM</b></div>
+                    </div>
+                `;
+            } else { sa2.style.width = '0'; sa2.classList.remove('active'); sa2.innerHTML = ''; }
+
+            // 3단계: Level-1 SA (Perception)
+            if (survExpandedLevel >= 3) {
+                sa1.style.width = '380px'; sa1.classList.add('active');
+                sa1.innerHTML = `
+                    <div class="panel-clickable" onclick="setSurvLevel(3, event)">
+                        <div class="surv-panel-title" style="color:#10b981;">Level-1 SA (Perception) <span style="font-size:12px;float:right;color:#64748b;">(Click to collapse)</span></div>
+                        <div class="surv-panel-subtitle">Ship Status</div>
+                        <div class="data-row"><span>Position:</span> <b>${latStr}, ${lonStr}</b></div>
+                        <div class="data-row"><span>Speed (SOG):</span> <b>${expandedMass.spd.toFixed(1)} Kn</b></div>
+                        <div class="data-row"><span>Gyro heading:</span> <b>${expandedMass.hdg.toFixed(1)}°</b></div>
+                        
+                        <div class="surv-panel-subtitle">Equipment Status</div>
+                        <div class="data-row"><span>GPS / ECDIS / AIS:</span> <b style="color:#10b981;">Operational</b></div>
+                        <div class="data-row"><span>Steering system:</span> <b style="color:#10b981;">Normal</b></div>
+                        <div class="data-row"><span>Communication (VHF):</span> <b>Ch. 16 Monitored</b></div>
+                        
+                        <div class="surv-panel-subtitle">Route Plan & Traffic</div>
+                        <div class="data-row"><span>Planned route:</span> <b>${expandedMass.originPort.name} ➔ ${expandedMass.destPort.name}</b></div>
+                        <div class="data-row"><span>Number of targets:</span> <b>${simEntities.length - 1}</b></div>
+                        <div class="data-row"><span>Density of traffic:</span> <b style="color:${targetsWithin2NM > 2 ? '#eab308' : '#10b981'};">${targetsWithin2NM > 2 ? 'HIGH' : 'LOW'}</b></div>
+                        
+                        <div class="surv-panel-subtitle">Weather</div>
+                        <div class="data-row"><span>Wind (Spd / Dir):</span> <b>${globalEnv.windSpd.toFixed(1)} m/s / ${globalEnv.windDir}°</b></div>
+                        <div class="data-row"><span>Current (Spd / Dir):</span> <b>${globalEnv.currentSpd.toFixed(1)} Kn / ${globalEnv.currentDir}°</b></div>
+                    </div>
+                `;
+            } else { sa1.style.width = '0'; sa1.classList.remove('active'); sa1.innerHTML = ''; }
         } else {
-            detailPanel.style.width = '0';
-            detailPanel.style.opacity = '0';
+            sa1.style.width = '0'; sa1.classList.remove('active'); sa1.innerHTML = '';
+            sa2.style.width = '0'; sa2.classList.remove('active'); sa2.innerHTML = '';
+            sa3.style.width = '0'; sa3.classList.remove('active'); sa3.innerHTML = '';
         }
     }
 
@@ -1366,8 +1403,7 @@
         
         survExpandedMassId = null;
         survExpandedLevel = 0;
-        document.getElementById('surv-detail-panel').style.width = '0';
-        document.getElementById('surv-detail-panel').style.opacity = '0';
+        updateSidebar(); 
 
         document.getElementById('main-wrapper').className = 'general-mode';
         document.getElementById('panel-surveillance').style.display = 'none';
@@ -1393,8 +1429,7 @@
         
         survExpandedMassId = null;
         survExpandedLevel = 0;
-        document.getElementById('surv-detail-panel').style.width = '0';
-        document.getElementById('surv-detail-panel').style.opacity = '0';
+        updateSidebar(); 
 
         massViews[idx].panOffsetX = 0;
         massViews[idx].panOffsetY = 0;
