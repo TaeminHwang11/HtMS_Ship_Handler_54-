@@ -159,7 +159,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_37" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -1403,6 +1403,11 @@
         
         survExpandedMassId = null;
         survExpandedLevel = 0;
+
+        document.getElementById('surv-sa-1').style.width = '0'; document.getElementById('surv-sa-1').classList.remove('active');
+        document.getElementById('surv-sa-2').style.width = '0'; document.getElementById('surv-sa-2').classList.remove('active');
+        document.getElementById('surv-sa-3').style.width = '0'; document.getElementById('surv-sa-3').classList.remove('active');
+
         updateSidebar(); 
 
         document.getElementById('main-wrapper').className = 'general-mode';
@@ -1429,6 +1434,11 @@
         
         survExpandedMassId = null;
         survExpandedLevel = 0;
+
+        document.getElementById('surv-sa-1').style.width = '0'; document.getElementById('surv-sa-1').classList.remove('active');
+        document.getElementById('surv-sa-2').style.width = '0'; document.getElementById('surv-sa-2').classList.remove('active');
+        document.getElementById('surv-sa-3').style.width = '0'; document.getElementById('surv-sa-3').classList.remove('active');
+
         updateSidebar(); 
 
         massViews[idx].panOffsetX = 0;
