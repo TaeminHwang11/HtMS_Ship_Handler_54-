@@ -1936,23 +1936,30 @@
                     let relX = tgt.x - s.x;
                     let relZ = tgt.z - s.z;
                     let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, relX, relZ);
-                    
-                    if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
-                        let currentCpaScore = 1;
-                        if (cpaData.cpa < 0.3) currentCpaScore = 3;
-                        else if (cpaData.cpa < 0.7) currentCpaScore = 2;
+                            if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
+            let currentCpaScore = 1;
+            if (cpaData.cpa < 0.3) currentCpaScore = 3;
+            else if (cpaData.cpa < 0.7) currentCpaScore = 2;
 
-                        let currentTcpaScore = 1;
-                        if (cpaData.tcpa < 180) currentTcpaScore = 3; 
-                        else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
+            let currentTcpaScore = 1;
+            if (cpaData.tcpa < 180) currentTcpaScore = 3; 
+            else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
 
-                        let targetRisk = currentCpaScore + currentTcpaScore;
-                        if (targetRisk > maxTargetRisk) {
-                            maxTargetRisk = targetRisk;
-                            cpaRisk = currentCpaScore;
-                            tcpaRisk = currentTcpaScore;
-                        }
-                    }
+            // 💡 수정된 부분: CPA가 충분히 안전(1점)하다면 불필요한 TCPA 위험도를 합산하지 않음
+            let targetRisk = currentCpaScore;
+            if (currentCpaScore > 1) {
+                targetRisk += currentTcpaScore;
+            } else {
+                targetRisk = 2; // 기본 안전 수치 유지
+            }
+
+            if (targetRisk > maxTargetRisk) {
+                maxTargetRisk = targetRisk;
+                cpaRisk = currentCpaScore;
+                tcpaRisk = currentTcpaScore;
+            }
+        }
+
                 }
 
                 let xtdScore = 1;
