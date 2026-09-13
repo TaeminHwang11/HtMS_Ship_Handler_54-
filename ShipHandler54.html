@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- 모바일 전체화면 및 앱 설치용 매니페스트 태그 추가 -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22ShipHandler%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22start_url%22%3A%22.%22%7D'>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="display" content="standalone">
+    
     <title>[HTMS] Ship Handler</title>
     <!-- Three.js 코어 및 로더 -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
@@ -123,6 +130,25 @@
 </head>
 <body>
 
+    <!-- 자바스크립트 전체화면 강제 실행 함수 추가 -->
+    <script>
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            try {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen().catch(() => {});
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {
+                console.log("전체화면 에러:", err);
+            }
+        }
+    </script>
+
     <div id="scanline"></div>
     <canvas id="hud-lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.5s;"></canvas>
 
@@ -193,7 +219,8 @@
                 </div>
             </div>
 
-            <button class="btn-main" onclick="startLoadingAssets()">시작하기</button>
+            <!-- 💡 전체화면 함수 추가 매핑 -->
+            <button class="btn-main" onclick="enterFullscreen(); startLoadingAssets();">시작하기</button>
         </div>
     </div>
 
