@@ -1255,36 +1255,71 @@
             isRadarDragging = false; 
         });
 
+
+        // 두 손가락 줌(Pinch-to-Zoom)을 위한 변수 및 함수 추가
+        let initialPinchDistance = null;
+        let initialRadarZoom = 1.0;
+
+        function getPinchDistance(touches) {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        }
+
         ecdisEl.addEventListener('touchstart', (e) => {
             e.stopPropagation();
             if(gameState !== 'PLAYING' || isPaused) return;
 
-            handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
+            // 💡 두 손가락 터치 시: 확대/축소(Pinch Zoom) 모드 진입
+            if (e.touches.length === 2) {
+                initialPinchDistance = getPinchDistance(e.touches);
+                initialRadarZoom = manualRadarZoom;
+                isRadarDragging = false; // 패닝 무시
+                if (radarHoldTimer) clearTimeout(radarHoldTimer);
+                return;
+            }
 
-            radarHoldTimer = setTimeout(() => {
-                if (!hasRadarDragged) {
-                    isRadarWindowDragging = true;
-                    isRadarDragging = false;
-                    hasRadarDragged = true;
-                    radarWinStartX = e.touches[0].clientX;
-                    radarWinStartY = e.touches[0].clientY;
-                    const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
-                    radarWinStartLeft = rect.left;
-                    radarWinStartTop = rect.top;
+            // 한 손가락 터치 시: 패닝 및 윈도우 드래그 모드
+            if (e.touches.length === 1) {
+                handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
 
-                    UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
-                    UI_ELEMENTS.ecdisContainer.style.right = 'auto';
-                    UI_ELEMENTS.ecdisContainer.style.transform = 'none';
-                    UI_ELEMENTS.ecdisContainer.style.margin = '0';
-                    UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
-                    UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
-                    UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
-                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00';
-                }
-            }, 400);
+                radarHoldTimer = setTimeout(() => {
+                    if (!hasRadarDragged) {
+                        isRadarWindowDragging = true;
+                        isRadarDragging = false;
+                        hasRadarDragged = true;
+                        radarWinStartX = e.touches[0].clientX;
+                        radarWinStartY = e.touches[0].clientY;
+                        const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
+                        radarWinStartLeft = rect.left;
+                        radarWinStartTop = rect.top;
+
+                        UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
+                        UI_ELEMENTS.ecdisContainer.style.right = 'auto';
+                        UI_ELEMENTS.ecdisContainer.style.transform = 'none';
+                        UI_ELEMENTS.ecdisContainer.style.margin = '0';
+                        UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
+                        UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
+                        UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
+                        UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00';
+                    }
+                }, 400);
+            }
         }, {passive: false});
 
         window.addEventListener('touchmove', (e) => {
+            // 💡 두 손가락 확대/축소 로직 처리
+            if (initialPinchDistance !== null && e.touches.length === 2) {
+                e.preventDefault(); // 화면 스크롤 방지
+                const currentDistance = getPinchDistance(e.touches);
+                
+                // 손가락이 멀어지면(확대) Range 감소(Zoom In), 가까워지면(축소) Range 증가(Zoom Out)
+                manualRadarZoom = initialRadarZoom * (initialPinchDistance / currentDistance);
+                manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
+                return;
+            }
+
             if (isRadarWindowDragging) {
                 e.preventDefault();
                 const dx = e.touches[0].clientX - radarWinStartX;
@@ -1293,13 +1328,20 @@
                 UI_ELEMENTS.ecdisContainer.style.top = (radarWinStartTop + dy) + 'px';
                 return;
             }
-            if(isRadarDragging) {
+            
+            // 한 손가락 패닝 처리
+            if(isRadarDragging && e.touches.length === 1) {
                 e.preventDefault();
                 handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
             }
         }, {passive: false});
 
-        window.addEventListener('touchend', () => { 
+        window.addEventListener('touchend', (e) => { 
+            // 터치가 하나라도 떨어지면 줌 모드 초기화
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+
             if(radarHoldTimer) clearTimeout(radarHoldTimer);
             if(isRadarWindowDragging) {
                 isRadarWindowDragging = false;
