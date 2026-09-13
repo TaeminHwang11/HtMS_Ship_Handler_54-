@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- 모바일 전체화면 및 앱 설치용 매니페스트 태그 추가 -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RadarNav%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22start_url%22%3A%22.%22%7D'>
+    <!-- 모바일 전체화면 및 웹앱 메타태그 추가 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="display" content="standalone">
+    
     <title>[HTMS] RADAR Navigation</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -188,6 +196,25 @@
 </head>
 <body>
 
+<!-- 자바스크립트 전체화면 강제 실행 함수 추가 -->
+<script>
+    function enterFullscreen() {
+        const elem = document.documentElement;
+        try {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen().catch(() => {});
+            }
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+        } catch (err) {
+            console.log("전체화면 에러:", err);
+        }
+    }
+</script>
+
 <div id="login-overlay">
     <h1 style="font-size: 42px; letter-spacing: 2px; margin-bottom: 10px; color:var(--text-main);">[HTMS] RADAR Navigation</h1>
     <h2 style="color: var(--accent-blue); letter-spacing: 5px; font-size: 16px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
@@ -207,7 +234,8 @@
                 <option value="">목록 로딩 중...</option>
             </select>
         </div>
-        <button class="btn-main" id="btn-start" onclick="startLogin()">시작하기</button>
+        <!-- 시작 버튼 클릭 시 전체화면 함수 호출 적용 -->
+        <button class="btn-main" id="btn-start" onclick="enterFullscreen(); startLogin()">시작하기</button>
     </div>
 </div>
 
