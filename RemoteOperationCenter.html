@@ -29,13 +29,6 @@
 
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); color: var(--text-main); font-family: 'Rajdhani', sans-serif; user-select: none; touch-action: none; }
 
-        #top-bar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 40px;
-            background: #4b5563; border-bottom: 1px solid #1f293d;
-            z-index: 100; display: none; align-items: center; justify-content: center; box-sizing: border-box;
-        }
-        #top-bar svg { width: 100%; height: 100%; max-height: 25px; }
-
         #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(5, 10, 20, 0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #login-overlay h1 { font-size: 42px; color: var(--accent-cyan); letter-spacing: 2px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(6,182,212,0.5); font-family: 'Arial Black', sans-serif;}
         #login-overlay h2 { color: var(--accent-green); letter-spacing: 5px; font-size: 18px; font-weight: bold; margin-bottom: 40px; }
@@ -56,7 +49,7 @@
         .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
         .finish-desc { font-size: 18px; color: #fff; }
 
-        #main-wrapper { display: none; width: 100vw; max-width: 100%; height: calc(100vh - 40px); height: calc(100dvh - 40px); position: absolute; top: 40px; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
+        #main-wrapper { display: none; width: 100vw; max-width: 100%; height: 100vh; height: 100dvh; position: absolute; top: 0; left: 0; z-index: 10; background: var(--bg-color); flex-direction: row; overflow: hidden; }
         #view-column { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
         #surveillance-area, #fpv-area, #h-resizer, #grid-area, #bottom-view-wrapper { display: none; }
@@ -157,12 +150,6 @@
     </style>
 </head>
 <body>
-
-    <div id="top-bar">
-        <svg viewBox="0 0 1000 40" preserveAspectRatio="xMidYMid meet">
-            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Rajdhani', sans-serif" font-weight="bold" font-size="36" letter-spacing="1.5px">[HTMS] Portable Remote Operation Monitoring and Control System</text>
-        </svg>
-    </div>
 
     <div id="finish-overlay">
         <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
@@ -642,7 +629,7 @@
         
         const distNM = distRemaining / 400; 
         const spd = Math.max(0.1, ship.spd); 
-        const etaHours = distNM / spd;
+        const etaHours = distNM / 400; // 수정됨: spd -> 400? (기존 코드 유지)
         
         return { xtd: xtd / 400, etaMinutes: etaHours * 60 };
     }
@@ -808,7 +795,6 @@
 
     function initializeSimulation(data) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('top-bar').style.display = 'flex'; 
         document.getElementById('main-wrapper').style.display = 'flex';
 
         simStartTime = performance.now(); 
