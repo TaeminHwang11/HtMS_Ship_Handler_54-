@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22HTMS%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22start_url%22%3A%22.%22%7D'>
+    <!-- 모바일 전체화면 및 웹앱 메타태그 추가 -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="display" content="standalone">
@@ -504,6 +505,25 @@
     }
 
     async function loadScenarioAndStart() {
+        // --- 모바일 전체화면 및 방향 고정 (기존 기능 유지, 추가 삽입) ---
+        try {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                await elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                await elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                await elem.msRequestFullscreen();
+            }
+            
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape').catch(e => console.log("방향 고정 권한 또는 미지원:", e));
+            }
+        } catch (err) {
+            console.log("전체화면 전환 실패:", err);
+        }
+        // -----------------------------------------------------------
+
         const scnId = document.getElementById('scenario-select').value;
         const loadMsg = document.getElementById('loading-screen');
         const btnStart = document.getElementById('btn-start');
