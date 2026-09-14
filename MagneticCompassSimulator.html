@@ -308,7 +308,8 @@
                     </div>
                     <div class="rudder-val-text" id="order-rudder-val" style="color: var(--mid-color);">MID 0°</div>
                 </div>
-                <div class="rudder-col" style="border-left: 1px solid #475569;">
+                <!-- 여기에 id="actual-col" 추가 -->
+                <div class="rudder-col" id="actual-col" style="border-left: 1px solid #475569;">
                     <div>ACTUAL</div>
                     <div class="rudder-val-text" id="actual-rudder-val" style="color: var(--mid-color);">MID 0°</div>
                 </div>
@@ -585,7 +586,15 @@
             const segmentTime = 2700 / totalErrors;
             for(let i = 0; i < totalErrors; i++) {
                 let startOffset = Math.random() * (segmentTime - 60);
-                malfunctionSchedule.push((i * segmentTime) + startOffset);
+                let time = (i * segmentTime) + startOffset;
+                
+                // ✅ 첫 번째 에러(i===0)는 무작위가 아닌 120초에 강제 발생 
+                // (15Kts 속도로 1000m 항해시 129초 소요되므로, 변침 10초 전에 에러가 시작됨)
+                if (i === 0) {
+                    time = 120;
+                }
+                
+                malfunctionSchedule.push(time);
             }
         }
 
@@ -656,16 +665,18 @@
         });
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            // ✅ 어떤 모드 버튼을 누르든 시작 버튼 클릭 시 강제 전체 화면 및 가로 모드 전환
-            try {
-                let elem = document.documentElement;
-                if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.warn(e)); }
-                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().catch(e => console.warn(e)); }
-                
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(e => console.warn("가로모드 고정 실패:", e));
-                }
-            } catch (err) { console.warn("Fullscreen API 오류", err); }
+            // 성공 확률을 높인 비동기 전체화면 및 가로모드 강제 전환 로직
+            let elem = document.documentElement;
+            let reqFullscreen = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+            
+            if (reqFullscreen) {
+                reqFullscreen.call(elem).then(() => {
+                    // 전체화면 진입 성공 후 가로모드 고정 (안드로이드용)
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(e => console.warn("가로모드 고정 실패 (지원안함):", e));
+                    }
+                }).catch(e => console.warn("전체화면 진입 실패:", e));
+            }
 
             innateB = 6.5; innateC = -4.0; innateD = 1.0;
             bErrorAdded = false; cErrorAdded = false; dErrorAdded = false;
@@ -703,7 +714,18 @@
                 // Steering 모드 전용 UI 세팅 (AP 제거 및 터치 조타 패널 활성화)
                 document.getElementById('ap-panel').style.display = 'none';
                 document.getElementById('order-label').style.display = 'none';
+                document.getElementById('order-rudder-val').style.display = 'none'; // 하단 원래 오더 텍스트 숨김
                 document.getElementById('touch-steer-panel').style.display = 'flex';
+
+                // ✅ 오른쪽 엑츄얼(ACTUAL) 칸에 오더값과 엑츄얼값을 나란히 표시하도록 DOM 수정
+                document.getElementById('actual-col').innerHTML = `
+                    <div style="font-size: clamp(0.6rem, 0.9vw, 0.8rem); color: #94a3b8; margin-bottom: 5px;">ORD / ACT</div>
+                    <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
+                        <div class="rudder-val-text" id="steer-order-val" style="color: var(--mid-color); font-size: 1.2rem;">MID 0°</div>
+                        <div style="color:#475569; font-weight:bold;">|</div>
+                        <div class="rudder-val-text" id="actual-rudder-val" style="color: var(--mid-color); font-size: 1.2rem;">MID 0°</div>
+                    </div>
+                `;
 
                 document.getElementById('map-section').style.display = 'flex';
                 initMap();
@@ -1055,19 +1077,19 @@
                 mapCtx.beginPath(); mapCtx.moveTo(shipX - 5000, startY + i*1000); mapCtx.lineTo(shipX + 5000, startY + i*1000); mapCtx.stroke();
             }
 
-            // ✅ 변경 1: 선박 항적(Ship Track)을 점선으로 표시
+            // 선박 항적(Ship Track)을 점선으로 표시
             mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; 
             mapCtx.lineWidth = 3 / scale;
-            mapCtx.setLineDash([15 / scale, 15 / scale]); // 점선 활성화
+            mapCtx.setLineDash([15 / scale, 15 / scale]);
             mapCtx.beginPath();
             if (shipTrack.length > 0) {
                 mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
                 for (let i=1; i<shipTrack.length; i++) { mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y); }
                 mapCtx.stroke();
             }
-            mapCtx.setLineDash([]); // 점선 설정 해제 (다른 선 그리기 위해 복구)
+            mapCtx.setLineDash([]); 
 
-            // ✅ 변경 2: 항로(Waypoint) 전체를 항상 동일한 노란색(고정)으로 표시
+            // 항로(Waypoint) 전체를 항상 동일한 노란색으로 고정 표시
             mapCtx.strokeStyle = '#fcd34d'; 
             mapCtx.lineWidth = 4 / scale; 
             mapCtx.beginPath();
@@ -1077,14 +1099,13 @@
             }
             mapCtx.stroke();
             
-            // ✅ 변경 3: 다음 항로 방향 텍스트를 각 웨이포인트 구간 '초입'에 배치
+            // 다음 항로 방향 텍스트를 각 웨이포인트 구간 '초입'에 배치
             for(let i=1; i<wps.length; i++) {
                 let dx = wps[i].x - wps[i-1].x; 
                 let dy = wps[i].y - wps[i-1].y;
                 let ang = Math.atan2(dx, -dy) * 180 / Math.PI;
                 if(ang < 0) ang += 360;
                 
-                // 선분의 시작점(wps[i-1])에서 방향(dx, dy)의 10% 지점으로 위치 이동
                 let textX = wps[i-1].x + dx * 0.1;
                 let textY = wps[i-1].y + dy * 0.1;
                 
@@ -1093,7 +1114,7 @@
                 mapCtx.rotate(ang * Math.PI / 180);
                 mapCtx.fillStyle = '#fcd34d'; 
                 mapCtx.font = "bold 80px Arial";
-                mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", 40, -40); // 선에 겹치지 않게 살짝 오프셋 조정
+                mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", 40, -40); 
                 mapCtx.restore();
             }
 
@@ -1147,7 +1168,7 @@
                     }
                 }
 
-                // 1. AP Logic (Steering 모드에선 패널이 숨겨져 있어 apEnabled가 항상 false이므로 작동 안 함)
+                // 1. AP Logic
                 if (apEnabled) {
                     let activeHeading = heading;
                     if (currentMode === 'STEERING' && isMalfunctionActive) {
@@ -1241,7 +1262,7 @@
                 }
             }
 
-            // ✅ 변경 4: 하단 UI Gyro Heading 숫자도 오작동 에러와 똑같이 흔들리게 처리
+            // 하단 UI Gyro Heading 숫자 오작동 연동
             let activeDisplayHeading = heading;
             if (currentMode === 'STEERING' && isMalfunctionActive) {
                 let noise = (Math.random() - 0.5) * 10;
@@ -1249,17 +1270,21 @@
             }
             updateTextDOM('heading-val', activeDisplayHeading.toFixed(1).padStart(5, '0') + '°');
 
-            let fmtOrd = formatRudder(orderRudder); updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
-            let fmtAct = formatRudder(actualRudder); updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
+            // ✅ Steering 모드의 [ ORD | ACT ] 병합 텍스트 업데이트 포함
+            let fmtOrd = formatRudder(orderRudder); 
+            updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
+            updateTextDOM('steer-order-val', fmtOrd.text, fmtOrd.color); // Steering 모드 전용 오더칸
+
+            let fmtAct = formatRudder(actualRudder); 
+            updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
+            
             updateTextDOM('rot-val', rot.toFixed(1));
 
             if (currentMode === 'STEERING') {
                 renderMap();
                 
-                // 나침반 카드 역시 동일한 왜곡된 방위(activeDisplayHeading)를 그립니다.
                 canvas.style.transform = `rotate(${-activeDisplayHeading}deg)`; 
                 
-                // 점수 UI 색상 변경
                 if (score < 10000 && document.getElementById('map-score').innerText !== Math.floor(score).toString()) {
                     updateTextDOM('map-score', Math.floor(score).toString(), document.getElementById('map-xtd').innerText.replace('m','') > 50 ? '#ef4444' : '#22c55e');
                 }
