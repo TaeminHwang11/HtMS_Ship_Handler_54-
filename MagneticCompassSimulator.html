@@ -62,7 +62,7 @@
         #top-section { display: flex; flex: 1; height: 85%; }
         
         /* Left: Compass Display */
-        #compass-section { flex: 7.5; position: relative; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); box-sizing: border-box; overflow: hidden; }
+        #compass-section { flex: 7.5; position: relative; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); box-sizing: border-box; overflow: hidden; transition: flex 0.5s; }
         
         .compass-guide { position: absolute; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px; border: 1px solid #334155; font-size: clamp(0.7rem, 1vw, 0.9rem); color: #94a3b8; z-index: 20; white-space: nowrap; }
         #env-info { top: 20px; left: 20px; font-family: monospace; color: #7dd3fc; }
@@ -82,6 +82,11 @@
             0% { box-shadow: 0 0 5px #fcd34d, inset 0 0 5px #fcd34d; border-color: #fcd34d; }
             50% { box-shadow: 0 0 20px #fcd34d, inset 0 0 10px #fcd34d; border-color: #fff; }
             100% { box-shadow: 0 0 5px #fcd34d, inset 0 0 5px #fcd34d; border-color: #fcd34d; }
+        }
+        @keyframes blink-warning {
+            0% { box-shadow: 0 0 5px red; opacity: 1; }
+            50% { box-shadow: 0 0 20px red; opacity: 0.7; }
+            100% { box-shadow: 0 0 5px red; opacity: 1; }
         }
         .highlight-blink { animation: blink-border 1.5s infinite !important; border-radius: 8px; z-index: 10; }
 
@@ -105,7 +110,7 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #94a3b8; margin-top: -7px; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         /* Steering Practice UI */
-        #map-section { display: none; flex: 2.5; background: var(--panel-bg); border-left: 2px solid #334155; padding: 15px; flex-direction: column; box-sizing: border-box; min-width: 250px; }
+        #map-section { display: none; flex: 2.5; background: var(--panel-bg); border-left: 2px solid #334155; padding: 15px; flex-direction: column; box-sizing: border-box; min-width: 250px; transition: flex 0.5s; }
         .map-box { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #475569; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         #map-canvas { flex: 1; background: #020617; border-radius: 8px; border: 1px inset #334155; width: 100%; }
         .dist-group { display: flex; gap: 5px; margin-top: 10px; }
@@ -178,6 +183,12 @@
         <!-- TOP: Compass & Panels -->
         <div id="top-section">
             <div id="compass-section">
+                <!-- 오작동 경고 UI (Steering 전용) -->
+                <div id="malfunction-warning" style="display:none; position:absolute; top:80px; left:50%; transform:translateX(-50%); background:rgba(231,76,60,0.9); color:white; padding:15px 30px; border-radius:8px; font-weight:bold; font-size:1.5rem; z-index:100; text-align:center; animation:blink-warning 1s infinite;">
+                    ⚠️ 컴퍼스 오작동 발생 ⚠️<br>
+                    <span style="font-size:1rem; font-weight:normal;">(Compass Malfunction)</span>
+                </div>
+
                 <!-- 환경 변수 -->
                 <div class="compass-guide" id="env-info">
                     <!-- JS에서 렌더링 됩니다 -->
@@ -244,7 +255,10 @@
 
             <!-- Steering Practice Panel -->
             <div id="map-section">
-                <div style="text-align: center; color: #38bdf8; font-weight: bold; margin-bottom: 10px;">Steering Practice Top View</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="color: #38bdf8; font-weight: bold;">Steering Practice Top View</div>
+                    <div style="font-size: 0.9rem;">Score: <span id="map-score" style="color: #22c55e; font-weight:bold; font-size:1.1rem;">10000</span></div>
+                </div>
                 <div class="map-box">
                     <div>Speed: <span id="map-speed" style="color: #fff; font-weight:bold;">15</span> Kts <span style="font-size:0.7rem; color:#94a3b8;">(↑/↓)</span></div>
                     <div>XTD: <span id="map-xtd" style="color: #fcd34d; font-weight:bold;">0.0</span> m</div>
@@ -494,7 +508,16 @@
         const mapCanvas = document.getElementById('map-canvas');
         const mapCtx = mapCanvas.getContext('2d');
 
+        // Steering 모드 전용 상태 변수
+        let simTime = 0;
+        let score = 10000;
+        let malfunctionSchedule = [];
+        let currentMalIndex = 0;
+        let isMalfunctionActive = false;
+        let malEndTime = 0;
+
         function generateNextWP() {
+            // 이 함수는 Steering 모드의 고정 시나리오 범위를 벗어났을 때만 예비로 작동합니다.
             let p1 = wps[wps.length - 2];
             let p2 = wps[wps.length - 1];
             let dx = p2.x - p1.x;
@@ -509,12 +532,48 @@
         }
 
         function initMap() {
-            wps = [{x: 0, y: 0}, {x: 0, y: -3000}];
+            // 45분 (약 20km) 10회 선회 시나리오 웨이포인트 생성
+            wps = [{x: 0, y: 0}];
+            let cx = 0, cy = 0;
+            let crs = 0;
+            
+            // 초반 직진 1km
+            cy -= 1000;
+            wps.push({x: cx, y: cy});
+            
+            const turnAngles = [30, -20, 25, -15, 30, -30, 20, -20, 15, -10];
+            const legDist = 1900;
+            
+            turnAngles.forEach(ang => {
+                crs = (crs + ang + 360) % 360;
+                let rad = crs * Math.PI / 180;
+                cx += legDist * Math.sin(rad);
+                cy -= legDist * Math.cos(rad); // y축 반전
+                wps.push({x: cx, y: cy});
+            });
+            
             activeIdx = 0;
-            generateNextWP(); generateNextWP(); generateNextWP();
             shipX = 0; shipY = 0; heading = 0;
             shipTrack = [];
+            shipSpeed = 15;
             updateTextDOM('map-speed', shipSpeed.toString());
+            
+            // 상태 초기화
+            simTime = 0;
+            score = 10000;
+            isMalfunctionActive = false;
+            currentMalIndex = 0;
+            updateTextDOM('map-score', Math.floor(score).toString(), '#22c55e');
+            document.getElementById('malfunction-warning').style.display = 'none';
+            
+            // 2700초(45분) 동안 20번의 오작동 스케줄링 (각 60초 지속)
+            malfunctionSchedule = [];
+            const totalErrors = 20;
+            const segmentTime = 2700 / totalErrors;
+            for(let i = 0; i < totalErrors; i++) {
+                let startOffset = Math.random() * (segmentTime - 60);
+                malfunctionSchedule.push((i * segmentTime) + startOffset);
+            }
         }
 
         function resizeMap() {
@@ -558,7 +617,8 @@
             disableAP();
 
             if (currentMode === 'EXPERT') {
-                // Expert 모드: Variation (-15~15), Gyro Error (-3~3) 랜덤 (0 제외)
+                document.getElementById('compass-section').style.flex = '7.5';
+                document.getElementById('corrector-section').style.flex = '2.5';
                 let v = 0; while(v === 0) { v = Math.floor(Math.random() * 31) - 15; }
                 variation = v;
                 let g = 0; while(g === 0) { g = Math.floor(Math.random() * 7) - 3; }
@@ -567,11 +627,17 @@
                 document.getElementById('calc-guide').style.display = 'block';
                 tutorialStep = 1; 
             } else if (currentMode === 'BEGINNER') {
+                document.getElementById('compass-section').style.flex = '7.5';
+                document.getElementById('corrector-section').style.flex = '2.5';
                 variation = -6.0;
                 gyroError = 1.0;
                 document.getElementById('calc-guide').style.display = 'block';
                 tutorialStep = 1; 
             } else if (currentMode === 'STEERING') {
+                // 5:5 화면 분할 적용
+                document.getElementById('compass-section').style.flex = '5';
+                document.getElementById('map-section').style.flex = '5';
+                
                 document.getElementById('corrector-section').style.display = 'none';
                 document.getElementById('map-section').style.display = 'flex';
                 document.getElementById('env-info').style.display = 'none';
@@ -960,18 +1026,20 @@
             mapCtx.restore();
 
             let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
-            let dx = p2.x - p1.x; let dy = p2.y - p1.y;
-            let len = Math.sqrt(dx*dx + dy*dy);
-            
-            let xtd = 0;
-            if(len > 0) { xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len; }
-            
-            let dot = (shipX - p2.x) * dx + (shipY - p2.y) * dy;
-            if (dot >= 0) { 
-                activeIdx++;
-                if (activeIdx >= wps.length - 2) generateNextWP();
+            if(p1 && p2) {
+                let dx = p2.x - p1.x; let dy = p2.y - p1.y;
+                let len = Math.sqrt(dx*dx + dy*dy);
+                
+                let xtd = 0;
+                if(len > 0) { xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len; }
+                
+                let dot = (shipX - p2.x) * dx + (shipY - p2.y) * dy;
+                if (dot >= 0) { 
+                    activeIdx++;
+                    if (activeIdx >= wps.length - 2) generateNextWP(); // 보험용 호출
+                }
+                updateTextDOM('map-xtd', xtd.toFixed(1));
             }
-            updateTextDOM('map-xtd', xtd.toFixed(1));
         }
 
         function loop() {
@@ -980,9 +1048,34 @@
             let simSteps = (isFastForward && apEnabled) ? 15 : 1;
 
             for (let step = 0; step < simSteps; step++) {
+                // Steering 모드: 오작동 로직 처리 및 XTD 패널티 계산
+                if (currentMode === 'STEERING') {
+                    simTime += dt;
+                    
+                    if (currentMalIndex < malfunctionSchedule.length) {
+                        if (simTime >= malfunctionSchedule[currentMalIndex]) {
+                            isMalfunctionActive = true;
+                            malEndTime = simTime + 60; // 60초 지속
+                            document.getElementById('malfunction-warning').style.display = 'block';
+                            currentMalIndex++;
+                        }
+                    }
+                    if (isMalfunctionActive && simTime >= malEndTime) {
+                        isMalfunctionActive = false;
+                        document.getElementById('malfunction-warning').style.display = 'none';
+                    }
+                }
+
                 // 1. AP Logic 
                 if (apEnabled) {
-                    let err = (apTarget - heading) % 360;
+                    let activeHeading = heading;
+                    // 오작동 중에는 AP가 왜곡된 방위를 기준으로 조타함
+                    if (currentMode === 'STEERING' && isMalfunctionActive) {
+                        let noise = (Math.random() - 0.5) * 10;
+                        activeHeading = (heading + noise + 360) % 360;
+                    }
+
+                    let err = (apTarget - activeHeading) % 360;
                     if (err > 180) err -= 360; if (err < -180) err += 360;
 
                     let Kp_ap = 1.2; let Kd_ap = 0.5; 
@@ -1006,13 +1099,11 @@
                     effLevel = 1; 
                 }
                 if (effLevel > 0) {
-                    // 외란(바람/조류)을 계산 (Math.random() 비중을 줄여 고주파 헌팅 방지)
                     let drift = Math.sin(Date.now() * 0.0005) * 1.5 * effLevel;
                     let gust = (Math.random() - 0.5) * 0.5 * effLevel; 
                     disturbance = drift + gust; 
                 }
 
-                // 외란을 rot에 직접 더하지 않고 targetRot에 적용하여 선박 관성(T)에 의해 부드럽게 필터링되도록 수정 (헌팅 현상 해결)
                 const targetRot = (K * actualRudder) + disturbance;
                 const rotDerivative = (targetRot - rot) / T; 
                 
@@ -1028,6 +1119,20 @@
                     if (shipTrack.length === 0 || Math.hypot(shipX - shipTrack[shipTrack.length-1].x, shipY - shipTrack[shipTrack.length-1].y) > 20) {
                         shipTrack.push({x: shipX, y: shipY});
                         if (shipTrack.length > 300) shipTrack.shift(); 
+                    }
+
+                    // XTD 패널티 계산 (50m 초과 시 점수 삭감)
+                    let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
+                    if (p1 && p2) {
+                        let dx = p2.x - p1.x; let dy = p2.y - p1.y;
+                        let len = Math.sqrt(dx*dx + dy*dy);
+                        if (len > 0) {
+                            let currentXtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len;
+                            if (currentXtd > 50) {
+                                score -= 10 * dt;
+                                if (score < 0) score = 0;
+                            }
+                        }
                     }
                 } else {
                     let errAp = (apTarget - heading) % 360;
@@ -1063,7 +1168,19 @@
 
             if (currentMode === 'STEERING') {
                 renderMap();
-                canvas.style.transform = `rotate(${-heading}deg)`; 
+                
+                // 오작동 시 나침반 카드가 왜곡된 방위를 그리도록 처리
+                let displayHeading = heading;
+                if (isMalfunctionActive) {
+                    let noise = (Math.random() - 0.5) * 10;
+                    displayHeading = (heading + noise + 360) % 360;
+                }
+                canvas.style.transform = `rotate(${-displayHeading}deg)`; 
+                
+                // 점수 UI 색상 변경
+                if (score < 10000 && document.getElementById('map-score').innerText !== Math.floor(score).toString()) {
+                    updateTextDOM('map-score', Math.floor(score).toString(), document.getElementById('map-xtd').innerText.replace('m','') > 50 ? '#ef4444' : '#22c55e');
+                }
             } else {
                 const steadyProg = document.getElementById('steady-prog');
                 if (steadyProg) steadyProg.value = (steadyTime / STEADY_TARGET) * 100;
