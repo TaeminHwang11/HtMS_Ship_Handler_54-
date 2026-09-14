@@ -144,7 +144,8 @@
             padding: 15px 5px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; 
             font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; text-align: center; 
         }
-        .placeholder-btn:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); transform: translateY(-2px); }
+        .placeholder-btn:hover { background: rgba(6,182,212,0.2); color: #fff; border-color: var(--accent-cyan); transform: translateY(-2px); }
+        .placeholder-btn.active-btn { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
 
         /* 💡 팝아웃 디테일 패널 CSS 렌더링 픽스 (역방향 SA 구조) */
         #surv-detail-panel { 
@@ -279,17 +280,20 @@
                     <div id="intervention-status-text" style="color:#00ffaa; font-weight:bold; font-size:22px; letter-spacing:2px; font-family:'Rajdhani', sans-serif;">CONNECTING...</div>
                     <div id="latency-countdown" style="color:#88c0d0; margin-top:10px; font-family:monospace; font-size:18px;">3.0s</div>
                 </div>
+
+                <!-- 💡 AR HUD HTML 레이블용 컨테이너 -->
+                <div id="ar-label-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 40;"></div>
             </div>
             
             <div id="h-resizer"></div>
 
             <div id="bottom-view-wrapper">
                 <div id="split-left-panel" class="split-side-panel">
-                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">LEFT CONTROLS</div>
+                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">LEFT CONTROLS (AR)</div>
                     <div class="control-btn-grid">
-                        <button class="placeholder-btn">L_BTN 01</button>
-                        <button class="placeholder-btn">L_BTN 02</button>
-                        <button class="placeholder-btn">L_BTN 03</button>
+                        <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')">3D ROUTE</button>
+                        <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')">ENV VECTORS</button>
+                        <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')">XTD CORRIDOR</button>
                         <button class="placeholder-btn">L_BTN 04</button>
                         <button class="placeholder-btn">L_BTN 05</button>
                         <button class="placeholder-btn">L_BTN 06</button>
@@ -308,11 +312,11 @@
                 <div id="grid-area"></div>
                 
                 <div id="split-right-panel" class="split-side-panel">
-                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">RIGHT CONTROLS</div>
+                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">RIGHT CONTROLS (AR)</div>
                     <div class="control-btn-grid">
-                        <button class="placeholder-btn">R_BTN 01</button>
-                        <button class="placeholder-btn">R_BTN 02</button>
-                        <button class="placeholder-btn">R_BTN 03</button>
+                        <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')">AR LABELS</button>
+                        <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')">GUARD RING</button>
+                        <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')">CPA VECTOR</button>
                         <button class="placeholder-btn">R_BTN 04</button>
                         <button class="placeholder-btn">R_BTN 05</button>
                         <button class="placeholder-btn">R_BTN 06</button>
@@ -331,9 +335,9 @@
         </div>
         
         <div id="surv-detail-panel">
-            <div id="surv-sa-1" class="surv-panel-col"></div> <!-- Level 1 SA (Perception): 3번째 팝아웃 -->
-            <div id="surv-sa-2" class="surv-panel-col"></div> <!-- Level 2 SA (Comprehension): 2번째 팝아웃 -->
-            <div id="surv-sa-3" class="surv-panel-col"></div> <!-- Level 3 SA (Projection): 1번째 팝아웃 -->
+            <div id="surv-sa-1" class="surv-panel-col"></div>
+            <div id="surv-sa-2" class="surv-panel-col"></div>
+            <div id="surv-sa-3" class="surv-panel-col"></div>
         </div>
 
         <div id="sidebar">
@@ -492,7 +496,6 @@
     let last2DRenderTime = 0; 
     let last3DRenderTime = 0;
 
-    // 💡 글로벌 1배속 랜덤 시간 변수 추가
     let simUnixTime = Date.now() - Math.floor(Math.random() * 86400000); 
     let baseRefLat = 34.8; 
     let baseRefLon = 126.4;
@@ -514,10 +517,40 @@
 
     let lastTouchX = 0, lastTouchY = 0;
 
+    // 💡 AR HUD 상태 관리 객체 및 토글 함수
+    let arStates = { 
+        route: false, 
+        env: false, 
+        xtd: false, 
+        label: false, 
+        ring: false, 
+        cpa: false 
+    };
+
+    let arObjects = {
+        routeLine: null,
+        xtdLines: null,
+        guardRing: null,
+        cpaLines: []
+    };
+
+    window.toggleAR = function(key) {
+        arStates[key] = !arStates[key];
+        const btn = document.getElementById('btn-tgl-' + key);
+        if (btn) {
+            if (arStates[key]) {
+                btn.classList.add('active-btn');
+            } else {
+                btn.classList.remove('active-btn');
+            }
+        }
+    };
+
     function findSeaRoute(startCode, endCode) {
         let distances = {}; 
         let prev = {}; 
         let pq = [];
+        
         for(let node in NAV_GRAPH) { 
             distances[node] = Infinity; 
             prev[node] = null; 
@@ -539,6 +572,7 @@
                 let dy = NAV_GRAPH[neighbor].lat - NAV_GRAPH[curr].lat;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 let alt = distances[curr] + dist;
+                
                 if(alt < distances[neighbor]) { 
                     distances[neighbor] = alt; 
                     prev[neighbor] = curr; 
@@ -548,6 +582,7 @@
         
         let path = []; 
         let u = endCode;
+        
         if(prev[u] !== null || u === startCode) {
             while(u !== null) { 
                 path.unshift(NAV_GRAPH[u]); 
@@ -574,6 +609,7 @@
             select.innerHTML = '';
             
             const filteredFiles = files.filter(f => f && f.name && (String(f.name).toUpperCase().includes('MASS') || String(f.name).toUpperCase().includes('SCENARIO')));
+            
             if(filteredFiles.length === 0) {
                 select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
             } else {
@@ -588,6 +624,7 @@
             select.innerHTML = '<option value="">통신 오류. 다시 시도해주세요.</option>';
         }
     }
+    
     window.addEventListener('DOMContentLoaded', fetchScenarioList);
 
     function getValidShipType(rawType) {
@@ -620,8 +657,14 @@
         const loadMsg = document.getElementById('loading-screen');
         const btnStart = document.getElementById('btn-start');
         
-        if(!document.getElementById('student-id').value) { alert("학번을 입력해주세요."); return; }
-        if(!scnId) { alert("시나리오를 선택해주세요."); return; }
+        if(!document.getElementById('student-id').value) { 
+            alert("학번을 입력해주세요."); 
+            return; 
+        }
+        if(!scnId) { 
+            alert("시나리오를 선택해주세요."); 
+            return; 
+        }
         
         btnStart.style.display = 'none'; 
         loadMsg.style.display = 'block';
@@ -651,7 +694,9 @@
             fetch(GITHUB_BASE_URL + "Jsons/Settings.json?t=" + new Date().getTime())
             .then(res => { if(res.ok) return res.json(); })
             .then(data => {
-                if(data) { for (const key in data) localStorage.setItem(key, data[key]); }
+                if(data) { 
+                    for (const key in data) localStorage.setItem(key, data[key]); 
+                }
                 addProgress();
             }).catch(() => addProgress())
         );
@@ -659,6 +704,7 @@
         const texLoader = new THREE.TextureLoader();
         loadedSkyboxes = [];
         const skyboxFiles = ["NiceSky.jpg", "GraySky.jpg", "SunsetSky.jpg"];
+        
         skyboxFiles.forEach(sf => {
             loadPromises.push(
                 new Promise(resolve => {
@@ -673,20 +719,26 @@
         });
 
         const gltfLoader = new THREE.GLTFLoader();
+        
         modelFiles.forEach(file => {
             loadPromises.push(
                 new Promise(resolve => {
                     gltfLoader.load(GITHUB_BASE_URL + file, (gltf) => {
                         const model = gltf.scene;
                         const box = new THREE.Box3().setFromObject(model); 
-                        const size = new THREE.Vector3(); box.getSize(size); 
-                        const center = new THREE.Vector3(); box.getCenter(center);
+                        const size = new THREE.Vector3(); 
+                        box.getSize(size); 
+                        const center = new THREE.Vector3(); 
+                        box.getCenter(center);
+                        
                         model.position.set(-center.x, -center.y, -center.z); 
                         const scale = 150 / Math.max(size.x, size.y, size.z); 
+                        
                         const wrapper = new THREE.Group(); 
                         wrapper.add(model); 
                         wrapper.scale.set(scale, scale, scale);
                         parsedModels[file.split('/').pop()] = { group: wrapper };
+                        
                         resolve();
                     }, undefined, () => resolve());
                 }).then(() => addProgress())
@@ -720,18 +772,24 @@
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
     }
 
-    // 💡 글로벌 경도 산출 헬퍼 함수
+    function getLonFromUnits(x) {
+        return baseRefLon + (x * 1852 / 400) / (111111 * Math.cos(baseRefLat * DEG2RAD));
+    }
+
     function getGlobalLonLat(s) {
         if(!s.globalRoute || s.globalRoute.length < 2) return { lat: baseRefLat, lon: baseRefLon };
         
         let totalDist = 0; 
         let segDists = [];
+        
         for(let i=0; i<s.globalRoute.length-1; i++) {
             let dx = s.globalRoute[i+1].lon - s.globalRoute[i].lon; 
             if (dx > 180) dx -= 360; 
             if (dx < -180) dx += 360;
+            
             let dy = s.globalRoute[i+1].lat - s.globalRoute[i].lat;
             let d = Math.sqrt(dx*dx + dy*dy);
+            
             totalDist += d; 
             segDists.push(d);
         }
@@ -769,9 +827,13 @@
         const dz = nextWp.z - prevWp.z;
         const routeLen = Math.hypot(dx, dz);
         let xtd = 0;
-        if (routeLen > 0) xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
+        
+        if (routeLen > 0) {
+            xtd = Math.abs(dx * (prevWp.z - ship.z) - (prevWp.x - ship.x) * dz) / routeLen;
+        }
         
         let distRemaining = Math.hypot(nextWp.x - ship.x, nextWp.z - ship.z);
+        
         for (let i = ship.currentWpIndex; i < ship.waypoints.length - 1; i++) {
             distRemaining += Math.hypot(ship.waypoints[i+1].x - ship.waypoints[i].x, ship.waypoints[i+1].z - ship.waypoints[i].z);
         }
@@ -779,6 +841,7 @@
         const distNM = distRemaining / 400; 
         const spd = Math.max(0.1, ship.spd); 
         const etaHours = distNM / 400; 
+        
         return { xtd: xtd / 400, etaMinutes: etaHours * 60 };
     }
 
@@ -820,6 +883,7 @@
                 if (bcr_units > 0) bcr = bcr_units / 400; 
             } 
         } 
+        
         return { cpa: cpaUnits / 400, tcpa: tcpa, bcr: bcr }; 
     }
 
@@ -853,7 +917,9 @@
         if(isSimulationRunning) {
             if (currentMode !== 'SURVEILLANCE') {
                 render2D();
-                if(isSplitMode && renderer3D && scene && camera3D) renderer3D.render(scene, camera3D);
+                if(isSplitMode && renderer3D && scene && camera3D) {
+                    renderer3D.render(scene, camera3D);
+                }
             }
         }
     });
@@ -886,6 +952,7 @@
         }
 
         const customFileName = `${scnName.replace('.json', '')}_M_${dateStr}_${studentId}_${studentName}.json`;
+        
         const payload = { 
             studentId: studentId, 
             studentName: studentName, 
@@ -963,6 +1030,7 @@
         data.ships.forEach(s => {
             let isMass = s.isMASS === 1;
             let finalType = isMass ? randomMassModels[Math.floor(Math.random() * randomMassModels.length)] : getValidShipType(s.shipType);
+            
             const wpSet = data.WayPointSet.find(w => w.WayPointSetID === s.waypointSetID);
             const startWP = wpSet ? wpSet.WayPoints[0] : { Latitude: baseRefLat, Longitude: baseRefLon };
             const uPos = latLonToUnits(startWP.Latitude, startWP.Longitude, baseRefLat, baseRefLon);
@@ -1006,7 +1074,8 @@
 
         const massShips = simEntities.filter(s => s.isMASS);
         const grid = document.getElementById('grid-area');
-        grid.innerHTML = ''; massViews = [];
+        grid.innerHTML = ''; 
+        massViews = [];
 
         massShips.forEach((mass, idx) => {
             const vp = document.createElement('div');
@@ -1037,6 +1106,7 @@
                 initialPinchDistance: 0, 
                 initialViewScale: 0 
             };
+            
             massViews.push(vObj);
             layoutObserver.observe(vp);
 
@@ -1078,8 +1148,10 @@
                         const dx = mx - vObj.panX; 
                         const dy = my - vObj.panY;
                         const dist = Math.sqrt(dx*dx + dy*dy) / vObj.viewScale / 400;
+                        
                         let brg = Math.atan2(dx, -dy) * 180 / Math.PI; 
                         if (brg < 0) brg += 360;
+                        
                         const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
                         if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
                     }
@@ -1087,6 +1159,7 @@
                     if(vObj.isDragging) { 
                         const dx = mx - vObj.dragStartX - vObj.panOffsetX;
                         const dy = my - vObj.dragStartY - vObj.panOffsetY;
+                        
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
                         
                         vObj.panOffsetX = mx - vObj.dragStartX; 
@@ -1133,12 +1206,14 @@
                         const dy = my - vObj.dragStartY - vObj.panOffsetY;
                         
                         if(Math.abs(dx)>3 || Math.abs(dy)>3) vObj.hasDragged = true;
+                        
                         vObj.panOffsetX = mx - vObj.dragStartX; 
                         vObj.panOffsetY = my - vObj.dragStartY; 
                         
                         const curDx = mx - vObj.panX; 
                         const curDy = my - vObj.panY;
                         const dist = Math.sqrt(curDx*curDx + curDy*curDy) / vObj.viewScale / 400;
+                        
                         let brg = Math.atan2(curDx, -curDy) * 180 / Math.PI; 
                         if (brg < 0) brg += 360;
                         
@@ -1149,6 +1224,7 @@
                         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                         let newScale = vObj.initialViewScale * (dist / vObj.initialPinchDistance);
                         let range = Math.min(30, Math.max(0.5, 1 / newScale));
+                        
                         vObj.viewScale = 1 / range; 
                         document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
                         logEvent("MAP_ZOOMED", { newRangeNM: range.toFixed(2) });
@@ -1173,6 +1249,7 @@
                 
                 canvas.addEventListener('click', (e) => {
                     if(vObj.hasDragged || currentMode === 'SURVEILLANCE') return;
+                    
                     const rect = canvas.getBoundingClientRect(); 
                     const mx = e.clientX - rect.left; 
                     const my = e.clientY - rect.top;
@@ -1181,8 +1258,10 @@
                     simEntities.forEach((s, tIdx) => {
                         if(s.isMASS && s !== vObj.massEntity) return;
                         if(s === vObj.massEntity) return;
+                        
                         const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
                         const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
+                        
                         if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
                             clickedIndex = tIdx;
                         }
@@ -1200,9 +1279,11 @@
                 canvas.addEventListener('wheel', (e) => {
                     if(currentMode === 'SURVEILLANCE') return;
                     e.preventDefault();
+                    
                     let range = Math.min(30, Math.max(0.5, (1 / vObj.viewScale) * (e.deltaY < 0 ? 0.9 : 1.1)));
                     vObj.viewScale = 1 / range; 
                     document.querySelector(`#hud-${idx} .hud-range`).textContent = `RANGE: ${range.toFixed(1)} NM`;
+                    
                     logEvent("MAP_ZOOMED", { newRangeNM: range.toFixed(2) });
                     render2D(); 
                 }, { passive: false });
@@ -1226,8 +1307,8 @@
         const ctx = canvas.getContext('2d');
         const W = canvas.width; 
         const H = canvas.height;
-        ctx.clearRect(0,0,W,H);
         
+        ctx.clearRect(0,0,W,H);
         ctx.fillStyle = '#050a10';
         ctx.fillRect(0,0,W,H);
 
@@ -1321,15 +1402,16 @@
             let isBlinkOff = s.riskLevel === 2 && Math.sin(performance.now() * 0.01) < 0;
 
             if (!isBlinkOff) {
-                // 항로 방향 화살표 각도 계산 (임시적으로 이전/다음 포인트 간의 각도)
                 let angle = Math.atan2(destXY.y - sXY.y, destXY.x - sXY.x) + Math.PI/2;
                 
                 ctx.save();
                 ctx.translate(sXY.x, sXY.y); 
                 ctx.rotate(angle);
+                
                 ctx.fillStyle = shipColor; 
                 ctx.shadowColor = shipColor; 
                 ctx.shadowBlur = 15;
+                
                 ctx.beginPath(); 
                 ctx.moveTo(0, -10); 
                 ctx.lineTo(6, 8); 
@@ -1356,6 +1438,7 @@
 
     function updateGridLayout() {
         const grid = document.getElementById('grid-area');
+        
         if(isSplitMode) { 
             grid.style.gridTemplateColumns = '1fr'; 
             grid.style.gridTemplateRows = '1fr'; 
@@ -1364,6 +1447,7 @@
         
         const count = massViews.length; 
         if (count === 0) return;
+        
         let cols = 1, rows = 1;
         if (count === 2) { cols = 2; rows = 1; } 
         else if (count === 3) { cols = 3; rows = 1; }
@@ -1387,6 +1471,7 @@
 
     window.setSurvLevel = function(level, event) {
         if(event) event.stopPropagation();
+        
         if(survExpandedLevel === level) { 
             survExpandedLevel = level - 1; 
             if(survExpandedLevel === 0) survExpandedMassId = null; 
@@ -1403,9 +1488,11 @@
         
         simEntities.forEach(s => {
             if(!s.isMASS) return;
+            
             let riskColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let riskText = s.riskLevel === 2 ? 'HIGH RISK' : (s.riskLevel === 1 ? 'WARNING' : 'SAFE');
             let isActive = (String(survExpandedMassId) === String(s.id));
+            
             if (isActive) expandedMass = s;
             
             container.innerHTML += `
@@ -1424,6 +1511,7 @@
         if (expandedMass && survExpandedLevel > 0) {
             let targetsWithin2NM = 0; 
             let closestDistNM = Infinity;
+            
             simEntities.forEach(tgt => {
                 if (tgt !== expandedMass) {
                     let dNM = Math.sqrt(Math.pow(tgt.x - expandedMass.x, 2) + Math.pow(tgt.z - expandedMass.z, 2)) / 400;
@@ -1458,7 +1546,11 @@
                         <div style="margin-top:20px; font-size:12px; color:#64748b; text-align:center;">우측 선박 버튼을 한번 더 누르면<br>Level-2 SA (Comprehension)로 확장됩니다.</div>
                     </div>
                 `;
-            } else { sa3.style.width = '0'; sa3.classList.remove('active'); sa3.innerHTML = ''; }
+            } else { 
+                sa3.style.width = '0'; 
+                sa3.classList.remove('active'); 
+                sa3.innerHTML = ''; 
+            }
             
             if (survExpandedLevel >= 2) {
                 sa2.style.width = '350px'; 
@@ -1480,7 +1572,11 @@
                         <div class="data-row"><span>Current separation (OS & TS):</span> <b>${targetsWithin2NM} targets < 2NM</b></div>
                     </div>
                 `;
-            } else { sa2.style.width = '0'; sa2.classList.remove('active'); sa2.innerHTML = ''; }
+            } else { 
+                sa2.style.width = '0'; 
+                sa2.classList.remove('active'); 
+                sa2.innerHTML = ''; 
+            }
             
             if (survExpandedLevel >= 3) {
                 sa1.style.width = '380px'; 
@@ -1508,7 +1604,11 @@
                         <div class="data-row"><span>Current (Spd / Dir):</span> <b>${globalEnv.currentSpd.toFixed(1)} Kn / ${globalEnv.currentDir}°</b></div>
                     </div>
                 `;
-            } else { sa1.style.width = '0'; sa1.classList.remove('active'); sa1.innerHTML = ''; }
+            } else { 
+                sa1.style.width = '0'; 
+                sa1.classList.remove('active'); 
+                sa1.innerHTML = ''; 
+            }
         } else {
             sa1.style.width = '0'; sa1.classList.remove('active'); sa1.innerHTML = ''; 
             sa2.style.width = '0'; sa2.classList.remove('active'); sa2.innerHTML = ''; 
@@ -1521,6 +1621,7 @@
             updateSurveillanceSidebar(); 
             return; 
         }
+        
         if(massViews.length === 0) return;
         const vObj = massViews[activeMassIndex]; 
         const mass = vObj.massEntity;
@@ -1598,11 +1699,25 @@
     const fpvArea = document.getElementById('fpv-area'); 
     let isHResizing = false;
     
-    hResizer.addEventListener('mousedown', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); });
-    hResizer.addEventListener('touchstart', (e) => { isHResizing = true; document.body.style.cursor = 'row-resize'; e.preventDefault(); }, {passive: false});
+    hResizer.addEventListener('mousedown', (e) => { 
+        isHResizing = true; 
+        document.body.style.cursor = 'row-resize'; 
+        e.preventDefault(); 
+    });
+    
+    hResizer.addEventListener('touchstart', (e) => { 
+        isHResizing = true; 
+        document.body.style.cursor = 'row-resize'; 
+        e.preventDefault(); 
+    }, {passive: false});
     
     window.addEventListener('mousemove', (e) => handleResizerMove(e.clientY));
-    window.addEventListener('touchmove', (e) => { if(isHResizing) { e.preventDefault(); handleResizerMove(e.touches[0].clientY); } }, {passive: false});
+    window.addEventListener('touchmove', (e) => { 
+        if(isHResizing) { 
+            e.preventDefault(); 
+            handleResizerMove(e.touches[0].clientY); 
+        } 
+    }, {passive: false});
     
     function handleResizerMove(clientY) {
         if (!isHResizing) return;
@@ -1613,8 +1728,19 @@
         fpvArea.style.height = `${newHeight}%`;
     }
     
-    window.addEventListener('mouseup', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
-    window.addEventListener('touchend', () => { if(isHResizing) { isHResizing = false; document.body.style.cursor = 'default'; } });
+    window.addEventListener('mouseup', () => { 
+        if(isHResizing) { 
+            isHResizing = false; 
+            document.body.style.cursor = 'default'; 
+        } 
+    });
+    
+    window.addEventListener('touchend', () => { 
+        if(isHResizing) { 
+            isHResizing = false; 
+            document.body.style.cursor = 'default'; 
+        } 
+    });
 
     window.enterSurveillanceMode = function() {
         if(interventionState !== 'NONE') return;
@@ -1638,9 +1764,12 @@
         survExpandedMassId = null; 
         survExpandedLevel = 0;
         
-        document.getElementById('surv-sa-1').style.width = '0'; document.getElementById('surv-sa-1').classList.remove('active');
-        document.getElementById('surv-sa-2').style.width = '0'; document.getElementById('surv-sa-2').classList.remove('active');
-        document.getElementById('surv-sa-3').style.width = '0'; document.getElementById('surv-sa-3').classList.remove('active');
+        document.getElementById('surv-sa-1').style.width = '0'; 
+        document.getElementById('surv-sa-1').classList.remove('active');
+        document.getElementById('surv-sa-2').style.width = '0'; 
+        document.getElementById('surv-sa-2').classList.remove('active');
+        document.getElementById('surv-sa-3').style.width = '0'; 
+        document.getElementById('surv-sa-3').classList.remove('active');
         
         updateSidebar(); 
 
@@ -1669,9 +1798,12 @@
         survExpandedMassId = null; 
         survExpandedLevel = 0;
         
-        document.getElementById('surv-sa-1').style.width = '0'; document.getElementById('surv-sa-1').classList.remove('active');
-        document.getElementById('surv-sa-2').style.width = '0'; document.getElementById('surv-sa-2').classList.remove('active');
-        document.getElementById('surv-sa-3').style.width = '0'; document.getElementById('surv-sa-3').classList.remove('active');
+        document.getElementById('surv-sa-1').style.width = '0'; 
+        document.getElementById('surv-sa-1').classList.remove('active');
+        document.getElementById('surv-sa-2').style.width = '0'; 
+        document.getElementById('surv-sa-2').classList.remove('active');
+        document.getElementById('surv-sa-3').style.width = '0'; 
+        document.getElementById('surv-sa-3').classList.remove('active');
         
         updateSidebar(); 
 
@@ -1828,6 +1960,7 @@
             const massId = mass.name;
             
             logEvent("MANUAL_STEERING_CMD_SENT", { massId: massId, dir: 'C', delayMs: latencyMs });
+            
             setTimeout(() => {
                 if(interventionState !== 'ACTIVE') return;
                 const currentMass = massViews[activeMassIndex].massEntity; 
@@ -1836,6 +1969,7 @@
                 currentMass.targetRudder = 0; 
                 logEvent("MANUAL_STEERING_APPLIED", { massId: currentMass.name, cmd: 0, dir: 'C' });
             }, latencyMs);
+            
             e.preventDefault(); 
         }
     });
@@ -1937,10 +2071,12 @@
             cvs.width = 64; 
             cvs.height = 64; 
             const ctx = cvs.getContext('2d');
+            
             const grad = ctx.createRadialGradient(32,32,0, 32,32,32);
             grad.addColorStop(0, 'white'); 
             grad.addColorStop(0.2, colorStr); 
             grad.addColorStop(1, 'transparent');
+            
             ctx.fillStyle = grad; 
             ctx.fillRect(0,0,64,64);
             return new THREE.CanvasTexture(cvs);
@@ -1950,21 +2086,23 @@
         const matG = new THREE.SpriteMaterial({ map: getTex('rgba(50,255,50,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
         const matW = new THREE.SpriteMaterial({ map: getTex('rgba(255,255,255,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 
+        // 💡 하드코딩된 브릿지 기준 좌표 (Z-는 선수 방향)
+        // 전주등 대비 현등 높이를 대폭 낮춰 갑판 레벨에 배치
         const port = new THREE.Sprite(matR); 
-        port.scale.set(15,15,1); 
-        port.position.set(-8, 15, -10);
+        port.scale.set(10, 10, 1); 
+        port.position.set(-6, 5, -20);
         
         const stbd = new THREE.Sprite(matG); 
-        stbd.scale.set(15,15,1); 
-        stbd.position.set(8, 15, -10);
+        stbd.scale.set(10, 10, 1); 
+        stbd.position.set(6, 5, -20);
         
         const mast = new THREE.Sprite(matW); 
-        mast.scale.set(20,20,1); 
-        mast.position.set(0, 25, -25);
+        mast.scale.set(15, 15, 1); 
+        mast.position.set(0, 25, 0);
         
         const stern = new THREE.Sprite(matW); 
-        stern.scale.set(15,15,1); 
-        stern.position.set(0, 12, 35);
+        stern.scale.set(10, 10, 1); 
+        stern.position.set(0, 5, 25);
         
         group.add(port, stbd, mast, stern);
         group.visible = false; 
@@ -1973,6 +2111,7 @@
 
     function getModelForShip(type) {
         let cloneGroup;
+        
         if (parsedModels[type]) {
             cloneGroup = parsedModels[type].group.clone();
             const savedCalib = localStorage.getItem('model_calib_' + type);
@@ -2000,6 +2139,7 @@
         currentEnvPeriod = period;
 
         let fogColorHex;
+        
         if (period === 'DAY') {
             const isCloudy = shipId % 2 === 0; 
             scene.background = loadedSkyboxes.find(s => s.name === (isCloudy ? 'GraySky.jpg' : 'NiceSky.jpg')) || new THREE.Color(0x5a7a99);
@@ -2017,6 +2157,7 @@
             if(dirLight) dirLight.intensity = 0.05;
             if(ambLight) ambLight.intensity = 0.2;
         }
+        
         scene.fog.color.setHex(fogColorHex);
         
         if (seaMesh) {
@@ -2030,10 +2171,11 @@
         document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { 
-            if(osShipGroup.children[i] !== camera3D && osShipGroup.children[i] !== seaMesh) { 
+            if(osShipGroup.children[i] !== camera3D && osShipGroup.children[i] !== seaMesh && osShipGroup.children[i] !== arObjects.guardRing) { 
                 osShipGroup.remove(osShipGroup.children[i]); 
             }
         }
+        
         targetMeshes.forEach(m => scene.remove(m.mesh)); 
         targetMeshes = [];
         
@@ -2047,12 +2189,14 @@
         } else { 
             camera3D.position.set(0, 20, 15); 
         }
+        
         camAngleX = -0.05; 
         camAngleY = 0;
 
         simEntities.forEach((tgt) => { 
             if(tgt.isMASS && tgt !== mass) return; 
             if(tgt === mass) return; 
+            
             const tModel = getModelForShip(tgt.type); 
             const tGroup = new THREE.Group(); 
             tGroup.add(tModel);
@@ -2103,6 +2247,7 @@
     
     function drawVectorArrowLocal(ctx, panX, panY, viewScale, x, z, heading, distUnit, color) {
         if (distUnit <= 0) return;
+        
         const cx = panX + x * viewScale; 
         const cy = panY + z * viewScale; 
         const rad = (heading - 90) * DEG2RAD;
@@ -2253,6 +2398,97 @@
         });
     }
 
+    // 💡 개별 스마트 기능(AR HUD) 렌더링 함수
+    function renderARHUD(mass) {
+        if (!isSplitMode || !camera3D || !scene) return;
+        
+        const meterScale = 4.63; // 1 단위 = 4.63 미터 변환 비율
+        
+        // 1. Guard Ring (안전 반경 링)
+        if (arStates.ring) {
+            if (!arObjects.guardRing) {
+                const geo = new THREE.RingGeometry(400, 405, 64);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+                arObjects.guardRing = new THREE.Mesh(geo, mat);
+                arObjects.guardRing.rotation.x = -Math.PI / 2;
+                arObjects.guardRing.position.y = 1; // 수면보다 살짝 위
+                osShipGroup.add(arObjects.guardRing);
+            }
+            arObjects.guardRing.visible = true;
+        } else if (arObjects.guardRing) {
+            arObjects.guardRing.visible = false;
+        }
+
+        // 2. 3D Route (예정 항로 투영)
+        if (arStates.route) {
+            if (!arObjects.routeLine) {
+                const pts = [];
+                mass.waypoints.forEach(wp => {
+                    pts.push(new THREE.Vector3(wp.x * meterScale, 1.5, wp.z * meterScale));
+                });
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const mat = new THREE.LineBasicMaterial({ color: 0x06b6d4, linewidth: 2 });
+                arObjects.routeLine = new THREE.Line(geo, mat);
+                scene.add(arObjects.routeLine);
+            }
+            arObjects.routeLine.visible = true;
+        } else if (arObjects.routeLine) {
+            arObjects.routeLine.visible = false;
+        }
+
+        // 3. CPA Vectors (타선 예측 경로선)
+        if (arStates.cpa) {
+            arObjects.cpaLines.forEach(l => scene.remove(l));
+            arObjects.cpaLines = [];
+            
+            targetMeshes.forEach(t => {
+                const start = new THREE.Vector3(t.entity.x * meterScale, 2, t.entity.z * meterScale);
+                const speedVec = t.entity.spd * meterScale * 10; 
+                const dx = speedVec * Math.sin(t.entity.hdg * DEG2RAD);
+                const dz = -speedVec * Math.cos(t.entity.hdg * DEG2RAD);
+                const end = new THREE.Vector3(start.x + dx, 2, start.z + dz);
+                
+                const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+                const mat = new THREE.LineBasicMaterial({ color: 0xfab308 });
+                const line = new THREE.Line(geo, mat);
+                
+                scene.add(line);
+                arObjects.cpaLines.push(line);
+            });
+        } else {
+            arObjects.cpaLines.forEach(l => scene.remove(l));
+            arObjects.cpaLines = [];
+        }
+
+        // 4. AR Labels (타선 정보 HTML 오버레이)
+        const labelContainer = document.getElementById('ar-label-container');
+        if (labelContainer) {
+            if (arStates.label) {
+                let html = '';
+                const fpvRect = document.getElementById('fpv-area').getBoundingClientRect();
+                
+                targetMeshes.forEach(t => {
+                    const pos = new THREE.Vector3(t.entity.x * meterScale, 20, t.entity.z * meterScale);
+                    pos.project(camera3D);
+                    
+                    if (pos.z < 1) { // 카메라 앞쪽에 있을 때만 표시
+                        const x = (pos.x * 0.5 + 0.5) * fpvRect.width;
+                        const y = (pos.y * -0.5 + 0.5) * fpvRect.height;
+                        
+                        html += `
+                        <div style="position:absolute; left:${x}px; top:${y}px; transform:translate(-50%, -100%); background:rgba(0,0,0,0.6); border:1px solid var(--accent-cyan); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; pointer-events:none; z-index:100; text-align:center;">
+                            <div style="color:var(--accent-yellow); font-weight:bold;">${t.entity.name}</div>
+                            <div>SOG: ${t.entity.spd.toFixed(1)}Kn</div>
+                        </div>`;
+                    }
+                });
+                labelContainer.innerHTML = html;
+            } else {
+                labelContainer.innerHTML = '';
+            }
+        }
+    }
+
     function mainLoop() {
         requestAnimationFrame(mainLoop);
         if(!isSimulationRunning) return;
@@ -2271,11 +2507,17 @@
                 s.latencySec = (Math.random() * 9 + 1).toFixed(1); 
                 let latVal = parseFloat(s.latencySec);
                 if (latVal <= 3.0) { 
-                    s.connStatus = '좋음'; s.fps3D = 60; s.frameInterval = 16; 
+                    s.connStatus = '좋음'; 
+                    s.fps3D = 60; 
+                    s.frameInterval = 16; 
                 } else if (latVal <= 7.0) { 
-                    s.connStatus = '보통'; s.fps3D = 30; s.frameInterval = 33; 
+                    s.connStatus = '보통'; 
+                    s.fps3D = 30; 
+                    s.frameInterval = 33; 
                 } else { 
-                    s.connStatus = '불량'; s.fps3D = 10; s.frameInterval = 100; 
+                    s.connStatus = '불량'; 
+                    s.fps3D = 10; 
+                    s.frameInterval = 100; 
                 }
                 s.lastCommUpdate = now;
             }
@@ -2321,7 +2563,6 @@
             let actualVz = -moveZ / dt; 
             s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
 
-            // 💡 실시간 글로벌 경위도 동기화 
             if(s.isMASS) {
                 const pos = getGlobalLonLat(s);
                 s.globalLat = pos.lat;
@@ -2331,6 +2572,7 @@
             if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
                 const nextWp = s.waypoints[s.currentWpIndex]; 
                 const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
+                
                 if (distToWp < 100) { 
                     s.currentWpIndex++; 
                     if (s.currentWpIndex === s.waypoints.length && massViews[activeMassIndex] && s === massViews[activeMassIndex].massEntity && !isLogSent) {
@@ -2351,7 +2593,9 @@
                 for (let i = 0; i < simEntities.length; i++) {
                     let tgt = simEntities[i]; 
                     if (s === tgt) continue;
+                    
                     let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, tgt.x - s.x, tgt.z - s.z);
+                    
                     if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
                         let currentCpaScore = 1; 
                         if (cpaData.cpa < 0.3) currentCpaScore = 3; 
@@ -2362,6 +2606,7 @@
                         else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
                         
                         let targetRisk = currentCpaScore > 1 ? currentCpaScore + currentTcpaScore : 2;
+                        
                         if (targetRisk > maxTargetRisk) { 
                             maxTargetRisk = targetRisk; 
                             cpaRisk = currentCpaScore; 
@@ -2427,7 +2672,9 @@
             const isNight = (currentPeriod !== 'DAY');
             
             targetMeshes.forEach(t => { 
+                // 💡 모델 컨테이너의 하위 실제 메시 객체에서 userData 호출 (경로 수정)
                 const modelData = t.mesh.children[0].userData;
+                
                 if (modelData && modelData.navLights) {
                     if (isNight) {
                         modelData.navLights.visible = true;
@@ -2458,6 +2705,9 @@
             if (osShipGroup.children[1] && osShipGroup.children[1].userData && osShipGroup.children[1].userData.navLights) {
                 osShipGroup.children[1].userData.navLights.visible = false;
             }
+
+            // 💡 AR 기능 렌더링 호출
+            renderARHUD(mass);
 
             if (now - last3DRenderTime >= mass.frameInterval) {
                 const dt3d = (now - last3DRenderTime) / 1000; 
