@@ -383,11 +383,7 @@
                 const files = await res.json();
                 if (files.error) throw new Error(files.error);
                 
-                // 디버깅용 1분짜리 추가
-                select.innerHTML = `
-                    <option value="random">무작위 생성 (Random - 36분)</option>
-                    <option value="debug">테스트용 짧은 시나리오 (Debug - 1~2분)</option>
-                `;
+                select.innerHTML = '<option value="random">무작위 생성 (Random - 36분)</option>';
                 const filtered = files.filter(f => f.name.includes('Scenario'));
                 
                 filtered.forEach(file => {
@@ -686,20 +682,6 @@
             });
         }
 
-        // 디버깅용 매우 짧은 시나리오 (1~2분 분량)
-        function generateDebugScenario() {
-            wps = [{x: 0, y: 0}];
-            loadedShipSpeed = 15; // 디버그 시나리오도 15노트 강제
-            let cx = 0, cy = 0;
-            cy -= 400; // 직진 400m
-            wps.push({x: cx, y: cy});
-            
-            let rad = 45 * Math.PI / 180;
-            cx += 400 * Math.sin(rad); 
-            cy -= 400 * Math.cos(rad); // 45도 방향으로 400m
-            wps.push({x: cx, y: cy});
-        }
-
         function parseScenarioData(data) {
             wps = [{x: 0, y: 0}];
             loadedShipSpeed = 15; // 기본 속도
@@ -735,18 +717,14 @@
             
             logData = []; lastLogTimeSec = 0;
 
-            if (loadedScenarioName === "Debug") {
-                malfunctionSchedule = [10];
-            } else {
-                malfunctionSchedule = [];
-                const totalErrors = 20;
-                const segmentTime = 2160 / totalErrors; // 108초
-                for(let i = 0; i < totalErrors; i++) {
-                    let startOffset = Math.random() * (segmentTime - 60);
-                    let time = (i * segmentTime) + startOffset;
-                    if (i === 0) time = 120;
-                    malfunctionSchedule.push(time);
-                }
+            malfunctionSchedule = [];
+            const totalErrors = 20;
+            const segmentTime = 2160 / totalErrors; // 108초
+            for(let i = 0; i < totalErrors; i++) {
+                let startOffset = Math.random() * (segmentTime - 60);
+                let time = (i * segmentTime) + startOffset;
+                if (i === 0) time = 120;
+                malfunctionSchedule.push(time);
             }
         }
 
@@ -764,10 +742,6 @@
             if (selectedFileId === 'random' || !selectedFileId) {
                 loadedScenarioName = "Random";
                 generateRandomScenario();
-                finalizeSteeringSetup();
-            } else if (selectedFileId === 'debug') {
-                loadedScenarioName = "Debug";
-                generateDebugScenario();
                 finalizeSteeringSetup();
             } else {
                 loadedScenarioName = select.options[select.selectedIndex].text.replace('.json', '');
@@ -899,6 +873,7 @@
             disableAP();
 
             if (currentMode === 'STEERING') {
+                // 시작 화면(자차보정기)이 번쩍이지 않게 UI를 즉각 변경
                 document.getElementById('start-screen').style.display = 'none'; 
                 
                 document.getElementById('compass-section').style.flex = '5';
@@ -926,6 +901,7 @@
                 document.getElementById('map-section').style.display = 'flex';
                 setTimeout(resizeMap, 10);
 
+                // 로그인 오버레이 띄우기
                 document.getElementById('steering-login-overlay').style.display = 'flex';
                 fetchScenarioList();
                 
