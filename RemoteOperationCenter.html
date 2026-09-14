@@ -492,7 +492,7 @@
     }
 
     async function loadScenarioAndStart() {
-        // --- 모바일 전체화면 및 방향 고정 (기존 기능 유지, 추가 삽입) ---
+        // --- 모바일 전체화면 및 방향 고정 ---
         try {
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
@@ -559,6 +559,7 @@
                 new Promise(resolve => {
                     texLoader.load(GITHUB_BASE_URL + "Environment/" + sf, (t) => { 
                         t.mapping = THREE.EquirectangularReflectionMapping; 
+                        t.name = sf; // 💡 안개 색상 매칭용 이름 저장
                         loadedSkyboxes.push(t);
                         resolve(); 
                     }, undefined, () => resolve());
@@ -1700,16 +1701,17 @@
             t.wrapS = t.wrapT = THREE.RepeatWrapping;
             t.repeat.set(200, 200); 
         });
+        
         seaMesh = new THREE.Mesh(
             new THREE.PlaneGeometry(80000, 80000),
             new THREE.MeshPhongMaterial({ 
                 color: 0x050a10, 
                 normalMap: waterNormals,
                 normalScale: new THREE.Vector2(1.0, 1.0), 
-                specular: 0x334455, 
-                shininess: 30,
-                transparent: true, 
-                opacity: 0.7 
+                specular: 0x667788, // 💡 수면 반사율 향상
+                shininess: 50,
+                reflectivity: 0.35  // 💡 envMap 반사 정도 추가
+                // 💡 transparent, opacity 설정을 완전히 제거하여 스카이박스 투과 차단
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
@@ -1765,8 +1767,30 @@
         const mass = massViews[idx].massEntity;
         document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
 
-        if (mass.skybox) { scene.background = mass.skybox; } 
-        else { scene.background = new THREE.Color(0x5a6a79); }
+        let fogColorHex = 0x5a6a79; // 기본값
+
+        if (mass.skybox) {
+            scene.background = mass.skybox;
+            
+            // 💡 로드된 스카이박스 이름에 따라 안개(Fog) 색상을 동기화
+            if (mass.skybox.name === "SunsetSky.jpg") fogColorHex = 0x8a4a2a;
+            else if (mass.skybox.name === "NiceSky.jpg") fogColorHex = 0x7590aa;
+            else fogColorHex = 0x5a6a79; // GraySky
+            
+            if (seaMesh) {
+                seaMesh.material.envMap = mass.skybox; // 수면에 스카이박스 반사
+                seaMesh.material.needsUpdate = true;
+            }
+        } else { 
+            scene.background = new THREE.Color(0x5a6a79); 
+            if (seaMesh) {
+                seaMesh.material.envMap = null;
+                seaMesh.material.needsUpdate = true;
+            }
+        }
+        
+        // 💡 수평선 경계 블렌딩을 위한 안개 색상 적용
+        scene.fog.color.setHex(fogColorHex);
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { 
             if(osShipGroup.children[i] !== camera3D && osShipGroup.children[i] !== seaMesh) {
@@ -2016,7 +2040,6 @@
                         if (cpaData.tcpa < 180) currentTcpaScore = 3; 
                         else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
 
-                        // 💡 CPA가 충분히 안전(1점)하다면 불필요한 TCPA 위험도를 합산하지 않음
                         let targetRisk = currentCpaScore;
                         if (currentCpaScore > 1) {
                             targetRisk += currentTcpaScore;
