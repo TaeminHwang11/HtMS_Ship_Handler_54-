@@ -298,8 +298,14 @@
                         <button id="ap-ff-btn" class="ap-spin-btn">⏩</button>
                     </div>
                 </div>
-                <div class="rudder-col">
-                    <div>ORDER (←/→/Space)</div>
+                <div class="rudder-col" style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <div id="order-label" style="font-size: clamp(0.6rem, 0.9vw, 0.8rem); color: #94a3b8; margin-bottom: 5px;">ORDER (←/→/Space)</div>
+                    <!-- 스티어링 연습 모드 전용 터치 패널 -->
+                    <div id="touch-steer-panel" style="display: none; gap: 10px; margin: 5px 0; justify-content: center; width: 100%; padding: 0 10px; box-sizing: border-box;">
+                        <button id="btn-port" style="flex:1; padding: 10px 0; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; touch-action: manipulation;">◀ PORT</button>
+                        <button id="btn-mid" style="flex:0.8; padding: 10px 0; background: #94a3b8; color: #0f172a; border: none; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; touch-action: manipulation;">MID</button>
+                        <button id="btn-stbd" style="flex:1; padding: 10px 0; background: #22c55e; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; touch-action: manipulation;">STBD ▶</button>
+                    </div>
                     <div class="rudder-val-text" id="order-rudder-val" style="color: var(--mid-color);">MID 0°</div>
                 </div>
                 <div class="rudder-col" style="border-left: 1px solid #475569;">
@@ -390,6 +396,13 @@
         function drawCompass() {
             ctx.clearRect(0, 0, 500, 500);
             ctx.translate(cx, cy);
+            
+            // 모바일 강제 다크모드 방어용 배경 채우기
+            ctx.beginPath();
+            ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#e2e8f0'; 
+            ctx.fill();
+
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             
             for(let i = 0; i < 360; i += 5) {
@@ -589,6 +602,39 @@
             return { text: `MID 0°`, color: 'var(--mid-color)' };
         }
 
+        // --- Touch Steering Logic (스티어링 모드 한정 작동) ---
+        const steerBtnPort = document.getElementById('btn-port');
+        const steerBtnMid = document.getElementById('btn-mid');
+        const steerBtnStbd = document.getElementById('btn-stbd');
+
+        function steerPort(e) {
+            if(e) e.preventDefault();
+            disableAP(); 
+            if (orderRudder % 5 !== 0) orderRudder = Math.round(orderRudder / 5) * 5;
+            orderRudder = Math.max(orderRudder - 5, -35);
+        }
+        function steerStbd(e) {
+            if(e) e.preventDefault();
+            disableAP();
+            if (orderRudder % 5 !== 0) orderRudder = Math.round(orderRudder / 5) * 5;
+            orderRudder = Math.min(orderRudder + 5, 35);
+        }
+        function steerMid(e) {
+            if(e) e.preventDefault();
+            disableAP();
+            orderRudder = 0;
+        }
+
+        if(steerBtnPort) {
+            steerBtnPort.addEventListener('mousedown', steerPort);
+            steerBtnPort.addEventListener('touchstart', steerPort);
+            steerBtnStbd.addEventListener('mousedown', steerStbd);
+            steerBtnStbd.addEventListener('touchstart', steerStbd);
+            steerBtnMid.addEventListener('mousedown', steerMid);
+            steerBtnMid.addEventListener('touchstart', steerMid);
+        }
+        // --------------------------------------------------
+
         window.addEventListener('keydown', (e) => {
             if (!isRunning) return;
             if (['ArrowRight', 'ArrowLeft', 'Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
@@ -639,10 +685,16 @@
                 document.getElementById('map-section').style.flex = '5';
                 
                 document.getElementById('corrector-section').style.display = 'none';
-                document.getElementById('map-section').style.display = 'flex';
                 document.getElementById('env-info').style.display = 'none';
                 document.getElementById('steady-timer').style.display = 'none';
                 document.getElementById('mag-box').style.display = 'none';
+                
+                // Steering 모드 전용 UI 세팅 (AP 제거 및 터치 조타 패널 활성화)
+                document.getElementById('ap-panel').style.display = 'none';
+                document.getElementById('order-label').style.display = 'none';
+                document.getElementById('touch-steer-panel').style.display = 'flex';
+
+                document.getElementById('map-section').style.display = 'flex';
                 initMap();
                 setTimeout(resizeMap, 100);
             }
@@ -1066,10 +1118,9 @@
                     }
                 }
 
-                // 1. AP Logic 
+                // 1. AP Logic (Steering 모드에선 패널이 숨겨져 있어 apEnabled가 항상 false이므로 작동 안 함)
                 if (apEnabled) {
                     let activeHeading = heading;
-                    // 오작동 중에는 AP가 왜곡된 방위를 기준으로 조타함
                     if (currentMode === 'STEERING' && isMalfunctionActive) {
                         let noise = (Math.random() - 0.5) * 10;
                         activeHeading = (heading + noise + 360) % 360;
