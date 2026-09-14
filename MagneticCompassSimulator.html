@@ -308,7 +308,7 @@
                     </div>
                     <div class="rudder-val-text" id="order-rudder-val" style="color: var(--mid-color);">MID 0°</div>
                 </div>
-                <!-- 여기에 id="actual-col" 추가 -->
+                <!-- 엑츄얼(ACTUAL) 컬럼 (Steering 모드에선 ORD | ACT 통합 표시용으로 사용) -->
                 <div class="rudder-col" id="actual-col" style="border-left: 1px solid #475569;">
                     <div>ACTUAL</div>
                     <div class="rudder-val-text" id="actual-rudder-val" style="color: var(--mid-color);">MID 0°</div>
@@ -588,7 +588,7 @@
                 let startOffset = Math.random() * (segmentTime - 60);
                 let time = (i * segmentTime) + startOffset;
                 
-                // ✅ 첫 번째 에러(i===0)는 무작위가 아닌 120초에 강제 발생 
+                // 첫 번째 에러(i===0)는 무작위가 아닌 120초에 강제 발생 
                 // (15Kts 속도로 1000m 항해시 129초 소요되므로, 변침 10초 전에 에러가 시작됨)
                 if (i === 0) {
                     time = 120;
@@ -717,7 +717,7 @@
                 document.getElementById('order-rudder-val').style.display = 'none'; // 하단 원래 오더 텍스트 숨김
                 document.getElementById('touch-steer-panel').style.display = 'flex';
 
-                // ✅ 오른쪽 엑츄얼(ACTUAL) 칸에 오더값과 엑츄얼값을 나란히 표시하도록 DOM 수정
+                // 오른쪽 엑츄얼(ACTUAL) 칸에 오더값과 엑츄얼값을 나란히 표시하도록 DOM 수정
                 document.getElementById('actual-col').innerHTML = `
                     <div style="font-size: clamp(0.6rem, 0.9vw, 0.8rem); color: #94a3b8; margin-bottom: 5px;">ORD / ACT</div>
                     <div style="display:flex; gap:15px; justify-content:center; align-items:center;">
@@ -1077,19 +1077,7 @@
                 mapCtx.beginPath(); mapCtx.moveTo(shipX - 5000, startY + i*1000); mapCtx.lineTo(shipX + 5000, startY + i*1000); mapCtx.stroke();
             }
 
-            // 선박 항적(Ship Track)을 점선으로 표시
-            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; 
-            mapCtx.lineWidth = 3 / scale;
-            mapCtx.setLineDash([15 / scale, 15 / scale]);
-            mapCtx.beginPath();
-            if (shipTrack.length > 0) {
-                mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
-                for (let i=1; i<shipTrack.length; i++) { mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y); }
-                mapCtx.stroke();
-            }
-            mapCtx.setLineDash([]); 
-
-            // 항로(Waypoint) 전체를 항상 동일한 노란색으로 고정 표시
+            // 항로(Waypoint) 전체를 항상 동일한 노란색으로 고정 표시 (항적보다 아래에 그려짐)
             mapCtx.strokeStyle = '#fcd34d'; 
             mapCtx.lineWidth = 4 / scale; 
             mapCtx.beginPath();
@@ -1117,6 +1105,18 @@
                 mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", 40, -40); 
                 mapCtx.restore();
             }
+
+            // 선박 항적(Ship Track)을 점선으로 표시 (항로 텍스트와 노란 선 위로 올라옴)
+            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; 
+            mapCtx.lineWidth = 3 / scale;
+            mapCtx.setLineDash([15 / scale, 15 / scale]);
+            mapCtx.beginPath();
+            if (shipTrack.length > 0) {
+                mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
+                for (let i=1; i<shipTrack.length; i++) { mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y); }
+                mapCtx.stroke();
+            }
+            mapCtx.setLineDash([]); 
 
             // 내 선박 그리기
             mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
@@ -1222,7 +1222,7 @@
                         if (shipTrack.length > 300) shipTrack.shift(); 
                     }
 
-                    // XTD 패널티 계산 (50m 초과 시 점수 삭감)
+                    // XTD 패널티 계산 (50m 초과 시 이탈 거리에 비례하여 부드럽게 점수 삭감)
                     let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
                     if (p1 && p2) {
                         let dx = p2.x - p1.x; let dy = p2.y - p1.y;
@@ -1230,7 +1230,9 @@
                         if (len > 0) {
                             let currentXtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len;
                             if (currentXtd > 50) {
-                                score -= 10 * dt;
+                                // 50m를 초과한 거리에 대해 초당 0.05점씩 차감되도록 완화 (예: 150m 이탈 시 초당 5점 삭감)
+                                let penaltyRate = (currentXtd - 50) * 0.05;
+                                score -= penaltyRate * dt;
                                 if (score < 0) score = 0;
                             }
                         }
@@ -1270,7 +1272,7 @@
             }
             updateTextDOM('heading-val', activeDisplayHeading.toFixed(1).padStart(5, '0') + '°');
 
-            // ✅ Steering 모드의 [ ORD | ACT ] 병합 텍스트 업데이트 포함
+            // Steering 모드의 [ ORD | ACT ] 병합 텍스트 업데이트 포함
             let fmtOrd = formatRudder(orderRudder); 
             updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
             updateTextDOM('steer-order-val', fmtOrd.text, fmtOrd.color); // Steering 모드 전용 오더칸
