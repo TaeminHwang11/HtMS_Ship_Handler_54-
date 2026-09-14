@@ -701,7 +701,6 @@
             wps = [{x: 0, y: 0}];
             if (data.os && data.os.waypoints) {
                 data.os.waypoints.forEach(wp => {
-                    // 기존 코드의 180도 반전 오류 수정: - 부호를 제거하여 구글 에디터 방향과 일치시킴
                     let xVal = wp.x !== undefined ? Number(wp.x) : 0;
                     let yVal = wp.y !== undefined ? Number(wp.y) : (wp.z !== undefined ? Number(wp.z) : 0);
                     
@@ -729,7 +728,6 @@
             logData = []; lastLogTimeSec = 0;
 
             if (loadedScenarioName === "Debug") {
-                // 디버깅 모드에서는 시작 10초 만에 오작동 발생
                 malfunctionSchedule = [10];
             } else {
                 malfunctionSchedule = [];
@@ -1189,16 +1187,15 @@
             }
             mapCtx.setLineDash([]); 
 
-            // 내 선박 그리기
+            // 내 선박 그리기 (✅ 오타 수정 완료: maplineTo -> mapCtx.lineTo)
             mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
             mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath();
-            mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); maplineTo(-30, -50);
+            mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
             mapCtx.closePath(); mapCtx.fill();
             mapCtx.strokeStyle = '#fff'; mapCtx.lineWidth = 2 / scale; mapCtx.stroke();
 
             mapCtx.restore();
 
-            // 목표 수직선(결승선) 통과 확인 및 XTD 계산
             let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
             if(p1 && p2) {
                 let dx = p2.x - p1.x; let dy = p2.y - p1.y;
@@ -1207,8 +1204,6 @@
                 let xtd = 0;
                 if(len > 0) { xtd = Math.abs(dx * (p1.y - shipY) - (p1.x - shipX) * dy) / len; }
                 
-                // 벡터 내적(Dot Product)을 이용한 통과 판정 (수학적 가상의 결승선)
-                // dot 값이 0 이상이 되면, 목표점 p2를 기준으로 dx, dy 방향의 수직 평면을 넘어선 것을 의미함.
                 let dot = (shipX - p2.x) * dx + (shipY - p2.y) * dy;
                 if (dot >= 0) { 
                     activeIdx++;
@@ -1246,7 +1241,6 @@
                     // 1초 단위로 항적 데이터 로깅
                     if (simTime - lastLogTimeSec >= 1.0) {
                         lastLogTimeSec = simTime;
-                        // ✅ 수정: 리플레이 좌표 매핑. 북쪽으로 갈 때 물리적 이동 거리는 -shipY이므로 위도 계산 시 양수로 반영되도록 수정
                         let physicalY = -shipY; 
                         let latStr = (34.783 + (physicalY / 1852) / 60).toFixed(6);
                         let lonStr = (126.362 + (shipX / 1852) / (60 * Math.cos(34.783 * Math.PI / 180))).toFixed(6);
@@ -1254,8 +1248,6 @@
                         logData.push({
                             time: simTime.toFixed(1),
                             name: "OS", lat: latStr, lon: lonStr,
-                            // ✅ 수정: 리플레이에서 180도 반전되는 현상 해결. 
-                            // 캔버스 좌표(아래쪽이 +)를 리플레이어도 그대로 사용하므로 y값의 마이너스 부호를 제거함.
                             x: (shipX / 4.63).toFixed(2), y: (shipY / 4.63).toFixed(2), 
                             hdg: heading.toFixed(1), sog: shipSpeed.toFixed(1), cog: heading.toFixed(1),
                             rot: rot.toFixed(2), rud_cmd: orderRudder.toFixed(1), rud_act: actualRudder.toFixed(1)
