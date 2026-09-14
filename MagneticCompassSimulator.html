@@ -600,6 +600,7 @@
 
         let shipX = 0, shipY = 0;
         let shipSpeed = 15; 
+        let loadedShipSpeed = 15; // 시나리오에서 불러온 속력 저장
         let wps = [];
         let shipTrack = [];
         let activeIdx = 0;
@@ -669,6 +670,7 @@
 
         function generateRandomScenario() {
             wps = [{x: 0, y: 0}];
+            loadedShipSpeed = 15; // 무작위 생성 시 15노트 강제
             let cx = 0, cy = 0, crs = 0;
             cy -= 1000; // 초반 직진 1km
             wps.push({x: cx, y: cy});
@@ -687,6 +689,7 @@
         // 디버깅용 매우 짧은 시나리오 (1~2분 분량)
         function generateDebugScenario() {
             wps = [{x: 0, y: 0}];
+            loadedShipSpeed = 15; // 디버그 시나리오도 15노트 강제
             let cx = 0, cy = 0;
             cy -= 400; // 직진 400m
             wps.push({x: cx, y: cy});
@@ -699,6 +702,10 @@
 
         function parseScenarioData(data) {
             wps = [{x: 0, y: 0}];
+            loadedShipSpeed = 15; // 기본 속도
+            if (data.os && data.os.spd !== undefined) {
+                loadedShipSpeed = Number(data.os.spd);
+            }
             if (data.os && data.os.waypoints) {
                 data.os.waypoints.forEach(wp => {
                     let xVal = wp.x !== undefined ? Number(wp.x) : 0;
@@ -715,7 +722,8 @@
 
         function initMapState() {
             activeIdx = 0; shipX = 0; shipY = 0; heading = 0;
-            shipTrack = []; shipSpeed = 15;
+            shipTrack = []; 
+            shipSpeed = loadedShipSpeed; // 시나리오에 기록된 속도(또는 기본 15) 반영
             updateTextDOM('map-speed', shipSpeed.toString());
             
             simTime = 0; score = 10000;
@@ -800,7 +808,6 @@
             const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0');
             const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
             
-            // 파일명 구분자 _T_ 
             const customFileName = `${loadedScenarioName}_T_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
             const payload = { studentId: studentInfo.id, studentName: studentInfo.name, fileName: customFileName, logData: logData };
@@ -892,7 +899,6 @@
             disableAP();
 
             if (currentMode === 'STEERING') {
-                // 시작 화면(자차보정기)이 번쩍이지 않게 UI를 즉각 변경
                 document.getElementById('start-screen').style.display = 'none'; 
                 
                 document.getElementById('compass-section').style.flex = '5';
@@ -920,7 +926,6 @@
                 document.getElementById('map-section').style.display = 'flex';
                 setTimeout(resizeMap, 10);
 
-                // 로그인 오버레이 띄우기
                 document.getElementById('steering-login-overlay').style.display = 'flex';
                 fetchScenarioList();
                 
@@ -1187,7 +1192,7 @@
             }
             mapCtx.setLineDash([]); 
 
-            // 내 선박 그리기 (✅ 오타 수정 완료: maplineTo -> mapCtx.lineTo)
+            // 내 선박 그리기
             mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
             mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath();
             mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
