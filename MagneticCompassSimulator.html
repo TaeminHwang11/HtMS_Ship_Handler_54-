@@ -383,7 +383,11 @@
                 const files = await res.json();
                 if (files.error) throw new Error(files.error);
                 
-                select.innerHTML = '<option value="random">무작위 생성 (Random - 36분)</option>';
+                // 디버깅용 1분짜리 추가
+                select.innerHTML = `
+                    <option value="random">무작위 생성 (Random - 36분)</option>
+                    <option value="debug">테스트용 짧은 시나리오 (Debug - 1~2분)</option>
+                `;
                 const filtered = files.filter(f => f.name.includes('Scenario'));
                 
                 filtered.forEach(file => {
@@ -669,8 +673,6 @@
             cy -= 1000; // 초반 직진 1km
             wps.push({x: cx, y: cy});
             
-            // 총 36분(2160초), 15Kts(7.716m/s) = 16.6km 항해.
-            // 초반 1km 제외, 10번 변침 각 레그는 약 1566m
             const turnAngles = [30, -20, 25, -15, 30, -30, 20, -20, 15, -10];
             const legDist = 1566;
             
@@ -682,12 +684,24 @@
             });
         }
 
+        // 디버깅용 매우 짧은 시나리오 (1~2분 분량)
+        function generateDebugScenario() {
+            wps = [{x: 0, y: 0}];
+            let cx = 0, cy = 0;
+            cy -= 400; // 직진 400m
+            wps.push({x: cx, y: cy});
+            
+            let rad = 45 * Math.PI / 180;
+            cx += 400 * Math.sin(rad); 
+            cy -= 400 * Math.cos(rad); // 45도 방향으로 400m
+            wps.push({x: cx, y: cy});
+        }
+
         function parseScenarioData(data) {
             wps = [{x: 0, y: 0}];
             if (data.os && data.os.waypoints) {
                 data.os.waypoints.forEach(wp => {
-                    // 구글 스크립트 좌표계 매핑 (1NM = 400 unit, 1NM = 1852m) -> 미터 변환 비율 4.63
-                    // ✅ 기존 코드의 180도 반전 오류 수정: - 부호를 제거하여 에디터와 방향 일치
+                    // ✅ 기존 코드의 180도 반전 오류 수정: - 부호를 제거하여 구글 에디터 방향과 일치시킴
                     let xVal = wp.x !== undefined ? Number(wp.x) : 0;
                     let yVal = wp.y !== undefined ? Number(wp.y) : (wp.z !== undefined ? Number(wp.z) : 0);
                     
@@ -710,26 +724,26 @@
             updateTextDOM('map-score', Math.floor(score).toString(), '#22c55e');
             document.getElementById('malfunction-warning').style.display = 'none';
             
-            // 맵 뷰 리셋
             mapPanX = 0; mapPanY = 0; mapZoom = 1.0;
             
-            // 로그 데이터 초기화
             logData = []; lastLogTimeSec = 0;
 
-            // 36분(2160초) 동안 20번 오작동 스케줄 생성
-            malfunctionSchedule = [];
-            const totalErrors = 20;
-            const segmentTime = 2160 / totalErrors; // 108초
-            for(let i = 0; i < totalErrors; i++) {
-                let startOffset = Math.random() * (segmentTime - 60);
-                let time = (i * segmentTime) + startOffset;
-                // 첫 번째 오류는 무조건 120초에 발생시킴 (변침 10초 전 타격)
-                if (i === 0) time = 120;
-                malfunctionSchedule.push(time);
+            if (loadedScenarioName === "Debug") {
+                // 디버깅 모드에서는 시작 10초 만에 오작동 발생
+                malfunctionSchedule = [10];
+            } else {
+                malfunctionSchedule = [];
+                const totalErrors = 20;
+                const segmentTime = 2160 / totalErrors; // 108초
+                for(let i = 0; i < totalErrors; i++) {
+                    let startOffset = Math.random() * (segmentTime - 60);
+                    let time = (i * segmentTime) + startOffset;
+                    if (i === 0) time = 120;
+                    malfunctionSchedule.push(time);
+                }
             }
         }
 
-        // 로그인 창에서 시작 버튼 누를 때
         function startSteeringSimulation() {
             studentInfo.id = document.getElementById('student-id').value.trim();
             studentInfo.name = document.getElementById('student-name').value.trim();
@@ -744,6 +758,10 @@
             if (selectedFileId === 'random' || !selectedFileId) {
                 loadedScenarioName = "Random";
                 generateRandomScenario();
+                finalizeSteeringSetup();
+            } else if (selectedFileId === 'debug') {
+                loadedScenarioName = "Debug";
+                generateDebugScenario();
                 finalizeSteeringSetup();
             } else {
                 loadedScenarioName = select.options[select.selectedIndex].text.replace('.json', '');
@@ -766,7 +784,6 @@
 
         function finalizeSteeringSetup() {
             document.getElementById('steering-login-overlay').style.display = 'none';
-            // UI 세팅은 start-btn 클릭 시 이미 완료됨
             initMapState();
             setTimeout(resizeMap, 100);
             
@@ -785,7 +802,8 @@
             const hh = String(now.getHours()).padStart(2, '0'); const min = String(now.getMinutes()).padStart(2, '0'); const ss = String(now.getSeconds()).padStart(2, '0');
             const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
             
-            const customFileName = `${loadedScenarioName}_S_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+            // ✅ 파일명 구분자를 _T_ 로 변경
+            const customFileName = `${loadedScenarioName}_T_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
 
             const payload = { studentId: studentInfo.id, studentName: studentInfo.name, fileName: customFileName, logData: logData };
             
@@ -859,7 +877,6 @@
         });
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            // 성공 확률을 높인 비동기 전체화면 및 가로모드 강제 전환 로직
             let elem = document.documentElement;
             let reqFullscreen = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
             
@@ -877,7 +894,9 @@
             disableAP();
 
             if (currentMode === 'STEERING') {
-                // ✅ 로그인창 뜨기 전 500ms 동안 자차보정 화면이 보이지 않도록 즉시 조타연습 레이아웃으로 변경
+                // ✅ 시작 화면(자차보정기)이 번쩍이지 않게 UI를 즉각 변경
+                document.getElementById('start-screen').style.display = 'none'; 
+                
                 document.getElementById('compass-section').style.flex = '5';
                 document.getElementById('map-section').style.flex = '5';
                 
@@ -901,15 +920,11 @@
                 `;
 
                 document.getElementById('map-section').style.display = 'flex';
-                setTimeout(resizeMap, 10);
-
-                // 로그인 오버레이 표시 
-                document.getElementById('start-screen').style.opacity = '0';
-                setTimeout(() => { 
-                    document.getElementById('start-screen').style.display = 'none'; 
-                    document.getElementById('steering-login-overlay').style.display = 'flex';
-                    fetchScenarioList();
-                }, 500);
+                
+                // 로그인 오버레이 띄우기
+                document.getElementById('steering-login-overlay').style.display = 'flex';
+                fetchScenarioList();
+                
                 return;
             } else if (currentMode === 'EXPERT') {
                 document.getElementById('compass-section').style.flex = '7.5';
@@ -1132,7 +1147,7 @@
                 mapCtx.beginPath(); mapCtx.moveTo(shipX - mapPanX - 8000, startY + i*1000); mapCtx.lineTo(shipX - mapPanX + 8000, startY + i*1000); mapCtx.stroke();
             }
 
-            // 항로(Waypoint) 전체를 항상 동일한 노란색으로 고정 표시 (항적보다 아래에 그려짐)
+            // 항로(Waypoint) 전체를 항상 동일한 노란색으로 고정 표시
             mapCtx.strokeStyle = '#fcd34d'; 
             mapCtx.lineWidth = 4 / scale; 
             mapCtx.beginPath();
@@ -1161,7 +1176,7 @@
                 mapCtx.restore();
             }
 
-            // 선박 항적(Ship Track)을 점선으로 표시 (항로 텍스트와 노란 선 위로 올라옴)
+            // 선박 항적(Ship Track)을 점선으로 표시 
             mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; 
             mapCtx.lineWidth = 3 / scale;
             mapCtx.setLineDash([15 / scale, 15 / scale]);
@@ -1293,7 +1308,7 @@
                         if (shipTrack.length > 300) shipTrack.shift(); 
                     }
 
-                    // XTD 패널티 계산 (50m 초과 시 이탈 거리에 비례하여 부드럽게 점수 삭감)
+                    // XTD 패널티 계산
                     let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
                     if (p1 && p2) {
                         let dx = p2.x - p1.x; let dy = p2.y - p1.y;
