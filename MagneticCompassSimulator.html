@@ -656,6 +656,17 @@
         });
 
         document.getElementById('start-btn').addEventListener('click', () => {
+            // ✅ 어떤 모드 버튼을 누르든 시작 버튼 클릭 시 강제 전체 화면 및 가로 모드 전환
+            try {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.warn(e)); }
+                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().catch(e => console.warn(e)); }
+                
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(e => console.warn("가로모드 고정 실패:", e));
+                }
+            } catch (err) { console.warn("Fullscreen API 오류", err); }
+
             innateB = 6.5; innateC = -4.0; innateD = 1.0;
             bErrorAdded = false; cErrorAdded = false; dErrorAdded = false;
             tutorialStep = 0;
@@ -1035,6 +1046,7 @@
             mapCtx.scale(scale, scale);
             mapCtx.translate(-shipX, -shipY);
 
+            // 배경 그리드 선
             mapCtx.strokeStyle = '#1e293b'; mapCtx.lineWidth = 1 / scale;
             let startX = Math.floor((shipX - mapCanvas.width/2/scale)/1000)*1000;
             let startY = Math.floor((shipY - mapCanvas.height/2/scale)/1000)*1000;
@@ -1043,32 +1055,49 @@
                 mapCtx.beginPath(); mapCtx.moveTo(shipX - 5000, startY + i*1000); mapCtx.lineTo(shipX + 5000, startY + i*1000); mapCtx.stroke();
             }
 
-            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; mapCtx.lineWidth = 3 / scale;
+            // ✅ 변경 1: 선박 항적(Ship Track)을 점선으로 표시
+            mapCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; 
+            mapCtx.lineWidth = 3 / scale;
+            mapCtx.setLineDash([15 / scale, 15 / scale]); // 점선 활성화
             mapCtx.beginPath();
             if (shipTrack.length > 0) {
                 mapCtx.moveTo(shipTrack[0].x, shipTrack[0].y);
                 for (let i=1; i<shipTrack.length; i++) { mapCtx.lineTo(shipTrack[i].x, shipTrack[i].y); }
                 mapCtx.stroke();
             }
+            mapCtx.setLineDash([]); // 점선 설정 해제 (다른 선 그리기 위해 복구)
 
-            mapCtx.strokeStyle = '#fcd34d'; mapCtx.lineWidth = 4 / scale; mapCtx.beginPath();
-            let startWpIdx = Math.max(0, activeIdx);
-            mapCtx.moveTo(wps[startWpIdx].x, wps[startWpIdx].y);
-            for(let i=startWpIdx + 1; i<wps.length; i++) mapCtx.lineTo(wps[i].x, wps[i].y);
+            // ✅ 변경 2: 항로(Waypoint) 전체를 항상 동일한 노란색(고정)으로 표시
+            mapCtx.strokeStyle = '#fcd34d'; 
+            mapCtx.lineWidth = 4 / scale; 
+            mapCtx.beginPath();
+            mapCtx.moveTo(wps[0].x, wps[0].y);
+            for(let i=1; i<wps.length; i++) {
+                mapCtx.lineTo(wps[i].x, wps[i].y);
+            }
             mapCtx.stroke();
             
+            // ✅ 변경 3: 다음 항로 방향 텍스트를 각 웨이포인트 구간 '초입'에 배치
             for(let i=1; i<wps.length; i++) {
-                let dx = wps[i].x - wps[i-1].x; let dy = wps[i].y - wps[i-1].y;
+                let dx = wps[i].x - wps[i-1].x; 
+                let dy = wps[i].y - wps[i-1].y;
                 let ang = Math.atan2(dx, -dy) * 180 / Math.PI;
                 if(ang < 0) ang += 360;
-                let midX = (wps[i].x + wps[i-1].x) / 2; let midY = (wps[i].y + wps[i-1].y) / 2;
                 
-                mapCtx.save(); mapCtx.translate(midX, midY); mapCtx.rotate(ang * Math.PI / 180);
-                mapCtx.fillStyle = '#fcd34d'; mapCtx.font = "bold 80px Arial";
-                mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", -40, -20);
+                // 선분의 시작점(wps[i-1])에서 방향(dx, dy)의 10% 지점으로 위치 이동
+                let textX = wps[i-1].x + dx * 0.1;
+                let textY = wps[i-1].y + dy * 0.1;
+                
+                mapCtx.save(); 
+                mapCtx.translate(textX, textY); 
+                mapCtx.rotate(ang * Math.PI / 180);
+                mapCtx.fillStyle = '#fcd34d'; 
+                mapCtx.font = "bold 80px Arial";
+                mapCtx.fillText(ang.toFixed(0).padStart(3,'0') + "°", 40, -40); // 선에 겹치지 않게 살짝 오프셋 조정
                 mapCtx.restore();
             }
 
+            // 내 선박 그리기
             mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
             mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath();
             mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
@@ -1212,21 +1241,23 @@
                 }
             }
 
+            // ✅ 변경 4: 하단 UI Gyro Heading 숫자도 오작동 에러와 똑같이 흔들리게 처리
+            let activeDisplayHeading = heading;
+            if (currentMode === 'STEERING' && isMalfunctionActive) {
+                let noise = (Math.random() - 0.5) * 10;
+                activeDisplayHeading = (heading + noise + 360) % 360;
+            }
+            updateTextDOM('heading-val', activeDisplayHeading.toFixed(1).padStart(5, '0') + '°');
+
             let fmtOrd = formatRudder(orderRudder); updateTextDOM('order-rudder-val', fmtOrd.text, fmtOrd.color);
             let fmtAct = formatRudder(actualRudder); updateTextDOM('actual-rudder-val', fmtAct.text, fmtAct.color);
-            updateTextDOM('heading-val', heading.toFixed(1).padStart(5, '0') + '°');
             updateTextDOM('rot-val', rot.toFixed(1));
 
             if (currentMode === 'STEERING') {
                 renderMap();
                 
-                // 오작동 시 나침반 카드가 왜곡된 방위를 그리도록 처리
-                let displayHeading = heading;
-                if (isMalfunctionActive) {
-                    let noise = (Math.random() - 0.5) * 10;
-                    displayHeading = (heading + noise + 360) % 360;
-                }
-                canvas.style.transform = `rotate(${-displayHeading}deg)`; 
+                // 나침반 카드 역시 동일한 왜곡된 방위(activeDisplayHeading)를 그립니다.
+                canvas.style.transform = `rotate(${-activeDisplayHeading}deg)`; 
                 
                 // 점수 UI 색상 변경
                 if (score < 10000 && document.getElementById('map-score').innerText !== Math.floor(score).toString()) {
