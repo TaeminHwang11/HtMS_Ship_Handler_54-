@@ -383,7 +383,7 @@
                 const files = await res.json();
                 if (files.error) throw new Error(files.error);
                 
-                select.innerHTML = '<option value="random">무작위 생성 (Random - 36분)</option>';
+                select.innerHTML = '<option value="random">무작위 생성 (Random - 30분)</option>';
                 const filtered = files.filter(f => f.name.includes('Scenario'));
                 
                 filtered.forEach(file => {
@@ -671,8 +671,9 @@
             cy -= 1000; // 초반 직진 1km
             wps.push({x: cx, y: cy});
             
+            // 30분 시나리오: 약 13.89km 항해 (10번 변침, 레그당 1289m)
             const turnAngles = [30, -20, 25, -15, 30, -30, 20, -20, 15, -10];
-            const legDist = 1566;
+            const legDist = 1289;
             
             turnAngles.forEach(ang => {
                 crs = (crs + ang + 360) % 360;
@@ -719,11 +720,11 @@
 
             malfunctionSchedule = [];
             const totalErrors = 20;
-            const segmentTime = 2160 / totalErrors; // 108초
+            const segmentTime = 1800 / totalErrors; // 30분 시나리오 (90초)
             for(let i = 0; i < totalErrors; i++) {
                 let startOffset = Math.random() * (segmentTime - 60);
                 let time = (i * segmentTime) + startOffset;
-                if (i === 0) time = 120;
+                if (i === 0) time = 120; // 첫 오작동 타이밍 고정
                 malfunctionSchedule.push(time);
             }
         }
@@ -873,7 +874,6 @@
             disableAP();
 
             if (currentMode === 'STEERING') {
-                // 시작 화면(자차보정기)이 번쩍이지 않게 UI를 즉각 변경
                 document.getElementById('start-screen').style.display = 'none'; 
                 
                 document.getElementById('compass-section').style.flex = '5';
@@ -901,7 +901,6 @@
                 document.getElementById('map-section').style.display = 'flex';
                 setTimeout(resizeMap, 10);
 
-                // 로그인 오버레이 띄우기
                 document.getElementById('steering-login-overlay').style.display = 'flex';
                 fetchScenarioList();
                 
@@ -1168,15 +1167,22 @@
             }
             mapCtx.setLineDash([]); 
 
-            // 내 선박 그리기
+            // 내 선박 그리기 (오작동 시에는 원형 기호로 변경)
             mapCtx.translate(shipX, shipY); mapCtx.rotate(heading * Math.PI / 180);
             mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath();
-            mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
+            
+            if (isMalfunctionActive) {
+                mapCtx.arc(0, 0, 50, 0, Math.PI * 2);
+            } else {
+                mapCtx.moveTo(0, -100); mapCtx.lineTo(30, -50); mapCtx.lineTo(30, 100); mapCtx.lineTo(-30, 100); mapCtx.lineTo(-30, -50);
+            }
+            
             mapCtx.closePath(); mapCtx.fill();
             mapCtx.strokeStyle = '#fff'; mapCtx.lineWidth = 2 / scale; mapCtx.stroke();
 
             mapCtx.restore();
 
+            // 목표 수직선(결승선) 통과 확인 및 XTD 계산
             let p1 = wps[activeIdx]; let p2 = wps[activeIdx+1];
             if(p1 && p2) {
                 let dx = p2.x - p1.x; let dy = p2.y - p1.y;
