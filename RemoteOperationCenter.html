@@ -413,6 +413,13 @@
     let last2DRenderTime = 0; 
     let last3DRenderTime = 0;
 
+    // 💡 글로벌 시간 및 조명 환경 변수 추가
+    let simUnixTime = Date.now() - Math.floor(Math.random() * 86400000); 
+    let baseRefLat = 34.8; 
+    let baseRefLon = 126.4;
+    let currentEnvPeriod = null;
+    let dirLight, ambLight;
+
     let interventionState = 'NONE'; 
     let interventionTimer = null;
     let systemLogs = []; 
@@ -427,7 +434,6 @@
     let seaMesh; 
 
     let lastTouchX = 0, lastTouchY = 0;
-    let refLat = 34.8; let refLon = 126.4;
 
     function findSeaRoute(startCode, endCode) {
         let distances = {}; let prev = {}; let pq = [];
@@ -492,7 +498,7 @@
     }
 
     async function loadScenarioAndStart() {
-        // --- 모바일 전체화면 및 방향 고정 ---
+        // --- 모바일 전체화면 및 방향 고정 (기존 기능 유지, 추가 삽입) ---
         try {
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
@@ -559,7 +565,7 @@
                 new Promise(resolve => {
                     texLoader.load(GITHUB_BASE_URL + "Environment/" + sf, (t) => { 
                         t.mapping = THREE.EquirectangularReflectionMapping; 
-                        t.name = sf; // 💡 안개 색상 매칭용 이름 저장
+                        t.name = sf; // 💡 환경 파일 이름 동기화용
                         loadedSkyboxes.push(t);
                         resolve(); 
                     }, undefined, () => resolve());
@@ -608,6 +614,11 @@
         const dxM = (lon - rLon) * 111111 * Math.cos(rLat * Math.PI / 180);
         const dzM = -(lat - rLat) * 111111;
         return { x: dxM * (400 / 1852), z: dzM * (400 / 1852) };
+    }
+
+    // 💡 X 좌표를 실제 경도로 반환하는 헬퍼 함수
+    function getLonFromUnits(x) {
+        return baseRefLon + (x * 1852 / 400) / (111111 * Math.cos(baseRefLat * DEG2RAD));
     }
 
     function calculateXTDAndETA(ship) {
@@ -800,7 +811,6 @@
 
         simStartTime = performance.now(); 
 
-        let baseRefLat = 34.8; let baseRefLon = 126.4;
         if(data.WayPointSet && data.WayPointSet.length > 0) { 
             baseRefLat = Number(data.WayPointSet[0].WayPoints[0].Latitude); 
             baseRefLon = Number(data.WayPointSet[0].WayPoints[0].Longitude); 
@@ -1087,6 +1097,19 @@
                 }
             });
             ctx.restore();
+        }
+
+        // 💡 2D 월드맵 태양 명암(야간 오버레이) 적용
+        const utcHours = (simUnixTime / 3600000) % 24;
+        const solarLon = 180 - (utcHours * 15);
+        ctx.fillStyle = 'rgba(0, 5, 20, 0.55)'; 
+        let startX = ((solarLon + 90 + 180) % 360) * (W / 360);
+        let endX = ((solarLon + 270 + 180) % 360) * (W / 360);
+        if (startX < endX) { 
+            ctx.fillRect(startX, 0, endX - startX, H); 
+        } else { 
+            ctx.fillRect(startX, 0, W - startX, H); 
+            ctx.fillRect(0, 0, endX, H); 
         }
 
         ctx.save();
@@ -1694,8 +1717,11 @@
         
         layoutObserver.observe(fpvArea);
 
-        scene.add(new THREE.AmbientLight(0x707070, 1.5));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(-1000, 1500, -1000); scene.add(dirLight);
+        ambLight = new THREE.AmbientLight(0x707070, 1.5);
+        scene.add(ambLight);
+        dirLight = new THREE.DirectionalLight(0xffffff, 1.0); 
+        dirLight.position.set(-1000, 1500, -1000); 
+        scene.add(dirLight);
 
         const waterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
             t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -1708,10 +1734,9 @@
                 color: 0x050a10, 
                 normalMap: waterNormals,
                 normalScale: new THREE.Vector2(1.0, 1.0), 
-                specular: 0x667788, // 💡 수면 반사율 향상
+                specular: 0x667788, 
                 shininess: 50,
-                reflectivity: 0.35  // 💡 envMap 반사 정도 추가
-                // 💡 transparent, opacity 설정을 완전히 제거하여 스카이박스 투과 차단
+                reflectivity: 0.35
             })
         );
         seaMesh.rotation.x = -Math.PI / 2;
@@ -1748,49 +1773,89 @@
         }, {passive: false});
     }
 
+    // 💡 야간 점등용 항해등(Nav Lights) 스프라이트 생성 함수
+    function createNavLights(boxSize) {
+        const group = new THREE.Group();
+        const getTex = (colorStr) => {
+            const cvs = document.createElement('canvas'); cvs.width = 64; cvs.height = 64; const ctx = cvs.getContext('2d');
+            const grad = ctx.createRadialGradient(32,32,0, 32,32,32);
+            grad.addColorStop(0, 'white'); grad.addColorStop(0.2, colorStr); grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(cvs);
+        };
+        const matR = new THREE.SpriteMaterial({ map: getTex('rgba(255,50,50,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        const matG = new THREE.SpriteMaterial({ map: getTex('rgba(50,255,50,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        const matW = new THREE.SpriteMaterial({ map: getTex('rgba(255,255,255,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+
+        const port = new THREE.Sprite(matR); port.scale.set(15,15,1); port.position.set(-boxSize.x/2 - 1, boxSize.y * 0.6, 0);
+        const stbd = new THREE.Sprite(matG); stbd.scale.set(15,15,1); stbd.position.set(boxSize.x/2 + 1, boxSize.y * 0.6, 0);
+        const mast = new THREE.Sprite(matW); mast.scale.set(20,20,1); mast.position.set(0, boxSize.y + 5, boxSize.z * 0.2);
+        const stern = new THREE.Sprite(matW); stern.scale.set(15,15,1); stern.position.set(0, boxSize.y * 0.3, -boxSize.z/2 - 1);
+        
+        group.add(port, stbd, mast, stern);
+        group.visible = false;
+        return group;
+    }
+
     function getModelForShip(type) {
+        let cloneGroup;
         if (parsedModels[type]) {
-            const clone = parsedModels[type].group.clone();
+            cloneGroup = parsedModels[type].group.clone();
             const savedCalib = localStorage.getItem('model_calib_' + type);
             if(savedCalib) { 
                 const calib = JSON.parse(savedCalib); 
-                clone.position.copy(calib.pos); clone.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z);
+                cloneGroup.position.copy(calib.pos); cloneGroup.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z);
             }
-            return clone;
+        } else {
+            cloneGroup = new THREE.Group();
+            const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
+            cloneGroup.add(hull);
         }
-        const group = new THREE.Group();
-        const hull = new THREE.Mesh( new THREE.BoxGeometry(10, 10, 50), new THREE.MeshLambertMaterial({ color: 0x10b981 }) ); hull.position.y = 5;
-        group.add(hull); return group;
+
+        const box = new THREE.Box3().setFromObject(cloneGroup);
+        const size = new THREE.Vector3(); box.getSize(size);
+        const navLights = createNavLights(size);
+        cloneGroup.add(navLights);
+        cloneGroup.userData.navLights = navLights;
+
+        return cloneGroup;
+    }
+
+    // 💡 시간에 따른 글로벌 환경(하늘, 조명) 업데이트 함수
+    function applyEnvironmentToScene(period) {
+        if (currentEnvPeriod === period) return;
+        currentEnvPeriod = period;
+
+        let fogColorHex;
+        if (period === 'DAY') {
+            scene.background = loadedSkyboxes.find(s => s.name === 'NiceSky.jpg') || new THREE.Color(0x5a7a99);
+            fogColorHex = 0x5a7a99;
+            if(dirLight) dirLight.intensity = 1.0;
+            if(ambLight) ambLight.intensity = 1.5;
+        } else if (period === 'TWILIGHT') {
+            scene.background = loadedSkyboxes.find(s => s.name === 'SunsetSky.jpg') || new THREE.Color(0x1e1512);
+            fogColorHex = 0x1e1512; 
+            if(dirLight) dirLight.intensity = 0.4;
+            if(ambLight) ambLight.intensity = 0.6;
+        } else { // NIGHT
+            scene.background = new THREE.Color(0x02050a); 
+            fogColorHex = 0x02050a;
+            if(dirLight) dirLight.intensity = 0.05;
+            if(ambLight) ambLight.intensity = 0.2;
+        }
+        scene.fog.color.setHex(fogColorHex);
+        
+        if (seaMesh) {
+            seaMesh.material.envMap = scene.background instanceof THREE.Texture ? scene.background : null;
+            seaMesh.material.needsUpdate = true;
+        }
     }
 
     function setup3DSceneForMass(idx) {
         const mass = massViews[idx].massEntity;
         document.getElementById('fpv-label').innerText = `${mass.name} FPV CAM`;
 
-        let fogColorHex = 0x5a6a79; // 기본값
-
-        if (mass.skybox) {
-            scene.background = mass.skybox;
-            
-            // 💡 로드된 스카이박스 이름에 따라 안개(Fog) 색상을 동기화
-            if (mass.skybox.name === "SunsetSky.jpg") fogColorHex = 0x8a4a2a;
-            else if (mass.skybox.name === "NiceSky.jpg") fogColorHex = 0x7590aa;
-            else fogColorHex = 0x5a6a79; // GraySky
-            
-            if (seaMesh) {
-                seaMesh.material.envMap = mass.skybox; // 수면에 스카이박스 반사
-                seaMesh.material.needsUpdate = true;
-            }
-        } else { 
-            scene.background = new THREE.Color(0x5a6a79); 
-            if (seaMesh) {
-                seaMesh.material.envMap = null;
-                seaMesh.material.needsUpdate = true;
-            }
-        }
-        
-        // 💡 수평선 경계 블렌딩을 위한 안개 색상 적용
-        scene.fog.color.setHex(fogColorHex);
+        currentEnvPeriod = null; // 강제 업데이트를 위해 초기화
 
         for(let i = osShipGroup.children.length - 1; i >= 0; i--) { 
             if(osShipGroup.children[i] !== camera3D && osShipGroup.children[i] !== seaMesh) {
@@ -1951,6 +2016,8 @@
         const dt = Math.min((now - lastTime) / 1000, 0.1); 
         lastTime = now;
         
+        simUnixTime += dt * 1000; // 💡 1배속 (현실 시간과 완벽히 동일하게 흐름)
+        
         simEntities.forEach(s => { 
             s.globalProgress += (s.spd / 3600) * 0.00005 * dt; 
             if (s.globalProgress > 1) s.globalProgress = 0;
@@ -2097,9 +2164,26 @@
             });
         }
         
+        // 💡 3D Scene 주야간 연산 및 업데이트 로직 추가
         if (isSplitMode && massViews[activeMassIndex] && renderer3D) {
             const mass = massViews[activeMassIndex].massEntity;
             
+            // 현재 활성화된 선박의 경도를 바탕으로 지방시 산출
+            const utcHours = (simUnixTime / 3600000) % 24;
+            let localHours = (utcHours + getLonFromUnits(mass.x) / 15) % 24;
+            if (localHours < 0) localHours += 24;
+
+            let currentPeriod = 'DAY';
+            if (localHours > 18.5 || localHours < 5.5) currentPeriod = 'NIGHT';
+            else if (localHours > 17 || localHours < 7) currentPeriod = 'TWILIGHT';
+            
+            applyEnvironmentToScene(currentPeriod);
+            
+            // 시야 내 모든 선박의 항해등 켜기/끄기
+            const isNight = (currentPeriod !== 'DAY');
+            osShipGroup.children.forEach(c => { if(c.userData && c.userData.navLights) c.userData.navLights.visible = isNight; });
+            targetMeshes.forEach(t => { if(t.mesh.children[0] && t.mesh.children[0].userData.navLights) t.mesh.children[0].userData.navLights.visible = isNight; });
+
             if (now - last3DRenderTime >= mass.frameInterval) {
                 const dt3d = (now - last3DRenderTime) / 1000;
                 last3DRenderTime = now;
