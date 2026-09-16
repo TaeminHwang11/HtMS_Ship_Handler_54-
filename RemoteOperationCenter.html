@@ -228,7 +228,7 @@
         .close-target { float: right; cursor: pointer; color: #ef4444; font-size: 14px; line-height: 1; }
         .close-target:hover { color: #fca5a5; }
 
-        /* 💡 일시정지 토글 버튼 스타일 추가 */
+        /* 💡 일시정지 토글 버튼 스타일 */
         #btn-pause-toggle {
             position: absolute;
             top: 20px;
@@ -277,7 +277,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_51" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_최종" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -294,7 +294,7 @@
         <div id="view-column">
             <div id="surveillance-area">
                 <canvas id="world-map-canvas"></canvas>
-                <!-- 💡 일시정지 버튼 추가 -->
+                <!-- 💡 일시정지 버튼 -->
                 <button id="btn-pause-toggle" onclick="togglePause()" title="재생/일시정지">❚❚</button>
             </div>
 
@@ -520,7 +520,6 @@
     let currentMode = 'SURVEILLANCE';
     let isSplitMode = false;
     let isSimulationRunning = false;
-    // 💡 일시정지 상태 변수 추가
     let isPaused = false;
     
     let lastTime = performance.now();
@@ -551,7 +550,6 @@
 
     let lastTouchX = 0, lastTouchY = 0;
 
-    // 💡 일시정지 토글 함수 추가
     window.togglePause = function() {
         isPaused = !isPaused;
         const btn = document.getElementById('btn-pause-toggle');
@@ -564,7 +562,6 @@
         }
     };
 
-    // 💡 AR HUD 상태 관리 객체 및 토글 함수
     let arStates = { 
         route: false, 
         env: false, 
@@ -1346,6 +1343,7 @@
         mainLoop();
     }
 
+    // 💡 세계지도(Surveillance) 렌더링 영역 - 배경 색상 그라데이션 적용 완료
     function renderWorldMap() {
         if(currentMode !== 'SURVEILLANCE') return;
         const canvas = document.getElementById('world-map-canvas');
@@ -1356,7 +1354,24 @@
         const H = canvas.height;
         
         ctx.clearRect(0,0,W,H);
-        ctx.fillStyle = '#050a10';
+
+        const utcHours = (simUnixTime / 3600000) % 24;
+        const solarLon = 180 - (utcHours * 15);
+
+        // 💡 배경에 낮(흰색)/여명(회색)/밤(검은색) 그라데이션 적용
+        const bgGrad = ctx.createLinearGradient(0, 0, W, 0);
+        for (let i = 0; i <= 40; i++) {
+            let pct = i / 40;
+            let lon = -180 + (360 * pct);
+            let lonDiff = Math.abs(lon - solarLon);
+            if (lonDiff > 180) lonDiff = 360 - lonDiff;
+
+            if (lonDiff < 75) bgGrad.addColorStop(pct, '#ffffff');       // 낮 영역 (흰색)
+            else if (lonDiff < 95) bgGrad.addColorStop(pct, '#888888');  // 여명 영역 (회색)
+            else bgGrad.addColorStop(pct, '#000000');                    // 밤 영역 (검은색)
+        }
+        
+        ctx.fillStyle = bgGrad;
         ctx.fillRect(0,0,W,H);
 
         const getXY = (lat, lon) => { 
@@ -1364,13 +1379,10 @@
         };
 
         if (worldGeoJSON) {
-            // 💡 해안선 그라데이션 적용 로직
-            const utcHours = (simUnixTime / 3600000) % 24;
-            const solarLon = 180 - (utcHours * 15);
-            
+            // 해안선 그라데이션 적용 로직 (기존 유지)
             const grad = ctx.createLinearGradient(0, 0, W, 0);
-            for (let i = 0; i <= 20; i++) {
-                let pct = i / 20;
+            for (let i = 0; i <= 40; i++) {
+                let pct = i / 40;
                 let lon = -180 + (360 * pct);
                 let lonDiff = Math.abs(lon - solarLon);
                 if (lonDiff > 180) lonDiff = 360 - lonDiff;
@@ -1418,7 +1430,8 @@
             ctx.arc(xy.x, xy.y, 3, 0, Math.PI*2); 
             ctx.fill();
             
-            ctx.fillStyle = '#fff'; 
+            // 흰색 배경에서도 글자가 보일 수 있도록 shadow(검정)를 가볍게 주거나 색상 유지
+            ctx.fillStyle = '#c084fc'; // 흰 바탕 대비 가독성을 위해 글자색 변경 (보라색 계열로 통일)
             ctx.shadowBlur = 0; 
             ctx.font = 'bold 11px monospace'; 
             ctx.fillText(p.code, xy.x + 8, xy.y + 4);
@@ -1467,7 +1480,7 @@
                 ctx.fill();
                 ctx.restore();
                 
-                ctx.fillStyle = '#fff'; 
+                ctx.fillStyle = shipColor; // 선박명 색상 (흰 바탕에서 묻히지 않게 각자의 riskColor 사용)
                 ctx.font = 'bold 11px monospace'; 
                 ctx.fillText(s.name, sXY.x + 12, sXY.y + 4);
             }
