@@ -119,36 +119,31 @@
 
         #main-wrapper.general-mode #grid-area { display: grid; flex: 1; gap: 4px; background: #000; padding: 4px; height: 100%; min-height: 0; }
 
-        /* General Monitoring: 모든 MASS 창 동시 패닝/확대축소 컨트롤 */
+        /* General Monitoring: 우측 패널 하단 ALL SYNC 컨트롤 */
         #all-sync-control {
-            display: none; position: absolute; right: 12px; bottom: 12px; width: 136px;
-            padding: 8px; box-sizing: border-box; z-index: 18;
+            display: none; width: 100%; margin-top: 10px; padding: 8px; box-sizing: border-box;
             background: rgba(11, 15, 25, 0.90); border: 1px solid #334155; border-radius: 7px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.35); user-select: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35); user-select: none; flex-shrink: 0;
         }
         #main-wrapper.general-mode #all-sync-control { display: flex; flex-direction: column; gap: 6px; }
         .all-sync-title { font-size: 11px; font-weight: bold; color: var(--accent-cyan); text-align: center; letter-spacing: 0.6px; }
         #all-sync-pan-pad {
-            height: 72px; display: flex; align-items: center; justify-content: center;
+            height: 72px; display: flex; align-items: center; justify-content: center; text-align: center;
             background: rgba(30, 41, 59, 0.92); border: 1px solid #475569; border-radius: 5px;
             color: #94a3b8; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;
-            cursor: grab; touch-action: none;
+            cursor: grab; touch-action: none; line-height: 1.35;
         }
         #all-sync-pan-pad:active { cursor: grabbing; }
-        .all-sync-zoom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .all-sync-zoom-btn {
-            height: 30px; padding: 0; background: #1e293b; color: var(--accent-cyan);
-            border: 1px solid #475569; border-radius: 5px; font-family: 'Rajdhani', sans-serif;
-            font-size: 18px; font-weight: bold; cursor: pointer;
-        }
-        .all-sync-zoom-btn:active { background: rgba(6,182,212,0.22); }
-        /* 집중모니터링 시 센터 탑뷰가 하단 폭의 1/3을 차지하도록 flex:1 적용 */
-        #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-height: 0; gap: 4px; background: #000; padding: 4px; }
 
+        /* Detailed Monitoring 기본 세로 비율: 카메라 3/5, 하단 2/5 */
         #main-wrapper.split-mode #fpv-area { 
-            display: flex; flex: 1; min-height: 20%; background: #050a10; 
+            display: flex; flex: 3 1 0; min-height: 20%; background: #050a10; 
             position: relative; box-shadow: inset 0 -10px 30px rgba(0,0,0,0.5); 
         }
+        #main-wrapper.split-mode #bottom-view-wrapper { display: flex; flex: 2 1 0; min-height: 20%; }
+
+        /* Detailed Monitoring 하단: 왼쪽 3개 기능 그룹, 오른쪽 2D 화면 */
+        #main-wrapper.split-mode #grid-area { display: grid; flex: 1; min-width: 0; min-height: 0; gap: 4px; background: #000; padding: 4px; order: 2; }
         #main-wrapper.split-mode #h-resizer { 
             display: block; height: 8px; background: #1e293b; cursor: row-resize; 
             z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; 
@@ -156,18 +151,31 @@
         }
         #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: var(--accent-cyan); }
 
-        /* 좌우 버튼 패널 CSS: 탑뷰와 1:1:1 비율을 맞추기 위해 flex:1 적용 */
-        .split-side-panel { display: none; flex-direction: column; background: var(--panel-bg); padding: 15px; overflow-y: auto; flex: 1; border-right: 1px solid var(--border-color); }
-        #split-right-panel { border-right: none; border-left: 1px solid var(--border-color); }
-        #main-wrapper.split-mode .split-side-panel { display: flex; }
-        
-        /* 버튼 그리드: 3열로 널찍하게 배치 */
-        .control-btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
-        .placeholder-btn { 
-            background: #1e293b; color: #94a3b8; border: 1px solid #334155; 
-            padding: 15px 5px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; 
-            font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; text-align: center; 
+        .split-side-panel { display: none; background: var(--panel-bg); box-sizing: border-box; }
+        #main-wrapper.split-mode #split-left-panel {
+            display: flex; flex: 3; min-width: 0; min-height: 0; flex-direction: row;
+            gap: 10px; padding: 10px; overflow: hidden; border-right: 1px solid var(--border-color); order: 1;
         }
+        #main-wrapper.split-mode #split-right-panel { display: none; }
+        .split-control-group { display: flex; flex: 1; min-width: 0; flex-direction: column; }
+        .split-group-title {
+            font-size: 12px; font-weight: 700; letter-spacing: 1px; text-align: center;
+            padding: 0 4px 7px; margin-bottom: 7px; border-bottom: 1px solid #243044;
+        }
+        .split-group-title.sa { color: var(--accent-cyan); }
+        .split-group-title.dm { color: var(--accent-yellow); }
+        .split-group-title.ac { color: var(--accent-green); }
+        .control-btn-grid {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 6px; width: 100%; flex: 1; min-height: 0;
+        }
+        .placeholder-btn { 
+            min-width: 0; min-height: 0; background: #1e293b; color: #94a3b8; border: 1px solid #334155; 
+            padding: 6px 4px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; 
+            font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; text-align: center;
+            display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1;
+        }
+        .control-code { color: #64748b; font-size: 9px; flex-shrink: 0; }
         .placeholder-btn:hover { background: rgba(6,182,212,0.2); color: #fff; border-color: var(--accent-cyan); transform: translateY(-2px); }
         .placeholder-btn.active-btn { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
 
@@ -320,7 +328,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_55" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_56" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -364,57 +372,43 @@
 
             <div id="bottom-view-wrapper">
                 <div id="split-left-panel" class="split-side-panel">
-                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">LEFT CONTROLS (AR)</div>
-                    <div class="control-btn-grid">
-                        <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')">3D ROUTE</button>
-                        <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')">ENV VECTORS</button>
-                        <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')">XTD CORRIDOR</button>
-                        <button class="placeholder-btn">L_BTN 04</button>
-                        <button class="placeholder-btn">L_BTN 05</button>
-                        <button class="placeholder-btn">L_BTN 06</button>
-                        <button class="placeholder-btn">L_BTN 07</button>
-                        <button class="placeholder-btn">L_BTN 08</button>
-                        <button class="placeholder-btn">L_BTN 09</button>
-                        <button class="placeholder-btn">L_BTN 10</button>
-                        <button class="placeholder-btn">L_BTN 11</button>
-                        <button class="placeholder-btn">L_BTN 12</button>
-                        <button class="placeholder-btn">L_BTN 13</button>
-                        <button class="placeholder-btn">L_BTN 14</button>
-                        <button class="placeholder-btn">L_BTN 15</button>
+                    <div class="split-control-group">
+                        <div class="split-group-title sa">SITUATION AWARENESS</div>
+                        <div class="control-btn-grid">
+                            <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')"><span class="control-code">SA01</span><span>FUTURE POSITION</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')"><span class="control-code">SA02</span><span>COLLISION POINT</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')"><span class="control-code">SA03</span><span>THREAT HIGHLIGHT</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')"><span class="control-code">SA04</span><span>RELATIVE MOTION</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')"><span class="control-code">SA05</span><span>APPROACH RANK</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')"><span class="control-code">SA06</span><span>MANEUVER TREND</span></button>
+                        </div>
+                    </div>
+                    <div class="split-control-group">
+                        <div class="split-group-title dm">DECISION MAKING</div>
+                        <div class="control-btn-grid">
+                            <button class="placeholder-btn"><span class="control-code">DM01</span><span>SAFE HDG BAND</span></button>
+                            <button class="placeholder-btn"><span class="control-code">DM02</span><span>MIN ALTERATION</span></button>
+                            <button class="placeholder-btn"><span class="control-code">DM03</span><span>PORT / STBD</span></button>
+                            <button class="placeholder-btn"><span class="control-code">DM04</span><span>SPEED OPTION</span></button>
+                            <button class="placeholder-btn"><span class="control-code">DM05</span><span>WHAT-IF COURSE</span></button>
+                            <button class="placeholder-btn"><span class="control-code">DM06</span><span>COLREG CUE</span></button>
+                        </div>
+                    </div>
+                    <div class="split-control-group">
+                        <div class="split-group-title ac">ACTION &amp; CONTROL</div>
+                        <div class="control-btn-grid">
+                            <button class="placeholder-btn"><span class="control-code">AC01</span><span>TARGET HEADING</span></button>
+                            <button class="placeholder-btn"><span class="control-code">AC02</span><span>RUDDER DIRECTION</span></button>
+                            <button class="placeholder-btn"><span class="control-code">AC03</span><span>RUDDER ANGLE</span></button>
+                            <button class="placeholder-btn"><span class="control-code">AC04</span><span>HEADING ERROR</span></button>
+                            <button class="placeholder-btn"><span class="control-code">AC05</span><span>ROT GUIDANCE</span></button>
+                            <button class="placeholder-btn"><span class="control-code">AC06</span><span>EASE / MIDSHIP</span></button>
+                        </div>
                     </div>
                 </div>
                 
                 <div id="grid-area"></div>
-
-                <div id="all-sync-control">
-                    <div class="all-sync-title">ALL SYNC CONTROL</div>
-                    <div id="all-sync-pan-pad">DRAG TO PAN</div>
-                    <div class="all-sync-zoom-row">
-                        <button type="button" class="all-sync-zoom-btn" onclick="allSyncZoom(0.85, event)" title="전체 확대">＋</button>
-                        <button type="button" class="all-sync-zoom-btn" onclick="allSyncZoom(1.15, event)" title="전체 축소">−</button>
-                    </div>
-                </div>
-                
-                <div id="split-right-panel" class="split-side-panel">
-                    <div style="color:var(--accent-cyan); font-weight:bold; margin-bottom:15px; text-align:center; font-size: 16px; letter-spacing: 1px;">RIGHT CONTROLS (AR)</div>
-                    <div class="control-btn-grid">
-                        <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')">AR LABELS</button>
-                        <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')">GUARD RING</button>
-                        <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')">CPA VECTOR</button>
-                        <button class="placeholder-btn">R_BTN 04</button>
-                        <button class="placeholder-btn">R_BTN 05</button>
-                        <button class="placeholder-btn">R_BTN 06</button>
-                        <button class="placeholder-btn">R_BTN 07</button>
-                        <button class="placeholder-btn">R_BTN 08</button>
-                        <button class="placeholder-btn">R_BTN 09</button>
-                        <button class="placeholder-btn">R_BTN 10</button>
-                        <button class="placeholder-btn">R_BTN 11</button>
-                        <button class="placeholder-btn">R_BTN 12</button>
-                        <button class="placeholder-btn">R_BTN 13</button>
-                        <button class="placeholder-btn">R_BTN 14</button>
-                        <button class="placeholder-btn">R_BTN 15</button>
-                    </div>
-                </div>
+                <div id="split-right-panel" class="split-side-panel"></div>
             </div>
         </div>
         
@@ -454,6 +448,10 @@
                 <div id="macro-targets-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
                 <div style="font-size: 12px; color: #94a3b8; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; text-align: center; margin-top: auto; line-height: 1.5; flex-shrink: 0;">
                     상세 관찰 및 개입을 원하시면<br>특정 선박 화면을 <b>더블클릭</b> 하세요.
+                </div>
+                <div id="all-sync-control">
+                    <div class="all-sync-title">ALL SYNC CONTROL</div>
+                    <div id="all-sync-pan-pad">DRAG TO PAN<br>WHEEL TO ZOOM</div>
                 </div>
             </div>
 
@@ -1979,7 +1977,7 @@
         massViews[idx].panOffsetY = 0;
         
         document.getElementById('main-wrapper').className = 'split-mode'; 
-        fpvArea.style.flex = '1'; 
+        fpvArea.style.flex = '3 1 0'; 
         fpvArea.style.height = 'auto';
         
         document.getElementById('panel-surveillance').style.display = 'none'; 
@@ -2310,18 +2308,24 @@
             const isCloudy = shipId % 2 === 0; 
             scene.background = loadedSkyboxes.find(s => s.name === (isCloudy ? 'GraySky.jpg' : 'NiceSky.jpg')) || new THREE.Color(0x5a7a99);
             fogColorHex = 0x5a7a99;
-            if(dirLight) dirLight.intensity = 1.0;
-            if(ambLight) ambLight.intensity = 1.5;
+            if(dirLight) { dirLight.color.setHex(0xffffff); dirLight.intensity = 1.0; }
+            if(ambLight) { ambLight.color.setHex(0xffffff); ambLight.intensity = 1.5; }
+            if(renderer3D && renderer3D.domElement) renderer3D.domElement.style.filter = 'none';
         } else if (period === 'TWILIGHT') {
             scene.background = loadedSkyboxes.find(s => s.name === 'SunsetSky.jpg') || new THREE.Color(0x1e1512);
             fogColorHex = 0x1e1512; 
-            if(dirLight) dirLight.intensity = 0.4;
-            if(ambLight) ambLight.intensity = 0.6;
+            if(dirLight) { dirLight.color.setHex(0xffffff); dirLight.intensity = 0.4; }
+            if(ambLight) { ambLight.color.setHex(0xffffff); ambLight.intensity = 0.6; }
+            if(renderer3D && renderer3D.domElement) renderer3D.domElement.style.filter = 'none';
         } else { 
-            scene.background = new THREE.Color(0x02050a); 
-            fogColorHex = 0x02050a;
-            if(dirLight) dirLight.intensity = 0.05;
-            if(ambLight) ambLight.intensity = 0.2;
+            // Detailed Monitoring 야간: 야간 카메라처럼 명암을 끌어올리고 녹색 계열로 가시성 확보
+            scene.background = new THREE.Color(0x07110b); 
+            fogColorHex = 0x07110b;
+            if(dirLight) { dirLight.color.setHex(0x9dffae); dirLight.intensity = 0.25; }
+            if(ambLight) { ambLight.color.setHex(0x70ff8a); ambLight.intensity = 0.75; }
+            if(renderer3D && renderer3D.domElement) {
+                renderer3D.domElement.style.filter = 'grayscale(1) sepia(1) hue-rotate(70deg) saturate(3) brightness(1.7) contrast(1.2)';
+            }
         }
         
         scene.fog.color.setHex(fogColorHex);
@@ -2443,12 +2447,13 @@
         ctx.restore();
     }
 
-    // General Monitoring: 모든 MASS 창 동시 패닝/확대축소
+    // General Monitoring: 모든 MASS 창 동시 패닝 + 마우스 휠 확대축소
     let isAllSyncPanning = false;
     let allSyncLastX = 0;
     let allSyncLastY = 0;
 
     const allSyncPanPad = document.getElementById('all-sync-pan-pad');
+    const allSyncControl = document.getElementById('all-sync-control');
     if (allSyncPanPad) {
         allSyncPanPad.addEventListener('mousedown', (e) => {
             if (currentMode !== 'GENERAL') return;
@@ -2466,6 +2471,23 @@
             allSyncLastY = e.touches[0].clientY;
             e.preventDefault();
             e.stopPropagation();
+        }, { passive: false });
+    }
+
+    if (allSyncControl) {
+        allSyncControl.addEventListener('wheel', (e) => {
+            if (currentMode !== 'GENERAL') return;
+            e.preventDefault();
+            e.stopPropagation();
+            const rangeFactor = e.deltaY < 0 ? 0.9 : 1.1;
+            massViews.forEach((v, idx) => {
+                const currentRange = 1 / v.viewScale;
+                const newRange = Math.min(30, Math.max(0.5, currentRange * rangeFactor));
+                v.viewScale = 1 / newRange;
+                const rangeHud = document.querySelector(`#hud-${idx} .hud-range`);
+                if (rangeHud) rangeHud.textContent = `RANGE: ${newRange.toFixed(1)} NM`;
+            });
+            render2D();
         }, { passive: false });
     }
 
@@ -2498,23 +2520,6 @@
 
     window.addEventListener('mouseup', () => { isAllSyncPanning = false; });
     window.addEventListener('touchend', () => { isAllSyncPanning = false; });
-
-    window.allSyncZoom = function(rangeFactor, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        if (currentMode !== 'GENERAL') return;
-
-        massViews.forEach((v, idx) => {
-            const currentRange = 1 / v.viewScale;
-            const newRange = Math.min(30, Math.max(0.5, currentRange * rangeFactor));
-            v.viewScale = 1 / newRange;
-            const rangeHud = document.querySelector(`#hud-${idx} .hud-range`);
-            if (rangeHud) rangeHud.textContent = `RANGE: ${newRange.toFixed(1)} NM`;
-        });
-        render2D();
-    };
 
     function render2D() {
         if (currentMode === 'SURVEILLANCE') return;
