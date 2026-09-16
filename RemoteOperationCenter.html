@@ -147,28 +147,33 @@
         .placeholder-btn:hover { background: rgba(6,182,212,0.2); color: #fff; border-color: var(--accent-cyan); transform: translateY(-2px); }
         .placeholder-btn.active-btn { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
 
-        /* 💡 Surveillance MASS 비교 팝업: 우측 첫 패널 위치에서 최대 3개를 위→아래로 표시 */
+        /* 💡 Surveillance MASS 비교 팝업: 선박별 독립 세로 스택, 새 선택은 기존 열의 왼쪽에 추가 */
         #surv-detail-panel { 
-            position: absolute; right: clamp(260px, 33vw, 380px); top: 0; height: 100%; width: 350px;
-            display: flex; flex-direction: column; justify-content: flex-start; gap: 8px;
-            padding: 10px 0; box-sizing: border-box; z-index: 50; pointer-events: none;
+            position: absolute; right: clamp(260px, 33vw, 380px); top: 0; height: 100%;
+            width: calc(100% - clamp(260px, 33vw, 380px));
+            display: flex; flex-direction: row; justify-content: flex-end; align-items: flex-start; gap: 8px;
+            padding: 10px 0 10px 10px; box-sizing: border-box; z-index: 50; pointer-events: none; overflow: hidden;
         }
         .surv-panel-col { 
-            width: 100%; height: 0; box-sizing: border-box; overflow-y: auto; overflow-x: hidden;
+            flex: 0 0 0; width: 0; max-height: calc(100% - 20px); box-sizing: border-box;
+            overflow-y: auto; overflow-x: hidden;
             background: rgba(11, 15, 25, 0.95); backdrop-filter: blur(4px);
             border-left: 1px solid var(--accent-cyan);
-            transition: opacity 0.2s ease, transform 0.2s ease, height 0.2s ease, padding 0.2s ease;
+            transition: flex-basis 0.22s ease, width 0.22s ease, opacity 0.18s ease, transform 0.22s ease, padding 0.22s ease;
             opacity: 0; padding: 0; pointer-events: none; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
-            transform: translateX(12px);
+            transform: translateX(24px);
         }
         .surv-panel-col.active { 
-            opacity: 1; height: calc((100% - 16px) / 3); min-height: 0; padding: 12px 14px;
-            pointer-events: auto; transform: translateX(0);
+            flex-basis: 350px; width: 350px; min-width: 350px; height: auto; padding: 12px 14px;
+            opacity: 1; pointer-events: auto; transform: translateX(0);
         }
         .surv-panel-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--accent-cyan); }
         .surv-panel-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 7px; font-weight: bold; margin-top: 8px; }
+        .surv-level-block + .surv-level-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(148,163,184,0.22); }
         .surv-fleet-btn { min-height: 58px; width: 100%; box-sizing: border-box; padding: 14px 16px; display: flex; align-items: center; }
         .surv-fleet-btn > div { width: 100%; pointer-events: none; }
+        #main-wrapper:not(.surveillance-mode) #surv-detail-panel,
+        #main-wrapper:not(.surveillance-mode) #surv-max-toast { display: none !important; }
         #surv-max-toast {
             position: absolute; right: calc(clamp(260px, 33vw, 380px) + 18px); bottom: 20px;
             background: rgba(17, 24, 39, 0.94); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.55);
@@ -231,6 +236,7 @@
 
         .info-box { background: #172033; border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--accent-cyan); flex-shrink: 0; transition: transform 0.2s; }
         .info-box.clickable:hover { transform: scale(1.02); cursor: pointer; border-color: #fff; }
+        .info-box.clickable.surv-fleet-btn:hover { transform: none; }
         .info-header { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
         .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; align-items: center; }
         .data-row span { color: #94a3b8; font-weight: bold; }
@@ -290,7 +296,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_53" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_54" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -528,7 +534,8 @@
     let massViews = [];   
     let activeMassIndex = 0;
     
-    let survExpandedMassIds = [];
+    let survMassStates = [];
+    let survOpenSequence = 0;
     let survToastTimer = null;
 
     let currentMode = 'SURVEILLANCE';
@@ -1574,23 +1581,63 @@
             if (!el) return;
             el.classList.remove('active');
             el.innerHTML = '';
+            el.style.order = '';
         });
+        const toast = document.getElementById('surv-max-toast');
+        if (toast) toast.classList.remove('show');
+        if (survToastTimer) {
+            clearTimeout(survToastTimer);
+            survToastTimer = null;
+        }
     }
 
     window.toggleSurvPanel = function(massId) {
         const id = String(massId);
-        const openedIndex = survExpandedMassIds.indexOf(id);
+        const state = survMassStates.find(item => item.id === id && !item.closing);
 
-        if (openedIndex !== -1) {
-            // 이미 열려 있는 MASS 버튼을 다시 누르면 해당 창만 닫는다.
-            survExpandedMassIds.splice(openedIndex, 1);
-        } else {
-            if (survExpandedMassIds.length >= 3) {
-                showSurvMaxToast();
+        if (state) {
+            if (state.level < 3) {
+                state.level += 1;
+                updateSidebar();
                 return;
             }
-            survExpandedMassIds.push(id);
+
+            // 4번째 클릭: 해당 선박 정보 묶음만 오른쪽으로 접어 닫는다.
+            state.closing = true;
+            const slot = document.getElementById(`surv-sa-${state.slot + 1}`);
+            if (slot) slot.classList.remove('active');
+
+            setTimeout(() => {
+                survMassStates = survMassStates.filter(item => item !== state);
+                if (slot) {
+                    slot.innerHTML = '';
+                    slot.style.order = '';
+                }
+                updateSidebar();
+            }, 230);
+            return;
         }
+
+        const openStates = survMassStates.filter(item => !item.closing);
+        if (openStates.length >= 3) {
+            showSurvMaxToast();
+            return;
+        }
+
+        const usedSlots = new Set(survMassStates.map(item => item.slot));
+        const freeSlot = [0, 1, 2].find(slotIdx => !usedSlots.has(slotIdx));
+        if (freeSlot === undefined) {
+            showSurvMaxToast();
+            return;
+        }
+
+        survMassStates.push({
+            id: id,
+            level: 1,
+            slot: freeSlot,
+            seq: ++survOpenSequence,
+            closing: false
+        });
         updateSidebar();
     };
 
@@ -1603,7 +1650,7 @@
             
             let riskColor = s.riskLevel === 2 ? '#ef4444' : (s.riskLevel === 1 ? '#eab308' : '#10b981');
             let riskText = s.riskLevel === 2 ? 'HIGH RISK' : (s.riskLevel === 1 ? 'WARNING' : 'SAFE');
-            let isActive = survExpandedMassIds.includes(String(s.id));
+            let isActive = survMassStates.some(item => !item.closing && item.id === String(s.id));
             
             container.innerHTML += `
             <div class="info-box clickable surv-fleet-btn" style="border-left-color: ${riskColor}; ${isActive ? `border-width: 2px; border-color: ${riskColor};` : ''}" onclick="toggleSurvPanel('${s.id}')">
@@ -1620,12 +1667,24 @@
             document.getElementById('surv-sa-3')
         ];
 
-        const selectedMasses = survExpandedMassIds
-            .map(id => simEntities.find(s => s.isMASS && String(s.id) === String(id)))
-            .filter(Boolean);
-
         slots.forEach((slot, slotIdx) => {
-            const expandedMass = selectedMasses[slotIdx];
+            if (!slot) return;
+            const state = survMassStates.find(item => item.slot === slotIdx);
+
+            if (!state) {
+                slot.classList.remove('active');
+                slot.innerHTML = '';
+                slot.style.order = '';
+                return;
+            }
+
+            // 닫히는 동안에는 기존 내용을 유지한 채 우측으로 접히는 애니메이션만 수행한다.
+            if (state.closing) {
+                slot.classList.remove('active');
+                return;
+            }
+
+            const expandedMass = simEntities.find(s => s.isMASS && String(s.id) === state.id);
             if (!expandedMass) {
                 slot.classList.remove('active');
                 slot.innerHTML = '';
@@ -1633,33 +1692,74 @@
             }
 
             let targetsWithin2NM = 0;
+            let closestDistNM = Infinity;
             simEntities.forEach(tgt => {
                 if (tgt !== expandedMass) {
                     const dNM = Math.sqrt(Math.pow(tgt.x - expandedMass.x, 2) + Math.pow(tgt.z - expandedMass.z, 2)) / 400;
                     if (dNM < 2.0) targetsWithin2NM++;
+                    if (dNM < closestDistNM) closestDistNM = dNM;
                 }
             });
 
             const cCol = expandedMass.cpaRisk === 3 ? '#ef4444' : (expandedMass.cpaRisk === 2 ? '#eab308' : '#10b981');
             const tCol = expandedMass.tcpaRisk === 3 ? '#ef4444' : (expandedMass.tcpaRisk === 2 ? '#eab308' : '#10b981');
+            const xCol = expandedMass.xtdRisk === 3 ? '#ef4444' : (expandedMass.xtdRisk === 2 ? '#eab308' : '#10b981');
             const riskColor = expandedMass.riskLevel === 2 ? '#ef4444' : (expandedMass.riskLevel === 1 ? '#eab308' : '#10b981');
             const riskText = expandedMass.riskLevel === 2 ? 'HIGH RISK' : (expandedMass.riskLevel === 1 ? 'WARNING' : 'SAFE');
+            const latStr = `N 34° ${(expandedMass.z / 11111).toFixed(1)}'`;
+            const lonStr = `E 126° ${(expandedMass.x / 11111).toFixed(1)}'`;
 
-            slot.classList.add('active');
-            slot.innerHTML = `
+            let panelHtml = `
                 <div class="surv-panel-title" style="display:flex; align-items:center; justify-content:space-between; color:${riskColor};">
                     <span>${expandedMass.name}</span>
                     <span style="font-size:10px; color:${riskColor}; background:rgba(255,255,255,0.08); padding:3px 7px; border-radius:4px;">${riskText}</span>
                 </div>
-                <div class="surv-panel-subtitle">Level-3 SA (Projection)</div>
-                <div class="data-row"><span>Projected Position:</span> <b>N 34° ${(expandedMass.z / 11111 + 0.1).toFixed(1)}' E 126° ${(expandedMass.x / 11111 + 0.1).toFixed(1)}'</b></div>
-                <div class="data-row"><span>ETA to waypoints:</span> <b>${formatETA(expandedMass.etaMinutes)}</b></div>
-                <div class="data-row"><span>CPA Risk:</span> <b style="color:${cCol};">LV ${expandedMass.cpaRisk}</b></div>
-                <div class="data-row"><span>TCPA Risk:</span> <b style="color:${tCol};">LV ${expandedMass.tcpaRisk}</b></div>
-                <div class="data-row"><span>Traffic congestion:</span> <b style="color:${targetsWithin2NM > 2 ? '#eab308' : '#10b981'};">${targetsWithin2NM > 2 ? 'HIGH' : 'LOW'}</b></div>
-                <div class="data-row"><span>Projected weather:</span> <b>Clear</b></div>
-                <div class="data-row"><span>Projected wind:</span> <b>${globalEnv.windSpd.toFixed(1)} m/s</b></div>
-            `;
+
+                <div class="surv-level-block">
+                    <div class="surv-panel-subtitle" style="color:var(--accent-cyan);">Level 3: Projection</div>
+                    <div class="data-row"><span>Projected Position:</span> <b>N 34° ${(expandedMass.z / 11111 + 0.1).toFixed(1)}' E 126° ${(expandedMass.x / 11111 + 0.1).toFixed(1)}'</b></div>
+                    <div class="data-row"><span>ETA to waypoints:</span> <b>${formatETA(expandedMass.etaMinutes)}</b></div>
+                    <div class="data-row"><span>CPA Risk:</span> <b style="color:${cCol};">LV ${expandedMass.cpaRisk}</b></div>
+                    <div class="data-row"><span>TCPA Risk:</span> <b style="color:${tCol};">LV ${expandedMass.tcpaRisk}</b></div>
+                    <div class="data-row"><span>Projected traffic congestion:</span> <b style="color:${targetsWithin2NM > 2 ? '#eab308' : '#10b981'};">${targetsWithin2NM > 2 ? 'HIGH' : 'LOW'}</b></div>
+                    <div class="data-row"><span>Projected weather:</span> <b>Clear</b></div>
+                    <div class="data-row"><span>Projected wind speed:</span> <b>${globalEnv.windSpd.toFixed(1)} m/s</b></div>
+                </div>`;
+
+            if (state.level >= 2) {
+                panelHtml += `
+                <div class="surv-level-block">
+                    <div class="surv-panel-subtitle" style="color:var(--accent-yellow);">Level 2: Interpretation</div>
+                    <div class="data-row"><span>XTE (Cross Track Error):</span> <b style="color:${xCol};">${expandedMass.xtd.toFixed(2)} NM</b></div>
+                    <div class="data-row"><span>Course deviation:</span> <b>${Math.abs(expandedMass.cog - expandedMass.hdg).toFixed(1)}°</b></div>
+                    <div class="data-row"><span>Speed deviation:</span> <b>${Math.abs(expandedMass.cmdSpeed - expandedMass.spd).toFixed(1)} Kn</b></div>
+                    <div class="data-row"><span>Dist. to nearest obstacle:</span> <b style="color:${closestDistNM < 1.0 ? '#ef4444' : (closestDistNM < 2.0 ? '#eab308' : '#10b981')};">${closestDistNM === Infinity ? '-' : closestDistNM.toFixed(2)} NM</b></div>
+                    <div class="data-row"><span>Current separation:</span> <b>${targetsWithin2NM} targets &lt; 2NM</b></div>
+                    <div class="data-row"><span>Validity of indicators:</span> <b style="color:#10b981;">Valid</b></div>
+                    <div class="data-row"><span>System emergencies:</span> <b style="color:#10b981;">Safe</b></div>
+                </div>`;
+            }
+
+            if (state.level >= 3) {
+                panelHtml += `
+                <div class="surv-level-block">
+                    <div class="surv-panel-subtitle" style="color:#10b981;">Level 1: Perception</div>
+                    <div class="data-row"><span>Position:</span> <b>${latStr}, ${lonStr}</b></div>
+                    <div class="data-row"><span>Speed (SOG):</span> <b>${expandedMass.spd.toFixed(1)} Kn</b></div>
+                    <div class="data-row"><span>Gyro heading:</span> <b>${expandedMass.hdg.toFixed(1)}°</b></div>
+                    <div class="data-row"><span>COG:</span> <b>${expandedMass.cog.toFixed(1)}°</b></div>
+                    <div class="data-row"><span>XTE:</span> <b>${expandedMass.xtd.toFixed(2)} NM</b></div>
+                    <div class="data-row"><span>Planned route:</span> <b>${expandedMass.originPort.name} ➔ ${expandedMass.destPort.name}</b></div>
+                    <div class="data-row"><span>Number of targets:</span> <b>${simEntities.length - 1}</b></div>
+                    <div class="data-row"><span>Wind (Spd / Dir):</span> <b>${globalEnv.windSpd.toFixed(1)} m/s / ${globalEnv.windDir}°</b></div>
+                    <div class="data-row"><span>Current (Spd / Dir):</span> <b>${globalEnv.currentSpd.toFixed(1)} Kn / ${globalEnv.currentDir}°</b></div>
+                </div>`;
+            }
+
+            // 새로 선택한 선박일수록 더 작은 order를 부여하여 기존 열의 왼쪽에 배치한다.
+            slot.style.order = String(-state.seq);
+            slot.classList.add('active');
+            slot.innerHTML = panelHtml;
         });
     }
 
@@ -1808,7 +1908,8 @@
         if(interventionState !== 'NONE') return;
         currentMode = 'GENERAL'; 
         isSplitMode = false;
-        survExpandedMassIds = [];
+        survMassStates = [];
+        survOpenSequence = 0;
         clearSurvPanelSlots();
         
         updateSidebar(); 
@@ -1835,7 +1936,8 @@
         activeMassIndex = idx; 
         isSplitMode = true; 
         currentMode = 'SPLIT';
-        survExpandedMassIds = [];
+        survMassStates = [];
+        survOpenSequence = 0;
         clearSurvPanelSlots();
         
         updateSidebar(); 
