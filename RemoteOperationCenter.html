@@ -185,8 +185,8 @@
 
         /* 💡 Surveillance MASS 비교 팝업: 선박별 독립 세로 스택, 새 선택은 기존 열의 왼쪽에 추가 */
         #surv-detail-panel { 
-            position: absolute; right: clamp(260px, 33vw, 380px); top: 0; height: 100%;
-            width: calc(100% - clamp(260px, 33vw, 380px));
+            position: absolute; right: clamp(174px, 22vw, 254px); top: 0; height: 100%;
+            width: calc(100% - clamp(174px, 22vw, 254px));
             display: flex; flex-direction: row; justify-content: flex-end; align-items: flex-start; gap: 8px;
             padding: 10px 0 10px 10px; box-sizing: border-box; z-index: 50; pointer-events: none; overflow: hidden;
         }
@@ -211,7 +211,7 @@
         #main-wrapper:not(.surveillance-mode) #surv-detail-panel,
         #main-wrapper:not(.surveillance-mode) #surv-max-toast { display: none !important; }
         #surv-max-toast {
-            position: absolute; right: calc(clamp(260px, 33vw, 380px) + 18px); bottom: 20px;
+            position: absolute; right: calc(clamp(174px, 22vw, 254px) + 18px); bottom: 20px;
             background: rgba(17, 24, 39, 0.94); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.55);
             border-radius: 7px; padding: 10px 14px; font-size: 13px; font-weight: bold; letter-spacing: 0.2px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.35); z-index: 80; pointer-events: none;
@@ -220,7 +220,7 @@
         #surv-max-toast.show { opacity: 1; transform: translateY(0); }
 
         #sidebar { 
-            width: clamp(260px, 33vw, 380px); background: var(--panel-bg); 
+            width: clamp(174px, 22vw, 254px); background: var(--panel-bg); 
             border-left: 1px solid var(--border-color); display: flex; 
             flex-direction: column; padding: 20px; box-sizing: border-box; 
             z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; 
@@ -249,7 +249,7 @@
         #fpv-label { position: absolute; top: 15px; left: 15px; color: var(--accent-cyan); font-weight: bold; font-size: 16px; letter-spacing: 1px; text-shadow: 0 2px 4px #000; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px; z-index: 10;}
         #fpv-ownship-hud {
             position: absolute; top: 12px; left: 170px; right: 200px; z-index: 12;
-            display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px;
+            display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px;
             padding: 5px 7px; box-sizing: border-box; pointer-events: none;
             background: rgba(2, 8, 18, 0.66); border: 1px solid rgba(16,185,129,0.55); border-radius: 5px;
             box-shadow: 0 0 14px rgba(16,185,129,0.12); backdrop-filter: blur(3px);
@@ -257,7 +257,7 @@
         .fpv-hud-item { min-width: 0; text-align: center; border-right: 1px solid rgba(148,163,184,0.18); padding: 1px 4px; }
         .fpv-hud-item:last-child { border-right: none; }
         .fpv-hud-label { display: block; color: #94a3b8; font-size: 11px; font-weight: 700; line-height: 1.05; letter-spacing: 0.35px; white-space: nowrap; }
-        .fpv-hud-value { display: block; color: #10b981; font-family: monospace; font-size: 16px; font-weight: bold; line-height: 1.28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 8px rgba(16,185,129,0.35); }
+        .fpv-hud-value { display: block; color: #10b981; font-family: monospace; font-size: 16px; font-weight: bold; line-height: 1.28; white-space: nowrap; text-shadow: 0 0 8px rgba(16,185,129,0.35); }
         
         #intervention-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 55; backdrop-filter: blur(4px); }
         .latency-spinner { border: 4px solid rgba(0, 255, 170, 0.2); border-top: 4px solid #00ffaa; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -343,7 +343,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_58" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_59" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -370,11 +370,10 @@
                     <div class="fpv-hud-item"><span class="fpv-hud-label">HDG</span><b id="split-hdg" class="fpv-hud-value">000.0°</b></div>
                     <div class="fpv-hud-item"><span class="fpv-hud-label">COG</span><b id="split-cog" class="fpv-hud-value">000.0°</b></div>
                     <div class="fpv-hud-item"><span class="fpv-hud-label">SOG</span><b id="split-sog" class="fpv-hud-value">0.0 Kn</b></div>
-                    <div class="fpv-hud-item"><span class="fpv-hud-label">ROT</span><b id="split-rot" class="fpv-hud-value">0.0 °/min</b></div>
+                    <div class="fpv-hud-item"><span class="fpv-hud-label">ROT</span><b id="split-rot" class="fpv-hud-value">0.0</b></div>
                     <div class="fpv-hud-item"><span class="fpv-hud-label">RUD CMD</span><b id="split-rud-cmd" class="fpv-hud-value">0.0°</b></div>
                     <div class="fpv-hud-item"><span class="fpv-hud-label">RUD ACT</span><b id="split-rud-act" class="fpv-hud-value">0.0°</b></div>
                     <div class="fpv-hud-item"><span class="fpv-hud-label">XTD</span><b id="split-os-xtd" class="fpv-hud-value">0.00 NM</b></div>
-                    <div class="fpv-hud-item"><span class="fpv-hud-label">ETA</span><b id="split-os-eta" class="fpv-hud-value">--:--</b></div>
                 </div>
                 
                 <div id="fpv-network-status" style="position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.85); padding: 10px 15px; border-radius: 6px; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 4px; text-align: right; min-width: 140px; border: 1px solid rgba(255,255,255,0.5);">
@@ -400,34 +399,34 @@
                     <div class="split-control-group">
                         <div class="split-group-title sa">SITUATION AWARENESS</div>
                         <div class="control-btn-grid">
-                            <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')"><span class="control-btn-line"><span class="control-code">SA01</span>FUTURE</span><span class="control-btn-line">POSITION</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')"><span class="control-btn-line"><span class="control-code">SA02</span>COLLISION</span><span class="control-btn-line">POINT</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')"><span class="control-btn-line"><span class="control-code">SA03</span>THREAT</span><span class="control-btn-line">HIGHLIGHT</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')"><span class="control-btn-line"><span class="control-code">SA04</span>RELATIVE</span><span class="control-btn-line">MOTION</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')"><span class="control-btn-line"><span class="control-code">SA05</span>APPROACH</span><span class="control-btn-line">RANK</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')"><span class="control-btn-line"><span class="control-code">SA06</span>MANEUVER</span><span class="control-btn-line">TREND</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')"><span class="control-btn-line">FUTURE</span><span class="control-btn-line">POSITION</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')"><span class="control-btn-line">COLLISION</span><span class="control-btn-line">POINT</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')"><span class="control-btn-line">THREAT</span><span class="control-btn-line">HIGHLIGHT</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')"><span class="control-btn-line">RELATIVE</span><span class="control-btn-line">MOTION</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')"><span class="control-btn-line">APPROACH</span><span class="control-btn-line">RANK</span></button>
+                            <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')"><span class="control-btn-line">MANEUVER</span><span class="control-btn-line">TREND</span></button>
                         </div>
                     </div>
                     <div class="split-control-group">
                         <div class="split-group-title dm">DECISION MAKING</div>
                         <div class="control-btn-grid">
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM01</span>SAFE HDG</span><span class="control-btn-line">BAND</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM02</span>MIN</span><span class="control-btn-line">ALTERATION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM03</span>PORT /</span><span class="control-btn-line">STBD</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM04</span>SPEED</span><span class="control-btn-line">OPTION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM05</span>WHAT-IF</span><span class="control-btn-line">COURSE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">DM06</span>COLREG</span><span class="control-btn-line">CUE</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">SAFE HDG</span><span class="control-btn-line">BAND</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">MIN</span><span class="control-btn-line">ALTERATION</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">PORT /</span><span class="control-btn-line">STBD</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">SPEED</span><span class="control-btn-line">OPTION</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">WHAT-IF</span><span class="control-btn-line">COURSE</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">COLREG</span><span class="control-btn-line">CUE</span></button>
                         </div>
                     </div>
                     <div class="split-control-group">
                         <div class="split-group-title ac">ACTION &amp; CONTROL</div>
                         <div class="control-btn-grid">
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC01</span>TARGET</span><span class="control-btn-line">HEADING</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC02</span>RUDDER</span><span class="control-btn-line">DIRECTION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC03</span>RUDDER</span><span class="control-btn-line">ANGLE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC04</span>HEADING</span><span class="control-btn-line">ERROR</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC05</span>ROT</span><span class="control-btn-line">GUIDANCE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line"><span class="control-code">AC06</span>EASE /</span><span class="control-btn-line">MIDSHIP</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">TARGET</span><span class="control-btn-line">HEADING</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">DIRECTION</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">ANGLE</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">HEADING</span><span class="control-btn-line">ERROR</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">ROT</span><span class="control-btn-line">GUIDANCE</span></button>
+                            <button class="placeholder-btn"><span class="control-btn-line">EASE /</span><span class="control-btn-line">MIDSHIP</span></button>
                         </div>
                     </div>
                 </div>
@@ -1900,13 +1899,12 @@
             document.getElementById('split-hdg').innerText = `${mass.hdg.toFixed(1)}°`; 
             document.getElementById('split-cog').innerText = `${mass.cog.toFixed(1)}°`; 
             document.getElementById('split-sog').innerText = `${mass.spd.toFixed(1)} Kn`;
-            document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)} °/min`; 
+            document.getElementById('split-rot').innerText = `${mass.rot.toFixed(1)}`; 
             
             document.getElementById('split-rud-cmd').innerText = `${mass.targetRudder.toFixed(1)}°`; 
             document.getElementById('split-rud-act').innerText = `${mass.actualRudder.toFixed(1)}°`;
             
             document.getElementById('split-os-xtd').innerText = `${mass.xtd.toFixed(2)} NM`; 
-            document.getElementById('split-os-eta').innerText = formatETA(mass.etaMinutes);
             
             updateTgtPanels('split-targets-container');
             
@@ -2299,19 +2297,19 @@
 
         const port = new THREE.Sprite(matR); 
         port.scale.set(10, 10, 1); 
-        port.position.set(-6, 5, -20);
+        port.position.set(-3, 2.5, -10);
         
         const stbd = new THREE.Sprite(matG); 
         stbd.scale.set(10, 10, 1); 
-        stbd.position.set(6, 5, -20);
+        stbd.position.set(3, 2.5, -10);
         
         const mast = new THREE.Sprite(matW); 
         mast.scale.set(15, 15, 1); 
-        mast.position.set(0, 25, 0);
+        mast.position.set(0, 12.5, 0);
         
         const stern = new THREE.Sprite(matW); 
         stern.scale.set(10, 10, 1); 
-        stern.position.set(0, 5, 25);
+        stern.position.set(0, 2.5, 12.5);
         
         group.add(port, stbd, mast, stern);
         group.visible = false; 
