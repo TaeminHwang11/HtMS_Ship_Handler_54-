@@ -1343,7 +1343,7 @@
         mainLoop();
     }
 
-    // 💡 세계지도(Surveillance) 렌더링 영역 - 배경 색상 그라데이션 적용 완료
+    // 💡 세계지도(Surveillance): 테마 배경 유지, 육지/경계선에만 낮·밤 그라데이션 적용
     function renderWorldMap() {
         if(currentMode !== 'SURVEILLANCE') return;
         const canvas = document.getElementById('world-map-canvas');
@@ -1358,20 +1358,9 @@
         const utcHours = (simUnixTime / 3600000) % 24;
         const solarLon = 180 - (utcHours * 15);
 
-        // 💡 배경에 낮(흰색)/여명(회색)/밤(검은색) 그라데이션 적용
-        const bgGrad = ctx.createLinearGradient(0, 0, W, 0);
-        for (let i = 0; i <= 40; i++) {
-            let pct = i / 40;
-            let lon = -180 + (360 * pct);
-            let lonDiff = Math.abs(lon - solarLon);
-            if (lonDiff > 180) lonDiff = 360 - lonDiff;
-
-            if (lonDiff < 75) bgGrad.addColorStop(pct, '#ffffff');       // 낮 영역 (흰색)
-            else if (lonDiff < 95) bgGrad.addColorStop(pct, '#888888');  // 여명 영역 (회색)
-            else bgGrad.addColorStop(pct, '#000000');                    // 밤 영역 (검은색)
-        }
-        
-        ctx.fillStyle = bgGrad;
+        // 바다와 해도 밖 배경은 기존 테마의 남색으로 고정
+        ctx.fillStyle = getComputedStyle(document.documentElement)
+            .getPropertyValue('--bg-color').trim() || '#0b0f19';
         ctx.fillRect(0,0,W,H);
 
         const getXY = (lat, lon) => { 
@@ -1379,41 +1368,76 @@
         };
 
         if (worldGeoJSON) {
-            // 해안선 그라데이션 적용 로직 (기존 유지)
-            const grad = ctx.createLinearGradient(0, 0, W, 0);
-            for (let i = 0; i <= 40; i++) {
-                let pct = i / 40;
-                let lon = -180 + (360 * pct);
+            const landGrad = ctx.createLinearGradient(0, 0, W, 0);
+            const lineGrad = ctx.createLinearGradient(0, 0, W, 0);
+            const glowGrad = ctx.createLinearGradient(0, 0, W, 0);
+
+            // 기존 낮/밤 기준(75° / 95°) 및 시뮬레이션 시간 계산은 유지
+            // 0 = 밤, 1 = 낮. 중간 영역은 육지색·선색·발광이 함께 부드럽게 전환
+            for (let i = 0; i <= 360; i++) {
+                const pct = i / 360;
+                const lon = -180 + (360 * pct);
                 let lonDiff = Math.abs(lon - solarLon);
                 if (lonDiff > 180) lonDiff = 360 - lonDiff;
-                
-                if (lonDiff < 75) grad.addColorStop(pct, 'rgba(250, 204, 21, 0.9)');       // 낮 영역 (금색)
-                else if (lonDiff < 95) grad.addColorStop(pct, 'rgba(180, 150, 80, 0.6)');  // 여명 영역 (옅은 황갈색)
-                else grad.addColorStop(pct, 'rgba(100, 116, 139, 0.3)');                   // 밤 영역 (흐린 회색)
+
+                const ratio = Math.max(0, Math.min(1, (95 - lonDiff) / 20));
+                const daylight = ratio * ratio * (3 - 2 * ratio);
+                const land = Math.round(255 * daylight);
+
+                // 육지: 검정 ↔ 회색 ↔ 흰색
+                landGrad.addColorStop(pct, `rgb(${land}, ${land}, ${land})`);
+
+                // 경계선: 기존 밤 색상 ↔ 중간색 ↔ 금색
+                const r = Math.round(100 + (250 - 100) * daylight);
+                const g = Math.round(116 + (204 - 116) * daylight);
+                const b = Math.round(139 + (21 - 139) * daylight);
+                const a = 0.3 + (0.9 - 0.3) * daylight;
+                lineGrad.addColorStop(pct, `rgba(${r}, ${g}, ${b}, ${a})`);
+
+                // 밤에는 금색 발광이 없고, 낮으로 갈수록 점진적으로 발광
+                glowGrad.addColorStop(pct, `rgba(250, 204, 21, ${0.55 * daylight})`);
             }
 
             ctx.save();
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 1.2;
-            
-            const drawRing = (ring) => {
-                ctx.beginPath();
-                ring.forEach((pt, i) => { 
-                    const xy = getXY(pt[1], pt[0]); 
-                    if (i === 0) ctx.moveTo(xy.x, xy.y); 
-                    else ctx.lineTo(xy.x, xy.y); 
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = landGrad;
+            const borders = new Path2D();
+
+            const drawPolygon = (rings) => {
+                const landPath = new Path2D();
+                rings.forEach(ring => {
+                    ring.forEach((pt, i) => {
+                        const xy = getXY(pt[1], pt[0]);
+                        if (i === 0) landPath.moveTo(xy.x, xy.y);
+                        else landPath.lineTo(xy.x, xy.y);
+                    });
+                    landPath.closePath();
                 });
-                ctx.stroke();
+
+                // 내부 링(호수 등)은 채우지 않고 배경색을 그대로 남김
+                ctx.fill(landPath, 'evenodd');
+                borders.addPath(landPath);
             };
-            
+
             worldGeoJSON.features.forEach(feature => {
-                if(feature.geometry.type === 'Polygon') { 
-                    feature.geometry.coordinates.forEach(drawRing); 
-                } 
-                else if (feature.geometry.type === 'MultiPolygon') { 
-                    feature.geometry.coordinates.forEach(poly => poly.forEach(drawRing)); 
+                if(feature.geometry.type === 'Polygon') {
+                    drawPolygon(feature.geometry.coordinates);
+                }
+                else if (feature.geometry.type === 'MultiPolygon') {
+                    feature.geometry.coordinates.forEach(drawPolygon);
                 }
             });
+
+            // 육지를 모두 채운 뒤 경계선을 그려 인접 육지에 선이 덮이지 않게 함
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = glowGrad;
+            ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
+            ctx.shadowBlur = 6;
+            ctx.stroke(borders);
+
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = lineGrad;
+            ctx.stroke(borders);
             ctx.restore();
         }
 
