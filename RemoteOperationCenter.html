@@ -227,6 +227,36 @@
 
         .close-target { float: right; cursor: pointer; color: #ef4444; font-size: 14px; line-height: 1; }
         .close-target:hover { color: #fca5a5; }
+
+        /* 💡 일시정지 토글 버튼 스타일 추가 */
+        #btn-pause-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 45px;
+            height: 45px;
+            background: rgba(11, 15, 25, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            color: var(--accent-cyan);
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+            box-shadow: 0 0 10px rgba(6,182,212,0.2);
+            user-select: none;
+        }
+        #btn-pause-toggle:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            box-shadow: 0 0 20px rgba(6,182,212,0.5);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -264,6 +294,8 @@
         <div id="view-column">
             <div id="surveillance-area">
                 <canvas id="world-map-canvas"></canvas>
+                <!-- 💡 일시정지 버튼 추가 -->
+                <button id="btn-pause-toggle" onclick="togglePause()" title="재생/일시정지">❚❚</button>
             </div>
 
             <div id="fpv-area">
@@ -488,6 +520,8 @@
     let currentMode = 'SURVEILLANCE';
     let isSplitMode = false;
     let isSimulationRunning = false;
+    // 💡 일시정지 상태 변수 추가
+    let isPaused = false;
     
     let lastTime = performance.now();
     let simStartTime = 0; 
@@ -516,6 +550,19 @@
     let seaMesh; 
 
     let lastTouchX = 0, lastTouchY = 0;
+
+    // 💡 일시정지 토글 함수 추가
+    window.togglePause = function() {
+        isPaused = !isPaused;
+        const btn = document.getElementById('btn-pause-toggle');
+        if (isPaused) {
+            btn.innerHTML = '▶';
+            logEvent("SIMULATION_PAUSED", {});
+        } else {
+            btn.innerHTML = '❚❚';
+            logEvent("SIMULATION_RESUMED", {});
+        }
+    };
 
     // 💡 AR HUD 상태 관리 객체 및 토글 함수
     let arStates = { 
@@ -2086,8 +2133,6 @@
         const matG = new THREE.SpriteMaterial({ map: getTex('rgba(50,255,50,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
         const matW = new THREE.SpriteMaterial({ map: getTex('rgba(255,255,255,1)'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 
-        // 💡 하드코딩된 브릿지 기준 좌표 (Z-는 선수 방향)
-        // 전주등 대비 현등 높이를 대폭 낮춰 갑판 레벨에 배치
         const port = new THREE.Sprite(matR); 
         port.scale.set(10, 10, 1); 
         port.position.set(-6, 5, -20);
@@ -2497,139 +2542,143 @@
         const dt = Math.min((now - lastTime) / 1000, 0.1); 
         lastTime = now;
         
-        simUnixTime += dt * 1000; 
-        
-        simEntities.forEach(s => { 
-            s.globalProgress += (s.spd / 3600) * 0.00005 * dt; 
-            if (s.globalProgress > 1) s.globalProgress = 0;
-
-            if (now - s.lastCommUpdate >= 5000) {
-                s.latencySec = (Math.random() * 9 + 1).toFixed(1); 
-                let latVal = parseFloat(s.latencySec);
-                if (latVal <= 3.0) { 
-                    s.connStatus = '좋음'; 
-                    s.fps3D = 60; 
-                    s.frameInterval = 16; 
-                } else if (latVal <= 7.0) { 
-                    s.connStatus = '보통'; 
-                    s.fps3D = 30; 
-                    s.frameInterval = 33; 
-                } else { 
-                    s.connStatus = '불량'; 
-                    s.fps3D = 10; 
-                    s.frameInterval = 100; 
-                }
-                s.lastCommUpdate = now;
-            }
-
-            let rDiff = s.targetRudder - s.actualRudder; 
-            let rStep = 1.5 * dt; 
-            if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
-            else s.actualRudder += Math.sign(rDiff) * rStep;
+        // 💡 일시정지 상태가 아닐 때만 시뮬레이션 물리 시간 및 위치 업데이트 진행
+        if (!isPaused) {
+            simUnixTime += dt * 1000; 
             
-            const K_nom = 2.0; 
-            const T_nom = 25.0; 
-            const targetRot = K_nom * s.actualRudder; 
-            const rotDerivative = (targetRot - s.rot) / T_nom; 
-            
-            s.rot += rotDerivative * dt; 
-            s.hdg = (s.hdg + (s.rot / 60.0) * dt * 3) % 360; 
-            if (s.hdg < 0) s.hdg += 360;
-            
-            const speedLossFactor = 0.008; 
-            const targetSpeed = s.cmdSpeed * (1.0 - speedLossFactor * Math.abs(s.rot));
-            const T_surge = 15.0; 
-            s.spd += (targetSpeed - s.spd) * (dt / T_surge);
+            simEntities.forEach(s => { 
+                s.globalProgress += (s.spd / 3600) * 0.00005 * dt; 
+                if (s.globalProgress > 1) s.globalProgress = 0;
 
-            const speedUnits = s.spd * (400 / 3600);
-            let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; 
-            let moveZ = -speedUnits * Math.cos(s.hdg * DEG2RAD) * dt;
-
-            if (globalEnv.currentSpd > 0) {
-                const currUnits = globalEnv.currentSpd * (400 / 3600);
-                moveX += currUnits * Math.sin(globalEnv.currentDir * DEG2RAD) * dt; 
-                moveZ -= currUnits * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
-            }
-            if (globalEnv.windSpd > 0) {
-                let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - s.hdg + 360) % 360 * DEG2RAD); 
-                const windUnits = windDriftSpeed * (400 / 3600);
-                moveX += windUnits * Math.cos(s.hdg * DEG2RAD) * dt; 
-                moveZ -= windUnits * -Math.sin(s.hdg * DEG2RAD) * dt;
-            }
-
-            s.x += moveX; 
-            s.z += moveZ; 
-            let actualVx = moveX / dt; 
-            let actualVz = -moveZ / dt; 
-            s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
-
-            if(s.isMASS) {
-                const pos = getGlobalLonLat(s);
-                s.globalLat = pos.lat;
-                s.globalLon = pos.lon;
-            }
-
-            if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
-                const nextWp = s.waypoints[s.currentWpIndex]; 
-                const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
-                
-                if (distToWp < 100) { 
-                    s.currentWpIndex++; 
-                    if (s.currentWpIndex === s.waypoints.length && massViews[activeMassIndex] && s === massViews[activeMassIndex].massEntity && !isLogSent) {
-                        finishSimulationAndSendData(s.name);
+                if (now - s.lastCommUpdate >= 5000) {
+                    s.latencySec = (Math.random() * 9 + 1).toFixed(1); 
+                    let latVal = parseFloat(s.latencySec);
+                    if (latVal <= 3.0) { 
+                        s.connStatus = '좋음'; 
+                        s.fps3D = 60; 
+                        s.frameInterval = 16; 
+                    } else if (latVal <= 7.0) { 
+                        s.connStatus = '보통'; 
+                        s.fps3D = 30; 
+                        s.frameInterval = 33; 
+                    } else { 
+                        s.connStatus = '불량'; 
+                        s.fps3D = 10; 
+                        s.frameInterval = 100; 
                     }
+                    s.lastCommUpdate = now;
                 }
-            }
 
-            if (now - s.lastRouteCalcTime >= 1000) {
-                const routeData = calculateXTDAndETA(s); 
-                s.xtd = routeData.xtd; 
-                s.etaMinutes = routeData.etaMinutes; 
-                s.lastRouteCalcTime = now;
+                let rDiff = s.targetRudder - s.actualRudder; 
+                let rStep = 1.5 * dt; 
+                if (Math.abs(rDiff) <= rStep) s.actualRudder = s.targetRudder; 
+                else s.actualRudder += Math.sign(rDiff) * rStep;
                 
-                let maxTargetRisk = 2; 
-                let cpaRisk = 1, tcpaRisk = 1;
+                const K_nom = 2.0; 
+                const T_nom = 25.0; 
+                const targetRot = K_nom * s.actualRudder; 
+                const rotDerivative = (targetRot - s.rot) / T_nom; 
                 
-                for (let i = 0; i < simEntities.length; i++) {
-                    let tgt = simEntities[i]; 
-                    if (s === tgt) continue;
+                s.rot += rotDerivative * dt; 
+                s.hdg = (s.hdg + (s.rot / 60.0) * dt * 3) % 360; 
+                if (s.hdg < 0) s.hdg += 360;
+                
+                const speedLossFactor = 0.008; 
+                const targetSpeed = s.cmdSpeed * (1.0 - speedLossFactor * Math.abs(s.rot));
+                const T_surge = 15.0; 
+                s.spd += (targetSpeed - s.spd) * (dt / T_surge);
+
+                const speedUnits = s.spd * (400 / 3600);
+                let moveX = speedUnits * Math.sin(s.hdg * DEG2RAD) * dt; 
+                let moveZ = -speedUnits * Math.cos(s.hdg * DEG2RAD) * dt;
+
+                if (globalEnv.currentSpd > 0) {
+                    const currUnits = globalEnv.currentSpd * (400 / 3600);
+                    moveX += currUnits * Math.sin(globalEnv.currentDir * DEG2RAD) * dt; 
+                    moveZ -= currUnits * Math.cos(globalEnv.currentDir * DEG2RAD) * dt;
+                }
+                if (globalEnv.windSpd > 0) {
+                    let windDriftSpeed = (globalEnv.windSpd * globalEnv.windSpd) * 0.005 * Math.sin((globalEnv.windDir - s.hdg + 360) % 360 * DEG2RAD); 
+                    const windUnits = windDriftSpeed * (400 / 3600);
+                    moveX += windUnits * Math.cos(s.hdg * DEG2RAD) * dt; 
+                    moveZ -= windUnits * -Math.sin(s.hdg * DEG2RAD) * dt;
+                }
+
+                s.x += moveX; 
+                s.z += moveZ; 
+                let actualVx = moveX / dt; 
+                let actualVz = -moveZ / dt; 
+                s.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
+
+                if(s.isMASS) {
+                    const pos = getGlobalLonLat(s);
+                    s.globalLat = pos.lat;
+                    s.globalLon = pos.lon;
+                }
+
+                if (s.waypoints && s.currentWpIndex < s.waypoints.length) {
+                    const nextWp = s.waypoints[s.currentWpIndex]; 
+                    const distToWp = Math.hypot(nextWp.x - s.x, nextWp.z - s.z);
                     
-                    let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, tgt.x - s.x, tgt.z - s.z);
-                    
-                    if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
-                        let currentCpaScore = 1; 
-                        if (cpaData.cpa < 0.3) currentCpaScore = 3; 
-                        else if (cpaData.cpa < 0.7) currentCpaScore = 2;
-                        
-                        let currentTcpaScore = 1; 
-                        if (cpaData.tcpa < 180) currentTcpaScore = 3; 
-                        else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
-                        
-                        let targetRisk = currentCpaScore > 1 ? currentCpaScore + currentTcpaScore : 2;
-                        
-                        if (targetRisk > maxTargetRisk) { 
-                            maxTargetRisk = targetRisk; 
-                            cpaRisk = currentCpaScore; 
-                            tcpaRisk = currentTcpaScore; 
+                    if (distToWp < 100) { 
+                        s.currentWpIndex++; 
+                        if (s.currentWpIndex === s.waypoints.length && massViews[activeMassIndex] && s === massViews[activeMassIndex].massEntity && !isLogSent) {
+                            finishSimulationAndSendData(s.name);
                         }
                     }
                 }
-                
-                let xtdScore = 1; 
-                if (s.xtd >= 1.0) xtdScore = 3; 
-                else if (s.xtd >= 0.5) xtdScore = 2; 
-                
-                s.cpaRisk = cpaRisk; 
-                s.tcpaRisk = tcpaRisk; 
-                s.xtdRisk = xtdScore;
-                
-                let totalScore = maxTargetRisk + xtdScore; 
-                if (totalScore >= 7) s.riskLevel = 2; 
-                else if (totalScore >= 5) s.riskLevel = 1; 
-                else s.riskLevel = 0; 
-            }
-        });
+
+                if (now - s.lastRouteCalcTime >= 1000) {
+                    const routeData = calculateXTDAndETA(s); 
+                    s.xtd = routeData.xtd; 
+                    s.etaMinutes = routeData.etaMinutes; 
+                    s.lastRouteCalcTime = now;
+                    
+                    let maxTargetRisk = 2; 
+                    let cpaRisk = 1, tcpaRisk = 1;
+                    
+                    for (let i = 0; i < simEntities.length; i++) {
+                        let tgt = simEntities[i]; 
+                        if (s === tgt) continue;
+                        
+                        let cpaData = calculateCPA(s.spd, s.hdg, tgt.spd, tgt.hdg, tgt.x - s.x, tgt.z - s.z);
+                        
+                        if (cpaData.tcpa > 0 && cpaData.tcpa <= 600) {
+                            let currentCpaScore = 1; 
+                            if (cpaData.cpa < 0.3) currentCpaScore = 3; 
+                            else if (cpaData.cpa < 0.7) currentCpaScore = 2;
+                            
+                            let currentTcpaScore = 1; 
+                            if (cpaData.tcpa < 180) currentTcpaScore = 3; 
+                            else if (cpaData.tcpa < 420) currentTcpaScore = 2; 
+                            
+                            let targetRisk = currentCpaScore > 1 ? currentCpaScore + currentTcpaScore : 2;
+                            
+                            if (targetRisk > maxTargetRisk) { 
+                                maxTargetRisk = targetRisk; 
+                                cpaRisk = currentCpaScore; 
+                                tcpaRisk = currentTcpaScore; 
+                            }
+                        }
+                    }
+                    
+                    let xtdScore = 1; 
+                    if (s.xtd >= 1.0) xtdScore = 3; 
+                    else if (s.xtd >= 0.5) xtdScore = 2; 
+                    
+                    s.cpaRisk = cpaRisk; 
+                    s.tcpaRisk = tcpaRisk; 
+                    s.xtdRisk = xtdScore;
+                    
+                    let totalScore = maxTargetRisk + xtdScore; 
+                    if (totalScore >= 7) s.riskLevel = 2; 
+                    else if (totalScore >= 5) s.riskLevel = 1; 
+                    else s.riskLevel = 0; 
+                }
+            });
+        } // 💡 물리 제어 블록 끝
         
+        // 💡 렌더링 및 UI 업데이트는 일시정지와 무관하게 계속 동작
         if (currentMode !== 'SURVEILLANCE') {
             massViews.forEach((v, idx) => {
                 const mass = v.massEntity; 
@@ -2713,7 +2762,8 @@
                 const dt3d = (now - last3DRenderTime) / 1000; 
                 last3DRenderTime = now;
                 
-                if (seaMesh && seaMesh.material.normalMap) { 
+                // 일시정지 중이 아닐 때만 파도 치게 함
+                if (!isPaused && seaMesh && seaMesh.material.normalMap) { 
                     const speedFact = Math.max(0.005, mass.spd * 0.001); 
                     seaMesh.material.normalMap.offset.y += speedFact * dt3d; 
                 }
