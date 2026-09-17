@@ -226,7 +226,7 @@
             z-index: 20; overflow-y: auto; overflow-x: hidden; flex-shrink: 0; 
         }
         .panel-title { 
-            font-size: 24px; font-weight: 800; color: var(--accent-cyan); 
+            font-size: 24px; font-weight: 800; color: #ffffff; 
             border-bottom: 1px solid var(--border-color); padding-bottom: 10px; 
             margin-bottom: 15px; letter-spacing: 1px; flex-shrink: 0; text-align: center;
         }
@@ -275,8 +275,8 @@
         #btn-end-intervention:hover:not(:disabled) { background: #ef4444; color: #fff; box-shadow: 0 0 25px rgba(239,68,68,0.5); transform: translateY(-2px); }
         #btn-end-intervention:disabled { background: #1e293b; border-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
 
-        #btn-general-monitoring { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: rgba(234, 179, 8, 0.14); border: 1px solid var(--accent-yellow); color: #fde047; transition: 0.2s; flex-shrink: 0; margin-bottom: 15px; }
-        #btn-general-monitoring:hover { background: var(--accent-yellow); color: #000; box-shadow: 0 0 20px rgba(234,179,8,0.35); transform: translateY(-2px); }
+        #btn-general-monitoring { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: rgba(6, 182, 212, 0.14); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); transition: 0.2s; flex-shrink: 0; margin-bottom: 15px; }
+        #btn-general-monitoring:hover { background: var(--accent-cyan); color: #000; box-shadow: 0 0 20px rgba(6,182,212,0.35); transform: translateY(-2px); }
 
         .steer-btn-sidebar { flex: 1; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; padding: 15px; font-size: 20px; font-family: 'Rajdhani', sans-serif; font-weight: bold; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.1s; user-select: none; box-shadow: 0 0 10px rgba(0,255,170,0.1); touch-action: none; }
         .steer-btn-sidebar:active { background: rgba(0, 255, 170, 0.5); transform: scale(0.95); box-shadow: 0 0 20px rgba(0,255,170,0.4); }
@@ -343,7 +343,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_59" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_60" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -452,7 +452,7 @@
 
             <div id="panel-macro" style="display: none; flex-direction: column; height: 100%; min-height: 0;">
                 <div class="panel-title">GENERAL MONITORING</div>
-                <button class="btn-return" onclick="enterSurveillanceMode()">SURVEILLANCE MONITORING (RETURN)</button>
+                <button class="btn-return" onclick="enterSurveillanceMode()">SURVEILLANCE MONITORING</button>
                 
                 <div class="info-box" style="border-left-color: var(--accent-green);">
                     <div class="info-header" style="color: var(--accent-green);">OWN SHIP (OS) INFO</div>
@@ -1702,7 +1702,7 @@
             let isActive = survMassStates.some(item => !item.closing && item.id === String(s.id));
             
             container.innerHTML += `
-            <div class="info-box clickable surv-fleet-btn" style="border-left-color: ${riskColor}; ${isActive ? `border-width: 2px; border-color: ${riskColor};` : ''}" onclick="toggleSurvPanel('${s.id}')">
+            <div class="info-box clickable surv-fleet-btn" style="border-left-color: ${riskColor}; ${isActive ? `border-width: 2px; border-color: #ffffff;` : ''}" onclick="toggleSurvPanel('${s.id}')">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span class="info-header" style="color: ${riskColor}; font-size:16px; margin:0; font-family:'Rajdhani', sans-serif;">${s.name}</span>
                     <span style="font-size:11px; font-weight:bold; color:${riskColor}; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px;">${riskText}</span>
