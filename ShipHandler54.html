@@ -352,31 +352,69 @@
         const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
         const LOG_INTERVAL = 1.0; 
 
+        // 네트워크 혼잡 대응: 요청이 몰릴 때 짧게 반복 호출하지 않고 점진적으로 대기
+        const NETWORK_RETRY_DELAYS = [3000, 5000, 8000, 10000, 15000];
+        const NETWORK_TIMEOUT_MS = 45000;
+        const MODEL_LOAD_CONCURRENCY = 2;
+
+        function waitMs(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function getRetryDelay(attempt) {
+            return NETWORK_RETRY_DELAYS[Math.min(Math.max(attempt - 1, 0), NETWORK_RETRY_DELAYS.length - 1)];
+        }
+
+        async function fetchJsonWithTimeout(url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { ...options, signal: controller.signal });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data && data.error) throw new Error(data.error);
+                return data;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
         // 시나리오 목록 불러오기 및 필터링
         async function fetchScenarioList() {
             const select = document.getElementById('scenario-select');
-            try {
-                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=list`);
-                const files = await res.json();
-                if (files.error) throw new Error(files.error);
+            let attempt = 0;
 
-                select.innerHTML = '';
-                // 'Scenario' 단어가 포함된 파일만 필터링
-                const filteredFiles = files.filter(f => f.name.includes('Scenario'));
+            while (true) {
+                try {
+                    if (attempt > 0) {
+                        select.innerHTML = `<option value="">시나리오 목록 재연결 중... (${attempt + 1}회)</option>`;
+                    }
 
-                if(filteredFiles.length === 0) {
-                    select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
-                } else {
-                    filteredFiles.forEach(file => {
-                        const opt = document.createElement('option');
-                        opt.value = file.id;
-                        opt.textContent = file.name.replace('.json', '');
-                        select.appendChild(opt);
-                    });
+                    const files = await fetchJsonWithTimeout(`${SCENARIO_SCRIPT_URL}?action=list`, { cache: 'no-store' });
+                    if (!Array.isArray(files)) throw new Error('시나리오 목록 형식이 올바르지 않습니다.');
+
+                    select.innerHTML = '';
+                    // 'Scenario' 단어가 포함된 파일만 필터링
+                    const filteredFiles = files.filter(f => f.name.includes('Scenario'));
+
+                    if(filteredFiles.length === 0) {
+                        select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
+                    } else {
+                        filteredFiles.forEach(file => {
+                            const opt = document.createElement('option');
+                            opt.value = file.id;
+                            opt.textContent = file.name.replace('.json', '');
+                            select.appendChild(opt);
+                        });
+                    }
+                    return;
+                } catch (err) {
+                    attempt++;
+                    const delay = getRetryDelay(attempt);
+                    console.warn(`시나리오 목록 로드 실패 - ${Math.round(delay / 1000)}초 후 재시도`, err);
+                    select.innerHTML = `<option value="">연결 지연... ${Math.round(delay / 1000)}초 후 자동 재시도</option>`;
+                    await waitMs(delay);
                 }
-            } catch (err) {
-                console.error(err);
-                select.innerHTML = '<option value="">목록을 불러오지 못했습니다.</option>';
             }
         }
         
@@ -736,7 +774,9 @@
                 
                 simpleWater.material.color.setHex(currentDaySeaColorLow);
                 
-                const elevation = 15; const azimuth = 47;
+                // 시작 시 현재 선수/카메라 정면 쪽 해면에 햇빛 반사가 보이도록 태양 방위를 맞춤
+                const elevation = 15;
+                const azimuth = (shipPhysics.heading - (camAngleY / DEG2RAD) + 360) % 360;
                 const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
                 sun.x = Math.cos(elRad) * Math.sin(azRad); 
                 sun.y = Math.sin(elRad); 
@@ -1430,15 +1470,21 @@
             if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; }
 
             progressEl.innerText = "시나리오 데이터 다운로드 중... (2/4)";
-            try { 
-                // 구글 드라이브에서 시나리오 파일 직접 로드
-                const scnRes = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${selectedScenarioId}`); 
-                if(scnRes.ok) {
-                    const parsed = await scnRes.json();
-                    if(parsed.error) throw new Error(parsed.error);
-                    loadedScenarioConfig = parsed;
+            let scenarioLoadAttempt = 0;
+            while (true) {
+                try {
+                    // 구글 드라이브에서 시나리오 파일 직접 로드 - 성공할 때까지 자동 재시도
+                    loadedScenarioConfig = await fetchJsonWithTimeout(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${selectedScenarioId}`, { cache: 'no-store' });
+                    break;
+                } catch(e) {
+                    scenarioLoadAttempt++;
+                    const delay = getRetryDelay(scenarioLoadAttempt);
+                    console.warn(`시나리오 로드 실패 - ${Math.round(delay / 1000)}초 후 재시도`, e);
+                    progressEl.innerText = `시나리오 연결 지연... ${Math.round(delay / 1000)}초 후 자동 재시도 (${scenarioLoadAttempt}회)`;
+                    await waitMs(delay);
+                    progressEl.innerText = "시나리오 데이터 다운로드 중... (2/4)";
                 }
-            } catch(e) { console.warn("시나리오 로드 실패:", e); }
+            }
 
             progressEl.innerText = "캘리브레이션 세팅 적용 중... (3/4)";
             try { 
@@ -1450,14 +1496,22 @@
                 } 
             } catch(e) { console.warn(e); }
 
-            // =============== 병렬 로딩 적용 구간 ===============
+            // =============== 네트워크 혼잡 완화 로딩 구간 ===============
             const gltfLoader = new THREE.GLTFLoader();
             let loadedModelsCount = 0;
+            let nextModelIndex = 0;
             progressEl.innerText = `3D 선박 모델 다운로드 중... (0/${modelFiles.length})`;
 
-            const modelLoadPromises = modelFiles.map(filePath => {
-                return new Promise((resolve) => {
-                    gltfLoader.load(GITHUB_BASE_URL + filePath, (gltf) => {
+            async function loadModelWithRetry(filePath) {
+                let attempt = 0;
+                const maxAttempts = 5;
+
+                while (attempt < maxAttempts) {
+                    try {
+                        const gltf = await new Promise((resolve, reject) => {
+                            gltfLoader.load(GITHUB_BASE_URL + filePath, resolve, undefined, reject);
+                        });
+
                         const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
                         const box = new THREE.Box3().setFromObject(rawModel); 
                         const size = new THREE.Vector3(); box.getSize(size); 
@@ -1475,20 +1529,39 @@
                         
                         const fileName = filePath.split('/').pop(); 
                         parsedModels[fileName] = { group: wrapper, height: size.y * scale };
-                        
-                        loadedModelsCount++;
-                        progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length})`;
-                        resolve();
-                    }, undefined, () => { 
-                        loadedModelsCount++;
-                        progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length}) [오류]`;
-                        resolve(); 
-                    });
-                });
-            });
+                        return true;
+                    } catch (err) {
+                        attempt++;
+                        if (attempt >= maxAttempts) {
+                            console.warn(`3D 모델 로드 최종 실패: ${filePath}`, err);
+                            return false;
+                        }
+                        const delay = getRetryDelay(attempt);
+                        progressEl.innerText = `3D 모델 연결 지연... 자동 재시도 (${attempt}/${maxAttempts - 1})`;
+                        await waitMs(delay);
+                    }
+                }
+                return false;
+            }
 
-            await Promise.all(modelLoadPromises);
-            // ===================================================
+            async function modelLoadWorker() {
+                while (true) {
+                    const currentIndex = nextModelIndex++;
+                    if (currentIndex >= modelFiles.length) return;
+
+                    const filePath = modelFiles[currentIndex];
+                    const loaded = await loadModelWithRetry(filePath);
+                    loadedModelsCount++;
+                    progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length})${loaded ? '' : ' [일부 오류]'}`;
+                }
+            }
+
+            const workers = Array.from(
+                { length: Math.min(MODEL_LOAD_CONCURRENCY, modelFiles.length) },
+                () => modelLoadWorker()
+            );
+            await Promise.all(workers);
+            // =========================================================
 
             document.getElementById('loading-screen').style.display = 'none';
             startSimulation(); 
@@ -1596,6 +1669,9 @@
                 if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
             }
 
+            // 시나리오의 실제 시작 Heading이 확정된 뒤 태양/해면 반사 방향을 한 번 더 맞춤
+            setTimeOfDay(isNight);
+
             let tStr = "0.0"; 
             logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
             targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
@@ -1606,6 +1682,104 @@
             btnPause.classList.remove('active');
             gameState = 'PLAYING';
         }
+
+        const PENDING_RESULT_KEY = 'HTMS_PENDING_RESULT_QUEUE_V1';
+        let resultUploadWorkerRunning = false;
+        let activeFinishUploadId = null;
+
+        function readPendingResultQueue() {
+            try {
+                const raw = localStorage.getItem(PENDING_RESULT_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                console.warn('임시 저장 데이터 읽기 실패:', e);
+                return [];
+            }
+        }
+
+        function writePendingResultQueue(queue) {
+            localStorage.setItem(PENDING_RESULT_KEY, JSON.stringify(queue));
+        }
+
+        async function postResultPayload(payload) {
+            return await fetchJsonWithTimeout(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            }, 60000);
+        }
+
+        async function processPendingResultQueue() {
+            if (resultUploadWorkerRunning) return;
+            resultUploadWorkerRunning = true;
+
+            try {
+                while (true) {
+                    const queue = readPendingResultQueue();
+                    if (queue.length === 0) break;
+
+                    const item = queue[0];
+                    let attempt = 0;
+
+                    while (true) {
+                        const showFinishUi = (item.id === activeFinishUploadId);
+                        try {
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = attempt === 0 ? "데이터 전송 중..." : "데이터 재전송 중...";
+                                title.style.color = "#00ffaa";
+                                document.getElementById('finish-desc').innerText = attempt === 0
+                                    ? "시뮬레이션 결과를 서버로 전송하고 있습니다."
+                                    : `네트워크 연결을 복구했습니다. 자동 재전송 중입니다. (${attempt + 1}회)`;
+                            }
+
+                            await postResultPayload(item.payload);
+
+                            const latestQueue = readPendingResultQueue();
+                            const nextQueue = latestQueue.filter(q => q.id !== item.id);
+                            writePendingResultQueue(nextQueue);
+
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = "데이터 전송 성공!";
+                                title.style.color = "#00ffaa";
+                                document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다.";
+                                activeFinishUploadId = null;
+                            }
+                            break;
+                        } catch (err) {
+                            attempt++;
+                            const delay = getRetryDelay(attempt);
+                            console.warn(`결과 전송 실패 - ${Math.round(delay / 1000)}초 후 재시도`, err);
+
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = "네트워크 연결 대기 중";
+                                title.style.color = "#ffcc00";
+                                document.getElementById('finish-desc').innerText = `데이터는 임시 보관되었습니다. ${Math.round(delay / 1000)}초 후 자동 재전송합니다. (${attempt}회)`;
+                            }
+
+                            await waitMs(delay);
+                        }
+                    }
+                }
+            } finally {
+                resultUploadWorkerRunning = false;
+                // 작업 중 새 항목이 추가된 경우 즉시 이어서 처리
+                if (readPendingResultQueue().length > 0) processPendingResultQueue();
+            }
+        }
+
+        // 이전 실행에서 네트워크 문제로 남은 결과가 있으면 페이지가 안정된 뒤 자동 복구 전송
+        setTimeout(() => {
+            if (readPendingResultQueue().length > 0) processPendingResultQueue();
+        }, 15000);
+
+        window.addEventListener('online', () => {
+            if (readPendingResultQueue().length > 0) processPendingResultQueue();
+        });
 
         function finishSimulationAndSendData() {
             if (gameState !== 'PLAYING') return;
@@ -1637,17 +1811,43 @@
                 logData: logData 
             };
 
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
-            .then(res => res.json()).then(res => { 
-                document.getElementById('finish-title').innerText = "데이터 전송 성공!"; 
-                document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다."; 
-            })
-            .catch(err => { 
-                document.getElementById('finish-title').innerText = "전송 실패"; 
-                document.getElementById('finish-title').style.color = "#ff3333"; 
-                document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다."; 
-                console.error(err); 
-            });
+            const uploadItem = {
+                id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                payload: payload
+            };
+            activeFinishUploadId = uploadItem.id;
+
+            try {
+                const queue = readPendingResultQueue();
+                queue.push(uploadItem);
+                writePendingResultQueue(queue);
+                processPendingResultQueue();
+            } catch (storageErr) {
+                // 브라우저 임시저장 용량이 부족한 경우에도 현재 화면에서는 성공할 때까지 재전송
+                console.warn('결과 임시 보관 실패 - 메모리에서 직접 재전송합니다.', storageErr);
+                (async () => {
+                    let attempt = 0;
+                    while (true) {
+                        try {
+                            await postResultPayload(payload);
+                            const title = document.getElementById('finish-title');
+                            title.innerText = "데이터 전송 성공!";
+                            title.style.color = "#00ffaa";
+                            document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다.";
+                            activeFinishUploadId = null;
+                            break;
+                        } catch (err) {
+                            attempt++;
+                            const delay = getRetryDelay(attempt);
+                            const title = document.getElementById('finish-title');
+                            title.innerText = "네트워크 연결 대기 중";
+                            title.style.color = "#ffcc00";
+                            document.getElementById('finish-desc').innerText = `${Math.round(delay / 1000)}초 후 자동 재전송합니다. (${attempt}회)`;
+                            await waitMs(delay);
+                        }
+                    }
+                })();
+            }
         }
 
 
