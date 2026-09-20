@@ -999,17 +999,55 @@
             logData: logData 
         };
         
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
-        .then(res => res.json()).then(res => {
-            document.getElementById('finish-title').innerText = "데이터 전송 성공!";
-            document.getElementById('finish-desc').innerText = "레이더 시뮬레이션 결과가 안전하게 저장되었습니다.";
-        })
-        .catch(err => {
-            document.getElementById('finish-title').innerText = "전송 실패";
-            document.getElementById('finish-title').style.color = "#ff3333";
-            document.getElementById('finish-desc').innerText = "네트워크 문제로 서버에 전송하지 못했습니다.";
-            console.error(err);
-        });
+        let sendAttempt = 0;
+
+        async function sendDataUntilSuccess() {
+            sendAttempt++;
+
+            const finishTitle = document.getElementById('finish-title');
+            const finishDesc = document.getElementById('finish-desc');
+
+            if (sendAttempt === 1) {
+                finishTitle.innerText = "데이터 전송 중...";
+                finishTitle.style.color = "var(--text-highlight)";
+                finishDesc.innerText = "레이더 시뮬레이션 결과를 서버에 저장하고 있습니다.";
+            } else {
+                finishTitle.innerText = "데이터 재전송 중...";
+                finishTitle.style.color = "#ffff55";
+                finishDesc.innerText = `네트워크 연결을 확인하며 자동 재전송 중입니다. (${sendAttempt}회째)`;
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+            try {
+                const res = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                await res.json();
+
+                clearTimeout(timeoutId);
+                finishTitle.innerText = "데이터 전송 성공!";
+                finishTitle.style.color = "var(--text-highlight)";
+                finishDesc.innerText = "레이더 시뮬레이션 결과가 안전하게 저장되었습니다.";
+            } catch (err) {
+                clearTimeout(timeoutId);
+                console.error(`데이터 전송 실패 (${sendAttempt}회째):`, err);
+
+                finishTitle.innerText = "전송 대기 중...";
+                finishTitle.style.color = "#ff3333";
+                finishDesc.innerText = `전송에 실패했습니다. 3초 후 자동으로 다시 시도합니다. (${sendAttempt}회 시도)`;
+
+                setTimeout(sendDataUntilSuccess, 3000);
+            }
+        }
+
+        sendDataUntilSuccess();
     }
 
     function parseScenarioData(data) {
