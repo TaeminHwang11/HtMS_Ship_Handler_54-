@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- 모바일 전체화면 및 앱 설치용 매니페스트 태그 추가 -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22ShipHandler%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22landscape%22%2C%22start_url%22%3A%22.%22%7D'>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="display" content="standalone">
+    
+    <title>[HTMS] Ship Handler</title>
+    <!-- Three.js 코어 및 로더 -->
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/objects/Water.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Rajdhani', sans-serif; user-select: none; background: #000; color: #fff;}
+        
+        /* AI Theme */
+        body.ai-active .hud-panel { background: rgba(4, 12, 20, 0.55); backdrop-filter: blur(8px); border: 1px solid rgba(0, 255, 255, 0.5); box-shadow: 0 0 30px rgba(0, 255, 255, 0.15), inset 0 0 15px rgba(0, 255, 255, 0.1); }
+        body.ai-active #scanline { display: block; }
+        #scanline { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,255,255,0.05) 50%, rgba(0,255,255,0.05)); background-size: 100% 4px; display: none; }
+
+        /* HUD Panels */
+        .hud-panel { position: absolute; background: rgba(5, 10, 15, 0.45); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 20px; z-index: 10; transition: background 0.5s, border 0.5s; cursor: grab;}
+        .hud-panel:active { cursor: grabbing; }
+        
+        /* 💡 메인 디지털 HUD (버튼 포함) */
+        #digital-hud-container { top: 0; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px 20px; background: rgba(5, 8, 12, 0.75); border: 2px solid rgba(0,255,255,0.3); border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 9999; position: absolute; cursor: grab; white-space: nowrap;}
+        #digital-hud-container:active { cursor: grabbing; }
+        body.ai-active #digital-hud-container { border-bottom: 2px solid #00ffff; box-shadow: 0 8px 25px rgba(0,255,255,0.15); }
+        .digital-item { display: flex; flex-direction: column; align-items: center; min-width: 55px;}
+        .digital-label { font-size: 13px; color: #88c0d0; font-weight: 700; margin-bottom: 0px;}
+        .digital-val { font-size: 24px; font-weight: 700; color: #fff; font-family: monospace;}
+        
+        body.ai-active #val-hdg, body.ai-active #val-crs, body.ai-active #val-sog, body.ai-active #val-lat, body.ai-active #val-wind, body.ai-active #val-current { 
+            color: #00bfff !important; text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); 
+        }
+
+        /* 💡 양옆에 붙는 얇은 버튼 스타일 */
+        .hud-side-controls { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+        .btn-group-small { display: flex; gap: 5px; justify-content: center;}
+        .btn-ctrl-small { background: rgba(0, 100, 200, 0.2); border: 1px solid rgba(0,255,255,0.3); color: #ccc; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; padding: 4px 8px; transition: 0.2s; height: 24px; display: flex; align-items: center; justify-content: center;}
+        .btn-ctrl-small:hover { background: rgba(0, 255, 255, 0.1); }
+        .btn-ctrl-small.active { background: rgba(0, 255, 255, 0.25); border-color: #00ffff; color: #00ffff;}
+        .btn-exit { background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc; }
+        .btn-night { border-color: #bb86fc; color: #bb86fc;}
+
+        /* Collision Indicator Animation */
+        @keyframes blink-collision {
+            0% { background: rgba(255, 51, 51, 0.8); border-color: #ff3333; color: #fff; }
+            50% { background: rgba(255, 51, 51, 0.2); border-color: #ff3333; color: #ffcccc; }
+            100% { background: rgba(255, 51, 51, 0.8); border-color: #ff3333; color: #fff; }
+        }
+        .collision-alert { animation: blink-collision 0.6s infinite !important; pointer-events: none; }
+        #btn-collision { padding: 0 10px; font-size: 11px; font-weight: bold; border-radius: 4px; border: 1px solid #00ffaa; background: rgba(0,255,170,0.1); color: #00ffaa; display: flex; align-items: center; justify-content: center; height: 24px; }
+
+
+        #camera-hint { position: absolute; top: 85px; left: 50%; transform: translateX(-50%); font-size: 15px; color: #00ffaa; pointer-events: none; z-index: 20; text-shadow: 0 2px 5px #000; font-weight: bold; text-align: center; display: none;}
+        .cam-controls { font-size: 12px; color: #ffcc00; margin-top: 5px; }
+        #save-toast { display: none; margin-top: 5px; color: #fff; background: rgba(0,255,170,0.4); padding: 2px 10px; border-radius: 4px; font-size: 12px;}
+
+        #ecdis-container { bottom: 20px; left: 50%; transform: translateX(-50%); width: 360px; height: 360px; border-radius: 50%; padding: 0; border: 2px solid rgba(0, 255, 255, 0.4); overflow: hidden; background: rgba(1, 15, 25, 0.7); display: none; z-index: 100;}
+        #ecdis-canvas { width: 100%; height: 100%; display: block; border-radius: 50%; cursor: crosshair; }
+        #radar-sweep { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(from 0deg, transparent 60%, rgba(0, 255, 255, 0.25) 100%); animation: sweep 2.5s infinite linear; pointer-events: none; }
+        @keyframes sweep { 100% { transform: rotate(360deg); } }
+
+        #right-center-cas-panel, #bottom-left-panel { display: none; z-index: 100; position: absolute; }
+        #right-center-cas-panel { right: 20px; bottom: 20px; width: 380px; }
+        #bottom-left-panel { bottom: 20px; left: 20px; width: 570px; }
+        
+        .panel-header { font-size: 18px; color: #0ff; font-weight: bold; border-bottom: 1px solid rgba(0,255,255,0.4); padding-bottom: 8px; margin-bottom: 15px;}
+        .danger-data-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; color: #b3e5fc; align-items: center;}
+        .danger-data-row b { font-size: 16px; font-family: monospace; color: #fff;}
+        .ai-insight-box { margin-top: 15px; padding: 15px; background: rgba(0,255,255,0.05); border-left: 4px solid #0ff; }
+        .ai-insight-title { font-size: 15px; font-weight: bold; color: #fff; margin-bottom: 8px;}
+        .ai-list { margin: 0; padding-left: 20px; color: #eceff1; font-size: 14px; line-height: 1.6; }
+
+        /* AR Container Fix */
+        #ar-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; overflow: hidden; z-index: 50; }
+        .ar-label { position: absolute; pointer-events: none; display: none; border: 1px solid rgba(0, 255, 255, 0.4); background: rgba(4, 16, 26, 0.85); min-width: 150px; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .ar-header { background: rgba(0, 255, 255, 0.3); color: #fff; padding: 6px 10px; font-size: 14px; font-weight: bold; border-bottom: 1px solid #0ff; text-align: center; }
+        .ar-body { padding: 8px 10px; font-size: 13px; color: #b3e5fc; line-height: 1.5; font-family: monospace;}
+
+        /* Auto Login & Loading Screen */
+        #login-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow-y: auto;}
+        .menu-box { background: rgba(0,0,0,0.6); border: 1px solid #00ffaa; border-radius: 12px; padding: 40px; width: 400px; box-shadow: 0 10px 40px rgba(0,255,170,0.1); margin: 20px 0;}
+        .form-row { margin-bottom: 20px; text-align: left;}
+        .form-row label { display: block; font-size: 14px; color: #88c0d0; margin-bottom: 8px; font-weight: bold;}
+        .form-row input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
+        
+        /* 커스텀 드롭다운 UI */
+        .custom-select-wrapper { position: relative; width: 100%; user-select: none; }
+        .custom-select-box { width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 18px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .custom-select-list { position: absolute; top: 100%; left: 0; width: 100%; max-height: 220px; overflow-y: auto; background: #111; border: 1px solid #555; border-radius: 0 0 4px 4px; z-index: 1001; display: none; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        .custom-select-item { padding: 12px; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; cursor: pointer; border-bottom: 1px solid #333; transition: background 0.1s;}
+        .custom-select-item:hover { background: rgba(0,255,170,0.2); color: #00ffaa; }
+        .custom-select-item:last-child { border-bottom: none; }
+
+        .btn-main { width: 100%; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; background: #00ffaa; color: #000; transition: 0.2s; margin-top: 10px;}
+        .btn-main:hover { background: #00cc88; transform: translateY(-2px);}
+        
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,5,15,0.95); z-index: 1000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
+        .spinner { border: 6px solid rgba(0, 255, 170, 0.2); border-top: 6px solid #00ffaa; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 24px; color: #00ffaa; letter-spacing: 2px; font-weight: bold; }
+        .loading-subtext { font-size: 16px; color: #88c0d0; margin-top: 10px; }
+
+        #finish-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
+        .finish-title { font-size: 32px; font-weight: bold; color: #00ffaa; margin-bottom: 15px; }
+        .finish-desc { font-size: 18px; color: #fff; }
+
+        /* 터치 조타 버튼 UI */
+        .steer-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; border-radius: 50%; background: rgba(0, 255, 170, 0.15); border: 2px solid #00ffaa; color: #00ffaa; font-size: 36px; font-weight: bold; font-family: 'Rajdhani', sans-serif; display: none; align-items: center; justify-content: center; z-index: 9999; cursor: pointer; user-select: none; backdrop-filter: blur(4px); transition: 0.1s;}
+        .steer-btn:active { background: rgba(0, 255, 170, 0.5); transform: translateY(-50%) scale(0.95); }
+        #btn-steer-port { left: 30px; }
+        #btn-steer-stbd { right: 30px; }
+
+        /* 중앙 카메라 조작 패드 UI */
+        #cam-control-pad { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: rgba(5,10,15,0.85); padding: 20px; border: 2px solid #00ffaa; border-radius: 12px; text-align: center; backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .cam-pad-btn { width: 60px; height: 60px; background: rgba(0, 255, 170, 0.15); border: 1px solid #00ffaa; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; user-select: none; transition: 0.1s;}
+        .cam-pad-btn:active { background: #00ffaa; color: #000; transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <!-- 자바스크립트 전체화면 강제 실행 함수 추가 -->
+    <script>
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            try {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen().catch(() => {});
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {
+                console.log("전체화면 에러:", err);
+            }
+        }
+    </script>
+
+    <div id="scanline"></div>
+    <canvas id="hud-lines" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.5s;"></canvas>
+
+    <!-- 터치 조타 버튼 (최상단) -->
+    <div id="btn-steer-port" class="steer-btn">P</div>
+    <div id="btn-steer-stbd" class="steer-btn">S</div>
+
+    <!-- 중앙 카메라 조작 패드 -->
+    <div id="cam-control-pad">
+        <div style="color: #00ffaa; font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid rgba(0,255,170,0.3); padding-bottom: 5px;">CAMERA CONTROL</div>
+        <table style="margin: 0 auto; border-spacing: 8px;">
+            <tr>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('q')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('q'); event.preventDefault();" ontouchend="stopCamMove()">Q<br>UP</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('w')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('w'); event.preventDefault();" ontouchend="stopCamMove()">W<br>FWD</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('e')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('e'); event.preventDefault();" ontouchend="stopCamMove()">E<br>DWN</button></td>
+            </tr>
+            <tr>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('a')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('a'); event.preventDefault();" ontouchend="stopCamMove()">A<br>LFT</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('s')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('s'); event.preventDefault();" ontouchend="stopCamMove()">S<br>BWD</button></td>
+                <td><button class="cam-pad-btn" onmousedown="setCamMove('d')" onmouseup="stopCamMove()" onmouseleave="stopCamMove()" ontouchstart="setCamMove('d'); event.preventDefault();" ontouchend="stopCamMove()">D<br>RGT</button></td>
+            </tr>
+        </table>
+        <button onclick="toggleCamControls()" style="margin-top: 10px; width: 100%; padding: 8px; background: rgba(255,51,51,0.2); border: 1px solid #ff3333; color: #ffcccc; cursor: pointer; border-radius: 4px; font-weight: bold;">CLOSE</button>
+    </div>
+
+    <!-- 자동 로그인 화면 -->
+    <div id="login-overlay">
+        <h1 style="font-size: 48px; letter-spacing: 2px; margin-bottom: 10px;">[HTMS] Ship Handler</h1>
+        <h2 style="color: #00ffaa; letter-spacing: 5px; font-size: 18px; font-weight: normal; margin-bottom: 40px;">SIMULATION LOGIN</h2>
+        
+        <div class="menu-box">
+            <div class="form-row">
+                <label>학번 (Student ID)</label>
+                <input type="text" id="student-id" placeholder="예: 20261234" autocomplete="off" />
+            </div>
+            <div class="form-row">
+                <label>이름 (Name)</label>
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" />
+            </div>
+
+            <!-- 시나리오 선택 추가 -->
+            <div class="form-row">
+                <label>시나리오 (Scenario) 선택</label>
+                <select id="scenario-select" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #00ffaa; font-family: 'Rajdhani', sans-serif; font-size: 16px; border-radius: 4px; outline: none; box-sizing: border-box; cursor: pointer; appearance: auto;">
+                    <option value="">목록 로딩 중...</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <label>본선 (Own Ship) 선택</label>
+                <div class="custom-select-wrapper">
+                    <div class="custom-select-box" onclick="toggleOsDropdown(event)">
+                        <span id="selected-os-text">Cargo Ship 1 (화물선 1)</span>
+                        <span style="font-size: 14px;">▼</span>
+                    </div>
+                    <div class="custom-select-list" id="os-dropdown-list">
+                        <div class="custom-select-item" onclick="selectOs('CargoShip1.glb', 'Cargo Ship 1 (화물선 1)', event)">Cargo Ship 1 (화물선 1)</div>
+                        <div class="custom-select-item" onclick="selectOs('CargoShip2.glb', 'Cargo Ship 2 (화물선 2)', event)">Cargo Ship 2 (화물선 2)</div>
+                        <div class="custom-select-item" onclick="selectOs('ContainerShip1.glb', 'Container Ship 1 (컨테이너선 1)', event)">Container Ship 1 (컨테이너선 1)</div>
+                        <div class="custom-select-item" onclick="selectOs('ContainerShip2.glb', 'Container Ship 2 (컨테이너선 2)', event)">Container Ship 2 (컨테이너선 2)</div>
+                        <div class="custom-select-item" onclick="selectOs('BulkCarrier.glb', 'Bulk Carrier (벌크선)', event)">Bulk Carrier (벌크선)</div>
+                        <div class="custom-select-item" onclick="selectOs('GasCarrier1.glb', 'Gas Carrier (가스운반선)', event)">Gas Carrier (가스운반선)</div>
+                        <div class="custom-select-item" onclick="selectOs('PassengerShip1.glb', 'Passenger Ship (여객선)', event)">Passenger Ship (여객선)</div>
+                        <div class="custom-select-item" onclick="selectOs('AircraftCarrier1.glb', 'Aircraft Carrier (항공모함)', event)">Aircraft Carrier (항공모함)</div>
+                        <div class="custom-select-item" onclick="selectOs('SteamShip.glb', 'Steam Ship (증기선)', event)">Steam Ship (증기선)</div>
+                        <div class="custom-select-item" onclick="selectOs('FishingBoat1.glb', 'Fishing Boat (어선)', event)">Fishing Boat (어선)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 💡 전체화면 함수 추가 매핑 -->
+            <button class="btn-main" onclick="enterFullscreen(); startLoadingAssets();">시작하기</button>
+        </div>
+    </div>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-text">DOWNLOADING ASSETS...</div>
+        <div id="loading-progress" class="loading-subtext">서버에 연결 중입니다...</div>
+    </div>
+    <div id="finish-overlay">
+        <div id="finish-title" class="finish-title">시뮬레이션 완료!</div>
+        <div id="finish-desc" class="finish-desc">결과 데이터를 서버로 전송하고 있습니다...</div>
+    </div>
+
+    <!-- 3. 메인 시뮬레이터 UI (HUD 및 날개 버튼 통합) -->
+    <div id="camera-hint">
+        <div class="cam-controls"></div>
+        <div id="save-toast"></div>
+    </div>
+    
+    <div id="digital-hud-container" class="draggable-panel" style="display:none;">
+        
+        <!-- 💡 왼쪽 컨트롤 패널 (HUD 통합) -->
+        <div class="hud-side-controls" style="border-right: 1px solid rgba(0,255,255,0.3); padding-right: 15px;">
+            <div class="btn-group-small">
+                <button id="btn-mode-cas" class="btn-ctrl-small" onclick="setMode('CAS')">CAS AI</button>
+                <button id="btn-radar" class="btn-ctrl-small" onclick="toggleRadar()">RADAR</button>
+                <div id="btn-collision">COLLISION CLEAR</div>
+            </div>
+            <div class="btn-group-small">
+                <button id="btn-pause" class="btn-ctrl-small" onclick="togglePause()">PAUSE</button>
+                <button id="btn-cam-control" class="btn-ctrl-small" onclick="toggleCamControls()">CAM</button>
+                <button id="btn-touch-steer" class="btn-ctrl-small" onclick="toggleTouchSteering()">TOUCH STR</button>
+            </div>
+        </div>
+
+        <!-- 원래 HUD 값들 -->
+        <div class="digital-item"><div class="digital-label">HDG</div><div id="val-hdg" class="digital-val">000.0°</div></div>
+        <div class="digital-item"><div class="digital-label">CRS</div><div id="val-crs" class="digital-val">000.0°</div></div>
+        <div class="digital-item"><div class="digital-label">SOG</div><div id="val-sog" class="digital-val">00.0</div></div>
+        <div class="digital-item"><div class="digital-label">DRIFT</div><div id="val-lat" class="digital-val">0.0</div></div>
+        <div class="digital-item"><div class="digital-label">ROT</div><div id="val-rot" class="digital-val">00.0</div></div>
+        <div class="digital-item"><div class="digital-label">RUD CMD</div><div id="val-rud-cmd" class="digital-val">00.0°</div></div>
+        <div class="digital-item"><div class="digital-label">RUD ACT</div><div id="val-rud-act" class="digital-val">00.0°</div></div>
+        <div class="digital-item"><div class="digital-label">WIND</div><div id="val-wind" class="digital-val">045° / 12.5</div></div>
+        <div class="digital-item"><div class="digital-label">CURRENT</div><div id="val-current" class="digital-val">000° / 0.0</div></div>
+
+        <!-- 💡 오른쪽 컨트롤 패널 (HUD 통합) -->
+        <div class="hud-side-controls" style="border-left: 1px solid rgba(0,255,255,0.3); padding-left: 15px;">
+            <div class="btn-group-small">
+                <button id="btn-env-calm" class="btn-ctrl-small active" onclick="setEnv('calm')">CALM</button>
+                <button id="btn-env-mod" class="btn-ctrl-small" onclick="setEnv('mod')">ROUGH</button>
+                <button id="btn-env-time" class="btn-ctrl-small" onclick="toggleDayNight()">NIGHT</button>
+                <!-- ADDED: Sky Cycle Button -->
+                <button id="btn-sky-cycle" class="btn-ctrl-small active" onclick="cycleSky()">SKY: NICE</button>
+                <button class="btn-ctrl-small btn-exit" onclick="returnToMenuFromSim()">MAIN MENU</button>
+            </div>
+            <div class="btn-group-small">
+                <button id="btn-sea-bright" class="btn-ctrl-small" onclick="setSeaColor('bright')">BRIGHT SEA</button>
+                <button id="btn-sea-normal" class="btn-ctrl-small active" onclick="setSeaColor('normal')">NORM SEA</button>
+                <button id="btn-sea-dark" class="btn-ctrl-small" onclick="setSeaColor('dark')">DARK SEA</button>
+                <button id="btn-graphic" class="btn-ctrl-small active" onclick="toggleGraphicMode()">GFX: HIGH</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="manual-target-panel" class="hud-panel draggable-panel" style="display:none; bottom: 20px; left: 20px; width: 380px; z-index: 150; background: rgba(5, 10, 15, 0.85);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,255,255,0.4); padding-bottom:8px; margin-bottom:15px;">
+            <div style="font-size:16px; color:#0ff; font-weight:bold;">MANUAL TARGET INFO</div>
+            <button onclick="closeManualTarget()" style="background:transparent; border:none; color:#fff; font-size:16px; cursor:pointer;">X</button>
+        </div>
+        <div class="danger-data-row"><span>NAME:</span> <b id="mt-name" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>MMSI:</span> <b id="mt-mmsi" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>COG:</span> <b id="mt-cog" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>SOG:</span> <b id="mt-sog" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>DIST:</span> <b id="mt-dist" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>CPA:</span> <b id="mt-cpa" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>TCPA:</span> <b id="mt-tcpa" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>BCR:</span> <b id="mt-bcr" style="color:#fff;">-</b></div>
+    </div>
+
+    <div id="ecdis-container" class="hud-panel draggable-panel"><canvas id="ecdis-canvas"></canvas><div id="radar-sweep"></div></div>
+
+    <!-- AI (CAS) Threat Analysis Panel -->
+    <div id="right-center-cas-panel" class="hud-panel draggable-panel">
+        <div class="panel-header">THREAT ANALYSIS</div>
+        <div style="margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#88c0d0; font-size:14px; font-weight:bold;">CPA ALARM LIMIT:</span>
+            
+            <div class="custom-select-wrapper" style="width: 100px;">
+                <div class="custom-select-box" style="padding: 4px 10px; font-size: 14px; background: #222;" onclick="toggleCpaDropdown(event)">
+                    <span id="selected-cpa-text">1.0 NM</span>
+                    <span style="font-size: 10px;">▼</span>
+                </div>
+                <div class="custom-select-list" id="cpa-dropdown-list" style="max-height: 150px; font-size: 14px;">
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(0.5, '0.5 NM', event)">0.5 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(1.0, '1.0 NM', event)">1.0 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(1.5, '1.5 NM', event)">1.5 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(2.0, '2.0 NM', event)">2.0 NM</div>
+                    <div class="custom-select-item" style="padding: 8px;" onclick="selectCpa(3.0, '3.0 NM', event)">3.0 NM</div>
+                </div>
+            </div>
+        </div>
+        <div class="danger-data-row"><span>NAME:</span> <b id="danger-target-name" style="color:#ffcc00;">-</b></div>
+        <div class="danger-data-row"><span>MMSI:</span> <b id="danger-target-mmsi" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>COG:</span> <b id="danger-target-cog" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>SOG:</span> <b id="danger-target-sog" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>DIST:</span> <b id="danger-target-dist" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>CPA:</span> <b id="danger-target-cpa" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>TCPA:</span> <b id="danger-target-tcpa" style="color:#fff;">-</b></div>
+        <div class="danger-data-row"><span>BCR:</span> <b id="danger-target-bcr" style="color:#fff;">-</b></div>
+        <div class="ai-insight-box"><div class="ai-insight-title">[ AI DECISION RATIONALE ]</div><ul id="danger-reason-list" class="ai-list"><li>SCANNING RADAR DATA...</li></ul></div>
+    </div>
+
+    <div id="bottom-left-panel" class="hud-panel draggable-panel">
+        <div class="panel-header">AI ADVISORY</div>
+        <div id="ai-voice-content" style="font-size: 22.5px; color: #eceff1; line-height: 1.6; word-break: keep-all;"></div>
+    </div>
+
+    <div id="ar-container"></div>
+
+    <script>
+        // ==========================================
+        // 1. CONSTANTS & CONFIGURATION
+        // ==========================================
+        const DEG2RAD = Math.PI / 180;
+        const GITHUB_BASE_URL = "./"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxES_Tm6HaYhZkF5euk9OtFyLGbOVyhjYGR3LGSGZGVxbrIueF1jMOqYctdtpVx7JluGQ/exec";
+        const SCENARIO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxl77msNyO5QKHSRSG9QAJlH9r9NGh78iV1KkddiTOHi4WO-SVWw_HAEJZK7qGg8GRig/exec";
+        const LOG_INTERVAL = 1.0; 
+
+        // 네트워크 혼잡 대응: 요청이 몰릴 때 짧게 반복 호출하지 않고 점진적으로 대기
+        const NETWORK_RETRY_DELAYS = [3000, 5000, 8000, 10000, 15000];
+        const NETWORK_TIMEOUT_MS = 45000;
+        const MODEL_LOAD_CONCURRENCY = 2;
+
+        function waitMs(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function getRetryDelay(attempt) {
+            return NETWORK_RETRY_DELAYS[Math.min(Math.max(attempt - 1, 0), NETWORK_RETRY_DELAYS.length - 1)];
+        }
+
+        async function fetchJsonWithTimeout(url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { ...options, signal: controller.signal });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data && data.error) throw new Error(data.error);
+                return data;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        // 시나리오 목록 불러오기 및 필터링
+        async function fetchScenarioList() {
+            const select = document.getElementById('scenario-select');
+            let attempt = 0;
+
+            while (true) {
+                try {
+                    if (attempt > 0) {
+                        select.innerHTML = `<option value="">시나리오 목록 재연결 중... (${attempt + 1}회)</option>`;
+                    }
+
+                    const files = await fetchJsonWithTimeout(`${SCENARIO_SCRIPT_URL}?action=list`, { cache: 'no-store' });
+                    if (!Array.isArray(files)) throw new Error('시나리오 목록 형식이 올바르지 않습니다.');
+
+                    select.innerHTML = '';
+                    // 'Scenario' 단어가 포함된 파일만 필터링
+                    const filteredFiles = files.filter(f => f.name.includes('Scenario'));
+
+                    if(filteredFiles.length === 0) {
+                        select.innerHTML = '<option value="">선택할 시나리오가 없습니다.</option>';
+                    } else {
+                        filteredFiles.forEach(file => {
+                            const opt = document.createElement('option');
+                            opt.value = file.id;
+                            opt.textContent = file.name.replace('.json', '');
+                            select.appendChild(opt);
+                        });
+                    }
+                    return;
+                } catch (err) {
+                    attempt++;
+                    const delay = getRetryDelay(attempt);
+                    console.warn(`시나리오 목록 로드 실패 - ${Math.round(delay / 1000)}초 후 재시도`, err);
+                    select.innerHTML = `<option value="">연결 지연... ${Math.round(delay / 1000)}초 후 자동 재시도</option>`;
+                    await waitMs(delay);
+                }
+            }
+        }
+        
+        // 페이지 로드 시 시나리오 목록 가져오기 실행
+        fetchScenarioList();
+
+        const modelFiles = [
+            "Models/AircraftCarrier1.glb", "Models/BulkCarrier.glb", "Models/CargoShip1.glb", "Models/CargoShip2.glb", 
+            "Models/ContainerShip1.glb", "Models/ContainerShip2.glb", "Models/FishingBoat1.glb", "Models/GasCarrier1.glb", 
+            "Models/PassengerShip1.glb", "Models/SteamShip.glb"
+        ];
+        
+        // 하늘 이미지 리스트 및 캐시 객체 추가
+        const skyList = [
+            { file: "Environment/NiceSky.jpg", name: "NICE" },
+            { file: "Environment/GraySky.jpg", name: "GRAY" },
+            { file: "Environment/SunsetSky.jpg", name: "SUNSET" }
+        ];
+        let currentSkyIndex = 0;
+        const cachedSkies = {};
+        
+        const settingsFile = "Jsons/Settings.json"; 
+        
+        // ==========================================
+        // 2. GLOBAL VARIABLES
+        // ==========================================
+        let MAIN_OS_FILE = "CargoShip1.glb"; 
+        let studentInfo = { id: "", name: "" };
+        let parsedModels = {}; 
+        let logData = [];
+        let lastLogTime = 0;
+        
+        let manuallySelectedTarget = null;
+        let isPaused = false;
+        let isHudDragged = false; 
+        let manualRadarZoom = 1.0;
+        
+        // --- 레이더 패닝(Panning) & 드래그 관련 변수 ---
+        let radarOffsetX = 0; 
+        let radarOffsetY = 0; 
+        let isRadarDragging = false; 
+        let radarDragStartX = 0; 
+        let radarDragStartY = 0; 
+        let hasRadarDragged = false;
+        
+        let radarHoldTimer = null;
+        let isRadarWindowDragging = false;
+        let radarWinStartX = 0, radarWinStartY = 0;
+        let radarWinStartLeft = 0, radarWinStartTop = 0;
+        // ------------------------------------
+        
+        let camMoveDir = null;
+        let isCamPadOpen = false;
+        let loadedScenarioConfig = null;
+        
+        let isOsDropdownOpen = false;
+        let isCpaDropdownOpen = false;
+        let currentCpaLimit = 1.0;
+        
+        let graphicMode = 'HIGH'; // 'HIGH', 'MID', 'LOW'
+
+        const wakePool = [];
+        const activeWakes = [];
+        let saveTimeout;
+        let lastTouchX = 0, lastTouchY = 0;
+        
+        // Simulation Physics & State
+        let currentMode = 'NONE'; 
+        let simSpeed = 1.0; 
+        const moveScale = 0.15; 
+        
+        const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
+        const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, sog: 10.0, cog: 0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
+        
+        let gameState = 'MENU';
+        let currentWpIndex = 0;
+        let isDraggingCam = false; 
+        let camAngleX = -0.1; 
+        let camAngleY = 0; 
+        let currentOSFileName = ""; 
+        window.currentRadarMaxDist = 1000; 
+
+        // ==========================================
+        // 3. CACHED DOM ELEMENTS (Performance Optimization)
+        // ==========================================
+        const UI_ELEMENTS = {};
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            // HUD Elements
+            UI_ELEMENTS.valHdg = document.getElementById('val-hdg');
+            UI_ELEMENTS.valCrs = document.getElementById('val-crs');
+            UI_ELEMENTS.valSog = document.getElementById('val-sog');
+            UI_ELEMENTS.valLat = document.getElementById('val-lat');
+            UI_ELEMENTS.valRot = document.getElementById('val-rot');
+            UI_ELEMENTS.valRudCmd = document.getElementById('val-rud-cmd');
+            UI_ELEMENTS.valRudAct = document.getElementById('val-rud-act');
+            UI_ELEMENTS.valWind = document.getElementById('val-wind');
+            UI_ELEMENTS.valCurrent = document.getElementById('val-current');
+            
+            // AI CAS Elements
+            UI_ELEMENTS.dangerTargetName = document.getElementById('danger-target-name');
+            UI_ELEMENTS.dangerTargetMmsi = document.getElementById('danger-target-mmsi');
+            UI_ELEMENTS.dangerTargetCog = document.getElementById('danger-target-cog');
+            UI_ELEMENTS.dangerTargetSog = document.getElementById('danger-target-sog');
+            UI_ELEMENTS.dangerTargetDist = document.getElementById('danger-target-dist');
+            UI_ELEMENTS.dangerTargetCpa = document.getElementById('danger-target-cpa');
+            UI_ELEMENTS.dangerTargetTcpa = document.getElementById('danger-target-tcpa');
+            UI_ELEMENTS.dangerTargetBcr = document.getElementById('danger-target-bcr');
+            UI_ELEMENTS.dangerReasonList = document.getElementById('danger-reason-list');
+            UI_ELEMENTS.aiVoiceContent = document.getElementById('ai-voice-content');
+            
+            // Manual Target Elements
+            UI_ELEMENTS.manualTargetPanel = document.getElementById('manual-target-panel');
+            UI_ELEMENTS.mtName = document.getElementById('mt-name');
+            UI_ELEMENTS.mtMmsi = document.getElementById('mt-mmsi');
+            UI_ELEMENTS.mtCog = document.getElementById('mt-cog');
+            UI_ELEMENTS.mtSog = document.getElementById('mt-sog');
+            UI_ELEMENTS.mtDist = document.getElementById('mt-dist');
+            UI_ELEMENTS.mtCpa = document.getElementById('mt-cpa');
+            UI_ELEMENTS.mtTcpa = document.getElementById('mt-tcpa');
+            UI_ELEMENTS.mtBcr = document.getElementById('mt-bcr');
+            
+            // Buttons and Containers
+            UI_ELEMENTS.btnCollision = document.getElementById('btn-collision');
+            UI_ELEMENTS.btnPause = document.getElementById('btn-pause');
+            UI_ELEMENTS.ecdisCanvas = document.getElementById('ecdis-canvas');
+            UI_ELEMENTS.ecdisContainer = document.getElementById('ecdis-container');
+            UI_ELEMENTS.hudLines = document.getElementById('hud-lines');
+        });
+
+        // ==========================================
+        // 4. THREE.JS SETUP & ASSETS
+        // ==========================================
+        
+        // 캐싱 강제 활성화 (Three.js 내장 캐싱 - 동일 세션 중복 다운로드 방지)
+        THREE.Cache.enabled = true;
+        
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x5a6a79, 0.00015); 
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 1. High Graphic Water (Water.js)
+        const water = new THREE.Water(new THREE.PlaneGeometry(80000, 80000), {
+            textureWidth: 512, textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }),
+            sunDirection: new THREE.Vector3(1, 1, 1).normalize(), sunColor: 0xdddddd, waterColor: 0x00E5FF, distortionScale: 1.5, alpha: 1.0 
+        });
+        water.rotation.x = -Math.PI / 2; 
+        scene.add(water);
+
+        // 2. Mid Graphic Water (MeshPhongMaterial + Normal Map)
+        const midWaterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(t) {
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.repeat.set(400, 400); 
+        });
+        const midWater = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshPhongMaterial({
+                color: 0x004488, 
+                normalMap: midWaterNormals,
+                normalScale: new THREE.Vector2(1.5, 1.5),
+                specular: 0xffffff,
+                shininess: 80,
+                transparent: true,
+                opacity: 0.85
+            })
+        );
+        midWater.rotation.x = -Math.PI / 2;
+        scene.add(midWater);
+        midWater.visible = false;
+
+        // 3. Low Graphic Water (단색)
+        const simpleWater = new THREE.Mesh(
+            new THREE.PlaneGeometry(80000, 80000),
+            new THREE.MeshBasicMaterial({ color: 0x004488, transparent: true, opacity: 0.85 })
+        );
+        simpleWater.rotation.x = -Math.PI / 2;
+        scene.add(simpleWater);
+        simpleWater.visible = false;
+
+        const origWaterRender = water.onBeforeRender;
+        water.onBeforeRender = function( renderer, scene, camera, geometry, material, group ) {
+            const originalBackground = scene.background; 
+            const originalEnvironment = scene.environment;
+            scene.background = new THREE.Color(0x000000); 
+            scene.environment = null; 
+            if (origWaterRender) origWaterRender.call( this, renderer, scene, camera, geometry, material, group );
+            scene.background = originalBackground; 
+            scene.environment = originalEnvironment;
+        };
+
+        const sun = new THREE.Vector3();
+        const ambientLight = new THREE.AmbientLight(0x707070, 1.5); scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(dirLight);
+
+        let daySkybox = null; 
+        let nightSkybox = null;
+        let isNight = false; 
+        let currentDaySeaColorHigh = 0x00E5FF;
+        let currentDaySeaColorLow = 0x004488; 
+
+        // Wake effect setup
+        const wakeCanvas = document.createElement('canvas');
+        wakeCanvas.width = 128; wakeCanvas.height = 256;
+        const wCtx = wakeCanvas.getContext('2d');
+        
+        const gradX = wCtx.createLinearGradient(0, 0, 128, 0);
+        gradX.addColorStop(0, 'rgba(140, 170, 190, 0)');
+        gradX.addColorStop(0.5, 'rgba(140, 170, 190, 0.5)');
+        gradX.addColorStop(1, 'rgba(140, 170, 190, 0)');
+        wCtx.fillStyle = gradX;
+        wCtx.fillRect(0, 0, 128, 256);
+        
+        wCtx.globalCompositeOperation = 'destination-in';
+        const gradY = wCtx.createLinearGradient(0, 0, 0, 256);
+        gradY.addColorStop(0, 'rgba(255,255,255,1)');
+        gradY.addColorStop(1, 'rgba(255,255,255,0)');
+        wCtx.fillStyle = gradY;
+        wCtx.fillRect(0, 0, 128, 256);
+
+        const wakeTex = new THREE.CanvasTexture(wakeCanvas);
+        const wakeGeo = new THREE.PlaneGeometry(18, 45); 
+
+        // AR & Overlay Setup
+        const arOverlayGroup = new THREE.Group(); scene.add(arOverlayGroup);
+        const dangerChevrons = new THREE.Group();
+        const osShip = new THREE.Group(); scene.add(osShip);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.5, 80000);
+        const targetShips = []; 
+        const arTags = {}; 
+        const arContainer = document.getElementById('ar-container');
+        
+        const goalGroup = new THREE.Group(); 
+        const goalMesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 800, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 })); 
+        goalMesh.position.y = 400; 
+        goalGroup.add(goalMesh); scene.add(goalGroup); goalGroup.visible = false;
+
+        const clock = new THREE.Clock(); 
+        const raycaster = new THREE.Raycaster(); 
+        const mouse = new THREE.Vector2(-1, -1);
+
+        function createChevron() {
+            const shape = new THREE.Shape(); 
+            shape.moveTo(0, 15); shape.lineTo(15, -15); shape.lineTo(10, -15); shape.lineTo(0, 5); shape.lineTo(-10, -15); shape.lineTo(-15, -15); shape.lineTo(0, 15);
+            const geo = new THREE.ShapeGeometry(shape); 
+            const mat = new THREE.MeshBasicMaterial({color: 0x00ffaa, transparent: true, opacity: 0.9, side: THREE.DoubleSide}); 
+            const mesh = new THREE.Mesh(geo, mat); 
+            mesh.rotation.x = -Math.PI / 2; 
+            return mesh;
+        }
+
+        const curve = new THREE.CatmullRomCurve3([ new THREE.Vector3(0, 1.0, -150), new THREE.Vector3(250, 1.0, -400), new THREE.Vector3(400, 1.0, -800), new THREE.Vector3(450, 1.0, -1200), new THREE.Vector3(400, 1.0, -1700), new THREE.Vector3(200, 1.0, -2100), new THREE.Vector3(0, 1.0, -2500) ]);
+        const points = curve.getPoints(25);
+        for(let i=0; i<points.length-1; i++) { 
+            const arr = createChevron(); 
+            arr.position.copy(points[i]); 
+            const dir = new THREE.Vector3().subVectors(points[i+1], points[i]).normalize(); 
+            arr.rotation.z = -Math.atan2(dir.x, -dir.z); 
+            dangerChevrons.add(arr); 
+        }
+        arOverlayGroup.add(dangerChevrons); arOverlayGroup.visible = false;
+
+
+        // ==========================================
+        // 5. HELPER FUNCTIONS
+        // ==========================================
+        function getScreenPos(vector3) { 
+            const v = vector3.clone(); 
+            v.project(camera); 
+            return { x: (v.x * .5 + .5) * window.innerWidth, y: -(v.y * .5 - .5) * window.innerHeight, z: v.z }; 
+        }
+        
+        function convertToLat(z) { return (34.800000 - (z / 111111)).toFixed(6); } 
+        function convertToLon(x) { return (126.400000 + (x / (111111 * Math.cos(34.8 * DEG2RAD)))).toFixed(6); }
+
+        function calculateCPA(voSpd, voHdg, vtSpd, vtHdg, relX, relZ) { 
+            const voX = voSpd * moveScale * Math.sin(voHdg * DEG2RAD); 
+            const voZ = -voSpd * moveScale * Math.cos(voHdg * DEG2RAD); 
+            const vtX = vtSpd * moveScale * Math.sin(vtHdg * DEG2RAD); 
+            const vtZ = -vtSpd * moveScale * Math.cos(vtHdg * DEG2RAD); 
+            
+            const dvX = vtX - voX; 
+            const dvZ = vtZ - voZ; 
+            
+            const dotP = (relX * dvX) + (relZ * dvZ); 
+            const vrelSq = (dvX * dvX) + (dvZ * dvZ); 
+            
+            const tcpa = (vrelSq > 0.0001) ? -dotP / vrelSq : 0; 
+            const cpa = (tcpa > 0) ? Math.sqrt(Math.pow(relX + dvX * tcpa, 2) + Math.pow(relZ + dvZ * tcpa, 2)) : Math.sqrt(relX*relX + relZ*relZ); 
+            
+            const radH = voHdg * DEG2RAD; 
+            const relX_stbd = relX * Math.cos(radH) + relZ * Math.sin(radH); 
+            const relZ_fwd = relX * Math.sin(radH) - relZ * Math.cos(radH); 
+            
+            const dvX_stbd = dvX * Math.cos(radH) + dvZ * Math.sin(radH); 
+            const dvZ_fwd = dvX * Math.sin(radH) - dvZ * Math.cos(radH); 
+            
+            let bcr = -1; 
+            if (Math.abs(dvX_stbd) > 0.0001) { 
+                const t_cross = -relX_stbd / dvX_stbd; 
+                if (t_cross > 0) { 
+                    const bcr_units = relZ_fwd + dvZ_fwd * t_cross; 
+                    if (bcr_units > 0) { 
+                        bcr = bcr_units / 400; 
+                    } 
+                } 
+            } 
+            return { cpa: cpa / 400, tcpa: tcpa, bcr: bcr }; 
+        }
+
+        function setTimeOfDay(isNightVal) {
+            const btn = document.getElementById('btn-env-time');
+            if(isNightVal) {
+                btn.innerText = 'DAY'; 
+                btn.classList.add('btn-night');
+                scene.background = nightSkybox || new THREE.Color(0x050a10); 
+                scene.environment = nightSkybox || null;
+                scene.fog.color.setHex(0x050a10); 
+                scene.fog.density = 0.0003;
+                ambientLight.intensity = 0.2; 
+                dirLight.intensity = 0.1; 
+                dirLight.color.setHex(0xffffff);
+                
+                water.material.uniforms['sunColor'].value.setHex(0x112233); 
+                water.material.uniforms['waterColor'].value.setHex(0x0f182b); 
+                
+                midWater.material.color.setHex(0x0f182b);
+                midWater.material.specular.setHex(0x223344); 
+                
+                simpleWater.material.color.setHex(0x0f182b);
+                
+                const theta = Math.PI * 0.5; 
+                const phi = 2 * Math.PI * 0.0;
+                sun.x = Math.cos(phi); 
+                sun.y = Math.sin(phi) * Math.sin(theta); 
+                sun.z = Math.sin(phi) * Math.cos(theta);
+            } else {
+                btn.innerText = 'NIGHT'; 
+                btn.classList.remove('btn-night');
+                scene.background = daySkybox || new THREE.Color(0x5a6a79); 
+                scene.environment = daySkybox || null;
+                scene.fog.color.setHex(0x5a6a79); 
+                scene.fog.density = 0.00015;
+                ambientLight.intensity = 1.5; 
+                dirLight.intensity = 1.0; 
+                dirLight.color.setHex(0xffffff);
+                
+                water.material.uniforms['sunColor'].value.setHex(0xdddddd); 
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColorHigh); 
+                
+                midWater.material.color.setHex(currentDaySeaColorLow);
+                midWater.material.specular.setHex(0xffffff); 
+                
+                simpleWater.material.color.setHex(currentDaySeaColorLow);
+                
+                // 시작 시 현재 선수/카메라 정면 쪽 해면에 햇빛 반사가 보이도록 태양 방위를 맞춤
+                const elevation = 15;
+                const azimuth = (shipPhysics.heading - (camAngleY / DEG2RAD) + 360) % 360;
+                const elRad = elevation * DEG2RAD; const azRad = azimuth * DEG2RAD;
+                sun.x = Math.cos(elRad) * Math.sin(azRad); 
+                sun.y = Math.sin(elRad); 
+                sun.z = -Math.cos(elRad) * Math.cos(azRad);
+            }
+            dirLight.position.copy(sun).multiplyScalar(100); 
+            water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+        }
+
+
+        // ==========================================
+        // 6. UI & EVENT HANDLERS
+        // ==========================================
+        
+        // 하늘색 (Skybox) 순환 변경 함수 
+        window.cycleSky = function() {
+            currentSkyIndex = (currentSkyIndex + 1) % skyList.length;
+            const btn = document.getElementById('btn-sky-cycle');
+            btn.innerText = 'SKY: ' + skyList[currentSkyIndex].name;
+            
+            if (cachedSkies[currentSkyIndex]) {
+                daySkybox = cachedSkies[currentSkyIndex];
+                if (!isNight) {
+                    scene.background = daySkybox;
+                    scene.environment = daySkybox;
+                }
+            } else {
+                // 아직 캐시되지 않은 경우 다운로드 후 캐싱 적용
+                const texLoader = new THREE.TextureLoader();
+                texLoader.load(GITHUB_BASE_URL + skyList[currentSkyIndex].file, (tex) => {
+                    tex.mapping = THREE.EquirectangularReflectionMapping;
+                    cachedSkies[currentSkyIndex] = tex;
+                    daySkybox = tex;
+                    if (!isNight) {
+                        scene.background = daySkybox;
+                        scene.environment = daySkybox;
+                    }
+                });
+            }
+        };
+
+        // --- 레이더 토글 함수 ---
+        let isRadarOpen = false;
+        window.toggleRadar = function(forceState) {
+            const container = UI_ELEMENTS.ecdisContainer || document.getElementById('ecdis-container');
+            const btn = document.getElementById('btn-radar');
+            if (!container || !btn) return;
+
+            if (forceState !== undefined) {
+                isRadarOpen = forceState;
+            } else {
+                isRadarOpen = !isRadarOpen;
+            }
+
+            if (isRadarOpen) {
+                container.style.display = 'block';
+                container.style.left = '50%';
+                container.style.top = 'auto';
+                container.style.bottom = '20px';
+                container.style.right = 'auto';
+                container.style.transform = 'translateX(-50%)';
+                container.style.margin = '0';
+                btn.classList.add('active');
+            } else {
+                container.style.display = 'none';
+                btn.classList.remove('active');
+            }
+        };
+
+        window.toggleOsDropdown = function(e) {
+            if(e) e.stopPropagation();
+            const list = document.getElementById('os-dropdown-list');
+            isOsDropdownOpen = !isOsDropdownOpen;
+            list.style.display = isOsDropdownOpen ? 'flex' : 'none';
+        };
+        
+        window.selectOs = function(val, text, e) {
+            if(e) e.stopPropagation();
+            MAIN_OS_FILE = val;
+            document.getElementById('selected-os-text').innerText = text;
+            document.getElementById('os-dropdown-list').style.display = 'none';
+            isOsDropdownOpen = false;
+        };
+
+        window.toggleCpaDropdown = function(e) {
+            if(e) e.stopPropagation();
+            const list = document.getElementById('cpa-dropdown-list');
+            isCpaDropdownOpen = !isCpaDropdownOpen;
+            list.style.display = isCpaDropdownOpen ? 'flex' : 'none';
+        };
+        
+        window.selectCpa = function(val, text, e) {
+            if(e) e.stopPropagation();
+            currentCpaLimit = val;
+            document.getElementById('selected-cpa-text').innerText = text;
+            document.getElementById('cpa-dropdown-list').style.display = 'none';
+            isCpaDropdownOpen = false;
+        };
+
+        document.addEventListener('click', () => {
+            const list = document.getElementById('os-dropdown-list');
+            if(list && isOsDropdownOpen) { list.style.display = 'none'; isOsDropdownOpen = false; }
+            const cpaList = document.getElementById('cpa-dropdown-list');
+            if(cpaList && isCpaDropdownOpen) { cpaList.style.display = 'none'; isCpaDropdownOpen = false; }
+        });
+
+        document.querySelectorAll('.draggable-panel').forEach(panel => {
+            let isPanelDragging = false, startX, startY, startLeft, startTop;
+            panel.addEventListener('mousedown', (e) => {
+                // 레이더 캔버스는 기본 드래그에서 제외하고 별도 롱프레스 이벤트로 처리
+                if(['BUTTON', 'SELECT', 'INPUT'].includes(e.target.tagName) || e.target.id === 'ecdis-canvas') return;
+                isPanelDragging = true; isHudDragged = false; 
+                startX = e.clientX; startY = e.clientY;
+                const rect = panel.getBoundingClientRect(); 
+                startLeft = rect.left; startTop = rect.top;
+                
+                panel.style.bottom = 'auto'; 
+                panel.style.right = 'auto'; 
+                panel.style.transform = 'none'; 
+                panel.style.margin = '0'; 
+                panel.style.left = startLeft + 'px'; 
+                panel.style.top = startTop + 'px'; 
+                panel.style.zIndex = 10000;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if(!isPanelDragging) return; 
+                isHudDragged = true; 
+                const dx = e.clientX - startX; 
+                const dy = e.clientY - startY; 
+                panel.style.left = (startLeft + dx) + 'px'; 
+                panel.style.top = (startTop + dy) + 'px';
+            });
+           window.addEventListener('mouseup', () => { 
+                if (isPanelDragging) { 
+                    isPanelDragging = false; 
+                    isHudDragged = false; // <--- 이 부분이 누락되어 있었음
+                    panel.style.zIndex = panel.id === 'digital-hud-container' ? '9999' : ''; 
+                } 
+            });
+        });
+
+        window.setSeaColor = function(level) {
+            document.getElementById('btn-sea-bright').classList.remove('active'); 
+            document.getElementById('btn-sea-normal').classList.remove('active'); 
+            document.getElementById('btn-sea-dark').classList.remove('active');
+            
+            if (level === 'bright') { 
+                currentDaySeaColorHigh = 0x00BFFF; 
+                currentDaySeaColorLow = 0x00E5FF; // 밝은 시안색
+                document.getElementById('btn-sea-bright').classList.add('active'); 
+            } 
+            else if (level === 'normal') { 
+                currentDaySeaColorHigh = 0x00E5FF; 
+                currentDaySeaColorLow = 0x004488; // 진한 파란색
+                document.getElementById('btn-sea-normal').classList.add('active'); 
+            } 
+            else if (level === 'dark') { 
+                currentDaySeaColorHigh = 0x253c54; 
+                currentDaySeaColorLow = 0x152535; // 어두운 파란색
+                document.getElementById('btn-sea-dark').classList.add('active'); 
+            }
+            
+            if (!isNight) { 
+                water.material.uniforms['waterColor'].value.setHex(currentDaySeaColorHigh); 
+                midWater.material.color.setHex(currentDaySeaColorLow);
+                simpleWater.material.color.setHex(currentDaySeaColorLow);
+            }
+        };
+
+        window.toggleDayNight = function() { 
+            isNight = !isNight; 
+            setTimeOfDay(isNight); 
+        };
+
+        window.toggleGraphicMode = function() {
+            const btn = document.getElementById('btn-graphic');
+            if (graphicMode === 'HIGH') {
+                graphicMode = 'MID';
+                btn.innerText = 'GFX: MID';
+                btn.classList.add('active');
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+                if (gameState === 'PLAYING') {
+                    water.visible = false;
+                    midWater.visible = true;
+                    simpleWater.visible = false;
+                }
+            } else if (graphicMode === 'MID') {
+                graphicMode = 'LOW';
+                btn.innerText = 'GFX: LOW';
+                btn.classList.remove('active');
+                renderer.setPixelRatio(0.75); // 해상도 대폭 낮춤
+                if (gameState === 'PLAYING') {
+                    water.visible = false;
+                    midWater.visible = false;
+                    simpleWater.visible = true;
+                }
+            } else {
+                graphicMode = 'HIGH';
+                btn.innerText = 'GFX: HIGH';
+                btn.classList.add('active');
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2)); // 원래 해상도
+                if (gameState === 'PLAYING') {
+                    water.visible = true;
+                    midWater.visible = false;
+                    simpleWater.visible = false;
+                }
+            }
+        };
+
+            window.returnToMenuFromSim = function() {
+            gameState = 'MENU';
+            for(let i = osShip.children.length - 1; i >= 0; i--) { 
+                if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); 
+            }
+            targetShips.forEach(ts => scene.remove(ts)); 
+            targetShips.length = 0;
+            
+            document.getElementById('ar-container').innerHTML = ''; 
+            for(let key in arTags) delete arTags[key];
+            
+            activeWakes.forEach(w => scene.remove(w)); 
+            wakePool.push(...activeWakes); 
+            activeWakes.length = 0;
+            
+            goalGroup.visible = false;
+            
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.body.classList.remove('ai-active'); 
+            currentMode = 'NONE';
+            water.visible = false; 
+            midWater.visible = false;
+            simpleWater.visible = false;
+            scene.background = new THREE.Color(0x000000);
+            toggleRadar(false);
+
+            // ==========================================
+            // [수정/추가된 부분] 메인 메뉴로 돌아갈 때 모든 HUD UI 숨기기
+            // ==========================================
+            document.getElementById('digital-hud-container').style.display = 'none';
+            document.getElementById('camera-hint').style.display = 'none';
+            document.getElementById('manual-target-panel').style.display = 'none';
+            
+            // CAS 모드가 켜져 있었을 경우를 대비해 패널 숨김 및 버튼 비활성화
+            document.getElementById('right-center-cas-panel').style.display = 'none';
+            document.getElementById('bottom-left-panel').style.display = 'none';
+            document.getElementById('btn-mode-cas').classList.remove('active');
+            
+            // 캠 컨트롤 패드 및 터치 조타 버튼이 켜져 있었을 경우를 대비해 끄기
+            document.getElementById('cam-control-pad').style.display = 'none';
+            document.getElementById('btn-cam-control').classList.remove('active');
+            isCamPadOpen = false;
+            
+            document.getElementById('btn-steer-port').style.display = 'none';
+            document.getElementById('btn-steer-stbd').style.display = 'none';
+            document.getElementById('btn-touch-steer').classList.remove('active');
+        }
+
+        window.togglePause = function() {
+            if (gameState !== 'PLAYING') return; 
+            isPaused = !isPaused; 
+            const btn = document.getElementById('btn-pause');
+            if(isPaused) { 
+                btn.innerText = 'RESUME'; btn.classList.add('active'); 
+            } else { 
+                btn.innerText = 'PAUSE'; btn.classList.remove('active'); 
+            }
+        }
+
+        window.toggleCamControls = function() {
+            isCamPadOpen = !isCamPadOpen;
+            const pad = document.getElementById('cam-control-pad');
+            const btn = document.getElementById('btn-cam-control');
+            if(isCamPadOpen) { 
+                pad.style.display = 'block'; btn.classList.add('active'); 
+            } else { 
+                pad.style.display = 'none'; btn.classList.remove('active'); 
+            }
+        };
+
+        window.toggleTouchSteering = function() {
+            const port = document.getElementById('btn-steer-port');
+            const stbd = document.getElementById('btn-steer-stbd');
+            const btn = document.getElementById('btn-touch-steer');
+            if(port.style.display === 'flex') {
+                port.style.display = 'none'; 
+                stbd.style.display = 'none'; 
+                btn.classList.remove('active');
+            } else {
+                port.style.display = 'flex'; 
+                stbd.style.display = 'flex'; 
+                btn.classList.add('active');
+            }
+        };
+
+        function applySteer(dir) {
+            if(!isPaused) { 
+                shipPhysics.targetRudder = Math.max(-35, Math.min(35, shipPhysics.targetRudder + (dir === 'P' ? -5 : 5))); 
+                shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; 
+            }
+        }
+
+        const btnPort = document.getElementById('btn-steer-port');
+        btnPort.style.touchAction = 'none';
+        btnPort.addEventListener('touchstart', (e) => { e.preventDefault(); applySteer('P'); }, {passive: false});
+        btnPort.addEventListener('mousedown', (e) => { e.preventDefault(); applySteer('P'); });
+
+        const btnStbd = document.getElementById('btn-steer-stbd');
+        btnStbd.style.touchAction = 'none';
+        btnStbd.addEventListener('touchstart', (e) => { e.preventDefault(); applySteer('S'); }, {passive: false});
+        btnStbd.addEventListener('mousedown', (e) => { e.preventDefault(); applySteer('S'); });
+
+        window.setCamMove = function(dir) { camMoveDir = dir; };
+        window.stopCamMove = function() { 
+            camMoveDir = null; 
+            if (currentOSFileName !== "") { 
+                const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; 
+                localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); 
+            } 
+        };
+        
+        window.setMode = function(mode) {
+            if(currentMode === mode) currentMode = 'NONE'; 
+            else currentMode = mode;
+            
+            document.getElementById('btn-mode-cas').classList.remove('active'); 
+            document.getElementById('right-center-cas-panel').style.display = 'none'; 
+            document.getElementById('bottom-left-panel').style.display = 'none'; 
+            document.getElementById('scanline').style.display = 'none'; 
+            document.getElementById('hud-lines').style.opacity = '0';
+            arOverlayGroup.visible = false; 
+            
+            Object.values(arTags).forEach(tag => tag.el.style.display = 'none'); 
+            document.body.classList.toggle('ai-active', currentMode !== 'NONE');
+            
+            if (currentMode === 'CAS') { 
+                window.closeManualTarget(); 
+                document.getElementById('btn-mode-cas').classList.add('active'); 
+                document.getElementById('right-center-cas-panel').style.display = 'block'; 
+                document.getElementById('bottom-left-panel').style.display = 'block'; 
+                document.getElementById('scanline').style.display = 'block'; 
+                document.getElementById('hud-lines').style.opacity = '1'; 
+                arOverlayGroup.visible = true; 
+                
+                // 삭제 또는 주석 처리하여 AI CAS 모드 활성화 시 레이더 강제 켜짐을 방지함
+                // toggleRadar(true);
+            }
+        };
+
+        window.setEnv = function(state) {
+            document.getElementById('btn-env-calm').classList.remove('active'); 
+            document.getElementById('btn-env-mod').classList.remove('active');
+            
+            if(state === 'calm') { 
+                env.waveForce = 0.3; 
+                document.getElementById('btn-env-calm').classList.add('active'); 
+                if (!isNight && daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; } 
+            } 
+            else if(state === 'mod') { 
+                env.waveForce = 1.2; 
+                document.getElementById('btn-env-mod').classList.add('active'); 
+                if (!isNight && nightSkybox) { scene.background = nightSkybox; scene.environment = nightSkybox; } 
+            }
+        };
+
+        window.addEventListener('keydown', (e) => { 
+            if(gameState === 'PLAYING') {
+                if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); 
+                if (!isPaused) {
+                    if(e.code === 'ArrowLeft' && !e.repeat) { shipPhysics.targetRudder = Math.max(-35, shipPhysics.targetRudder - 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
+                    if(e.code === 'ArrowRight' && !e.repeat) { shipPhysics.targetRudder = Math.min(35, shipPhysics.targetRudder + 5); shipPhysics.targetRudder = Math.round(shipPhysics.targetRudder/5)*5; }
+                    if(e.code === 'Space') shipPhysics.targetRudder = 0;
+                }
+                let camMoved = false;
+                if(e.code === 'KeyW') { camera.position.z -= 1; camMoved = true; }
+                if(e.code === 'KeyS') { camera.position.z += 1; camMoved = true; }
+                if(e.code === 'KeyA') { camera.position.x -= 1; camMoved = true; }
+                if(e.code === 'KeyD') { camera.position.x += 1; camMoved = true; }
+                if(e.code === 'KeyQ') { camera.position.y += 1; camMoved = true; }
+                if(e.code === 'KeyE') { camera.position.y -= 1; camMoved = true; }
+                
+                if (camMoved && currentOSFileName !== "") { 
+                    const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }; 
+                    localStorage.setItem('bridgeCam_' + currentOSFileName, JSON.stringify(pos)); 
+                    const toast = document.getElementById('save-toast'); 
+                    toast.style.display = 'inline-block'; 
+                    clearTimeout(saveTimeout); 
+                    saveTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000); 
+                }
+            }
+        });
+
+        document.addEventListener('mousedown', (e) => { 
+            if(e.target.tagName === 'CANVAS' && e.target.id !== 'ecdis-canvas' && gameState === 'PLAYING') isDraggingCam = true; 
+        });
+        document.addEventListener('mouseup', () => { isDraggingCam = false; });
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingCam && gameState === 'PLAYING') { 
+                camAngleY -= e.movementX * 0.003; 
+                camAngleX -= e.movementY * 0.003; 
+                camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX)); 
+            }
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1; 
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        document.addEventListener('touchstart', (e) => {
+            if(e.target.tagName === 'CANVAS' && e.target.id !== 'ecdis-canvas' && gameState === 'PLAYING') {
+                isDraggingCam = true;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        document.addEventListener('touchend', () => { isDraggingCam = false; });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDraggingCam && gameState === 'PLAYING') {
+                e.preventDefault(); 
+                let touchX = e.touches[0].clientX;
+                let touchY = e.touches[0].clientY;
+                
+                let movementX = touchX - lastTouchX;
+                let movementY = touchY - lastTouchY;
+
+                camAngleY -= movementX * 0.003;
+                camAngleX -= movementY * 0.003;
+                camAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camAngleX));
+
+                lastTouchX = touchX;
+                lastTouchY = touchY;
+            }
+        }, {passive: false});
+
+        // --- 레이더 패닝 및 윈도우 드래그(Long Press) 통합 로직 ---
+        const ecdisEl = document.getElementById('ecdis-canvas');
+
+        function handleRadarDragStart(clientX, clientY) {
+            if(gameState !== 'PLAYING' || isPaused) return false;
+            // 일반 패닝은 CAS 모드가 아닐때만 허용 (기존 로직 유지)
+            if(currentMode === 'CAS') return false; 
+            
+            isRadarDragging = true;
+            hasRadarDragged = false;
+            radarDragStartX = clientX;
+            radarDragStartY = clientY;
+            return true;
+        }
+
+        function handleRadarDragMove(clientX, clientY) {
+            if (isRadarWindowDragging) return; // 윈도우 드래그 중엔 패닝 무시
+            if (!isRadarDragging) return;
+            const dx = clientX - radarDragStartX;
+            const dy = clientY - radarDragStartY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasRadarDragged = true;
+                if(radarHoldTimer) clearTimeout(radarHoldTimer); // 조금이라도 움직이면 윈도우 드래그 타이머 취소
+            }
+            
+            if (hasRadarDragged) {
+                radarOffsetX += dx;
+                radarOffsetY += dy;
+                radarDragStartX = clientX;
+                radarDragStartY = clientY;
+            }
+        }
+
+        ecdisEl.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            if(gameState !== 'PLAYING' || isPaused) return;
+
+            handleRadarDragStart(e.clientX, e.clientY);
+
+            // 꾸욱 눌렀을 때(400ms) 창 자체를 이동시킬 수 있도록 처리
+            radarHoldTimer = setTimeout(() => {
+                if (!hasRadarDragged) {
+                    isRadarWindowDragging = true;
+                    isRadarDragging = false;
+                    hasRadarDragged = true; // 이후의 클릭 이벤트를 방지
+                    radarWinStartX = e.clientX;
+                    radarWinStartY = e.clientY;
+                    const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
+                    radarWinStartLeft = rect.left;
+                    radarWinStartTop = rect.top;
+
+                    // Absolute 위치 초기화
+                    UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.right = 'auto';
+                    UI_ELEMENTS.ecdisContainer.style.transform = 'none';
+                    UI_ELEMENTS.ecdisContainer.style.margin = '0';
+                    UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
+                    UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
+                    UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00'; // 드래그 모드 시각적 피드백
+                }
+            }, 400);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isRadarWindowDragging) {
+                const dx = e.clientX - radarWinStartX;
+                const dy = e.clientY - radarWinStartY;
+                UI_ELEMENTS.ecdisContainer.style.left = (radarWinStartLeft + dx) + 'px';
+                UI_ELEMENTS.ecdisContainer.style.top = (radarWinStartTop + dy) + 'px';
+                return;
+            }
+            if(isRadarDragging) handleRadarDragMove(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', () => { 
+            if(radarHoldTimer) clearTimeout(radarHoldTimer);
+            if(isRadarWindowDragging) {
+                isRadarWindowDragging = false;
+                UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
+                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)'; // 원래대로
+            }
+            isRadarDragging = false; 
+        });
+
+
+        // 두 손가락 줌(Pinch-to-Zoom)을 위한 변수 및 함수 추가
+        let initialPinchDistance = null;
+        let initialRadarZoom = 1.0;
+
+        function getPinchDistance(touches) {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        }
+
+        ecdisEl.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            if(gameState !== 'PLAYING' || isPaused) return;
+
+            // 💡 두 손가락 터치 시: 확대/축소(Pinch Zoom) 모드 진입
+            if (e.touches.length === 2) {
+                initialPinchDistance = getPinchDistance(e.touches);
+                initialRadarZoom = manualRadarZoom;
+                isRadarDragging = false; // 패닝 무시
+                if (radarHoldTimer) clearTimeout(radarHoldTimer);
+                return;
+            }
+
+            // 한 손가락 터치 시: 패닝 및 윈도우 드래그 모드
+            if (e.touches.length === 1) {
+                handleRadarDragStart(e.touches[0].clientX, e.touches[0].clientY);
+
+                radarHoldTimer = setTimeout(() => {
+                    if (!hasRadarDragged) {
+                        isRadarWindowDragging = true;
+                        isRadarDragging = false;
+                        hasRadarDragged = true;
+                        radarWinStartX = e.touches[0].clientX;
+                        radarWinStartY = e.touches[0].clientY;
+                        const rect = UI_ELEMENTS.ecdisContainer.getBoundingClientRect();
+                        radarWinStartLeft = rect.left;
+                        radarWinStartTop = rect.top;
+
+                        UI_ELEMENTS.ecdisContainer.style.bottom = 'auto';
+                        UI_ELEMENTS.ecdisContainer.style.right = 'auto';
+                        UI_ELEMENTS.ecdisContainer.style.transform = 'none';
+                        UI_ELEMENTS.ecdisContainer.style.margin = '0';
+                        UI_ELEMENTS.ecdisContainer.style.left = radarWinStartLeft + 'px';
+                        UI_ELEMENTS.ecdisContainer.style.top = radarWinStartTop + 'px';
+                        UI_ELEMENTS.ecdisContainer.style.zIndex = 10000;
+                        UI_ELEMENTS.ecdisContainer.style.border = '2px solid #ffcc00';
+                    }
+                }, 400);
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchmove', (e) => {
+            // 💡 두 손가락 확대/축소 로직 처리
+            if (initialPinchDistance !== null && e.touches.length === 2) {
+                e.preventDefault(); // 화면 스크롤 방지
+                const currentDistance = getPinchDistance(e.touches);
+                
+                // 손가락이 멀어지면(확대) Range 감소(Zoom In), 가까워지면(축소) Range 증가(Zoom Out)
+                manualRadarZoom = initialRadarZoom * (initialPinchDistance / currentDistance);
+                manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
+                return;
+            }
+
+            if (isRadarWindowDragging) {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - radarWinStartX;
+                const dy = e.touches[0].clientY - radarWinStartY;
+                UI_ELEMENTS.ecdisContainer.style.left = (radarWinStartLeft + dx) + 'px';
+                UI_ELEMENTS.ecdisContainer.style.top = (radarWinStartTop + dy) + 'px';
+                return;
+            }
+            
+            // 한 손가락 패닝 처리
+            if(isRadarDragging && e.touches.length === 1) {
+                e.preventDefault();
+                handleRadarDragMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', (e) => { 
+            // 터치가 하나라도 떨어지면 줌 모드 초기화
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+
+            if(radarHoldTimer) clearTimeout(radarHoldTimer);
+            if(isRadarWindowDragging) {
+                isRadarWindowDragging = false;
+                UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
+                UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)';
+            }
+            isRadarDragging = false; 
+        });
+
+        ecdisEl.addEventListener('click', function(e) {
+            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused) return;
+            if(hasRadarDragged || isRadarWindowDragging) return; // 드래그를 한 경우 타겟 클릭 취소
+
+            const rect = this.getBoundingClientRect(); 
+            const clickX = e.clientX - rect.left; 
+            const clickY = e.clientY - rect.top; 
+            const cx = this.clientWidth / 2; 
+            const cy = this.clientHeight / 2; 
+            const mapScale = (this.clientWidth / 2) / window.currentRadarMaxDist;
+            let closestTarget = null; 
+            let minDist = 15; 
+            
+            targetShips.forEach(ts => { 
+                const relX = ts.position.x - osShip.position.x; 
+                const relZ = ts.position.z - osShip.position.z; 
+                const true_bearing_rad = Math.atan2(relX, -relZ); 
+                const relBearing = true_bearing_rad - (shipPhysics.heading * DEG2RAD); 
+                const distSq = relX*relX + relZ*relZ; 
+                
+                // 패닝된 오프셋을 반영하여 타겟 위치 판별
+                const px = cx + radarOffsetX + Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; 
+                const py = cy + radarOffsetY - Math.cos(relBearing) * Math.sqrt(distSq) * mapScale; 
+                const clickDist = Math.hypot(px - clickX, py - clickY); 
+                if(clickDist < minDist) { 
+                    minDist = clickDist; 
+                    closestTarget = ts; 
+                } 
+            });
+            
+            if(closestTarget) { 
+                manuallySelectedTarget = closestTarget; 
+                UI_ELEMENTS.manualTargetPanel.style.display = 'block'; 
+            }
+        });
+        
+        document.getElementById('ecdis-canvas').addEventListener('wheel', function(e) {
+            if(gameState !== 'PLAYING' || currentMode === 'CAS' || isPaused || isHudDragged || isRadarWindowDragging) return;
+            e.preventDefault(); 
+            if (e.deltaY > 0) { manualRadarZoom *= 1.2; } else { manualRadarZoom /= 1.2; } 
+            manualRadarZoom = Math.max(0.1, Math.min(manualRadarZoom, 10.0));
+        }, {passive: false});
+
+        window.closeManualTarget = function() { 
+            manuallySelectedTarget = null; 
+            UI_ELEMENTS.manualTargetPanel.style.display = 'none'; 
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION & DATA SAVING
+        // ==========================================
+        window.startLoadingAssets = async function() {
+            studentInfo.id = document.getElementById('student-id').value.trim();
+            studentInfo.name = document.getElementById('student-name').value.trim();
+            if(!studentInfo.id || !studentInfo.name) { alert("학번과 이름을 정확히 입력해주세요."); return; }
+
+            // 시나리오 선택 여부 검증
+            const scenarioSelect = document.getElementById('scenario-select');
+            const selectedScenarioId = scenarioSelect.value;
+            if(!selectedScenarioId) { alert("시나리오를 선택해주세요."); return; }
+
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'flex';
+            const progressEl = document.getElementById('loading-progress');
+
+            progressEl.innerText = "스카이박스 불러오는 중... (1/4)";
+            const texLoader = new THREE.TextureLoader();
+            try {
+                daySkybox = await new Promise((resolve) => {
+                    texLoader.load(GITHUB_BASE_URL + skyList[currentSkyIndex].file, (tex) => { 
+                        tex.mapping = THREE.EquirectangularReflectionMapping; 
+                        cachedSkies[currentSkyIndex] = tex; 
+                        resolve(tex); 
+                    }, undefined, () => resolve(null));
+                });
+            } catch(e) {}
+            if(daySkybox) { scene.background = daySkybox; scene.environment = daySkybox; }
+
+            progressEl.innerText = "시나리오 데이터 다운로드 중... (2/4)";
+            let scenarioLoadAttempt = 0;
+            while (true) {
+                try {
+                    // 구글 드라이브에서 시나리오 파일 직접 로드 - 성공할 때까지 자동 재시도
+                    loadedScenarioConfig = await fetchJsonWithTimeout(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${selectedScenarioId}`, { cache: 'no-store' });
+                    break;
+                } catch(e) {
+                    scenarioLoadAttempt++;
+                    const delay = getRetryDelay(scenarioLoadAttempt);
+                    console.warn(`시나리오 로드 실패 - ${Math.round(delay / 1000)}초 후 재시도`, e);
+                    progressEl.innerText = `시나리오 연결 지연... ${Math.round(delay / 1000)}초 후 자동 재시도 (${scenarioLoadAttempt}회)`;
+                    await waitMs(delay);
+                    progressEl.innerText = "시나리오 데이터 다운로드 중... (2/4)";
+                }
+            }
+
+            progressEl.innerText = "캘리브레이션 세팅 적용 중... (3/4)";
+            try { 
+                // Settings.json 파일에 캐시를 적용하지 않도록 변경 (매번 최신 데이터를 받아오게 함)
+                const setRes = await fetch(GITHUB_BASE_URL + settingsFile, { cache: 'no-store' }); 
+                if(setRes.ok) { 
+                    const settingsData = await setRes.json(); 
+                    for (const key in settingsData) localStorage.setItem(key, settingsData[key]); 
+                } 
+            } catch(e) { console.warn(e); }
+
+            // =============== 네트워크 혼잡 완화 로딩 구간 ===============
+            const gltfLoader = new THREE.GLTFLoader();
+            let loadedModelsCount = 0;
+            let nextModelIndex = 0;
+            progressEl.innerText = `3D 선박 모델 다운로드 중... (0/${modelFiles.length})`;
+
+            async function loadModelWithRetry(filePath) {
+                let attempt = 0;
+                const maxAttempts = 5;
+
+                while (attempt < maxAttempts) {
+                    try {
+                        const gltf = await new Promise((resolve, reject) => {
+                            gltfLoader.load(GITHUB_BASE_URL + filePath, resolve, undefined, reject);
+                        });
+
+                        const rawModel = gltf.scene; rawModel.updateMatrixWorld(true);
+                        const box = new THREE.Box3().setFromObject(rawModel); 
+                        const size = new THREE.Vector3(); box.getSize(size); 
+                        const center = new THREE.Vector3(); box.getCenter(center);
+                        
+                        if (!isFinite(size.x) || size.x === 0) size.set(100, 100, 100); 
+                        if (!isFinite(center.x)) center.set(0, 0, 0);
+                        
+                        rawModel.position.set(-center.x, -center.y, -center.z); 
+                        const maxDim = Math.max(size.x, size.y, size.z); 
+                        const scale = 150 / maxDim;
+                        const wrapper = new THREE.Group(); 
+                        wrapper.add(rawModel); 
+                        wrapper.scale.set(scale, scale, scale);
+                        
+                        const fileName = filePath.split('/').pop(); 
+                        parsedModels[fileName] = { group: wrapper, height: size.y * scale };
+                        return true;
+                    } catch (err) {
+                        attempt++;
+                        if (attempt >= maxAttempts) {
+                            console.warn(`3D 모델 로드 최종 실패: ${filePath}`, err);
+                            return false;
+                        }
+                        const delay = getRetryDelay(attempt);
+                        progressEl.innerText = `3D 모델 연결 지연... 자동 재시도 (${attempt}/${maxAttempts - 1})`;
+                        await waitMs(delay);
+                    }
+                }
+                return false;
+            }
+
+            async function modelLoadWorker() {
+                while (true) {
+                    const currentIndex = nextModelIndex++;
+                    if (currentIndex >= modelFiles.length) return;
+
+                    const filePath = modelFiles[currentIndex];
+                    const loaded = await loadModelWithRetry(filePath);
+                    loadedModelsCount++;
+                    progressEl.innerText = `3D 선박 모델 다운로드 중... (${loadedModelsCount}/${modelFiles.length})${loaded ? '' : ' [일부 오류]'}`;
+                }
+            }
+
+            const workers = Array.from(
+                { length: Math.min(MODEL_LOAD_CONCURRENCY, modelFiles.length) },
+                () => modelLoadWorker()
+            );
+            await Promise.all(workers);
+            // =========================================================
+
+            document.getElementById('loading-screen').style.display = 'none';
+            startSimulation(); 
+        }
+
+        window.startSimulation = async function() {
+            let osFileName = MAIN_OS_FILE;
+            setTimeOfDay(isNight);
+            
+            if (graphicMode === 'LOW') {
+                water.visible = false;
+                midWater.visible = false;
+                simpleWater.visible = true;
+            } else if (graphicMode === 'MID') {
+                water.visible = false;
+                midWater.visible = true;
+                simpleWater.visible = false;
+            } else {
+                water.visible = true;
+                midWater.visible = false;
+                simpleWater.visible = false;
+            }
+            
+            for(let i = osShip.children.length - 1; i >= 0; i--) { if(osShip.children[i] !== camera) osShip.remove(osShip.children[i]); }
+            targetShips.forEach(ts => scene.remove(ts)); targetShips.length = 0;
+            document.getElementById('ar-container').innerHTML = ''; for(let key in arTags) delete arTags[key];
+            activeWakes.forEach(w => scene.remove(w)); wakePool.push(...activeWakes); activeWakes.length = 0;
+
+            logData = []; shipPhysics.simTime = 0; shipPhysics.wps = []; shipPhysics.targetRudder = 0; shipPhysics.actualRudder = 0; shipPhysics.rot = 0; shipPhysics.lat = 0; shipPhysics.roll = 0; shipPhysics.pitch = 0; shipPhysics.wakeTimer = 0; currentWpIndex = 0; goalGroup.visible = false; manuallySelectedTarget = null; manualRadarZoom = 1.0; radarOffsetX = 0; radarOffsetY = 0; 
+            
+            env.windDir = 45; env.windSpd = 12.5; env.currentDir = 0; env.currentSpd = 0.0;
+
+            document.getElementById('digital-hud-container').style.display = 'flex';
+            
+            // 레이더 초기 상태는 OFF로 설정
+            toggleRadar(false);
+
+            document.getElementById('camera-hint').style.display = 'block';
+            document.getElementById('manual-target-panel').style.display = 'none';
+
+            let osData = parsedModels[osFileName];
+            if (!osData) {
+                const availableFiles = Object.keys(parsedModels);
+                if(availableFiles.length > 0) { osFileName = availableFiles[0]; osData = parsedModels[osFileName]; } else { alert("로딩된 3D 선박 모델이 없어 구동 불가합니다."); return; }
+            }
+
+            currentOSFileName = osFileName;
+            const osModel = osData.group.clone();
+            
+            const savedCalib = localStorage.getItem('model_calib_' + osFileName);
+            if(savedCalib) { const calib = JSON.parse(savedCalib); osModel.position.copy(calib.pos); osModel.rotation.set(calib.rot.x, calib.rot.y, calib.rot.z); } else { osModel.position.set(0, 0, 0); osModel.rotation.set(0, 0, 0); }
+            osShip.add(osModel); osShip.add(camera);
+
+            const savedCamStr = localStorage.getItem('bridgeCam_' + currentOSFileName);
+            if (savedCamStr) { const savedPos = JSON.parse(savedCamStr); camera.position.set(savedPos.x, savedPos.y, savedPos.z); } else { camera.position.set(0, 60, 0); }
+            camera.rotation.order = 'YXZ'; camera.rotation.set(camAngleX, camAngleY, 0);
+
+            const filesList = Object.keys(parsedModels);
+            let targetIndex = 1;
+
+            function createTarget(x, z, hdg, spd, explicitFile = null) {
+                const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
+                const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
+                const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
+                const tSaved = localStorage.getItem('model_calib_' + randomFile);
+                if(tSaved) { const c = JSON.parse(tSaved); tModel.position.copy(c.pos); tModel.rotation.set(c.rot.x, c.rot.y, c.rot.z); } else { tModel.position.set(0, 0, 0); tModel.rotation.set(0, 0, 0); }
+                
+                tsGroup.add(tModel); 
+                tsGroup.position.set(x, 0, z); 
+                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; 
+                tsGroup.rotation.y = -hdg * DEG2RAD; 
+                targetShips.push(tsGroup); scene.add(tsGroup);
+                
+                const el = document.createElement('div'); el.className = 'ar-label';
+                el.innerHTML = `<div class="ar-header">${name}</div><div class="ar-body">Name: <span class="ar-val ar-name">${name}</span><br>MMSI: <span class="ar-val ar-mmsi">-</span><br>COG: <span class="ar-val ar-cog">-</span><br>SOG: <span class="ar-val ar-sog">-</span><br>DIST: <span class="ar-val ar-dist">-</span><br>CPA: <span class="ar-val ar-cpa">-</span><br>TCPA: <span class="ar-val ar-tcpa">-</span><br>BCR: <span class="ar-val ar-bcr">-</span></div>`;
+                arContainer.appendChild(el); 
+                arTags[name] = { el: el, mmsi: el.querySelector('.ar-mmsi'), cog: el.querySelector('.ar-cog'), sog: el.querySelector('.ar-sog'), dist: el.querySelector('.ar-dist'), cpa: el.querySelector('.ar-cpa'), tcpa: el.querySelector('.ar-tcpa'), bcr: el.querySelector('.ar-bcr') };
+            }
+
+            osShip.position.set(0, 0, 0); shipPhysics.heading = 0; shipPhysics.cmdSpeed = 10.0; shipPhysics.speed = 10.0; 
+
+            if (loadedScenarioConfig) {
+                if (Array.isArray(loadedScenarioConfig)) {
+                    loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); } });
+                } else {
+                    if (loadedScenarioConfig.os) {
+                        if (loadedScenarioConfig.os.spd !== undefined) { shipPhysics.cmdSpeed = loadedScenarioConfig.os.spd; shipPhysics.speed = loadedScenarioConfig.os.spd; }
+                        if (loadedScenarioConfig.os.hdg !== undefined) shipPhysics.heading = loadedScenarioConfig.os.hdg;
+                        if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
+                    }
+                    if (loadedScenarioConfig.targets) {
+                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
+                    }
+                    if (loadedScenarioConfig.environment) {
+                        if (loadedScenarioConfig.environment.wind) {
+                            env.windDir = loadedScenarioConfig.environment.wind.dir !== undefined ? Number(loadedScenarioConfig.environment.wind.dir) : env.windDir;
+                            env.windSpd = loadedScenarioConfig.environment.wind.spd !== undefined ? Number(loadedScenarioConfig.environment.wind.spd) : env.windSpd;
+                        }
+                        if (loadedScenarioConfig.environment.current) {
+                            env.currentDir = loadedScenarioConfig.environment.current.dir !== undefined ? Number(loadedScenarioConfig.environment.current.dir) : env.currentDir;
+                            env.currentSpd = loadedScenarioConfig.environment.current.spd !== undefined ? Number(loadedScenarioConfig.environment.current.spd) : env.currentSpd;
+                        }
+                    }
+                }
+                if(shipPhysics.wps.length > 0) { goalGroup.position.set(shipPhysics.wps[0].x, 0, shipPhysics.wps[0].z); goalGroup.visible = true; }
+            }
+
+            // 시나리오의 실제 시작 Heading이 확정된 뒤 태양/해면 반사 방향을 한 번 더 맞춤
+            setTimeOfDay(isNight);
+
+            let tStr = "0.0"; 
+            logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
+            
+            isPaused = false;
+            const btnPause = document.getElementById('btn-pause');
+            btnPause.innerText = 'PAUSE';
+            btnPause.classList.remove('active');
+            gameState = 'PLAYING';
+        }
+
+        const PENDING_RESULT_KEY = 'HTMS_PENDING_RESULT_QUEUE_V1';
+        let resultUploadWorkerRunning = false;
+        let activeFinishUploadId = null;
+
+        function readPendingResultQueue() {
+            try {
+                const raw = localStorage.getItem(PENDING_RESULT_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                console.warn('임시 저장 데이터 읽기 실패:', e);
+                return [];
+            }
+        }
+
+        function writePendingResultQueue(queue) {
+            localStorage.setItem(PENDING_RESULT_KEY, JSON.stringify(queue));
+        }
+
+        async function postResultPayload(payload) {
+            return await fetchJsonWithTimeout(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            }, 60000);
+        }
+
+        async function processPendingResultQueue() {
+            if (resultUploadWorkerRunning) return;
+            resultUploadWorkerRunning = true;
+
+            try {
+                while (true) {
+                    const queue = readPendingResultQueue();
+                    if (queue.length === 0) break;
+
+                    const item = queue[0];
+                    let attempt = 0;
+
+                    while (true) {
+                        const showFinishUi = (item.id === activeFinishUploadId);
+                        try {
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = attempt === 0 ? "데이터 전송 중..." : "데이터 재전송 중...";
+                                title.style.color = "#00ffaa";
+                                document.getElementById('finish-desc').innerText = attempt === 0
+                                    ? "시뮬레이션 결과를 서버로 전송하고 있습니다."
+                                    : `네트워크 연결을 복구했습니다. 자동 재전송 중입니다. (${attempt + 1}회)`;
+                            }
+
+                            await postResultPayload(item.payload);
+
+                            const latestQueue = readPendingResultQueue();
+                            const nextQueue = latestQueue.filter(q => q.id !== item.id);
+                            writePendingResultQueue(nextQueue);
+
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = "데이터 전송 성공!";
+                                title.style.color = "#00ffaa";
+                                document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다.";
+                                activeFinishUploadId = null;
+                            }
+                            break;
+                        } catch (err) {
+                            attempt++;
+                            const delay = getRetryDelay(attempt);
+                            console.warn(`결과 전송 실패 - ${Math.round(delay / 1000)}초 후 재시도`, err);
+
+                            if (showFinishUi) {
+                                const title = document.getElementById('finish-title');
+                                title.innerText = "네트워크 연결 대기 중";
+                                title.style.color = "#ffcc00";
+                                document.getElementById('finish-desc').innerText = `데이터는 임시 보관되었습니다. ${Math.round(delay / 1000)}초 후 자동 재전송합니다. (${attempt}회)`;
+                            }
+
+                            await waitMs(delay);
+                        }
+                    }
+                }
+            } finally {
+                resultUploadWorkerRunning = false;
+                // 작업 중 새 항목이 추가된 경우 즉시 이어서 처리
+                if (readPendingResultQueue().length > 0) processPendingResultQueue();
+            }
+        }
+
+        // 이전 실행에서 네트워크 문제로 남은 결과가 있으면 페이지가 안정된 뒤 자동 복구 전송
+        setTimeout(() => {
+            if (readPendingResultQueue().length > 0) processPendingResultQueue();
+        }, 15000);
+
+        window.addEventListener('online', () => {
+            if (readPendingResultQueue().length > 0) processPendingResultQueue();
+        });
+
+        function finishSimulationAndSendData() {
+            if (gameState !== 'PLAYING') return;
+            gameState = 'FINISHED'; isPaused = true;
+            document.getElementById('finish-overlay').style.display = 'flex';
+            
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const dateStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+            
+            // 💡 선택한 시나리오 이름 가져오기
+            const scenarioSelect = document.getElementById('scenario-select');
+            let loadedScenarioName = "UnknownScenario";
+            if (scenarioSelect && scenarioSelect.selectedIndex >= 0) {
+                loadedScenarioName = scenarioSelect.options[scenarioSelect.selectedIndex].text;
+            }
+            
+            // 💡 파일명 맨 앞에 시나리오 이름 추가 (예: Scenario_001_S_20260908_...)
+            const customFileName = `${loadedScenarioName}_S_${dateStr}_${studentInfo.id}_${studentInfo.name}.json`;
+            const payload = { 
+                studentId: studentInfo.id, 
+                studentName: studentInfo.name, 
+                fileName: customFileName, 
+                logData: logData 
+            };
+
+            const uploadItem = {
+                id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                payload: payload
+            };
+            activeFinishUploadId = uploadItem.id;
+
+            try {
+                const queue = readPendingResultQueue();
+                queue.push(uploadItem);
+                writePendingResultQueue(queue);
+                processPendingResultQueue();
+            } catch (storageErr) {
+                // 브라우저 임시저장 용량이 부족한 경우에도 현재 화면에서는 성공할 때까지 재전송
+                console.warn('결과 임시 보관 실패 - 메모리에서 직접 재전송합니다.', storageErr);
+                (async () => {
+                    let attempt = 0;
+                    while (true) {
+                        try {
+                            await postResultPayload(payload);
+                            const title = document.getElementById('finish-title');
+                            title.innerText = "데이터 전송 성공!";
+                            title.style.color = "#00ffaa";
+                            document.getElementById('finish-desc').innerText = "시뮬레이션 결과가 안전하게 저장되었습니다. 고생하셨습니다.";
+                            activeFinishUploadId = null;
+                            break;
+                        } catch (err) {
+                            attempt++;
+                            const delay = getRetryDelay(attempt);
+                            const title = document.getElementById('finish-title');
+                            title.innerText = "네트워크 연결 대기 중";
+                            title.style.color = "#ffcc00";
+                            document.getElementById('finish-desc').innerText = `${Math.round(delay / 1000)}초 후 자동 재전송합니다. (${attempt}회)`;
+                            await waitMs(delay);
+                        }
+                    }
+                })();
+            }
+        }
+
+
+        // ==========================================
+        // 8. UPDATE LOGIC (Physics & AI)
+        // ==========================================
+        function updatePhysics(dt) {
+            if (dt <= 0) return;
+            shipPhysics.simTime += dt; 
+            
+            let rDiff = shipPhysics.targetRudder - shipPhysics.actualRudder; 
+            let rStep = 1.5 * dt; 
+            
+            if (Math.abs(rDiff) <= rStep) shipPhysics.actualRudder = shipPhysics.targetRudder; 
+            else shipPhysics.actualRudder += Math.sign(rDiff) * rStep;
+            
+            const K_nom = 2.0; 
+            const T_nom = 25.0; 
+            const targetRot = K_nom * shipPhysics.actualRudder; 
+            const rotDerivative = (targetRot - shipPhysics.rot) / T_nom; 
+            
+            shipPhysics.rot += rotDerivative * dt; 
+            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
+            if (shipPhysics.heading < 0) shipPhysics.heading += 360;
+            
+            const headingRad = shipPhysics.heading * DEG2RAD;
+            const speedLossFactor = 0.008; 
+            const targetSpeed = shipPhysics.cmdSpeed * (1.0 - speedLossFactor * Math.abs(shipPhysics.rot));
+            const T_surge = 15.0; 
+            
+            shipPhysics.speed += (targetSpeed - shipPhysics.speed) * (dt / T_surge);
+
+            let moveX = (shipPhysics.speed * moveScale) * Math.sin(headingRad) * dt;
+            let moveZ = -(shipPhysics.speed * moveScale) * Math.cos(headingRad) * dt;
+
+            if (env.currentSpd > 0) {
+                let currentRad = env.currentDir * DEG2RAD;
+                moveX += (env.currentSpd * moveScale) * Math.sin(currentRad) * dt;
+                moveZ -= (env.currentSpd * moveScale) * Math.cos(currentRad) * dt;
+            }
+
+            let windDriftSpeed = 0;
+            if (env.windSpd > 0) {
+                let windForceRad = (env.windDir + 180) * DEG2RAD; 
+                windDriftSpeed = (env.windSpd * env.windSpd) * 0.005 * Math.sin((env.windDir - shipPhysics.heading + 360) % 360 * DEG2RAD);
+                moveX += (windDriftSpeed * moveScale) * Math.cos(headingRad) * dt; 
+                moveZ -= (windDriftSpeed * moveScale) * -Math.sin(headingRad) * dt;
+            }
+
+            let actualVx = moveX / (moveScale * dt);
+            let actualVz = -moveZ / (moveScale * dt);
+            shipPhysics.sog = Math.sqrt(actualVx*actualVx + actualVz*actualVz);
+            shipPhysics.cog = (Math.atan2(actualVx, actualVz) * 180 / Math.PI + 360) % 360;
+
+            osShip.position.x += moveX;
+            osShip.position.z += moveZ;
+            shipPhysics.lat = actualVx * Math.cos(headingRad) - actualVz * Math.sin(headingRad);
+
+            const t = clock.getElapsedTime() * simSpeed;
+            shipPhysics.roll = Math.sin(t * 0.8) * env.waveForce * 3.5 - (shipPhysics.rot * 0.18 * (shipPhysics.speed / 15.0)); 
+            shipPhysics.pitch = Math.cos(t * 0.7) * env.waveForce * 1.5;
+            osShip.rotation.set(-shipPhysics.pitch * DEG2RAD, -headingRad, -shipPhysics.roll * DEG2RAD);
+            
+            camera.rotation.y = camAngleY; camera.rotation.x = camAngleX;
+            arOverlayGroup.position.copy(osShip.position); arOverlayGroup.rotation.y = -headingRad;
+
+            if (shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
+                const wp = shipPhysics.wps[currentWpIndex];
+                const distToGoal = Math.sqrt(Math.pow(wp.x - osShip.position.x, 2) + Math.pow(wp.z - osShip.position.z, 2));
+                if (distToGoal < 120) { 
+                    currentWpIndex++; 
+                    if (currentWpIndex < shipPhysics.wps.length) { 
+                        goalGroup.position.set(shipPhysics.wps[currentWpIndex].x, 0, shipPhysics.wps[currentWpIndex].z); 
+                    } else { 
+                        goalGroup.visible = false; finishSimulationAndSendData(); 
+                    } 
+                }
+            }
+
+            targetShips.forEach(ts => {
+                const tsRad = ts.userData.heading * DEG2RAD; 
+                ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt; 
+                ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
+            });
+
+            for(let i = activeWakes.length - 1; i >= 0; i--) { 
+                let w = activeWakes[i]; 
+                w.userData.life -= dt * 0.25; 
+                w.scale.setScalar(1 + (1 - w.userData.life) * 1.5); 
+                w.material.opacity = w.userData.life * 0.4; 
+                if(w.userData.life <= 0) { 
+                    scene.remove(w); 
+                    activeWakes.splice(i, 1); 
+                    wakePool.push(w); 
+                } 
+            }
+            
+            shipPhysics.wakeTimer = (shipPhysics.wakeTimer || 0) + dt;
+            if(shipPhysics.wakeTimer > 0.15) {
+                shipPhysics.wakeTimer = 0;
+                function spawnWake(shipPos, shipHeadingRad, speed) { 
+                    if(speed < 2.0) return; 
+                    let w = wakePool.pop(); 
+                    if(!w) { 
+                        let mat = new THREE.MeshBasicMaterial({ map: wakeTex, transparent: true, opacity: 0.4, depthWrite: false }); 
+                        w = new THREE.Mesh(wakeGeo, mat); 
+                        w.rotation.order = 'YXZ'; w.rotation.x = -Math.PI / 2; 
+                    } 
+                    let dx = Math.sin(shipHeadingRad) * (-30); 
+                    let dz = -Math.cos(shipHeadingRad) * (-30); 
+                    w.position.set(shipPos.x + dx, 0.5, shipPos.z + dz); 
+                    w.rotation.z = -shipHeadingRad; w.scale.setScalar(1); 
+                    w.material.opacity = 0.4; w.userData.life = 1.0; 
+                    scene.add(w); activeWakes.push(w); 
+                }
+                spawnWake(osShip.position, headingRad, shipPhysics.speed); 
+                targetShips.forEach(ts => { 
+                    const tsRad = ts.userData.heading * DEG2RAD; 
+                    spawnWake(ts.position, tsRad, ts.userData.speed); 
+                });
+            }
+        }
+
+        function updateAI() {
+            // Update HUD values using cached DOM elements
+            UI_ELEMENTS.valHdg.innerText = shipPhysics.heading.toFixed(1).padStart(5, '0') + '°'; 
+            UI_ELEMENTS.valCrs.innerText = (shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading).toFixed(1).padStart(5, '0') + '°'; 
+            UI_ELEMENTS.valSog.innerText = (shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed).toFixed(1); 
+            UI_ELEMENTS.valLat.innerText = Math.abs(shipPhysics.lat).toFixed(1);
+            
+            const rotVal = shipPhysics.rot; 
+            UI_ELEMENTS.valRot.innerText = Math.abs(rotVal).toFixed(1); 
+            if (rotVal > 0.1) { UI_ELEMENTS.valRot.style.color = '#00ffaa'; } else if (rotVal < -0.1) { UI_ELEMENTS.valRot.style.color = '#ff3333'; } else { UI_ELEMENTS.valRot.style.color = '#fff'; }
+            
+            const rudCmdVal = shipPhysics.targetRudder; 
+            UI_ELEMENTS.valRudCmd.innerText = Math.abs(rudCmdVal).toFixed(1) + '°'; 
+            if (rudCmdVal > 0.1) { UI_ELEMENTS.valRudCmd.style.color = '#00ffaa'; } else if (rudCmdVal < -0.1) { UI_ELEMENTS.valRudCmd.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudCmd.style.color = '#fff'; }
+            
+            const rudActVal = shipPhysics.actualRudder; 
+            UI_ELEMENTS.valRudAct.innerText = Math.abs(rudActVal).toFixed(1) + '°'; 
+            if (rudActVal > 0.1) { UI_ELEMENTS.valRudAct.style.color = '#00ffaa'; } else if (rudActVal < -0.1) { UI_ELEMENTS.valRudAct.style.color = '#ff3333'; } else { UI_ELEMENTS.valRudAct.style.color = '#fff'; }
+
+            UI_ELEMENTS.valWind.innerText = `${Math.round(env.windDir).toString().padStart(3, '0')}° / ${env.windSpd.toFixed(1)}`;
+            UI_ELEMENTS.valCurrent.innerText = `${Math.round(env.currentDir).toString().padStart(3, '0')}° / ${env.currentSpd.toFixed(1)}`;
+
+            let maxDistSq = 1000 * 1000;
+            targetShips.forEach(ts => { 
+                const relX = ts.position.x - osShip.position.x; 
+                const relZ = ts.position.z - osShip.position.z; 
+                const dSq = relX*relX + relZ*relZ; 
+                if (dSq > maxDistSq) { maxDistSq = dSq; } 
+            });
+            window.currentRadarMaxDist = Math.sqrt(maxDistSq) * 1.15 * manualRadarZoom;
+
+            const canvasR = UI_ELEMENTS.ecdisCanvas; 
+            canvasR.width = canvasR.clientWidth; 
+            canvasR.height = canvasR.clientHeight; 
+            const ctxR = canvasR.getContext('2d'); 
+            const cx = canvasR.width/2; 
+            const cy = canvasR.height/2; 
+            // --- 패닝 오프셋 적용 ---
+            const drawCx = cx + radarOffsetX;
+            const drawCy = cy + radarOffsetY;
+            // ------------------------
+            const mapScale = (canvasR.width / 2) / window.currentRadarMaxDist; 
+            
+            ctxR.clearRect(0, 0, canvasR.width, canvasR.height); 
+            ctxR.strokeStyle = 'rgba(0, 255, 255, 0.3)'; 
+            ctxR.lineWidth = 1;
+
+            // --- 레인지링 동적 생성 수정 부분 ---
+            const ringSpacing = canvasR.width / 8;
+            // 패닝에 의해 화면 밖으로 벗어난 부분까지 링을 그리기 위해 최대 거리 계산
+            if (ringSpacing > 0) {
+                const distToCorners = [
+                    Math.hypot(0 - drawCx, 0 - drawCy),
+                    Math.hypot(canvasR.width - drawCx, 0 - drawCy),
+                    Math.hypot(0 - drawCx, canvasR.height - drawCy),
+                    Math.hypot(canvasR.width - drawCx, canvasR.height - drawCy)
+                ];
+                const maxDist = Math.max(...distToCorners);
+                const maxRings = Math.ceil(maxDist / ringSpacing);
+
+                for(let r = 1; r <= maxRings; r++) {
+                    ctxR.beginPath();
+                    ctxR.arc(drawCx, drawCy, r * ringSpacing, 0, Math.PI * 2);
+                    ctxR.stroke();
+                }
+            }
+            // ----------------------------------
+
+            ctxR.save(); ctxR.translate(drawCx, drawCy);
+
+            let mostDangerousTarget = null; 
+            let minTcpa = Infinity; 
+            let cpaThreshold = currentCpaLimit; 
+            let collisionDetected = false; 
+            
+            const canvasLines = UI_ELEMENTS.hudLines; 
+            canvasLines.width = window.innerWidth; 
+            canvasLines.height = window.innerHeight; 
+            const ctxL = canvasLines.getContext('2d'); 
+            ctxL.clearRect(0,0, canvasLines.width, canvasLines.height); 
+            const ownPos2D = { x: window.innerWidth/2, y: window.innerHeight - 50 };
+
+            raycaster.setFromCamera(mouse, camera); 
+            const intersects = raycaster.intersectObjects(targetShips, true); 
+            let hoveredShip = null;
+            if(intersects.length > 0) { 
+                let obj = intersects[0].object; 
+                while(obj.parent && !obj.userData.name) { obj = obj.parent; } 
+                if (obj.userData.name) hoveredShip = obj; 
+            }
+
+            if (shipPhysics.wps && shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
+                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; 
+                ctxR.lineWidth = 1.5; 
+                ctxR.setLineDash([5, 5]); 
+                ctxR.beginPath();
+                
+                let startIndex = Math.max(0, currentWpIndex - 1);
+                if (currentWpIndex === 0) { ctxR.moveTo(0, 0); }
+            
+                for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
+                    let relX = shipPhysics.wps[i].x - osShip.position.x; 
+                    let relZ = shipPhysics.wps[i].z - osShip.position.z; 
+                    let true_brg = Math.atan2(relX, -relZ); 
+                    let rel_brg = true_brg - (shipPhysics.heading * DEG2RAD); 
+                    let distSq = relX*relX + relZ*relZ; 
+                    let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                    let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                    
+                    if (i === startIndex && currentWpIndex !== 0) {
+                        ctxR.moveTo(rotX, rotY);
+                    } else {
+                        ctxR.lineTo(rotX, rotY);
+                    }
+                }
+                ctxR.stroke(); ctxR.setLineDash([]);
+                
+                for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
+                    let relX = shipPhysics.wps[i].x - osShip.position.x; 
+                    let relZ = shipPhysics.wps[i].z - osShip.position.z; 
+                    let true_brg = Math.atan2(relX, -relZ); 
+                    let rel_brg = true_brg - (shipPhysics.heading * DEG2RAD); 
+                    let distSq = relX*relX + relZ*relZ; 
+                    let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                    let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
+                    ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; 
+                    ctxR.beginPath(); 
+                    ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); 
+                    ctxR.fill(); 
+                }
+            }
+
+            const osSog = shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed;
+            const osCog = shipPhysics.cog !== undefined ? shipPhysics.cog : shipPhysics.heading;
+
+            targetShips.forEach(ts => {
+                const relX = ts.position.x - osShip.position.x; 
+                const relZ = ts.position.z - osShip.position.z;
+                const radH = shipPhysics.heading * DEG2RAD; 
+                const localX = relX * Math.cos(radH) + relZ * Math.sin(radH); 
+                const localZ = -relX * Math.sin(radH) + relZ * Math.cos(radH);
+                
+                if (Math.abs(localX) < 120 && Math.abs(localZ) < 300) { collisionDetected = true; }
+                
+                const distSq = relX*relX + relZ*relZ; 
+                const distNM = Math.sqrt(distSq) / 400; 
+                const true_bearing_rad = Math.atan2(relX, -relZ); 
+                const relBearing = true_bearing_rad - (shipPhysics.heading * DEG2RAD); 
+                const rotX = Math.sin(relBearing) * Math.sqrt(distSq) * mapScale; 
+                const rotY = -Math.cos(relBearing) * Math.sqrt(distSq) * mapScale;
+                
+                const { cpa, tcpa, bcr } = calculateCPA(osSog, osCog, ts.userData.speed, ts.userData.heading, relX, relZ);
+                let isDanger = (currentMode === 'CAS' && cpa < cpaThreshold && tcpa > 0 && tcpa < 1000);
+                if (isDanger && tcpa < minTcpa) { 
+                    minTcpa = tcpa; 
+                    mostDangerousTarget = { ts, cpa, tcpa, distNM, bcr }; 
+                }
+
+                ctxR.save(); ctxR.translate(rotX, rotY); 
+                ctxR.rotate((ts.userData.heading - shipPhysics.heading) * DEG2RAD);
+                
+                if (manuallySelectedTarget === ts) { 
+                    ctxR.beginPath(); 
+                    ctxR.arc(0, 0, 14, 0, Math.PI * 2); 
+                    ctxR.strokeStyle = '#ffcc00'; 
+                    ctxR.lineWidth = 1.5; 
+                    ctxR.stroke(); 
+                }
+                
+                if (isDanger) { 
+                    ctxR.fillStyle = '#ff3333'; ctxR.beginPath(); ctxR.arc(0, 0, 10, 0, Math.PI*2); ctxR.strokeStyle='#ff3333'; ctxR.stroke(); 
+                } else { 
+                    ctxR.fillStyle = '#00ff00'; 
+                }
+                
+                ctxR.beginPath(); ctxR.moveTo(0, -6); ctxR.lineTo(3, 4); ctxR.lineTo(-3, 4); ctxR.fill(); ctxR.restore();
+
+                const tagInfo = arTags[ts.userData.name]; 
+                const pos2D = getScreenPos(ts.position);
+                
+                if (pos2D.z < 1 && distSq < 80000000) {
+                    tagInfo.el.style.left = pos2D.x + 'px'; 
+                    tagInfo.el.style.top = (pos2D.y - 40) + 'px'; 
+                    tagInfo.mmsi.innerText = ts.userData.mmsi; 
+                    tagInfo.sog.innerText = ts.userData.speed.toFixed(1) + ' Kn'; 
+                    tagInfo.cog.innerText = ts.userData.heading.toFixed(1) + '°'; 
+                    tagInfo.dist.innerText = distNM.toFixed(1) + ' NM'; 
+                    tagInfo.cpa.innerText = cpa.toFixed(2) + ' NM'; 
+                    tagInfo.tcpa.innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + ' MIN' : '-'); 
+                    tagInfo.bcr.innerText = (bcr > 0 ? bcr.toFixed(2) + ' NM' : '-');
+                    
+                    if (currentMode === 'CAS') {
+                        if (isDanger) { 
+                            tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0; tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.05)`; tagInfo.el.style.borderColor = '#ff3333'; 
+                        } else { 
+                            tagInfo.el.style.zIndex = 50 - Math.floor(distNM); tagInfo.el.style.opacity = distNM > 3.0 ? 0.3 : 0.7; tagInfo.el.style.transform = `translate(-50%, -100%) scale(0.9)`; tagInfo.el.style.borderColor = 'rgba(0, 255, 170, 0.4)'; 
+                        }
+                        tagInfo.el.style.display = 'block'; 
+                        ctxL.beginPath(); ctxL.moveTo(ownPos2D.x, ownPos2D.y); ctxL.lineTo(pos2D.x, pos2D.y); 
+                        ctxL.strokeStyle = isDanger ? 'rgba(255, 51, 51, 0.8)' : 'rgba(0, 255, 170, 0.2)'; 
+                        ctxL.lineWidth = isDanger ? 2.0 : 1.0; ctxL.stroke();
+                    } else {
+                        if (hoveredShip === ts) { 
+                            tagInfo.el.style.zIndex = 999; tagInfo.el.style.opacity = 1.0; tagInfo.el.style.transform = `translate(-50%, -100%) scale(1.0)`; tagInfo.el.style.borderColor = '#00ffaa'; tagInfo.el.style.display = 'block'; 
+                        } else { 
+                            tagInfo.el.style.display = 'none'; 
+                        }
+                    }
+                } else { 
+                    tagInfo.el.style.display = 'none'; 
+                }
+            });
+
+            ctxR.fillStyle = '#000000'; ctxR.beginPath(); ctxR.moveTo(0, -7); ctxR.lineTo(3.5, 5); ctxR.lineTo(-3.5, 5); ctxR.fill(); ctxR.strokeStyle = '#ffffff'; ctxR.lineWidth = 1; ctxR.stroke(); ctxR.restore();
+            
+            const colInd = UI_ELEMENTS.btnCollision;
+            if (collisionDetected) { 
+                colInd.classList.add('collision-alert'); colInd.innerText = 'COLLISION ALERT'; colInd.style.background = ''; colInd.style.borderColor = ''; colInd.style.color = ''; 
+            } else { 
+                colInd.classList.remove('collision-alert'); colInd.innerText = 'COLLISION CLEAR'; colInd.style.background = 'rgba(0, 255, 170, 0.1)'; colInd.style.borderColor = '#00ffaa'; colInd.style.color = '#00ffaa'; 
+            }
+            
+            if (manuallySelectedTarget) { 
+                const ts = manuallySelectedTarget; 
+                const relX = ts.position.x - osShip.position.x; 
+                const relZ = ts.position.z - osShip.position.z; 
+                const distNM = Math.sqrt(relX*relX + relZ*relZ) / 400; 
+                const { cpa, tcpa, bcr } = calculateCPA(osSog, osCog, ts.userData.speed, ts.userData.heading, relX, relZ); 
+                
+                UI_ELEMENTS.mtName.innerText = ts.userData.name; 
+                UI_ELEMENTS.mtMmsi.innerText = ts.userData.mmsi; 
+                UI_ELEMENTS.mtCog.innerText = ts.userData.heading.toFixed(1) + "°"; 
+                UI_ELEMENTS.mtSog.innerText = ts.userData.speed.toFixed(1) + " Kn"; 
+                UI_ELEMENTS.mtDist.innerText = distNM.toFixed(1) + " NM"; 
+                UI_ELEMENTS.mtCpa.innerText = cpa.toFixed(2) + " NM"; 
+                UI_ELEMENTS.mtTcpa.innerText = (tcpa > 0 ? (tcpa/60).toFixed(1) + " MIN" : "-"); 
+                UI_ELEMENTS.mtBcr.innerText = (bcr > 0 ? bcr.toFixed(2) + " NM" : "-"); 
+            }
+
+            if (shipPhysics.simTime - lastLogTime >= LOG_INTERVAL) {
+                lastLogTime = shipPhysics.simTime; 
+                let tStr = shipPhysics.simTime.toFixed(1);
+                logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
+                targetShips.forEach(ts => { 
+                    logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); 
+                });
+            }
+
+            if (currentMode === 'CAS') {
+                const reasonList = UI_ELEMENTS.dangerReasonList; 
+                const voiceContent = UI_ELEMENTS.aiVoiceContent;
+                if (mostDangerousTarget) {
+                    let ts = mostDangerousTarget.ts; let tCpa = mostDangerousTarget.cpa; let tTcpa = mostDangerousTarget.tcpa; let tDist = mostDangerousTarget.distNM; let tBcr = mostDangerousTarget.bcr;
+                    
+                    UI_ELEMENTS.dangerTargetName.innerText = ts.userData.name; 
+                    UI_ELEMENTS.dangerTargetMmsi.innerText = ts.userData.mmsi; 
+                    UI_ELEMENTS.dangerTargetCog.innerText = ts.userData.heading.toFixed(1) + "°"; 
+                    UI_ELEMENTS.dangerTargetSog.innerText = ts.userData.speed.toFixed(1) + " Kn"; 
+                    UI_ELEMENTS.dangerTargetDist.innerText = tDist.toFixed(1) + " NM"; 
+                    UI_ELEMENTS.dangerTargetCpa.innerText = tCpa.toFixed(2) + " NM"; 
+                    UI_ELEMENTS.dangerTargetTcpa.innerText = (tTcpa/60).toFixed(1) + " MIN"; 
+                    UI_ELEMENTS.dangerTargetBcr.innerText = (tBcr > 0 ? tBcr.toFixed(2) + " NM" : "-");
+                    
+                    reasonList.innerHTML = `<li style="color:#ff3333; font-weight:bold;">HIGH COLLISION RISK</li><li>위험 선박: ${ts.userData.name}</li><li>충돌 예상 시간: ${(tTcpa/60).toFixed(1)}분</li><li style="margin-top:10px; color:#ffcc00; font-weight:bold;">▶ 우현 변침 권고.</li>`; 
+                    dangerChevrons.visible = false; 
+                    voiceContent.innerHTML = `선장님, <b style="color:#ffcc00">${ts.userData.name}</b> 와의 충돌 위험이 감지되었습니다.<br>안전 거리 확보를 위해 변침이 필요합니다.<br>집중하시고 <span style="color:#00ffaa; font-weight:bold;">충돌을 피하기 위한 </span>조타를 즉시 수행하십시오.`;
+                } else {
+                    UI_ELEMENTS.dangerTargetName.innerText = "NONE"; 
+                    UI_ELEMENTS.dangerTargetMmsi.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetCog.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetSog.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetDist.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetCpa.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetTcpa.innerText = "-"; 
+                    UI_ELEMENTS.dangerTargetBcr.innerText = "-";
+                    
+                    reasonList.innerHTML = `<li>ALL VESSELS CLEAR OF CPA</li><li style="margin-top:10px; color:#00ffaa; font-weight:bold;">▶ PRO CEED ON CURRENT SAFE ROUTE</li>`; 
+                    dangerChevrons.visible = false; 
+                    voiceContent.innerHTML = `선장님, 설정된 안전 반경(${currentCpaLimit.toFixed(1)}NM) 내에 충돌 위험 선박이 없습니다.<br>현재 침로와 속력을 유지하십시오.`;
+                }
+            }
+        }
+
+        // ==========================================
+        // 9. MAIN RENDER LOOP
+        // ==========================================
+        function animate() {
+            requestAnimationFrame(animate);
+            if (gameState === 'PLAYING') {
+                if (!isPaused) { 
+                    const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
+                    if (graphicMode === 'HIGH') {
+                        water.material.uniforms['time'].value += dt * 0.3; 
+                    } else if (graphicMode === 'MID') {
+                        if (midWater.material.normalMap) {
+                            midWater.material.normalMap.offset.x += dt * 0.02;
+                            midWater.material.normalMap.offset.y += dt * 0.03;
+                        }
+                    }
+                    updatePhysics(dt); 
+                } else { 
+                    clock.getDelta(); 
+                }
+                
+                if (camMoveDir && !isPaused) {
+                    if(camMoveDir === 'w') camera.position.z -= 1;
+                    if(camMoveDir === 's') camera.position.z += 1;
+                    if(camMoveDir === 'a') camera.position.x -= 1;
+                    if(camMoveDir === 'd') camera.position.x += 1;
+                    if(camMoveDir === 'q') camera.position.y += 1;
+                    if(camMoveDir === 'e') camera.position.y -= 1;
+                }
+
+                camera.rotation.y = camAngleY; 
+                camera.rotation.x = camAngleX; 
+                updateAI(); 
+            } else if (gameState === 'CALIBRATING') { 
+                if(typeof orbitControl !== 'undefined' && orbitControl) orbitControl.update(); 
+                clock.getDelta(); 
+            } else { 
+                clock.getDelta(); 
+            }
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
