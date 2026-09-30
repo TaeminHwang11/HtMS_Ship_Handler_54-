@@ -148,11 +148,11 @@
             min-width: 0; min-height: 0; gap: 4px; background: #000; padding: 4px; order: 2; box-sizing: border-box;
         }
         #main-wrapper.split-mode #h-resizer { 
-            display: block; height: 8px; background: #1e293b; cursor: default; pointer-events: none;
+            display: block; height: 8px; background: #1e293b; cursor: row-resize; pointer-events: auto;
             z-index: 30; border-top: 1px solid #0f172a; border-bottom: 1px solid #0f172a; 
-            transition: none; flex-shrink: 0; 
+            transition: background 0.15s; flex-shrink: 0; 
         }
-        #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: #1e293b; }
+        #main-wrapper.split-mode #h-resizer:hover, #main-wrapper.split-mode #h-resizer:active { background: #334155; }
 
         .split-side-panel { display: none; background: var(--panel-bg); box-sizing: border-box; }
         #main-wrapper.split-mode #split-left-panel {
@@ -343,22 +343,31 @@
         }
         #surveillance-preview-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
 
-        /* Detailed Monitoring: large 2D on the left, square support controls on the right. */
+        /* Detailed Monitoring: large 2D on the left, widened 3x3 support controls on the right. */
         #main-wrapper.split-mode #grid-area {
             display: grid; flex: 1 1 auto; width: auto; height: 100%; aspect-ratio: auto;
             min-width: 0; min-height: 0; gap: 4px; background: #000; padding: 4px; order: 1; box-sizing: border-box;
         }
         #main-wrapper.split-mode #split-left-panel {
-            display: flex; flex: 0 0 auto; height: 100%; width: auto; aspect-ratio: 1 / 1;
-            min-width: 0; min-height: 0; flex-direction: row; gap: 7px; padding: 8px;
+            display: flex; flex: 0 0 clamp(390px, 31%, 520px); height: 100%; width: auto; aspect-ratio: auto;
+            min-width: 390px; min-height: 0; flex-direction: column; gap: 6px; padding: 8px;
             overflow: hidden; border-left: 1px solid var(--border-color); border-right: none; order: 2;
         }
-        #main-wrapper.split-mode #split-left-panel .split-control-group { min-width: 0; }
-        #main-wrapper.split-mode #split-left-panel .control-btn-grid { gap: 5px; }
-        #main-wrapper.split-mode #split-left-panel .placeholder-btn { font-size: clamp(10px, 1.25vw, 16px); padding: 5px 3px; }
-        #support-sa-grid { grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); }
-        #support-dm-grid { grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); }
-        #support-ac-grid { grid-template-columns: 1fr; grid-template-rows: repeat(2, minmax(0,1fr)); }
+        #support-group-header-row {
+            display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; flex: 0 0 auto;
+        }
+        #support-group-header-row .split-group-title { margin: 0; padding: 0 2px 6px; font-size: 11px; }
+        #support-9-grid {
+            display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); grid-template-rows: repeat(3, minmax(0,1fr));
+            gap: 6px; width: 100%; flex: 1 1 auto; min-height: 0;
+        }
+        #main-wrapper.split-mode #split-left-panel .placeholder-btn {
+            font-size: clamp(11px, 0.95vw, 14px); padding: 5px 4px; line-height: 1.02; min-width: 0; overflow: hidden;
+        }
+        #support-9-grid .control-btn-line { white-space: nowrap; }
+        .placeholder-btn.support-sa { border-color: rgba(6,182,212,0.58); color:#67e8f9; }
+        .placeholder-btn.support-dm { border-color: rgba(234,179,8,0.58); color:#fde047; }
+        .placeholder-btn.support-ac { border-color: rgba(16,185,129,0.58); color:#6ee7b7; }
         .support-control-setting, .support-control-result {
             display: none; width: 100%; font-size: 10px; font-weight: 700; line-height: 1.05; white-space: nowrap;
             color: #0f172a; margin-top: 2px; pointer-events: none;
@@ -448,29 +457,21 @@
 
             <div id="bottom-view-wrapper">
                 <div id="split-left-panel" class="split-side-panel">
-                    <div class="split-control-group">
+                    <div id="support-group-header-row">
                         <div class="split-group-title sa">SITUATION AWARENESS</div>
-                        <div class="control-btn-grid" id="support-sa-grid">
-                            <button class="placeholder-btn support-sa" id="support-future" onclick="toggleNavSupport('sa','future')"><span class="control-btn-line">FUTURE POSITION</span><span class="support-control-setting" id="support-future-setting">90s</span></button>
-                            <button class="placeholder-btn support-sa" id="support-collision" onclick="toggleNavSupport('sa','collision')"><span class="control-btn-line">COLLISION POINT</span></button>
-                            <button class="placeholder-btn support-sa" id="support-threat" onclick="toggleNavSupport('sa','threat')"><span class="control-btn-line">THREAT HIGHLIGHT</span></button>
-                            <button class="placeholder-btn support-sa" id="support-priority" onclick="toggleNavSupport('sa','priority')"><span class="control-btn-line">PRIORITY MONITORING</span></button>
-                        </div>
-                    </div>
-                    <div class="split-control-group">
                         <div class="split-group-title dm">DECISION MAKING</div>
-                        <div class="control-btn-grid" id="support-dm-grid">
-                            <button class="placeholder-btn support-dm" id="support-safe" onclick="toggleNavSupport('dm','safe')"><span class="control-btn-line">SAFE HDG BAND</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
-                            <button class="placeholder-btn support-dm" id="support-min" onclick="toggleNavSupport('dm','min')"><span class="control-btn-line">MIN ALTERATION</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
-                            <button class="placeholder-btn support-dm" id="support-whatif" onclick="toggleNavSupport('dm','whatif')"><span class="control-btn-line">WHAT-IF COURSE</span></button>
-                        </div>
-                    </div>
-                    <div class="split-control-group">
                         <div class="split-group-title ac">ACTION &amp; CONTROL</div>
-                        <div class="control-btn-grid" id="support-ac-grid">
-                            <button class="placeholder-btn support-ac" id="support-rudder" onclick="toggleNavSupport('ac','rudder')"><span class="control-btn-line">RUDDER SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rudder-result">MODEL READY</span></button>
-                            <button class="placeholder-btn support-ac" id="support-rot" onclick="toggleNavSupport('ac','rot')"><span class="control-btn-line">ROT SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rot-result">MODEL READY</span></button>
-                        </div>
+                    </div>
+                    <div id="support-9-grid">
+                        <button class="placeholder-btn support-sa" id="support-future" onclick="toggleNavSupport('sa','future')"><span class="control-btn-line">FUTURE</span><span class="control-btn-line">POSITION</span><span class="support-control-setting" id="support-future-setting">90s</span></button>
+                        <button class="placeholder-btn support-sa" id="support-collision" onclick="toggleNavSupport('sa','collision')"><span class="control-btn-line">COLLISION</span><span class="control-btn-line">POINT</span></button>
+                        <button class="placeholder-btn support-sa" id="support-threat" onclick="toggleNavSupport('sa','threat')"><span class="control-btn-line">THREAT</span><span class="control-btn-line">HIGHLIGHT</span></button>
+                        <button class="placeholder-btn support-sa" id="support-priority" onclick="toggleNavSupport('sa','priority')"><span class="control-btn-line">PRIORITY</span><span class="control-btn-line">MONITORING</span></button>
+                        <button class="placeholder-btn support-dm" id="support-safe" onclick="toggleNavSupport('dm','safe')"><span class="control-btn-line">SAFE HDG</span><span class="control-btn-line">BAND</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
+                        <button class="placeholder-btn support-dm" id="support-min" onclick="toggleNavSupport('dm','min')"><span class="control-btn-line">MIN</span><span class="control-btn-line">ALTERATION</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
+                        <button class="placeholder-btn support-dm" id="support-whatif" onclick="toggleNavSupport('dm','whatif')"><span class="control-btn-line">WHAT-IF</span><span class="control-btn-line">COURSE</span></button>
+                        <button class="placeholder-btn support-ac" id="support-rudder" onclick="toggleNavSupport('ac','rudder')"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rudder-result">MODEL READY</span></button>
+                        <button class="placeholder-btn support-ac" id="support-rot" onclick="toggleNavSupport('ac','rot')"><span class="control-btn-line">ROT</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rot-result">MODEL READY</span></button>
                     </div>
                 </div>
                 
@@ -750,7 +751,7 @@
         const rb = document.getElementById('support-rudder-result');
         const rt = document.getElementById('support-rot-result');
         const acBtns = [document.getElementById('support-rudder'), document.getElementById('support-rot')].filter(Boolean);
-        acBtns.forEach(b => b.classList.toggle('model-error', navSupport.workerState === 'ERROR'));
+        acBtns.forEach(b => b.classList.toggle('model-error', navSupport.workerState === 'MODEL ERROR'));
         if (rb) rb.textContent = result && result.available ? result.rudderSuggestion : (navSupport.workerReady ? 'CALCULATING...' : navSupport.workerState);
         if (rt) rt.textContent = result && result.available ? result.rotSuggestion : (navSupport.workerReady ? 'CALCULATING...' : navSupport.workerState);
     }
@@ -855,20 +856,90 @@
         return null;
     }
 
+    function isDetailedHeadUpView(v) {
+        return !!(isSplitMode && massViews[activeMassIndex] === v && v && v.massEntity);
+    }
+
+    function detailedDisplayVector(v, dx, dz) {
+        if (!isDetailedHeadUpView(v)) return { x: dx, z: dz };
+        const h = wrap360Support(v.massEntity.hdg) * DEG2RAD;
+        const east = Number(dx) || 0;
+        const north = -(Number(dz) || 0);
+        const right = east * Math.cos(h) - north * Math.sin(h);
+        const forward = east * Math.sin(h) + north * Math.cos(h);
+        return { x: right, z: -forward };
+    }
+
+    function detailedDisplayHeading(v, absoluteHeading) {
+        return isDetailedHeadUpView(v) ? signedDiffSupport(v.massEntity.hdg, absoluteHeading) : absoluteHeading;
+    }
+
+    function detailedCanvasPoint(v, dx, dz) {
+        const q = detailedDisplayVector(v, dx, dz);
+        return { x: v.panX + q.x * v.viewScale, y: v.panY + q.z * v.viewScale };
+    }
+
+    function buildDetailedDangerHeadingArcs(mass, cpaNM) {
+        if (!mass) return [];
+        const ownSpeedU = Math.max(0.0001, Number(mass.spd) || 0) * 400 / 3600;
+        const safetyU = Math.max(0.02, Number(cpaNM) || 0.50) * 0.5 * 400;
+        const ovx = (Number(mass.spd) || 0) * 400 / 3600 * Math.sin((Number(mass.hdg) || 0) * DEG2RAD);
+        const ovz = -(Number(mass.spd) || 0) * 400 / 3600 * Math.cos((Number(mass.hdg) || 0) * DEG2RAD);
+        const arcs = [];
+        simEntities.forEach(t => {
+            if (t === mass || (t.isMASS && t !== mass)) return;
+            const tvx = (Number(t.spd) || 0) * 400 / 3600 * Math.sin((Number(t.hdg) || 0) * DEG2RAD);
+            const tvz = -(Number(t.spd) || 0) * 400 / 3600 * Math.cos((Number(t.hdg) || 0) * DEG2RAD);
+            const rx = t.x - mass.x, rz = t.z - mass.z;
+            const rvx = tvx - ovx, rvz = tvz - ovz;
+            const vv = rvx*rvx + rvz*rvz;
+            const tcpa = vv > 1e-12 ? -(rx*rvx + rz*rvz) / vv : Infinity;
+            if (!Number.isFinite(tcpa) || tcpa <= 0) return;
+            const fx = rx + tvx * tcpa;
+            const fz = rz + tvz * tcpa;
+            const d = Math.hypot(fx, fz);
+            if (d < 1e-9) return;
+            const bearing = wrap360Support(Math.atan2(fx, -fz) / DEG2RAD);
+            const halfDeg = d <= safetyU ? 90 : Math.asin(Math.max(0, Math.min(1, safetyU / d))) / DEG2RAD;
+            arcs.push({ tcpaSec: tcpa, radiusUnits: ownSpeedU * tcpa, bearing, halfDeg });
+        });
+        return arcs;
+    }
+
+    function renderDetailedDangerHeadingArcs(ctx, v, canvas, mass) {
+        const arcs = buildDetailedDangerHeadingArcs(mass, navSupport.targetCpaNM);
+        const maxVisiblePx = Math.hypot(canvas.width, canvas.height);
+        arcs.forEach(arc => {
+            const radiusPx = arc.radiusUnits * v.viewScale;
+            if (!Number.isFinite(radiusPx) || radiusPx < 2 || radiusPx > maxVisiblePx) return;
+            const displayBearing = isDetailedHeadUpView(v) ? signedDiffSupport(mass.hdg, arc.bearing) : arc.bearing;
+            const center = (displayBearing - 90) * DEG2RAD;
+            const half = arc.halfDeg * DEG2RAD;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(244,63,94,0.86)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(v.panX, v.panY, radiusPx, center-half, center+half, false);
+            ctx.stroke();
+            ctx.restore();
+        });
+    }
+
     function drawSupportRoute(ctx,v,mass,candidate,color,dash=[]) {
         if (!candidate) return;
         const firstLegNM = 1.5;
         const distU = firstLegNM*400;
-        const rad = candidate.heading*DEG2RAD;
+        const displayHeading = detailedDisplayHeading(v, candidate.heading);
+        const rad = displayHeading*DEG2RAD;
         const x1 = v.panX + Math.sin(rad)*distU*v.viewScale;
         const y1 = v.panY - Math.cos(rad)*distU*v.viewScale;
         let x2=x1, y2=y1;
         if (mass.waypoints && mass.currentWpIndex < mass.waypoints.length) {
             const wp = mass.waypoints[mass.currentWpIndex];
-            x2 = v.panX + (wp.x-mass.x)*v.viewScale;
-            y2 = v.panY + (wp.z-mass.z)*v.viewScale;
+            const p2 = detailedCanvasPoint(v, wp.x-mass.x, wp.z-mass.z);
+            x2 = p2.x; y2 = p2.y;
         } else {
-            const h = mass.hdg*DEG2RAD;
+            const h = detailedDisplayHeading(v, mass.hdg)*DEG2RAD;
             x2 = v.panX + Math.sin(h)*3*400*v.viewScale;
             y2 = v.panY - Math.cos(h)*3*400*v.viewScale;
         }
@@ -880,7 +951,7 @@
         const mass = v.massEntity;
         if (!mass) return;
         const active = navSupport.active;
-        const toCanvas = (dx,dz) => ({x:v.panX+dx*v.viewScale, y:v.panY+dz*v.viewScale});
+        const toCanvas = (dx,dz) => detailedCanvasPoint(v, dx, dz);
 
         if (active.has('sa:future')) {
             const steps = [1,2,3,4,5];
@@ -923,10 +994,7 @@
             ranked.forEach((o,i)=>{const p=toCanvas(o.t.x-mass.x,o.t.z-mass.z);ctx.save();ctx.fillStyle='rgba(2,8,18,0.92)';ctx.strokeStyle='#cbd5e1';ctx.beginPath();ctx.arc(p.x-13,p.y-13,9,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#f8fafc';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x-13,p.y-13);ctx.restore();});
         }
 
-        if (active.has('dm:safe')) {
-            const radius=Math.min(canvas.width,canvas.height)*0.27; const span=112.5;
-            for(let d=-span;d<=span+0.1;d+=5){const h=wrap360Support(mass.hdg+d);const ev=supportEvaluateHeading(mass,h,navSupport.targetCpaNM);const ang=(h-90)*DEG2RAD;const r0=radius-8,r1=radius+8;ctx.save();ctx.strokeStyle=ev.safe?'rgba(148,163,184,0.82)':'#fb7185';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(v.panX+Math.cos(ang)*r0,v.panY+Math.sin(ang)*r0);ctx.lineTo(v.panX+Math.cos(ang)*r1,v.panY+Math.sin(ang)*r1);ctx.stroke();ctx.restore();}
-        }
+        if (active.has('dm:safe')) renderDetailedDangerHeadingArcs(ctx, v, canvas, mass);
 
         if (active.has('dm:min')) {
             const p=supportFindMinAlter(mass,-1,navSupport.targetCpaNM), s=supportFindMinAlter(mass,1,navSupport.targetCpaNM);
@@ -936,11 +1004,19 @@
             [0.1,0.3,0.5,0.7,1.0].forEach((cpa,i)=>{const p=supportFindMinAlter(mass,-1,cpa),s=supportFindMinAlter(mass,1,cpa);const col=`rgba(168,85,247,${0.25+i*0.12})`;drawSupportRoute(ctx,v,mass,p,col,[3,4]);drawSupportRoute(ctx,v,mass,s,col,[3,4]);});
         }
         if (active.has('ac:rudder') || active.has('ac:rot')) {
-            const th=supportTargetHeading(mass); if(Number.isFinite(th)){const len=Math.min(canvas.width,canvas.height)*0.35;const a=(th-90)*DEG2RAD;ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();}
+            const th=supportTargetHeading(mass);
+            if(Number.isFinite(th)){
+                const len=Math.min(canvas.width,canvas.height)*0.35;
+                const displayHeading=detailedDisplayHeading(v, th);
+                const a=(displayHeading-90)*DEG2RAD;
+                ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();
+            }
         }
     }
 
     // ---------------- Browser-only steering worker: single joblib -> client-side Pyodide -> KD-tree/Q/PID ----------------
+    // Single trained bundle beside this HTML on GitHub.
+    const STEERING_JOBLIB_URLS = ['./steering_model.joblib'];
     const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/';
     const steeringWorkerSource = String.raw`
         const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/';
@@ -1004,6 +1080,12 @@
     function initSteeringWorker() {
         try {
             steeringWorker = new Worker(URL.createObjectURL(new Blob([steeringWorkerSource], {type:'text/javascript'})));
+            steeringWorker.onerror = e => {
+                navSupport.workerReady=false;
+                navSupport.workerState='MODEL ERROR';
+                console.warn('[STEERING WORKER]', e.message || e);
+                updateSupportButtonText();
+            };
             steeringWorker.onmessage = e => {
                 const d=e.data||{};
                 if(d.type==='status'){
@@ -1672,6 +1754,7 @@
                         
                         let brg = Math.atan2(dx, -dy) * 180 / Math.PI; 
                         if (brg < 0) brg += 360;
+                        if (isDetailedHeadUpView(vObj)) brg = wrap360Support(brg + vObj.massEntity.hdg);
                         
                         const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
                         if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
@@ -1737,6 +1820,7 @@
                         
                         let brg = Math.atan2(curDx, -curDy) * 180 / Math.PI; 
                         if (brg < 0) brg += 360;
+                        if (isDetailedHeadUpView(vObj)) brg = wrap360Support(brg + vObj.massEntity.hdg);
                         
                         const cursorHud = document.querySelector(`#hud-${idx} .hud-cursor-info`);
                         if (cursorHud) cursorHud.innerText = `BRG: ${brg.toFixed(1)}° / DST: ${dist.toFixed(2)}NM`;
@@ -1780,8 +1864,9 @@
                         if(s.isMASS && s !== vObj.massEntity) return;
                         if(s === vObj.massEntity) return;
                         
-                        const cx = vObj.panX + (s.x - vObj.massEntity.x) * vObj.viewScale;
-                        const cy = vObj.panY + (s.z - vObj.massEntity.z) * vObj.viewScale;
+                        const clickedPoint = detailedCanvasPoint(vObj, s.x - vObj.massEntity.x, s.z - vObj.massEntity.z);
+                        const cx = clickedPoint.x;
+                        const cy = clickedPoint.y;
                         
                         if(Math.hypot(mx - cx, my - cy) < Math.max(20, (SHIP_LEN_UNIT / 2) * vObj.viewScale)) {
                             clickedIndex = tIdx;
@@ -3060,10 +3145,10 @@
                         ctx.globalAlpha = isPassedLine ? 0.4 : 0.8; 
                         ctx.setLineDash(isPassedLine ? [] : [6, 4]);
                         
-                        const p1X = v.panX + (s.waypoints[i].x - v.massEntity.x) * v.viewScale; 
-                        const p1Z = v.panY + (s.waypoints[i].z - v.massEntity.z) * v.viewScale;
-                        const p2X = v.panX + (s.waypoints[i+1].x - v.massEntity.x) * v.viewScale; 
-                        const p2Z = v.panY + (s.waypoints[i+1].z - v.massEntity.z) * v.viewScale;
+                        const p1 = detailedCanvasPoint(v, s.waypoints[i].x - v.massEntity.x, s.waypoints[i].z - v.massEntity.z);
+                        const p2 = detailedCanvasPoint(v, s.waypoints[i+1].x - v.massEntity.x, s.waypoints[i+1].z - v.massEntity.z);
+                        const p1X = p1.x, p1Z = p1.y;
+                        const p2X = p2.x, p2Z = p2.y;
                         
                         ctx.moveTo(p1X, p1Z); 
                         ctx.lineTo(p2X, p2Z); 
@@ -3079,8 +3164,9 @@
                         let isPassedNode = i < s.currentWpIndex; 
                         let isLastNode = i === s.waypoints.length - 1;
                         
+                        const wpDisplay = detailedCanvasPoint(v, wRelX, wRelZ);
                         ctx.beginPath(); 
-                        ctx.arc(v.panX + wRelX * v.viewScale, v.panY + wRelZ * v.viewScale, isLastNode ? 6 : 3.5, 0, Math.PI*2); 
+                        ctx.arc(wpDisplay.x, wpDisplay.y, isLastNode ? 6 : 3.5, 0, Math.PI*2); 
                         
                         if (isLastNode) { 
                             ctx.fillStyle = '#eab308'; 
@@ -3104,18 +3190,21 @@
                 
                 const relX = s.x - v.massEntity.x; 
                 const relZ = s.z - v.massEntity.z; 
+                const displayOffset = detailedDisplayVector(v, relX, relZ);
+                const displayHeading = isOwnShip && isDetailedHeadUpView(v) ? 0 : detailedDisplayHeading(v, s.hdg);
                 const color = isOwnShip ? '#10b981' : '#ef4444';
                 
                 if (v.selectedTargets.includes(tIdx) && !isOwnShip) {
+                    const selectedPoint = detailedCanvasPoint(v, relX, relZ);
                     ctx.beginPath(); 
-                    ctx.arc(v.panX + relX * v.viewScale, v.panY + relZ * v.viewScale, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
+                    ctx.arc(selectedPoint.x, selectedPoint.y, (SHIP_LEN_UNIT / 2) * v.viewScale + 12, 0, Math.PI * 2);
                     ctx.strokeStyle = '#f97316'; 
                     ctx.lineWidth = 2; 
                     ctx.stroke();
                 }
                 
-                drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
-                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "OS" : s.name);
+                drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, displayOffset.x, displayOffset.z, displayHeading, s.spd * VECTOR_SCALE, color);
+                drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, displayOffset.x, displayOffset.z, displayHeading, color, isOwnShip, isOwnShip ? "OS" : s.name);
             });
 
             if (isSplitMode && idx === activeMassIndex) {
