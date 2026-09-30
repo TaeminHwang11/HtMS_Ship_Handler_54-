@@ -323,6 +323,53 @@
             box-shadow: 0 0 20px rgba(6,182,212,0.5);
             transform: translateY(-2px);
         }
+    
+
+        /* ===== Navigation Support integration: requested layout changes only ===== */
+        #surveillance-preview {
+            position: absolute; left: 18px; bottom: 18px; width: clamp(240px, 27vh, 340px); aspect-ratio: 1 / 1;
+            background: #050a10; border: 1px solid rgba(148,163,184,0.72); border-radius: 6px;
+            z-index: 45; display: none; overflow: hidden; box-sizing: border-box;
+        }
+        #surveillance-preview.visible { display: block; }
+        #surveillance-preview-title {
+            position: absolute; left: 8px; top: 7px; z-index: 3; padding: 3px 7px; border-radius: 4px;
+            background: rgba(2,8,18,0.78); border: 1px solid rgba(100,116,139,0.58);
+            color: #cbd5e1; font-size: 11px; font-weight: 700; pointer-events: none;
+        }
+        #surveillance-preview-range {
+            position: absolute; right: 8px; top: 7px; z-index: 3; padding: 3px 7px; border-radius: 4px;
+            background: rgba(2,8,18,0.78); color: #94a3b8; font-size: 10px; font-weight: 700; pointer-events: none;
+        }
+        #surveillance-preview-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+
+        /* Detailed Monitoring: large 2D on the left, square support controls on the right. */
+        #main-wrapper.split-mode #grid-area {
+            display: grid; flex: 1 1 auto; width: auto; height: 100%; aspect-ratio: auto;
+            min-width: 0; min-height: 0; gap: 4px; background: #000; padding: 4px; order: 1; box-sizing: border-box;
+        }
+        #main-wrapper.split-mode #split-left-panel {
+            display: flex; flex: 0 0 auto; height: 100%; width: auto; aspect-ratio: 1 / 1;
+            min-width: 0; min-height: 0; flex-direction: row; gap: 7px; padding: 8px;
+            overflow: hidden; border-left: 1px solid var(--border-color); border-right: none; order: 2;
+        }
+        #main-wrapper.split-mode #split-left-panel .split-control-group { min-width: 0; }
+        #main-wrapper.split-mode #split-left-panel .control-btn-grid { gap: 5px; }
+        #main-wrapper.split-mode #split-left-panel .placeholder-btn { font-size: clamp(10px, 1.25vw, 16px); padding: 5px 3px; }
+        #support-sa-grid { grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); }
+        #support-dm-grid { grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); }
+        #support-ac-grid { grid-template-columns: 1fr; grid-template-rows: repeat(2, minmax(0,1fr)); }
+        .support-control-setting, .support-control-result {
+            display: none; width: 100%; font-size: 10px; font-weight: 700; line-height: 1.05; white-space: nowrap;
+            color: #0f172a; margin-top: 2px; pointer-events: none;
+        }
+        .placeholder-btn.active-btn .support-control-setting,
+        .placeholder-btn.active-btn .support-control-result { display: block; }
+        .placeholder-btn.support-sa.active-btn { background: var(--accent-cyan); color:#000; border-color:var(--accent-cyan); }
+        .placeholder-btn.support-dm.active-btn { background: var(--accent-yellow); color:#000; border-color:var(--accent-yellow); }
+        .placeholder-btn.support-ac.active-btn { background: var(--accent-green); color:#000; border-color:var(--accent-green); }
+        .placeholder-btn.support-ac.model-error.active-btn { background:#7f1d1d; color:#fff; border-color:#ef4444; }
+
     </style>
 </head>
 <body>
@@ -343,7 +390,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_62" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_63" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -360,6 +407,11 @@
         <div id="view-column">
             <div id="surveillance-area">
                 <canvas id="world-map-canvas"></canvas>
+                <div id="surveillance-preview">
+                    <div id="surveillance-preview-title">2D PREVIEW</div>
+                    <div id="surveillance-preview-range">3.0 NM</div>
+                    <canvas id="surveillance-preview-canvas"></canvas>
+                </div>
                 <!-- 💡 일시정지 버튼 -->
                 <button id="btn-pause-toggle" onclick="togglePause()" title="재생/일시정지">❚❚</button>
             </div>
@@ -398,35 +450,26 @@
                 <div id="split-left-panel" class="split-side-panel">
                     <div class="split-control-group">
                         <div class="split-group-title sa">SITUATION AWARENESS</div>
-                        <div class="control-btn-grid">
-                            <button class="placeholder-btn" id="btn-tgl-route" onclick="toggleAR('route')"><span class="control-btn-line">FUTURE</span><span class="control-btn-line">POSITION</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-cpa" onclick="toggleAR('cpa')"><span class="control-btn-line">COLLISION</span><span class="control-btn-line">POINT</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-label" onclick="toggleAR('label')"><span class="control-btn-line">THREAT</span><span class="control-btn-line">HIGHLIGHT</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-env" onclick="toggleAR('env')"><span class="control-btn-line">RELATIVE</span><span class="control-btn-line">MOTION</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-ring" onclick="toggleAR('ring')"><span class="control-btn-line">APPROACH</span><span class="control-btn-line">RANK</span></button>
-                            <button class="placeholder-btn" id="btn-tgl-xtd" onclick="toggleAR('xtd')"><span class="control-btn-line">MANEUVER</span><span class="control-btn-line">TREND</span></button>
+                        <div class="control-btn-grid" id="support-sa-grid">
+                            <button class="placeholder-btn support-sa" id="support-future" onclick="toggleNavSupport('sa','future')"><span class="control-btn-line">FUTURE POSITION</span><span class="support-control-setting" id="support-future-setting">90s</span></button>
+                            <button class="placeholder-btn support-sa" id="support-collision" onclick="toggleNavSupport('sa','collision')"><span class="control-btn-line">COLLISION POINT</span></button>
+                            <button class="placeholder-btn support-sa" id="support-threat" onclick="toggleNavSupport('sa','threat')"><span class="control-btn-line">THREAT HIGHLIGHT</span></button>
+                            <button class="placeholder-btn support-sa" id="support-priority" onclick="toggleNavSupport('sa','priority')"><span class="control-btn-line">PRIORITY MONITORING</span></button>
                         </div>
                     </div>
                     <div class="split-control-group">
                         <div class="split-group-title dm">DECISION MAKING</div>
-                        <div class="control-btn-grid">
-                            <button class="placeholder-btn"><span class="control-btn-line">SAFE HDG</span><span class="control-btn-line">BAND</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">MIN</span><span class="control-btn-line">ALTERATION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">PORT /</span><span class="control-btn-line">STBD</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">SPEED</span><span class="control-btn-line">OPTION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">WHAT-IF</span><span class="control-btn-line">COURSE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">COLREG</span><span class="control-btn-line">CUE</span></button>
+                        <div class="control-btn-grid" id="support-dm-grid">
+                            <button class="placeholder-btn support-dm" id="support-safe" onclick="toggleNavSupport('dm','safe')"><span class="control-btn-line">SAFE HDG BAND</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-dm" id="support-min" onclick="toggleNavSupport('dm','min')"><span class="control-btn-line">MIN ALTERATION</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-dm" id="support-whatif" onclick="toggleNavSupport('dm','whatif')"><span class="control-btn-line">WHAT-IF COURSE</span></button>
                         </div>
                     </div>
                     <div class="split-control-group">
                         <div class="split-group-title ac">ACTION &amp; CONTROL</div>
-                        <div class="control-btn-grid">
-                            <button class="placeholder-btn"><span class="control-btn-line">TARGET</span><span class="control-btn-line">HEADING</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">DIRECTION</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">ANGLE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">HEADING</span><span class="control-btn-line">ERROR</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">ROT</span><span class="control-btn-line">GUIDANCE</span></button>
-                            <button class="placeholder-btn"><span class="control-btn-line">EASE /</span><span class="control-btn-line">MIDSHIP</span></button>
+                        <div class="control-btn-grid" id="support-ac-grid">
+                            <button class="placeholder-btn support-ac" id="support-rudder" onclick="toggleNavSupport('ac','rudder')"><span class="control-btn-line">RUDDER SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rudder-result">MODEL READY</span></button>
+                            <button class="placeholder-btn support-ac" id="support-rot" onclick="toggleNavSupport('ac','rot')"><span class="control-btn-line">ROT SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rot-result">MODEL READY</span></button>
                         </div>
                     </div>
                 </div>
@@ -642,6 +685,370 @@
         cpaLines: []
     };
 
+    // =====================================================================
+    // Navigation Support (online): browser-only SA/DM + KD-tree/Q/PID AC
+    // =====================================================================
+    const TRAIN_DATA_MANIFEST_URL = './TrainData/manifest.json'; // optional; TrainData(n).json files are auto-discovered
+    const navSupport = {
+        active: new Set(),
+        futureIntervalSec: 90,
+        targetCpaNM: 0.50,
+        targetHeadingByMass: new Map(),
+        historyByMass: new Map(),
+        lastHistorySampleMs: 0,
+        acResultByMass: new Map(),
+        workerReady: false,
+        workerState: 'LOADING',
+        workerVersion: null,
+        querySeq: 0,
+        latestSeqByMass: new Map()
+    };
+
+    const survPreview = {
+        massIndex: null,
+        viewScale: 1 / 3.0,
+        panOffsetX: 0,
+        panOffsetY: 0,
+        panX: 0,
+        panY: 0,
+        dragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        hasDragged: false
+    };
+
+    function wrap360Support(v) { v = Number(v) || 0; return ((v % 360) + 360) % 360; }
+    function signedDiffSupport(fromDeg, toDeg) {
+        let d = wrap360Support(toDeg) - wrap360Support(fromDeg);
+        if (d > 180) d -= 360;
+        if (d < -180) d += 360;
+        return d;
+    }
+    function supportMassIndexById(id) {
+        return massViews.findIndex(v => v && v.massEntity && String(v.massEntity.id) === String(id));
+    }
+    function supportTargetHeading(mass) {
+        if (!mass) return null;
+        const key = String(mass.id);
+        if (!navSupport.targetHeadingByMass.has(key)) navSupport.targetHeadingByMass.set(key, wrap360Support(mass.hdg));
+        return navSupport.targetHeadingByMass.get(key);
+    }
+    function setSupportTargetHeading(mass, value) {
+        if (!mass) return;
+        navSupport.targetHeadingByMass.set(String(mass.id), wrap360Support(value));
+        updateSupportButtonText();
+        requestSteeringSupport(true);
+    }
+    function updateSupportButtonText() {
+        const future = document.getElementById('support-future-setting');
+        if (future) future.textContent = `${navSupport.futureIntervalSec}s`;
+        document.querySelectorAll('.support-cpa-setting').forEach(el => el.textContent = `TARGET CPA: ${navSupport.targetCpaNM.toFixed(2)} NM`);
+        const mass = massViews[activeMassIndex] ? massViews[activeMassIndex].massEntity : null;
+        const hdg = mass ? supportTargetHeading(mass) : null;
+        document.querySelectorAll('.support-hdg-setting').forEach(el => el.textContent = `TARGET HDG: ${Number.isFinite(hdg) ? hdg.toFixed(0).padStart(3,'0') : '---'}°`);
+        const result = mass ? navSupport.acResultByMass.get(String(mass.id)) : null;
+        const rb = document.getElementById('support-rudder-result');
+        const rt = document.getElementById('support-rot-result');
+        const acBtns = [document.getElementById('support-rudder'), document.getElementById('support-rot')].filter(Boolean);
+        acBtns.forEach(b => b.classList.toggle('model-error', navSupport.workerState === 'ERROR'));
+        if (rb) rb.textContent = result && result.available ? result.rudderSuggestion : (navSupport.workerReady ? 'CALCULATING...' : navSupport.workerState);
+        if (rt) rt.textContent = result && result.available ? result.rotSuggestion : (navSupport.workerReady ? 'CALCULATING...' : navSupport.workerState);
+    }
+
+    window.toggleNavSupport = function(group, feature) {
+        const key = `${group}:${feature}`;
+        const btn = document.getElementById(`support-${feature}`);
+        if (navSupport.active.has(key)) {
+            navSupport.active.delete(key);
+            if (btn) btn.classList.remove('active-btn');
+        } else {
+            navSupport.active.add(key);
+            if (btn) btn.classList.add('active-btn');
+            const mass = massViews[activeMassIndex] ? massViews[activeMassIndex].massEntity : null;
+            if (group === 'ac' && mass) supportTargetHeading(mass);
+        }
+        updateSupportButtonText();
+        logEvent('NAV_SUPPORT_TOGGLE', { group, feature, active: navSupport.active.has(key) });
+        if (group === 'ac' && navSupport.active.has(key)) requestSteeringSupport(true);
+        if (isSplitMode) render2D();
+    };
+
+    function attachSupportWheel(id, handler) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('wheel', e => {
+            if (!el.classList.contains('active-btn')) return;
+            e.preventDefault(); e.stopPropagation(); handler(e);
+        }, { passive:false });
+    }
+
+    function initSupportControls() {
+        attachSupportWheel('support-future', e => {
+            navSupport.futureIntervalSec = Math.max(30, Math.min(600, navSupport.futureIntervalSec + (e.deltaY < 0 ? 30 : -30)));
+            updateSupportButtonText();
+            logEvent('FUTURE_INTERVAL_CHANGED', { seconds: navSupport.futureIntervalSec });
+            render2D();
+        });
+        ['support-safe','support-min'].forEach(id => attachSupportWheel(id, e => {
+            navSupport.targetCpaNM = Math.max(0.10, Math.min(3.0, Math.round((navSupport.targetCpaNM + (e.deltaY < 0 ? 0.05 : -0.05))*20)/20));
+            updateSupportButtonText();
+            logEvent('TARGET_CPA_CHANGED', { cpaNM: navSupport.targetCpaNM });
+            render2D();
+        }));
+        ['support-rudder','support-rot'].forEach(id => attachSupportWheel(id, e => {
+            const mass = massViews[activeMassIndex] ? massViews[activeMassIndex].massEntity : null;
+            if (!mass) return;
+            const cur = supportTargetHeading(mass);
+            setSupportTargetHeading(mass, cur + (e.deltaY > 0 ? 1 : -1));
+            logEvent('TARGET_HDG_CHANGED', { massId: mass.name, heading: supportTargetHeading(mass) });
+            render2D();
+        }));
+        updateSupportButtonText();
+    }
+
+    function recordSupportHistory(nowMs) {
+        if (nowMs - navSupport.lastHistorySampleMs < 500) return;
+        navSupport.lastHistorySampleMs = nowMs;
+        massViews.forEach(v => {
+            const m = v.massEntity;
+            if (!m) return;
+            const key = String(m.id);
+            const arr = navSupport.historyByMass.get(key) || [];
+            arr.push({ t: nowMs/1000, hdg:m.hdg, cog:m.cog, sog:m.spd, rot:m.rot, rudder:m.actualRudder, x:m.x, z:m.z });
+            while (arr.length > 0 && arr[arr.length-1].t - arr[0].t > 30.5) arr.shift();
+            navSupport.historyByMass.set(key, arr);
+        });
+    }
+
+    function supportPredictDisplacement(ship, seconds) {
+        const speed = Math.max(0, Number(ship.spd)||0) * 400 / 3600;
+        const rot = Number(ship.rot)||0;
+        const omega = rot * DEG2RAD / 60;
+        const h0 = (Number(ship.hdg)||0) * DEG2RAD;
+        const t = Math.max(0, Number(seconds)||0);
+        if (Math.abs(omega) < 1e-8) return { x:speed*Math.sin(h0)*t, z:-speed*Math.cos(h0)*t, hdg:wrap360Support(ship.hdg) };
+        const h1 = h0 + omega*t;
+        const east = speed/omega * (Math.cos(h0)-Math.cos(h1));
+        const north = speed/omega * (Math.sin(h1)-Math.sin(h0));
+        return { x:east, z:-north, hdg:wrap360Support(ship.hdg + rot*t/60) };
+    }
+
+    function supportEvaluateHeading(mass, heading, cpaNM) {
+        let worst = Infinity, unsafe = 0;
+        simEntities.forEach(t => {
+            if (t === mass || (t.isMASS && t !== mass)) return;
+            const c = calculateCPA(mass.spd, heading, t.spd, t.hdg, t.x-mass.x, t.z-mass.z);
+            if (c.tcpa > 0 && c.tcpa <= 600) {
+                worst = Math.min(worst, c.cpa);
+                if (c.cpa < cpaNM) unsafe++;
+            }
+        });
+        return { safe:unsafe===0, unsafe, worst:worst===Infinity?99:worst };
+    }
+
+    function supportFindMinAlter(mass, side, cpaNM) {
+        for (let deg=3; deg<=90; deg+=3) {
+            const h = wrap360Support(mass.hdg + side*deg);
+            const ev = supportEvaluateHeading(mass,h,cpaNM);
+            if (ev.safe) return { heading:h, alter:deg, side, ev };
+        }
+        return null;
+    }
+
+    function drawSupportRoute(ctx,v,mass,candidate,color,dash=[]) {
+        if (!candidate) return;
+        const firstLegNM = 1.5;
+        const distU = firstLegNM*400;
+        const rad = candidate.heading*DEG2RAD;
+        const x1 = v.panX + Math.sin(rad)*distU*v.viewScale;
+        const y1 = v.panY - Math.cos(rad)*distU*v.viewScale;
+        let x2=x1, y2=y1;
+        if (mass.waypoints && mass.currentWpIndex < mass.waypoints.length) {
+            const wp = mass.waypoints[mass.currentWpIndex];
+            x2 = v.panX + (wp.x-mass.x)*v.viewScale;
+            y2 = v.panY + (wp.z-mass.z)*v.viewScale;
+        } else {
+            const h = mass.hdg*DEG2RAD;
+            x2 = v.panX + Math.sin(h)*3*400*v.viewScale;
+            y2 = v.panY - Math.cos(h)*3*400*v.viewScale;
+        }
+        ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(v.panX,v.panY); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
+    }
+
+    function renderDetailedSupport2D(ctx,v,canvas) {
+        if (!isSplitMode || v !== massViews[activeMassIndex]) return;
+        const mass = v.massEntity;
+        if (!mass) return;
+        const active = navSupport.active;
+        const toCanvas = (dx,dz) => ({x:v.panX+dx*v.viewScale, y:v.panY+dz*v.viewScale});
+
+        if (active.has('sa:future')) {
+            const steps = [1,2,3,4,5];
+            simEntities.forEach(s => {
+                if (s.isMASS && s!==mass) return;
+                const baseX=s.x-mass.x, baseZ=s.z-mass.z;
+                let prev = toCanvas(baseX,baseZ);
+                steps.forEach((n,i)=>{
+                    const p=supportPredictDisplacement(s, navSupport.futureIntervalSec*n);
+                    const pt=toCanvas(baseX+p.x,baseZ+p.z);
+                    ctx.save(); ctx.strokeStyle='rgba(148,163,184,0.5)'; ctx.lineWidth=1; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(pt.x,pt.y); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.globalAlpha=0.18+0.12*i; ctx.fillStyle=s===mass?'#94a3b8':'#cbd5e1'; ctx.beginPath(); ctx.arc(pt.x,pt.y,4+i*0.6,0,Math.PI*2); ctx.fill(); ctx.restore(); prev=pt;
+                    if(i===4){ctx.save();ctx.fillStyle='#94a3b8';ctx.font='bold 10px monospace';ctx.fillText(`+${navSupport.futureIntervalSec*n}s`,pt.x+6,pt.y-5);ctx.restore();}
+                });
+            });
+        }
+
+        if (active.has('sa:collision')) {
+            simEntities.forEach(t=>{
+                if(t===mass || (t.isMASS&&t!==mass)) return;
+                const c=calculateCPA(mass.spd,mass.hdg,t.spd,t.hdg,t.x-mass.x,t.z-mass.z);
+                if(!(c.tcpa>0&&c.tcpa<=600&&c.cpa<navSupport.targetCpaNM)) return;
+                const osU=mass.spd*400/3600, tsU=t.spd*400/3600;
+                const ox=Math.sin(mass.hdg*DEG2RAD)*osU*c.tcpa, oz=-Math.cos(mass.hdg*DEG2RAD)*osU*c.tcpa;
+                const tx=(t.x-mass.x)+Math.sin(t.hdg*DEG2RAD)*tsU*c.tcpa, tz=(t.z-mass.z)-Math.cos(t.hdg*DEG2RAD)*tsU*c.tcpa;
+                const p=toCanvas((ox+tx)/2,(oz+tz)/2); ctx.save();ctx.strokeStyle='#fb7185';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-7,p.y-7);ctx.lineTo(p.x+7,p.y+7);ctx.moveTo(p.x+7,p.y-7);ctx.lineTo(p.x-7,p.y+7);ctx.stroke();ctx.restore();
+            });
+        }
+
+        if (active.has('sa:threat')) {
+            simEntities.forEach(t=>{
+                if(t===mass || (t.isMASS&&t!==mass)) return;
+                const c=calculateCPA(mass.spd,mass.hdg,t.spd,t.hdg,t.x-mass.x,t.z-mass.z);
+                if(c.tcpa>0&&c.tcpa<=600&&c.cpa<navSupport.targetCpaNM){const p=toCanvas(t.x-mass.x,t.z-mass.z);ctx.save();ctx.strokeStyle='#fb7185';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.stroke();ctx.restore();}
+            });
+        }
+
+        if (active.has('sa:priority')) {
+            const ranked=simEntities.filter(t=>t!==mass && !(t.isMASS&&t!==mass)).map(t=>{const d=Math.hypot(t.x-mass.x,t.z-mass.z)/400; const c=calculateCPA(mass.spd,mass.hdg,t.spd,t.hdg,t.x-mass.x,t.z-mass.z);return{t,d,c};}).filter(o=>o.d<=5).sort((a,b)=>a.c.cpa-b.c.cpa || a.c.tcpa-b.c.tcpa || a.d-b.d);
+            ranked.forEach((o,i)=>{const p=toCanvas(o.t.x-mass.x,o.t.z-mass.z);ctx.save();ctx.fillStyle='rgba(2,8,18,0.92)';ctx.strokeStyle='#cbd5e1';ctx.beginPath();ctx.arc(p.x-13,p.y-13,9,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#f8fafc';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x-13,p.y-13);ctx.restore();});
+        }
+
+        if (active.has('dm:safe')) {
+            const radius=Math.min(canvas.width,canvas.height)*0.27; const span=112.5;
+            for(let d=-span;d<=span+0.1;d+=5){const h=wrap360Support(mass.hdg+d);const ev=supportEvaluateHeading(mass,h,navSupport.targetCpaNM);const ang=(h-90)*DEG2RAD;const r0=radius-8,r1=radius+8;ctx.save();ctx.strokeStyle=ev.safe?'rgba(148,163,184,0.82)':'#fb7185';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(v.panX+Math.cos(ang)*r0,v.panY+Math.sin(ang)*r0);ctx.lineTo(v.panX+Math.cos(ang)*r1,v.panY+Math.sin(ang)*r1);ctx.stroke();ctx.restore();}
+        }
+
+        if (active.has('dm:min')) {
+            const p=supportFindMinAlter(mass,-1,navSupport.targetCpaNM), s=supportFindMinAlter(mass,1,navSupport.targetCpaNM);
+            drawSupportRoute(ctx,v,mass,p,'#94a3b8',[6,4]); drawSupportRoute(ctx,v,mass,s,'#eab308',[6,4]);
+        }
+        if (active.has('dm:whatif')) {
+            [0.1,0.3,0.5,0.7,1.0].forEach((cpa,i)=>{const p=supportFindMinAlter(mass,-1,cpa),s=supportFindMinAlter(mass,1,cpa);const col=`rgba(168,85,247,${0.25+i*0.12})`;drawSupportRoute(ctx,v,mass,p,col,[3,4]);drawSupportRoute(ctx,v,mass,s,col,[3,4]);});
+        }
+        if (active.has('ac:rudder') || active.has('ac:rot')) {
+            const th=supportTargetHeading(mass); if(Number.isFinite(th)){const len=Math.min(canvas.width,canvas.height)*0.35;const a=(th-90)*DEG2RAD;ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();}
+        }
+    }
+
+    // ---------------- Browser-only steering worker: single joblib -> client-side Pyodide -> KD-tree/Q/PID ----------------
+    const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/';
+    const steeringWorkerSource = String.raw`
+        const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/';
+        let pyodide = null;
+        let initialized = false;
+        let initPromise = null;
+        async function fetchFirstModel(urls) {
+            let lastError = null;
+            for (const url of (urls || [])) {
+                try {
+                    const r = await fetch(url, { cache: 'no-cache' });
+                    if (!r.ok) { lastError = new Error(url + ' -> HTTP ' + r.status); continue; }
+                    return { url, bytes: new Uint8Array(await r.arrayBuffer()) };
+                } catch (e) { lastError = e; }
+            }
+            throw lastError || new Error('steering_model.joblib not found');
+        }
+        const pythonModelCode = "import json, math, time\nimport numpy as np\nimport pandas as pd\nimport joblib\nfrom sklearn.neighbors import KDTree\n\nMODEL = None\nPOLICY_CACHE = {}\nPID_STATE = {}\nRNG = np.random.default_rng(150)\n\ndef wrap360(v):\n    return float(v) % 360.0\n\ndef angle_diff(a, b):\n    d = wrap360(b) - wrap360(a)\n    if d > 180.0:\n        d -= 360.0\n    if d < -180.0:\n        d += 360.0\n    return float(d)\n\ndef variance(a):\n    a = np.asarray(a, dtype=float)\n    return float(np.var(a, ddof=1)) if a.size >= 2 else 0.0\n\ndef feature_from_arrays(hdg, sog, rot, rud, i, target):\n    j0 = max(0, i - 9)\n    return np.array([\n        float(sog[i]),\n        float(rot[i]),\n        float(rud[i]),\n        variance(hdg[j0:i+1]),\n        variance(rot[j0:i+1]),\n        variance(rud[j0:i+1]),\n        variance(sog[j0:i+1]),\n        angle_diff(float(hdg[i]), float(target)),\n    ], dtype=float)\n\ndef nearest_index(arr, value):\n    if len(arr) == 0:\n        return 0\n    return int(np.argmin(np.abs(np.asarray(arr, dtype=float) - float(value))))\n\ndef init_model(path='/steering_model.joblib'):\n    global MODEL, POLICY_CACHE, PID_STATE\n    bundle = joblib.load(path)\n    if not isinstance(bundle, dict) or 'table' not in bundle:\n        raise ValueError('joblib does not contain the expected steering bundle/table')\n\n    table = bundle['table'].copy()\n    required = ['HDG', 'ROT', 'Rudder', 'SOG']\n    missing = [c for c in required if c not in table.columns]\n    if missing:\n        raise ValueError('joblib table missing columns: ' + ', '.join(missing))\n\n    if '_voyage_id' not in table.columns:\n        table['_voyage_id'] = 'episode_0'\n    if '_row_in_voyage' not in table.columns:\n        table['_row_in_voyage'] = np.arange(len(table), dtype=int)\n\n    episodes = []\n    features = []\n    meta_ep = []\n    meta_i = []\n    to_alter = []\n\n    for vid, g in table.groupby('_voyage_id', sort=False):\n        g = g.sort_values('_row_in_voyage').reset_index(drop=True)\n        hdg = pd.to_numeric(g['HDG'], errors='coerce').to_numpy(float)\n        sog = pd.to_numeric(g['SOG'], errors='coerce').to_numpy(float)\n        rot = pd.to_numeric(g['ROT'], errors='coerce').to_numpy(float)\n        rud = pd.to_numeric(g['Rudder'], errors='coerce').to_numpy(float)\n\n        if np.isfinite(hdg).sum() < 10 or np.isfinite(sog).sum() < 10 or np.isfinite(rot).sum() < 10 or np.isfinite(rud).sum() < 10:\n            continue\n\n        df = pd.DataFrame({'hdg':hdg,'sog':sog,'rot':rot,'rud':rud}).interpolate(limit_direction='both')\n        if not np.isfinite(df.to_numpy(float)).all():\n            continue\n        hdg, sog, rot, rud = [df[c].to_numpy(float) for c in ['hdg','sog','rot','rud']]\n        target = float(hdg[-1])\n        e = len(episodes)\n        episodes.append({'id':str(vid),'hdg':hdg,'sog':sog,'rot':rot,'rud':rud,'target':target})\n\n        for i in range(9, len(hdg)):\n            f = feature_from_arrays(hdg, sog, rot, rud, i, target)\n            if np.isfinite(f).all():\n                features.append(f)\n                meta_ep.append(e)\n                meta_i.append(i)\n                to_alter.append(f[-1])\n\n    if not features:\n        raise ValueError('No usable rows in steering_model.joblib')\n\n    X = np.vstack(features)\n    mu = np.mean(X, axis=0)\n    sigma = np.std(X, axis=0, ddof=1)\n    sigma[~np.isfinite(sigma) | (np.abs(sigma) < 1e-12)] = 1.0\n    Xn = (X - mu) / sigma\n    tree = KDTree(Xn, leaf_size=5, metric='euclidean')\n\n    MODEL = {\n        'episodes': episodes,\n        'X': X,\n        'mu': mu,\n        'sigma': sigma,\n        'tree': tree,\n        'meta_ep': np.asarray(meta_ep, dtype=int),\n        'meta_i': np.asarray(meta_i, dtype=int),\n        'to_alter': np.asarray(to_alter, dtype=float),\n        'rudder_effect': float(bundle.get('rudder_effect', float('nan'))),\n        'turning_damping': float(bundle.get('turning_damping', float('nan'))),\n        'rudder_speed': float(bundle.get('rudder_speed', 1.0)),\n        'bundle_version': str(bundle.get('version', 'unknown')),\n        'feature_dim': int(X.shape[1]),\n    }\n    POLICY_CACHE = {}\n    PID_STATE = {}\n    return json.dumps({\n        'bundleVersion': MODEL['bundle_version'],\n        'episodes': len(episodes),\n        'rows': int(X.shape[0]),\n        'featureDim': int(X.shape[1]),\n        'rudderEffect': MODEL['rudder_effect'],\n        'turningDamping': MODEL['turning_damping'],\n    })\n\ndef build_live_feature(rows, target_heading):\n    if len(rows) < 2:\n        raise ValueError('INSUFFICIENT LIVE HISTORY')\n    rows = list(rows)\n    while len(rows) < 10:\n        first = dict(rows[0])\n        first['t'] = float(first.get('t', 0)) - 0.5\n        rows.insert(0, first)\n    hdg = np.array([float(x['hdg']) for x in rows], float)\n    sog = np.array([float(x['sog']) for x in rows], float)\n    rot = np.array([float(x['rot']) for x in rows], float)\n    rud = np.array([float(x['rudder']) for x in rows], float)\n    return feature_from_arrays(hdg, sog, rot, rud, len(rows)-1, float(target_heading)), rows[-1]\n\ndef train_policy(candidates):\n    exp = []\n    for e, i in candidates:\n        ep = MODEL['episodes'][int(e)]\n        end = min(len(ep['hdg']) - 1, int(i) + 60)\n        for j in range(int(i), end):\n            exp.append((\n                angle_diff(ep['hdg'][j], ep['target']),\n                angle_diff(ep['hdg'][j+1], ep['target']),\n                float(ep['rot'][j]),\n                float(ep['rud'][j]),\n            ))\n    if not exp:\n        return None\n\n    hs = np.array(sorted(set(round(x[0]) for x in exp)), float)\n    actions_rot = np.array(sorted(set(round(x[2]) for x in exp)), float)\n    if len(hs) == 0 or len(actions_rot) == 0:\n        return None\n\n    q1 = {}\n    def qget(d, k):\n        return d.get(k, 0.0)\n\n    for _ in range(5000):\n        he, he2, rot, rud = exp[int(RNG.integers(0, len(exp)))]\n        s = float(hs[nearest_index(hs, round(he))])\n        sn = float(hs[nearest_index(hs, round(he2))])\n        a = float(round(rot))\n        vals = [qget(q1, (sn, float(aa))) for aa in actions_rot]\n        maxn = max(vals) if vals else 0.0\n        rw = -abs(he2)\n        k = (s, a)\n        q = qget(q1, k)\n        q1[k] = q + 0.1 * (rw + 0.7 * maxn - q)\n\n    def best_rot(he):\n        s = float(hs[nearest_index(hs, round(he))])\n        seen = [(a, q1.get((s, float(a)))) for a in actions_rot if (s, float(a)) in q1]\n        return float(max(seen, key=lambda x: x[1])[0]) if seen else float(actions_rot[0])\n\n    actions_r = np.array(sorted(set(round(x[3]) for x in exp)), float)\n    rot_states = np.array(sorted(set(round(best_rot(x[0]) - x[2]) for x in exp)), float)\n    if len(actions_r) == 0 or len(rot_states) == 0:\n        return None\n\n    q2 = {}\n    for _ in range(5000):\n        he, he2, rot, rud = exp[int(RNG.integers(0, len(exp)))]\n        tr = best_rot(he)\n        sd = float(rot_states[nearest_index(rot_states, round(tr - rot))])\n        a = float(round(rud))\n        rw = -abs(tr - rot)\n        k = (sd, a)\n        q = q2.get(k, 0.0)\n        q2[k] = q + 0.1 * (rw - q)\n\n    return {\n        'hs': hs,\n        'actions_rot': actions_rot,\n        'q1': q1,\n        'actions_r': actions_r,\n        'rot_states': rot_states,\n        'q2': q2,\n    }\n\ndef infer_policy(pol, he, rot):\n    hs = pol['hs']\n    ar = pol['actions_rot']\n    q1 = pol['q1']\n    s = float(hs[nearest_index(hs, round(he))])\n    seen = [(a, q1.get((s, float(a)))) for a in ar if (s, float(a)) in q1]\n    tr = float(max(seen, key=lambda x: x[1])[0]) if seen else float(ar[0])\n\n    rs = pol['rot_states']\n    ruds = pol['actions_r']\n    sd = float(rs[nearest_index(rs, round(tr - rot))])\n    q2 = pol['q2']\n    seen2 = [(a, q2.get((sd, float(a)))) for a in ruds if (sd, float(a)) in q2]\n    rr = float(max(seen2, key=lambda x: x[1])[0]) if seen2 else float(ruds[0])\n    return tr, rr\n\ndef query_json(payload_json):\n    if MODEL is None:\n        return json.dumps({'available':False, 'error':'MODEL NOT READY'})\n\n    m = json.loads(payload_json)\n    mass_id = str(m.get('massId', 'MASS'))\n    target = float(m['targetHeading'])\n    rows = []\n    for x in m.get('history', []):\n        try:\n            row = {\n                't': float(x.get('t', 0)),\n                'hdg': float(x['hdg']),\n                'sog': float(x['sog']),\n                'rot': float(x['rot']),\n                'rudder': float(x['rudder']),\n            }\n            if all(np.isfinite(list(row.values()))):\n                rows.append(row)\n        except Exception:\n            pass\n\n    try:\n        f, cur = build_live_feature(rows, target)\n    except Exception as e:\n        return json.dumps({'available':False, 'error':str(e)})\n\n    q = (f - MODEL['mu']) / MODEL['sigma']\n    k = min(100, len(MODEL['X']))\n    dist, idx = MODEL['tree'].query(q.reshape(1, -1), k=k)\n    idx = idx[0]\n    idx = sorted(idx, key=lambda ii: abs(MODEL['to_alter'][ii] - f[-1]))[:20]\n    candidates = [(int(MODEL['meta_ep'][ii]), int(MODEL['meta_i'][ii])) for ii in idx]\n\n    old = POLICY_CACHE.get(mass_id)\n    now = time.monotonic()\n    force = bool(m.get('force', False))\n    pol = old['pol'] if old else None\n    if pol is None or force or abs(angle_diff(old['target'], target)) >= 3 or now - old['t'] > 15:\n        pol = train_policy(candidates)\n        POLICY_CACHE[mass_id] = {'pol':pol, 'target':target, 't':now}\n    if pol is None:\n        return json.dumps({'available':False, 'error':'POLICY BUILD FAILED'})\n\n    he = angle_diff(cur['hdg'], target)\n    tr, rr = infer_policy(pol, he, cur['rot'])\n    rot_diff = tr - cur['rot']\n    kp = 10.0 * min(1.0, abs(rot_diff) / 100.0)\n    kd = 50.0 + 50.0 * min(1.0, abs(rr - cur['rudder']) / 35.0)\n    ki = 0.001 + 0.004 * math.exp(-abs(tr))\n\n    ps = PID_STATE.get(mass_id, {'integ':0.0, 'prev':he, 't':cur['t']})\n    dt = max(0.1, min(5.0, (cur['t'] - ps['t']) or 1.0))\n    ps['integ'] += he * dt\n    der = (he - ps['prev']) / dt\n    pid = max(-30.0, min(30.0, kp * he + ki * ps['integ'] + kd * der))\n    pid = float(round(pid))\n    ps.update({'prev':he, 't':cur['t']})\n    PID_STATE[mass_id] = ps\n\n    a = MODEL['rudder_effect']\n    b = MODEL['turning_damping']\n    pir = None\n    if np.isfinite(a) and np.isfinite(b) and b > 1e-6:\n        pir = float((a * pid / b) * 60.0)\n\n    rs = 'HOLD' if abs(pid - cur['rudder']) <= 2 else ('STBD' if pid > cur['rudder'] else 'PORT')\n    ro = 'UNAVAILABLE' if pir is None else ('HOLD' if abs(pir - cur['rot']) <= 1 else ('STBD' if pir > cur['rot'] else 'PORT'))\n    return json.dumps({\n        'available': True,\n        'rudderSuggestion': rs,\n        'rotSuggestion': ro,\n        'pidTargetRudder': pid,\n        'pidIntendedRot': pir,\n        'retrieved': len(candidates),\n        'bundleVersion': MODEL['bundle_version'],\n    })\n";
+        async function init(urls) {
+            if (initPromise) return initPromise;
+            initPromise = (async () => {
+                postMessage({type:'status',state:'PYODIDE'});
+                importScripts(PYODIDE_INDEX_URL + 'pyodide.js');
+                pyodide = await loadPyodide({ indexURL: PYODIDE_INDEX_URL });
+                postMessage({type:'status',state:'PACKAGES'});
+                await pyodide.loadPackage(['numpy','pandas','scikit-learn']);
+                const modelFile = await fetchFirstModel(urls);
+                pyodide.FS.writeFile('/steering_model.joblib', modelFile.bytes);
+                await pyodide.runPythonAsync(pythonModelCode);
+                const metaText = await pyodide.runPythonAsync("init_model('/steering_model.joblib')");
+                initialized = true;
+                postMessage({type:'ready',sourceUrl:modelFile.url,...JSON.parse(String(metaText))});
+            })().catch(err => {
+                initialized = false;
+                postMessage({type:'error',error:String(err && (err.stack||err.message) || err)});
+                throw err;
+            });
+            return initPromise;
+        }
+        async function query(m) {
+            if (!initialized || !pyodide) {
+                postMessage({type:'result',seq:m.seq,massId:m.massId,available:false,error:'MODEL NOT READY'});
+                return;
+            }
+            try {
+                pyodide.globals.set('payload_json', JSON.stringify(m));
+                const d = JSON.parse(String(pyodide.runPython('query_json(payload_json)')));
+                postMessage({type:'result',seq:m.seq,massId:m.massId,...d});
+            } catch (err) {
+                postMessage({type:'result',seq:m.seq,massId:m.massId,available:false,error:String(err && (err.message||err) || err)});
+            }
+        }
+        onmessage = e => {
+            const m = e.data || {};
+            if (m.type === 'init') init(m.urls);
+            else if (m.type === 'query') query(m);
+        };
+    `;
+
+    let steeringWorker = null;
+    function initSteeringWorker() {
+        try {
+            steeringWorker = new Worker(URL.createObjectURL(new Blob([steeringWorkerSource], {type:'text/javascript'})));
+            steeringWorker.onmessage = e => {
+                const d=e.data||{};
+                if(d.type==='status'){
+                    navSupport.workerReady=false;
+                    navSupport.workerState=d.state==='PYODIDE'?'LOADING PYODIDE':'LOADING MODEL';
+                }
+                else if(d.type==='ready'){
+                    navSupport.workerReady=true;
+                    navSupport.workerState='READY';
+                    navSupport.workerVersion=d.bundleVersion;
+                    console.log(`[STEERING] joblib ready: ${d.episodes} episodes / ${d.rows} states / ${d.featureDim}D · ${d.sourceUrl}`);
+                }
+                else if(d.type==='error'){
+                    navSupport.workerReady=false;
+                    navSupport.workerState='MODEL ERROR';
+                    console.warn('[STEERING]',d.error);
+                }
+                else if(d.type==='result'){
+                    if(navSupport.latestSeqByMass.get(String(d.massId))!==d.seq)return;
+                    navSupport.acResultByMass.set(String(d.massId),d); updateSupportButtonText();
+                }
+                updateSupportButtonText();
+            };
+            const urls=STEERING_JOBLIB_URLS.map(u=>new URL(u,window.location.href).href);
+            steeringWorker.postMessage({type:'init',urls});
+        } catch(err) { navSupport.workerState='WORKER ERROR'; console.warn(err); updateSupportButtonText(); }
+    }
+    function requestSteeringSupport(force=false) {
+        if(!steeringWorker || !navSupport.workerReady || !isSplitMode) { updateSupportButtonText(); return; }
+        if(!(navSupport.active.has('ac:rudder')||navSupport.active.has('ac:rot'))) return;
+        const v=massViews[activeMassIndex],m=v&&v.massEntity;if(!m)return;const hist=navSupport.historyByMass.get(String(m.id))||[];const seq=++navSupport.querySeq;navSupport.latestSeqByMass.set(String(m.id),seq);steeringWorker.postMessage({type:'query',seq,massId:String(m.id),targetHeading:supportTargetHeading(m),history:hist.map(x=>({...x})),force:!!force});
+    }
+
+    function initSurveillancePreviewInteraction() {
+        const box=document.getElementById('surveillance-preview'),canvas=document.getElementById('surveillance-preview-canvas'); if(!box||!canvas)return;
+        const resize=()=>{const r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width));canvas.height=Math.max(1,Math.floor(r.height));renderSurveillancePreview();}; new ResizeObserver(resize).observe(box); resize();
+        canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();survPreview.dragging=true;survPreview.hasDragged=false;survPreview.dragStartX=(e.clientX-r.left)-survPreview.panOffsetX;survPreview.dragStartY=(e.clientY-r.top)-survPreview.panOffsetY;});
+        window.addEventListener('mousemove',e=>{if(!survPreview.dragging)return;const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;survPreview.panOffsetX=mx-survPreview.dragStartX;survPreview.panOffsetY=my-survPreview.dragStartY;survPreview.hasDragged=true;renderSurveillancePreview();});
+        window.addEventListener('mouseup',()=>survPreview.dragging=false);
+        canvas.addEventListener('wheel',e=>{e.preventDefault();const range=Math.min(30,Math.max(.5,(1/survPreview.viewScale)*(e.deltaY<0?.9:1.1)));survPreview.viewScale=1/range;const el=document.getElementById('surveillance-preview-range');if(el)el.textContent=`${range.toFixed(1)} NM`;renderSurveillancePreview();},{passive:false});
+    }
+    function selectSurveillancePreviewByMassId(id){const idx=supportMassIndexById(id);if(idx<0)return;survPreview.massIndex=idx;survPreview.panOffsetX=0;survPreview.panOffsetY=0;const box=document.getElementById('surveillance-preview'),title=document.getElementById('surveillance-preview-title');if(box)box.classList.add('visible');if(title)title.textContent=`${massViews[idx].massEntity.name} · 2D PREVIEW`;renderSurveillancePreview();}
+    function renderSurveillancePreview(){if(currentMode!=='SURVEILLANCE'||survPreview.massIndex==null)return;const v=massViews[survPreview.massIndex],m=v&&v.massEntity,canvas=document.getElementById('surveillance-preview-canvas');if(!m||!canvas||!canvas.width)return;const ctx=canvas.getContext('2d');survPreview.panX=canvas.width/2+survPreview.panOffsetX;survPreview.panY=canvas.height/2+survPreview.panOffsetY;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#0d1322';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='#1e293b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,survPreview.panY);ctx.lineTo(canvas.width,survPreview.panY);ctx.moveTo(survPreview.panX,0);ctx.lineTo(survPreview.panX,canvas.height);ctx.stroke();if(m.waypoints){ctx.save();ctx.strokeStyle='#64748b';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);ctx.beginPath();m.waypoints.forEach((wp,i)=>{const x=survPreview.panX+(wp.x-m.x)*survPreview.viewScale,y=survPreview.panY+(wp.z-m.z)*survPreview.viewScale;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.restore();}simEntities.forEach(s=>{if(s.isMASS&&s!==m)return;const rx=s.x-m.x,rz=s.z-m.z,col=s===m?'#10b981':'#ef4444';drawVectorArrowLocal(ctx,survPreview.panX,survPreview.panY,survPreview.viewScale,rx,rz,s.hdg,s.spd*VECTOR_SCALE,col);drawShipHullLocal(ctx,survPreview.panX,survPreview.panY,survPreview.viewScale,rx,rz,s.hdg,col,s===m,s===m?'OS':s.name);});}
+
+
     window.toggleAR = function(key) {
         arStates[key] = !arStates[key];
         const btn = document.getElementById('btn-tgl-' + key);
@@ -733,7 +1140,12 @@
         }
     }
     
-    window.addEventListener('DOMContentLoaded', fetchScenarioList);
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchScenarioList();
+        initSupportControls();
+        initSurveillancePreviewInteraction();
+        initSteeringWorker();
+    });
 
     function getValidShipType(rawType) {
         if (!rawType) return "CargoShip1.glb";
@@ -1641,6 +2053,7 @@
     }
 
     window.toggleSurvPanel = function(massId) {
+        selectSurveillancePreviewByMassId(massId);
         const id = String(massId);
         const state = survMassStates.find(item => item.id === id && !item.closing);
 
@@ -1976,6 +2389,11 @@
         logEvent("MODE_CHANGED", { to: 'SURVEILLANCE' }); 
         updateSidebar(); 
         renderWorldMap();
+        if (survPreview.massIndex != null) {
+            const box = document.getElementById('surveillance-preview');
+            if (box) box.classList.add('visible');
+            renderSurveillancePreview();
+        }
     }
 
     window.enterGeneralMode = function() {
@@ -2008,6 +2426,7 @@
     window.enterSplitMode = function(idx) {
         if(isSplitMode) return;
         activeMassIndex = idx; 
+        supportTargetHeading(massViews[idx].massEntity);
         isSplitMode = true; 
         currentMode = 'SPLIT';
         survMassStates = [];
@@ -2042,6 +2461,8 @@
         updateGridLayout(); 
         setup3DSceneForMass(idx); 
         updateSidebar();
+        updateSupportButtonText();
+        requestSteeringSupport(true);
     }
 
     window.exitSplitMode = function() {
@@ -2696,6 +3117,10 @@
                 drawVectorArrowLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, s.spd * VECTOR_SCALE, color);
                 drawShipHullLocal(ctx, v.panX, v.panY, v.viewScale, relX, relZ, s.hdg, color, isOwnShip, isOwnShip ? "OS" : s.name);
             });
+
+            if (isSplitMode && idx === activeMassIndex) {
+                renderDetailedSupport2D(ctx, v, canvas);
+            }
         });
     }
 
@@ -2795,6 +3220,8 @@
         if(!isSimulationRunning) return;
         
         const now = performance.now(); 
+        recordSupportHistory(now);
+        if (currentMode === 'SURVEILLANCE' && survPreview.massIndex != null) renderSurveillancePreview();
         const dt = Math.min((now - lastTime) / 1000, 0.1); 
         lastTime = now;
         
@@ -3051,6 +3478,7 @@
             } else { 
                 render2D(); 
                 updateSidebar(); 
+                if (isSplitMode) requestSteeringSupport(false);
             }
         }
     }
