@@ -403,10 +403,20 @@
         .support-v19-column.dm, .support-v19-column.ac { grid-template-rows: repeat(2, minmax(0,1fr)); }
         #support-v19-grid .placeholder-btn {
             width: 100%; height: 100%; box-sizing: border-box; min-width: 0; min-height: 0;
+            padding: 6px 5px; font-size: clamp(14px, 1.15vw, 18px); line-height: 1.04;
         }
-        #support-v19-grid .support-control-setting,
-        #support-v19-grid .support-control-result { white-space: normal; line-height: 1.08; }
-        #support-v19-grid .support-control-result { font-size: 11px; }
+        #support-v19-grid .control-btn-line {
+            display: block; width: 100%; white-space: normal; overflow-wrap: anywhere;
+            font-size: clamp(13px, 1.05vw, 17px); font-weight: 800; line-height: 1.02;
+        }
+        #support-v19-grid .support-control-setting {
+            white-space: normal; line-height: 1.08; font-size: 10px; margin-top: 3px;
+        }
+        #support-v19-grid .support-control-result {
+            white-space: nowrap; line-height: 1.0; font-size: clamp(18px, 1.55vw, 24px); font-weight: 900;
+            letter-spacing: 0.7px; margin-top: 5px; margin-bottom: 2px; padding: 4px 3px;
+            border-radius: 4px; background: rgba(2,8,18,0.14); color: #071019;
+        }
 
     </style>
 </head>
@@ -428,7 +438,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_64" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_65" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -497,17 +507,17 @@
                     </div>
                     <div id="support-v19-grid">
                         <div class="support-v19-column sa">
-                            <button class="placeholder-btn support-sa" id="nav19-future" data-nav19-key="sa:future-position" onclick="nav19ToggleSupport('sa:future-position')"><span class="control-btn-line">FUTURE POSITION</span><span class="support-control-setting" id="nav19-future-setting">60s</span></button>
-                            <button class="placeholder-btn support-sa" id="nav19-threat" data-nav19-key="sa:threat-highlight" onclick="nav19ToggleSupport('sa:threat-highlight')"><span class="control-btn-line">THREAT HIGHLIGHT</span><span class="support-control-setting" id="nav19-threat-setting">DANGER CPA: 0.50 NM</span></button>
-                            <button class="placeholder-btn support-sa" id="nav19-priority" data-nav19-key="sa:approach-ranking" onclick="nav19ToggleSupport('sa:approach-ranking')"><span class="control-btn-line">PRIORITY MONITORING</span></button>
+                            <button class="placeholder-btn support-sa" id="nav19-future" data-nav19-key="sa:future-position" onclick="nav19ToggleSupport('sa:future-position')"><span class="control-btn-line">FUTURE</span><span class="control-btn-line">POSITION</span><span class="support-control-setting" id="nav19-future-setting">60s</span></button>
+                            <button class="placeholder-btn support-sa" id="nav19-threat" data-nav19-key="sa:threat-highlight" onclick="nav19ToggleSupport('sa:threat-highlight')"><span class="control-btn-line">THREAT</span><span class="control-btn-line">HIGHLIGHT</span><span class="support-control-setting" id="nav19-threat-setting">DANGER CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-sa" id="nav19-priority" data-nav19-key="sa:approach-ranking" onclick="nav19ToggleSupport('sa:approach-ranking')"><span class="control-btn-line">PRIORITY</span><span class="control-btn-line">MONITORING</span></button>
                         </div>
                         <div class="support-v19-column dm">
-                            <button class="placeholder-btn support-dm" id="nav19-safe" data-nav19-key="dm:safe-heading-band" onclick="nav19ToggleSupport('dm:safe-heading-band')"><span class="control-btn-line">DANGER HDG</span><span class="support-control-setting" id="nav19-safe-setting">TARGET CPA: 0.50 NM</span></button>
-                            <button class="placeholder-btn support-dm" id="nav19-route" data-nav19-key="dm:minimum-alteration" onclick="nav19ToggleSupport('dm:minimum-alteration')"><span class="control-btn-line">RECOMMENDED ROUTE</span><span class="support-control-setting" id="nav19-route-setting">TARGET CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-dm" id="nav19-safe" data-nav19-key="dm:safe-heading-band" onclick="nav19ToggleSupport('dm:safe-heading-band')"><span class="control-btn-line">DANGER</span><span class="control-btn-line">HDG</span><span class="support-control-setting" id="nav19-safe-setting">TARGET CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-dm" id="nav19-route" data-nav19-key="dm:minimum-alteration" onclick="nav19ToggleSupport('dm:minimum-alteration')"><span class="control-btn-line">RECOMMENDED</span><span class="control-btn-line">ROUTE</span><span class="support-control-setting" id="nav19-route-setting">TARGET CPA: 0.50 NM</span></button>
                         </div>
                         <div class="support-v19-column ac">
-                            <button class="placeholder-btn support-ac" id="nav19-rudder" data-nav19-key="act:rudder-balance" onclick="nav19ToggleSupport('act:rudder-balance')"><span class="control-btn-line">RUDDER SUGGESTION</span><span class="support-control-setting" id="nav19-rudder-setting">TARGET HDG: ---°</span><span class="support-control-result" id="nav19-rudder-result">SET HDG</span></button>
-                            <button class="placeholder-btn support-ac" id="nav19-rot" data-nav19-key="act:rot-balance" onclick="nav19ToggleSupport('act:rot-balance')"><span class="control-btn-line">ROT SUGGESTION</span><span class="support-control-setting" id="nav19-rot-setting">TARGET HDG: ---°</span><span class="support-control-result" id="nav19-rot-result">SET HDG</span></button>
+                            <button class="placeholder-btn support-ac" id="nav19-rudder" data-nav19-key="act:rudder-balance" onclick="nav19ToggleSupport('act:rudder-balance')"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-result" id="nav19-rudder-result">SET HDG</span><span class="support-control-setting" id="nav19-rudder-setting">TARGET HDG: ---°</span></button>
+                            <button class="placeholder-btn support-ac" id="nav19-rot" data-nav19-key="act:rot-balance" onclick="nav19ToggleSupport('act:rot-balance')"><span class="control-btn-line">ROT</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-result" id="nav19-rot-result">SET HDG</span><span class="support-control-setting" id="nav19-rot-setting">TARGET HDG: ---°</span></button>
                         </div>
                     </div>
                 </div>
@@ -3115,18 +3125,23 @@
             const vp = canvas.parentElement;
             if(!canvas || vp.classList.contains('hidden-vp') || canvas.width === 0) return;
 
-            // Detailed Monitoring 카메라와 동일한 낮/중간/밤 경계(07:00 / 17:00, 05:30 / 18:30)를 각 MASS의 현재 경도에 적용
-            const utcHours2D = (simUnixTime / 3600000) % 24;
-            const solarLon2D = 180 - (utcHours2D * 15);
-            let lonDiff2D = Math.abs(v.massEntity.globalLon - solarLon2D);
-            if (lonDiff2D > 180) lonDiff2D = 360 - lonDiff2D;
-
-            if (lonDiff2D < 75) {
-                vp.style.background = '#ffffff';
-            } else if (lonDiff2D < 97.5) {
-                vp.style.background = '#70757f';
-            } else {
+            // Detailed Monitoring 2D stays navy at all times for support-symbol readability.
+            // General Monitoring keeps its existing day/twilight/night background behavior.
+            if (isSplitMode && idx === activeMassIndex) {
                 vp.style.background = 'radial-gradient(circle at center, #111a2e 0%, #0d1322 100%)';
+            } else {
+                const utcHours2D = (simUnixTime / 3600000) % 24;
+                const solarLon2D = 180 - (utcHours2D * 15);
+                let lonDiff2D = Math.abs(v.massEntity.globalLon - solarLon2D);
+                if (lonDiff2D > 180) lonDiff2D = 360 - lonDiff2D;
+
+                if (lonDiff2D < 75) {
+                    vp.style.background = '#ffffff';
+                } else if (lonDiff2D < 97.5) {
+                    vp.style.background = '#70757f';
+                } else {
+                    vp.style.background = 'radial-gradient(circle at center, #111a2e 0%, #0d1322 100%)';
+                }
             }
             
             v.panX = canvas.width / 2 + v.panOffsetX; 
@@ -3825,7 +3840,7 @@
         const dir=(delta,tol)=>Math.abs(delta)<=tol?nav19Text('유지','HOLD'):(delta>0?nav19Text('우현으로','TO STBD'):nav19Text('좌현으로','TO PORT'));
         nav19State.pidResultByMass.set(id,{target,headingError:error,pidTargetRudder:pid,pidIntendedRot:intended,rudderSuggestion:dir(rd,2),rotSuggestion:dir(rotd,1)});nav19UpdateUi();
     }
-    function nav19RenderAction(ctx,v,mass){const h=nav19TargetHeading(mass);if(!Number.isFinite(h))return;const rel=nav19Diff(h,mass.hdg),a=(rel-90)*DEG2RAD,len=Math.min(ctx.canvas.width,ctx.canvas.height)*.35;ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();}
+    function nav19RenderAction(ctx,v,mass){const h=nav19TargetHeading(mass);if(!Number.isFinite(h))return;const rel=nav19Diff(h,mass.hdg),a=(rel-90)*DEG2RAD,len=Math.hypot(ctx.canvas.width,ctx.canvas.height)*2.0;ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();}
 
     function nav19RenderDetailed(ctx,v,canvas){
         if(!isSplitMode||v!==massViews[activeMassIndex]||!v.massEntity)return;const m=v.massEntity,a=nav19State.active;
