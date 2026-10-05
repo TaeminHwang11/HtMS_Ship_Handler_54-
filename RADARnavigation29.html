@@ -1928,12 +1928,19 @@
     function gameLoop(currentTime) {
         if (!isTransmitting) return;
         let dt = (currentTime - lastTime) / 1000;
-        if (dt > 0.1) dt = 0.1;
+        if (!Number.isFinite(dt) || dt < 0) dt = 0;
         lastTime = currentTime;
         
-        if (!isPaused) {
-            let simDtHours = (dt * timeMultiplier * simSpeed) / 3600;
-            updatePhysics(simDtHours, dt * simSpeed);
+        if (!isPaused && dt > 0) {
+            // Do not discard elapsed time on a slow frame. Integrate the full interval
+            // in <= 0.1 s physics steps so the radar simulation remains true 1x.
+            let remainingSec = dt * simSpeed;
+            while (remainingSec > 1e-9 && isTransmitting && !isPaused) {
+                const stepSec = Math.min(0.1, remainingSec);
+                const simDtHours = (stepSec * timeMultiplier) / 3600;
+                updatePhysics(simDtHours, stepSec);
+                remainingSec -= stepSec;
+            }
         }
         
         renderRadar(currentTime);
