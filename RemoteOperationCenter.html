@@ -379,6 +379,35 @@
         .placeholder-btn.support-ac.active-btn { background: var(--accent-green); color:#000; border-color:var(--accent-green); }
         .placeholder-btn.support-ac.model-error.active-btn { background:#7f1d1d; color:#fff; border-color:#ef4444; }
 
+    
+
+        /* ===== Navigation Supporter v19 transplanted into Detailed Monitoring only ===== */
+        #nav19-plan-row {
+            display: flex; justify-content: flex-end; align-items: center; flex: 0 0 auto; min-height: 27px;
+        }
+        #support-plan-adjustment {
+            background: rgba(2,8,18,0.86); color: #e2e8f0; border: 1px solid #64748b; border-radius: 5px;
+            padding: 4px 9px; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
+            letter-spacing: 0.35px; cursor: ns-resize; user-select: none;
+        }
+        #support-plan-adjustment:hover { border-color: #facc15; color: #facc15; }
+        #support-plan-adjustment b { color: #facc15; margin-left: 4px; }
+        #support-group-header-row .split-group-title { cursor: pointer; user-select: none; }
+        #support-group-header-row .split-group-title:hover { filter: brightness(1.25); }
+        #support-v19-grid {
+            display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px;
+            width: 100%; flex: 1 1 auto; min-height: 0;
+        }
+        .support-v19-column { display: grid; gap: 6px; min-width: 0; min-height: 0; }
+        .support-v19-column.sa { grid-template-rows: repeat(3, minmax(0,1fr)); }
+        .support-v19-column.dm, .support-v19-column.ac { grid-template-rows: repeat(2, minmax(0,1fr)); }
+        #support-v19-grid .placeholder-btn {
+            width: 100%; height: 100%; box-sizing: border-box; min-width: 0; min-height: 0;
+        }
+        #support-v19-grid .support-control-setting,
+        #support-v19-grid .support-control-result { white-space: normal; line-height: 1.08; }
+        #support-v19-grid .support-control-result { font-size: 11px; }
+
     </style>
 </head>
 <body>
@@ -399,7 +428,7 @@
             </div>
             <div class="form-row">
                 <label>이름 (Name)</label>
-                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_63" />
+                <input type="text" id="student-name" placeholder="예: 홍길동" autocomplete="off" value="테스터_64" />
             </div>
             <div class="form-row">
                 <label>시나리오 (Scenario) 선택</label>
@@ -456,22 +485,30 @@
             <div id="h-resizer"></div>
 
             <div id="bottom-view-wrapper">
+
                 <div id="split-left-panel" class="split-side-panel">
-                    <div id="support-group-header-row">
-                        <div class="split-group-title sa">SITUATION AWARENESS</div>
-                        <div class="split-group-title dm">DECISION MAKING</div>
-                        <div class="split-group-title ac">ACTION &amp; CONTROL</div>
+                    <div id="nav19-plan-row">
+                        <button type="button" id="support-plan-adjustment" title="Mouse wheel: PLAN ADJ · 1.0 balanced · higher favors Goal tracking">PLAN ADJ <b id="support-plan-adjustment-value">1.0</b></button>
                     </div>
-                    <div id="support-9-grid">
-                        <button class="placeholder-btn support-sa" id="support-future" onclick="toggleNavSupport('sa','future')"><span class="control-btn-line">FUTURE</span><span class="control-btn-line">POSITION</span><span class="support-control-setting" id="support-future-setting">90s</span></button>
-                        <button class="placeholder-btn support-sa" id="support-collision" onclick="toggleNavSupport('sa','collision')"><span class="control-btn-line">COLLISION</span><span class="control-btn-line">POINT</span></button>
-                        <button class="placeholder-btn support-sa" id="support-threat" onclick="toggleNavSupport('sa','threat')"><span class="control-btn-line">THREAT</span><span class="control-btn-line">HIGHLIGHT</span></button>
-                        <button class="placeholder-btn support-sa" id="support-priority" onclick="toggleNavSupport('sa','priority')"><span class="control-btn-line">PRIORITY</span><span class="control-btn-line">MONITORING</span></button>
-                        <button class="placeholder-btn support-dm" id="support-safe" onclick="toggleNavSupport('dm','safe')"><span class="control-btn-line">SAFE HDG</span><span class="control-btn-line">BAND</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
-                        <button class="placeholder-btn support-dm" id="support-min" onclick="toggleNavSupport('dm','min')"><span class="control-btn-line">MIN</span><span class="control-btn-line">ALTERATION</span><span class="support-control-setting support-cpa-setting">TARGET CPA: 0.50 NM</span></button>
-                        <button class="placeholder-btn support-dm" id="support-whatif" onclick="toggleNavSupport('dm','whatif')"><span class="control-btn-line">WHAT-IF</span><span class="control-btn-line">COURSE</span></button>
-                        <button class="placeholder-btn support-ac" id="support-rudder" onclick="toggleNavSupport('ac','rudder')"><span class="control-btn-line">RUDDER</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rudder-result">MODEL READY</span></button>
-                        <button class="placeholder-btn support-ac" id="support-rot" onclick="toggleNavSupport('ac','rot')"><span class="control-btn-line">ROT</span><span class="control-btn-line">SUGGESTION</span><span class="support-control-setting support-hdg-setting">TARGET HDG: ---°</span><span class="support-control-result" id="support-rot-result">MODEL READY</span></button>
+                    <div id="support-group-header-row">
+                        <div class="split-group-title sa" onclick="nav19ToggleGroup('sa')">SITUATION AWARENESS</div>
+                        <div class="split-group-title dm" onclick="nav19ToggleGroup('dm')">DECISION MAKING</div>
+                        <div class="split-group-title ac" onclick="nav19ToggleGroup('ac')">ACTION &amp; CONTROL</div>
+                    </div>
+                    <div id="support-v19-grid">
+                        <div class="support-v19-column sa">
+                            <button class="placeholder-btn support-sa" id="nav19-future" data-nav19-key="sa:future-position" onclick="nav19ToggleSupport('sa:future-position')"><span class="control-btn-line">FUTURE POSITION</span><span class="support-control-setting" id="nav19-future-setting">60s</span></button>
+                            <button class="placeholder-btn support-sa" id="nav19-threat" data-nav19-key="sa:threat-highlight" onclick="nav19ToggleSupport('sa:threat-highlight')"><span class="control-btn-line">THREAT HIGHLIGHT</span><span class="support-control-setting" id="nav19-threat-setting">DANGER CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-sa" id="nav19-priority" data-nav19-key="sa:approach-ranking" onclick="nav19ToggleSupport('sa:approach-ranking')"><span class="control-btn-line">PRIORITY MONITORING</span></button>
+                        </div>
+                        <div class="support-v19-column dm">
+                            <button class="placeholder-btn support-dm" id="nav19-safe" data-nav19-key="dm:safe-heading-band" onclick="nav19ToggleSupport('dm:safe-heading-band')"><span class="control-btn-line">DANGER HDG</span><span class="support-control-setting" id="nav19-safe-setting">TARGET CPA: 0.50 NM</span></button>
+                            <button class="placeholder-btn support-dm" id="nav19-route" data-nav19-key="dm:minimum-alteration" onclick="nav19ToggleSupport('dm:minimum-alteration')"><span class="control-btn-line">RECOMMENDED ROUTE</span><span class="support-control-setting" id="nav19-route-setting">TARGET CPA: 0.50 NM</span></button>
+                        </div>
+                        <div class="support-v19-column ac">
+                            <button class="placeholder-btn support-ac" id="nav19-rudder" data-nav19-key="act:rudder-balance" onclick="nav19ToggleSupport('act:rudder-balance')"><span class="control-btn-line">RUDDER SUGGESTION</span><span class="support-control-setting" id="nav19-rudder-setting">TARGET HDG: ---°</span><span class="support-control-result" id="nav19-rudder-result">SET HDG</span></button>
+                            <button class="placeholder-btn support-ac" id="nav19-rot" data-nav19-key="act:rot-balance" onclick="nav19ToggleSupport('act:rot-balance')"><span class="control-btn-line">ROT SUGGESTION</span><span class="support-control-setting" id="nav19-rot-setting">TARGET HDG: ---°</span><span class="support-control-result" id="nav19-rot-result">SET HDG</span></button>
+                        </div>
                     </div>
                 </div>
                 
@@ -3571,6 +3608,267 @@
             }
         }
     }
+
+
+    // =====================================================================
+    // Navigation Supporter v19 transplant for Detailed Monitoring 2D only.
+    // Remote-operation layout, 3D, sidebar, intervention and vessel physics
+    // are intentionally left untouched.
+    // =====================================================================
+    const NAV19_LANG = 'en';
+    const NAV19_CONFIG = Object.freeze({
+        safeCpaNM: 0.50,
+        cautionCpaNM: 1.00,
+        supportRadiusNM: 10.0,
+        futureRadiusNM: 5.0,
+        futureAsternNM: 1.0,
+        horizonMin: 10,
+        recommendedArcRecalcMs: 1000,
+        recommendedArcTRSec: 60,
+        recommendedArcTurnLimitStepDeg: 1,
+        routeTurnRateDegPerMin: 12,
+        arcPlanningMaxMin: 30
+    });
+    const NAV19_PLAN_OPTIONS = Object.freeze([0.05,0.10,0.20,1/3,0.50,1.00,2.00,3.00,5.00,10.00,20.00]);
+    const nav19State = {
+        active: new Set(),
+        futureIntervalSec: 60,
+        cpa: {
+            'sa:threat-highlight': 0.50,
+            'dm:safe-heading-band': 0.50,
+            'dm:minimum-alteration': 0.50
+        },
+        targetHeadingByMass: new Map(),
+        pidByMass: new Map(),
+        pidResultByMass: new Map(),
+        planAdj: 1.0,
+        weights: { goal: 1.0, altering: 1.0 },
+        arcCache: new Map(),
+        arcLastSolution: null,
+        arcWorker: null,
+        arcWorkerUrl: null,
+        arcWorkerBusy: false,
+        arcWorkerSeq: 0,
+        arcWorkerCurrent: null,
+        arcWorkerQueued: null,
+        initialized: false
+    };
+
+    function nav19Text(ko, en) { return NAV19_LANG === 'en' ? en : ko; }
+    function nav19Normalize(v) { v = Number(v) || 0; return ((v % 360) + 360) % 360; }
+    function nav19Diff(target, current) { return ((nav19Normalize(target) - nav19Normalize(current) + 540) % 360) - 180; }
+    function nav19Clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function nav19Mass() { return massViews[activeMassIndex] ? massViews[activeMassIndex].massEntity : null; }
+    function nav19Traffic() {
+        const unique = new Map();
+        simEntities.forEach(s => { if (!s.isMASS) unique.set(String(s.id), s); });
+        return Array.from(unique.values());
+    }
+    function nav19ShipMeters(ship) {
+        return { east: (Number(ship.x)||0) * 1852 / 400, north: -(Number(ship.z)||0) * 1852 / 400 };
+    }
+    function nav19Velocity(course, speedKnots) {
+        const s = Math.max(0, Number(speedKnots)||0) * 0.514444;
+        const r = nav19Normalize(course) * DEG2RAD;
+        return { east: s*Math.sin(r), north: s*Math.cos(r) };
+    }
+    function nav19Course(ship) { return Number.isFinite(Number(ship && ship.cog)) ? Number(ship.cog) : Number(ship && ship.hdg)||0; }
+    function nav19Speed(ship) { return Number(ship && (ship.sog ?? ship.spd)) || 0; }
+    function nav19ApplyWeights() {
+        const ratio = Math.max(0.01, Number(nav19State.planAdj)||1);
+        nav19State.weights.goal = (2*ratio)/(1+ratio);
+        nav19State.weights.altering = 2/(1+ratio);
+    }
+    nav19ApplyWeights();
+    function nav19PlanText(v) {
+        const n = Number(v)||1;
+        if (n < 1) return n.toFixed(2);
+        return n >= 10 ? n.toFixed(0) : n.toFixed(1);
+    }
+    function nav19ClearArc() {
+        nav19State.arcCache.clear();
+        nav19State.arcLastSolution = null;
+        nav19State.arcWorkerQueued = null;
+    }
+    function nav19GetCpa(key) { return Number(nav19State.cpa[key] ?? NAV19_CONFIG.safeCpaNM); }
+    function nav19SetCpa(key, value) {
+        const next = Math.round(nav19Clamp(Number(value)||0.5, 0.10, 3.00)*100)/100;
+        if (key === 'dm:safe-heading-band' || key === 'dm:minimum-alteration') {
+            nav19State.cpa['dm:safe-heading-band'] = next;
+            nav19State.cpa['dm:minimum-alteration'] = next;
+            nav19ClearArc();
+        } else nav19State.cpa[key] = next;
+    }
+    function nav19TargetHeading(mass) {
+        if (!mass) return null;
+        const v = nav19State.targetHeadingByMass.get(String(mass.id));
+        return Number.isFinite(Number(v)) ? nav19Normalize(v) : null;
+    }
+    function nav19SetTargetHeading(mass, value) {
+        if (!mass || !Number.isFinite(Number(value))) return;
+        nav19State.targetHeadingByMass.set(String(mass.id), nav19Normalize(value));
+        nav19State.pidResultByMass.delete(String(mass.id));
+        const ps = nav19State.pidByMass.get(String(mass.id));
+        if (ps) ps.targetHeading = null;
+        nav19UpdatePid(true);
+        nav19UpdateUi();
+    }
+
+    function nav19EvalMotion(os, ts, ownHeading = nav19Course(os), ownSpeed = nav19Speed(os), horizonMin = NAV19_CONFIG.horizonMin) {
+        const op=nav19ShipMeters(os), tp=nav19ShipMeters(ts);
+        const ov=nav19Velocity(ownHeading,ownSpeed), tv=nav19Velocity(nav19Course(ts),nav19Speed(ts));
+        const rE=tp.east-op.east, rN=tp.north-op.north, vE=tv.east-ov.east, vN=tv.north-ov.north;
+        const vv=vE*vE+vN*vN, horizonSec=horizonMin*60;
+        const rawTcpaSec=vv<1e-8?Infinity:-(rE*vE+rN*vN)/vv;
+        const evalSec=vv<1e-8?0:nav19Clamp(rawTcpaSec,0,horizonSec);
+        const curM=Math.hypot(rE,rN);
+        const cpaM=Math.hypot(rE+vE*evalSec,rN+vN*evalSec);
+        const rawCpaM=Number.isFinite(rawTcpaSec)?Math.hypot(rE+vE*rawTcpaSec,rN+vN*rawTcpaSec):curM;
+        return { cpaNM:cpaM/1852, rawCpaNM:rawCpaM/1852, tcpaMin:Number.isFinite(rawTcpaSec)?rawTcpaSec/60:null,
+            evalTcpaMin:evalSec/60, distanceNM:curM/1852, relEast:rE, relNorth:rN, relVelEast:vE, relVelNorth:vN };
+    }
+    function nav19InFutureArea(os, ts) {
+        const m=nav19EvalMotion(os,ts), dist=m.distanceNM;
+        if (dist > NAV19_CONFIG.futureRadiusNM + 1e-9) return false;
+        const r=nav19Normalize(nav19Course(os))*DEG2RAD;
+        const along=(m.relEast*Math.sin(r)+m.relNorth*Math.cos(r))/1852;
+        return along >= -NAV19_CONFIG.futureAsternNM-1e-9;
+    }
+    function nav19Predict(ship, sec) {
+        const speed=Math.max(0,nav19Speed(ship))*0.514444;
+        const course=nav19Normalize(nav19Course(ship)), rot=Number(ship&&ship.rot)||0, omega=rot*DEG2RAD/60, t=Math.max(0,Number(sec)||0), h0=course*DEG2RAD;
+        let east,north;
+        if (Math.abs(omega)<1e-7) { east=speed*Math.sin(h0)*t; north=speed*Math.cos(h0)*t; }
+        else { const h1=h0+omega*t; east=speed/omega*(Math.cos(h0)-Math.cos(h1)); north=speed/omega*(Math.sin(h1)-Math.sin(h0)); }
+        return {east,north,heading:nav19Normalize((Number(ship.hdg)||course)+rot*t/60)};
+    }
+    function nav19MetersToUnits(east,north) { return {x:east*400/1852,z:-north*400/1852}; }
+    function nav19CanvasPoint(v,east,north) { const q=nav19MetersToUnits(east,north); return detailedCanvasPoint(v,q.x,q.z); }
+    function nav19DrawGhost(ctx,v,east,north,heading,alpha) {
+        const q=nav19MetersToUnits(east,north), d=detailedDisplayVector(v,q.x,q.z), dh=detailedDisplayHeading(v,heading);
+        ctx.save(); ctx.globalAlpha=alpha; drawShipHullLocal(ctx,v.panX,v.panY,v.viewScale,d.x,d.z,dh,'#94a3b8',false,''); ctx.restore();
+    }
+    function nav19RenderFuture(ctx,v,mass) {
+        const marks=[1,2,3,4,5].map(n=>n*nav19State.futureIntervalSec), alphas=[0.14,0.19,0.24,0.30,0.38];
+        let prev={east:0,north:0};
+        marks.forEach((sec,i)=>{ const p=nav19Predict(mass,sec); if(Math.abs(Number(mass.rot)||0)>=0.5){const a=nav19CanvasPoint(v,prev.east,prev.north),b=nav19CanvasPoint(v,p.east,p.north);ctx.save();ctx.strokeStyle='rgba(148,163,184,.34)';ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();} nav19DrawGhost(ctx,v,p.east,p.north,p.heading,alphas[i]); prev=p; });
+        nav19Traffic().filter(t=>nav19InFutureArea(mass,t)).forEach(t=>{ const m=nav19EvalMotion(mass,t); let pp={east:m.relEast,north:m.relNorth}; marks.forEach((sec,i)=>{const p=nav19Predict(t,sec),e=m.relEast+p.east,n=m.relNorth+p.north;if(Math.abs(Number(t.rot)||0)>=0.5){const a=nav19CanvasPoint(v,pp.east,pp.north),b=nav19CanvasPoint(v,e,n);ctx.save();ctx.strokeStyle='rgba(148,163,184,.34)';ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();}nav19DrawGhost(ctx,v,e,n,p.heading,alphas[i]);pp={east:e,north:n};}); });
+    }
+    function nav19IsThreat(mass,t) { const m=nav19EvalMotion(mass,t),tc=Number(m.tcpaMin),c=Number(m.rawCpaNM); return Number.isFinite(tc)&&tc>0&&Number.isFinite(c)&&c<nav19GetCpa('sa:threat-highlight'); }
+    function nav19RenderThreat(ctx,v,mass) {
+        nav19Traffic().forEach(t=>{ if(!nav19IsThreat(mass,t)) return; const p=detailedCanvasPoint(v,t.x-mass.x,t.z-mass.z); const r=Math.max(14,(SHIP_LEN_UNIT/2)*v.viewScale+5);ctx.save();ctx.strokeStyle='#fb7185';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();ctx.restore(); });
+    }
+    function nav19RenderPriority(ctx,v,mass) {
+        nav19Traffic().map(t=>({t,m:nav19EvalMotion(mass,t)})).filter(o=>o.m.distanceNM<=5+1e-9).sort((a,b)=>{const af=Number.isFinite(a.m.tcpaMin)&&a.m.tcpaMin>=0,bf=Number.isFinite(b.m.tcpaMin)&&b.m.tcpaMin>=0;if(af!==bf)return af?-1:1;if(af&&bf)return a.m.cpaNM-b.m.cpaNM||a.m.tcpaMin-b.m.tcpaMin||a.m.distanceNM-b.m.distanceNM;return a.m.distanceNM-b.m.distanceNM;}).forEach((o,i)=>{const p=detailedCanvasPoint(v,o.t.x-mass.x,o.t.z-mass.z);ctx.save();ctx.fillStyle='rgba(2,8,18,.92)';ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x-13,p.y-13,9,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#f8fafc';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x-13,p.y-13);ctx.restore();});
+    }
+
+    function nav19ArcTargetState(os,ts){
+        const own=nav19ShipMeters(os),pos=nav19ShipMeters(ts),ownVel=nav19Velocity(nav19Course(os),nav19Speed(os)),vel=nav19Velocity(nav19Course(ts),nav19Speed(ts));
+        const relEast=pos.east-own.east,relNorth=pos.north-own.north,relVelEast=vel.east-ownVel.east,relVelNorth=vel.north-ownVel.north,vv=relVelEast*relVelEast+relVelNorth*relVelNorth;
+        return {ship:ts,relEast,relNorth,velEast:vel.east,velNorth:vel.north,relVelEast,relVelNorth,tcpaSec:vv>1e-10?-(relEast*relVelEast+relNorth*relVelNorth)/vv:Infinity};
+    }
+    function nav19FutureTargetPoint(ts,timeSec){return{east:ts.relEast+ts.velEast*timeSec,north:ts.relNorth+ts.velNorth*timeSec};}
+    function nav19BuildArcData(os,targets,safetyNM,planningMinutes,useFullCpaWall=true,trSecOverride=60){
+        const trSec=Math.max(1,Number(trSecOverride)||60),horizonMin=nav19Clamp(Math.ceil(Number(planningMinutes)||30),1,NAV19_CONFIG.arcPlanningMaxMin),horizonSec=Math.max(trSec,horizonMin*60),ownSpeedMps=Math.max(.1,nav19Speed(os)*.514444),requested=Math.max(.02,Number(safetyNM)||.5),domain=useFullCpaWall?requested:requested/2,safetyMeters=domain*1852,targetStates=(targets||[]).map(t=>nav19ArcTargetState(os,t)),ringCount=Math.max(1,Math.round(horizonSec/trSec)),rings=[],exactArcs=[];
+        for(let i=1;i<=ringCount;i++)rings.push({index:i,timeSec:i*trSec,minute:i*trSec/60,radiusMeters:ownSpeedMps*i*trSec,blockedAngles:new Array(360).fill(false),blockedSectors:[],arcs:[]});
+        targetStates.forEach(ts=>{const tc=ts.tcpaSec;if(!Number.isFinite(tc)||tc<=0||tc>horizonSec+1e-9)return;const ri=nav19Clamp(Math.ceil(tc/trSec),1,ringCount),ring=rings[ri-1],tf=nav19FutureTargetPoint(ts,tc),d=Math.hypot(tf.east,tf.north);if(d<1e-9)return;const bearing=nav19Normalize(Math.atan2(tf.east,tf.north)/DEG2RAD),half=d<=safetyMeters?90:Math.asin(nav19Clamp(safetyMeters/d,0,1))/DEG2RAD;for(let a=0;a<360;a++)if(Math.abs(nav19Diff(a,bearing))<=half+.5)ring.blockedAngles[a]=true;const rec={targetId:String(ts.ship.id),targetName:ts.ship.name||String(ts.ship.id),tcpaSec:tc,bearing,halfDeg:half,radiusMeters:ownSpeedMps*tc};ring.arcs.push(rec);exactArcs.push(rec);});
+        return{trSec,horizonMin,safetyMeters,safetyNM:requested,domainSafetyNM:domain,ownSpeedMps,targetStates,rings,exactArcs};
+    }
+    function nav19DangerSnapshot(os,targets,cpa){
+        const safety=Math.max(.02,Number(cpa)||.5),safetyMeters=safety*1852,ownSpeedMps=Math.max(.1,nav19Speed(os)*.514444),arcs=[];
+        (targets||[]).map(t=>nav19ArcTargetState(os,t)).forEach(ts=>{const tc=Number(ts.tcpaSec);if(!Number.isFinite(tc)||tc<=0)return;const tf=nav19FutureTargetPoint(ts,tc),d=Math.hypot(tf.east,tf.north);if(d<1e-9)return;const bearing=nav19Normalize(Math.atan2(tf.east,tf.north)/DEG2RAD),half=d<=safetyMeters?90:Math.asin(nav19Clamp(safetyMeters/d,0,1))/DEG2RAD;arcs.push({tcpaSec:tc,radiusMeters:ownSpeedMps*tc,bearing,halfDeg:half});});
+        return{arcs,safetyNM:safety};
+    }
+    function nav19RenderDanger(ctx,v,mass){
+        const snap=nav19DangerSnapshot(mass,nav19Traffic(),nav19GetCpa('dm:safe-heading-band')),maxVisible=Math.hypot(v.panX,v.panY,ctx.canvas.width-v.panX,ctx.canvas.height-v.panY);
+        snap.arcs.forEach(a=>{const radiusPx=a.radiusMeters*(400/1852)*v.viewScale;if(!Number.isFinite(radiusPx)||radiusPx<2||radiusPx>maxVisible)return;const rel=nav19Diff(a.bearing,mass.hdg),center=(rel-90)*DEG2RAD,half=a.halfDeg*DEG2RAD;ctx.save();ctx.strokeStyle='rgba(244,63,94,.86)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(v.panX,v.panY,radiusPx,center-half,center+half,false);ctx.stroke();ctx.restore();});
+    }
+    function nav19GoalRef(mass){
+        if(!mass)return null;const own=nav19ShipMeters(mass),wps=Array.isArray(mass.waypoints)?mass.waypoints:[];
+        if(wps.length>=2&&Number(mass.currentWpIndex)<wps.length){const idx=nav19Clamp(Math.round(Number(mass.currentWpIndex)||1),1,wps.length-1),to=wps[idx],from=wps[Math.max(0,idx-1)],de=(to.x-from.x)*1852/400,dn=-(to.z-from.z)*1852/400,base=nav19Normalize(Math.atan2(de,dn)/DEG2RAD);return{goalEast:to.x*1852/400,goalNorth:-to.z*1852/400,baseHeading:base,targetWaypointIndex:idx,targetWaypointName:`WP${idx}`};}
+        const base=nav19Normalize(nav19Course(mass)),dist=5*1852,r=base*DEG2RAD;return{goalEast:own.east+Math.sin(r)*dist,goalNorth:own.north+Math.cos(r)*dist,baseHeading:base,targetWaypointIndex:-1,targetWaypointName:'VIRTUAL'};
+    }
+
+    function nav19ArcWorkerMain(){
+        const R=Math.PI/180,n=d=>((Number(d)||0)%360+360)%360,diff=(t,c)=>((t-c+540)%360)-180,clamp=(v,l,h)=>Math.max(l,Math.min(h,v));
+        function fp(ts,t){return{east:ts.relEast+ts.velEast*t,north:ts.relNorth+ts.velNorth*t};}
+        function sep(p0,p1,t0,t1,ts){const a=fp(ts,t0),b=fp(ts,t1),r0e=a.east-p0.east,r0n=a.north-p0.north,r1e=b.east-p1.east,r1n=b.north-p1.north,de=r1e-r0e,dn=r1n-r0n,dd=de*de+dn*dn,u=dd>1e-12?clamp(-(r0e*de+r0n*dn)/dd,0,1):0;return Math.hypot(r0e+de*u,r0n+dn*u);}
+        function validate(points,ad){let m=Infinity;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];for(const ts of ad.targetStates)m=Math.min(m,sep(a,b,a.timeSec,b.timeSec,ts));}return{minSeparationNM:m/1852,safe:m+.5>=ad.safetyMeters};}
+        function outward(a,b){const r=Math.hypot(Number(a.east)||0,Number(a.north)||0);if(r<1e-6)return true;const de=(Number(b.east)||0)-(Number(a.east)||0),dn=(Number(b.north)||0)-(Number(a.north)||0);return(Number(a.east)||0)*de+(Number(a.north)||0)*dn>=-1e-6;}
+        function cross(a,b,w){const x0=Number(a.east)||0,y0=Number(a.north)||0,x1=Number(b.east)||0,y1=Number(b.north)||0,dx=x1-x0,dy=y1-y0,rr=Number(w&&w.radiusMeters);if(!Number.isFinite(rr)||rr<=0)return false;const A=dx*dx+dy*dy;if(A<1e-12)return false;const B=2*(x0*dx+y0*dy),C=x0*x0+y0*y0-rr*rr,D=B*B-4*A*C;if(D<-1e-9)return false;const root=Math.sqrt(Math.max(0,D));for(const u of[(-B-root)/(2*A),(-B+root)/(2*A)]){if(u<-1e-9||u>1+1e-9)continue;const e=x0+dx*u,no=y0+dy*u,bear=n(Math.atan2(e,no)/R);if(Math.abs(diff(bear,Number(w.bearing)||0))<=Number(w.halfDeg||0)+.5)return true;}return false;}
+        function crosses(a,b,ad){for(const w of(ad.exactArcs||[]))if(cross(a,b,w))return true;return false;}
+        function reconstruct(st){const p=[];let c=st;while(c){p.push(c.point);c=c.parent;}return p.reverse();}
+        function plan(input,side){const{currentHeading,goalHeading,goalRel,arcData,routeTurnRateDegPerMin,turnLimitStepDeg,maxAllowedTurnLimitDeg,weightGoal,weightAltering}=input,wg=Math.max(0,Number(weightGoal)||1),wa=Math.max(0,Number(weightAltering)||1),ws=wa,ss=side==='PORT'?-1:side==='STBD'?1:0,gd=Math.hypot(goalRel.east,goalRel.north);if(gd<1)return null;const stepM=Math.max(1,arcData.ownSpeedMps*arcData.trSec),gt=gd/Math.max(.01,arcData.ownSpeedMps),count=Math.max(0,Math.floor((gt-1e-6)/arcData.trSec)),rings=[];for(let i=1;i<=count;i++)rings.push({radiusMeters:stepM*i,timeSec:arcData.trSec*i,minute:arcData.trSec*i/60,terminal:false});rings.push({radiusMeters:gd,timeSec:gt,minute:gt/60,terminal:true});const key=(h,s,l)=>`${h}|${s}|${l}`,pt=(h,r)=>{if(r.terminal)return{east:goalRel.east,north:goalRel.north,timeSec:r.timeSec,minute:r.minute,heading:h};const a=h*R;return{east:Math.sin(a)*r.radiusMeters,north:Math.cos(a)*r.radiusMeters,timeSec:r.timeSec,minute:r.minute,heading:h};},better=(c,e)=>!e||c.cost<e.cost-1e-9||(Math.abs(c.cost-e.cost)<=1e-9&&c.pathLengthMeters<e.pathLengthMeters-1e-6)||(Math.abs(c.cost-e.cost)<=1e-9&&Math.abs(c.pathLengthMeters-e.pathLengthMeters)<=1e-6&&c.cumulativeTurn<e.cumulativeTurn),ceil=clamp(Number(maxAllowedTurnLimitDeg)||180,0,180),physical=(Number(routeTurnRateDegPerMin)||0)*(Number(arcData.trSec)||0)/60,baseStep=Math.max(1,Number(turnLimitStepDeg)||1),normal=Math.max(1,Math.floor(physical+1e-9)),limits=[],push=v=>{v=clamp(Math.round(v),0,ceil);if(!limits.includes(v))limits.push(v);},start=Math.min(normal,ceil);push(start);const fine=Math.max(2,baseStep*2);for(let x=start+fine;x<=Math.min(20,ceil);x+=fine)push(x);const med=Math.max(25,Math.ceil((Math.max(start,20)+1)/5)*5);for(let x=med;x<=Math.min(60,ceil);x+=5)push(x);const coarse=Math.max(70,Math.ceil((Math.max(start,60)+1)/10)*10);for(let x=coarse;x<=ceil;x+=10)push(x);push(ceil);limits.sort((a,b)=>a-b);
+            for(const lim of limits){let states=new Map(),initial={east:0,north:0,timeSec:0,minute:0,heading:currentHeading};states.set(key(currentHeading,0,0),{heading:currentHeading,firstAlterSign:0,cost:0,cumulativeTurn:0,pathLengthMeters:0,point:initial,parent:null,lastTurn:0});let failed=false;for(const ring of rings){const groups=new Map(),maxStates=3,consider=(prev,ca)=>{ca=n(ca);const st=diff(ca,prev.heading),tc=Math.abs(st);if(tc>lim+1e-9)return;let first=prev.firstAlterSign;if(first===0&&tc>1e-9){first=Math.sign(st);if(ss!==0&&first!==ss)return;}if(ss!==0&&first!==0&&first!==ss)return;const point=pt(ca,ring);if(!outward(prev.point,point)||crosses(prev.point,point,arcData))return;const gdif=diff(ca,goalHeading),prevTurn=Number(prev.lastTurn)||0,acc=st-prevTurn,cost=prev.cost+wg*gdif*gdif+wa*st*st+ws*acc*acc,seg=Math.hypot(point.east-prev.point.east,point.north-prev.point.north),cand={heading:ca,firstAlterSign:first,cost,cumulativeTurn:prev.cumulativeTurn+tc,pathLengthMeters:prev.pathLengthMeters+seg,point,parent:prev,lastTurn:st},gk=`${ca}|${first}`;let g=groups.get(gk);if(!g){g=[];groups.set(gk,g);}const si=g.findIndex(x=>Math.abs((Number(x.lastTurn)||0)-st)<=1e-9);if(si>=0){if(better(cand,g[si]))g[si]=cand;}else g.push(cand);g.sort((a,b)=>a.cost-b.cost||a.pathLengthMeters-b.pathLengthMeters||a.cumulativeTurn-b.cumulativeTurn);if(g.length>maxStates)g.length=maxStates;};for(const prev of states.values()){if(ring.terminal){consider(prev,goalHeading);continue;}const L=Math.floor(lim+1e-9);for(let d=-L;d<=L;d++){if(L===180&&d===180)continue;consider(prev,prev.heading+d);}}const next=new Map();for(const g of groups.values())for(const c of g)next.set(key(c.heading,c.firstAlterSign,c.lastTurn),c);if(!next.size){failed=true;break;}states=next;}if(failed||!states.size)continue;const finals=Array.from(states.values()).filter(st=>ss===0||st.firstAlterSign===0||st.firstAlterSign===ss).sort((a,b)=>a.cost-b.cost||a.pathLengthMeters-b.pathLengthMeters||a.cumulativeTurn-b.cumulativeTurn);if(!finals.length)continue;const st=finals[0],points=reconstruct(st),val=validate(points,arcData);let peak=points[0],pd=0;for(const p of points){const d=diff(p.heading,input.referenceHeading);if(Math.abs(d)>Math.abs(pd)){pd=d;peak=p;}}return{side,hasPath:true,safe:true,rejoined:true,points,cost:st.cost,pathLengthMeters:st.pathLengthMeters,cumulativeTurn:st.cumulativeTurn,peakHeading:peak.heading,peakDelta:pd,finalHeading:st.heading,minSeparationNM:val.minSeparationNM,usedTurnLimitDeg:lim,physicalTurnLimitDeg:physical,extreme:lim>physical+1e-9,goalHeading};}return{side,hasPath:false,safe:false,rejoined:false,points:[],minSeparationNM:0,usedTurnLimitDeg:ceil,physicalTurnLimitDeg:physical,extreme:true,goalHeading};}
+        self.onmessage=e=>{const m=e.data||{};if(m.type!=='plan')return;try{const p=plan(m.input,'PORT'),s=plan(m.input,'STBD');self.postMessage({type:'result',id:m.id,cacheKey:m.cacheKey,stableKey:m.stableKey,portPath:p,starboardPath:s});}catch(err){self.postMessage({type:'error',id:m.id,error:String(err&&err.stack||err)});}};
+    }
+    function nav19CreateArcWorker(){if(nav19State.arcWorker)return nav19State.arcWorker;if(typeof Worker!=='function'||typeof Blob!=='function'||typeof URL==='undefined')return null;try{const source=`(${nav19ArcWorkerMain.toString()})();`;nav19State.arcWorkerUrl=URL.createObjectURL(new Blob([source],{type:'application/javascript'}));nav19State.arcWorker=new Worker(nav19State.arcWorkerUrl);nav19State.arcWorker.onmessage=nav19HandleArcMessage;nav19State.arcWorker.onerror=e=>{console.warn('[NAV19 ARC]',e.message||e);nav19State.arcWorkerBusy=false;nav19State.arcWorkerCurrent=null;nav19DispatchQueued();};return nav19State.arcWorker;}catch(e){console.warn('[NAV19 ARC CREATE]',e);return null;}}
+    function nav19SanitizeArc(ad){return{trSec:ad.trSec,ownSpeedMps:ad.ownSpeedMps,safetyMeters:ad.safetyMeters,exactArcs:(ad.exactArcs||[]).map(a=>({radiusMeters:a.radiusMeters,bearing:a.bearing,halfDeg:a.halfDeg})),targetStates:(ad.targetStates||[]).map(t=>({relEast:t.relEast,relNorth:t.relNorth,velEast:t.velEast,velNorth:t.velNorth}))};}
+    function nav19BuildJob(mass,targets,cpa,cacheKey,stableKey){const ref=nav19GoalRef(mass);if(!ref)return null;const own=nav19ShipMeters(mass),goalRel={east:ref.goalEast-own.east,north:ref.goalNorth-own.north},gd=Math.hypot(goalRel.east,goalRel.north),speed=Math.max(.1,nav19Speed(mass)*.514444),planning=nav19Clamp(Math.ceil(gd/speed/60),1,NAV19_CONFIG.arcPlanningMaxMin),ad=nav19BuildArcData(mass,targets,cpa,planning,true,NAV19_CONFIG.recommendedArcTRSec);return{cacheKey,stableKey,input:{currentHeading:Math.round(nav19Normalize(nav19Course(mass)))%360,goalHeading:Math.round(nav19Normalize(Math.atan2(goalRel.east,goalRel.north)/DEG2RAD))%360,goalRel,referenceHeading:ref.baseHeading,arcData:nav19SanitizeArc(ad),routeTurnRateDegPerMin:NAV19_CONFIG.routeTurnRateDegPerMin,turnLimitStepDeg:NAV19_CONFIG.recommendedArcTurnLimitStepDeg,maxAllowedTurnLimitDeg:180,weightGoal:nav19State.weights.goal,weightAltering:nav19State.weights.altering},meta:{arcData:ad,targets,ref,baseHeading:nav19Course(mass),cpa}};}
+    function nav19Compose(job,p,s){const enrich=x=>x?{...x,referenceHeading:job.meta.ref.baseHeading,targetWaypointIndex:job.meta.ref.targetWaypointIndex,targetWaypointName:job.meta.ref.targetWaypointName}:x,pp=enrich(p),ss=enrich(s),cand=x=>x&&x.hasPath?{heading:x.peakHeading,delta:x.peakDelta,worst:{cpaNM:x.minSeparationNM},arcPath:x}:null;return{stableKey:job.stableKey,cacheKey:job.cacheKey,portRecommended:cand(pp),starboardRecommended:cand(ss),portPath:pp,starboardPath:ss,arcData:job.meta.arcData};}
+    function nav19Dispatch(job){const w=nav19CreateArcWorker();if(!w)return false;const id=++nav19State.arcWorkerSeq;nav19State.arcWorkerBusy=true;nav19State.arcWorkerCurrent={id,job};w.postMessage({type:'plan',id,cacheKey:job.cacheKey,stableKey:job.stableKey,input:job.input});return true;}
+    function nav19Queue(job){if(nav19State.arcWorkerBusy){nav19State.arcWorkerQueued=job;return;}nav19Dispatch(job);}
+    function nav19DispatchQueued(){if(nav19State.arcWorkerBusy||!nav19State.arcWorkerQueued)return;const j=nav19State.arcWorkerQueued;nav19State.arcWorkerQueued=null;nav19Dispatch(j);}
+    function nav19HandleArcMessage(e){const m=e.data||{},cur=nav19State.arcWorkerCurrent;if(!cur||m.id!==cur.id)return;nav19State.arcWorkerBusy=false;nav19State.arcWorkerCurrent=null;if(m.type==='result'){const sol=nav19Compose(cur.job,m.portPath,m.starboardPath);nav19State.arcCache.set(cur.job.cacheKey,sol);while(nav19State.arcCache.size>12)nav19State.arcCache.delete(nav19State.arcCache.keys().next().value);nav19State.arcLastSolution=sol;if(isSplitMode)render2D();}else console.warn('[NAV19 ARC]',m.error);nav19DispatchQueued();}
+    function nav19FindArc(mass){const targets=nav19Traffic(),cpa=nav19GetCpa('dm:minimum-alteration'),ref=nav19GoalRef(mass);if(!ref)return null;const targetKey=targets.map(t=>String(t.id)).sort().join(','),stable=[String(mass.id),ref.targetWaypointIndex,ref.goalEast.toFixed(1),ref.goalNorth.toFixed(1),targetKey,cpa.toFixed(2),NAV19_CONFIG.recommendedArcTRSec,nav19State.planAdj.toFixed(4),nav19State.weights.goal.toFixed(4),nav19State.weights.altering.toFixed(4)].join('|'),bucket=Math.floor((Number(simUnixTime)||Date.now())/NAV19_CONFIG.recommendedArcRecalcMs),cacheKey=`${stable}|${bucket}`;if(nav19State.arcCache.has(cacheKey))return nav19State.arcCache.get(cacheKey);const cur=nav19State.arcWorkerCurrent&&nav19State.arcWorkerCurrent.job&&nav19State.arcWorkerCurrent.job.cacheKey,queued=nav19State.arcWorkerQueued&&nav19State.arcWorkerQueued.cacheKey;if(cur!==cacheKey&&queued!==cacheKey){const job=nav19BuildJob(mass,targets,cpa,cacheKey,stable);if(job)nav19Queue(job);}return nav19State.arcLastSolution&&nav19State.arcLastSolution.stableKey===stable?nav19State.arcLastSolution:null;}
+    function nav19Best(sol){if(!sol)return null;const a=[sol.portRecommended,sol.starboardRecommended].filter(Boolean);if(!a.length)return null;return a.sort((x,y)=>(Number(x.arcPath&&x.arcPath.pathLengthMeters)||Infinity)-(Number(y.arcPath&&y.arcPath.pathLengthMeters)||Infinity)||(Number(x.arcPath&&x.arcPath.cost)||Infinity)-(Number(y.arcPath&&y.arcPath.cost)||Infinity))[0];}
+    function nav19RenderRoute(ctx,v,mass){const c=nav19Best(nav19FindArc(mass));if(!c||!c.arcPath||!Array.isArray(c.arcPath.points)||c.arcPath.points.length<2)return;ctx.save();ctx.strokeStyle='#facc15';ctx.lineWidth=2.6;ctx.lineJoin='round';ctx.lineCap='round';ctx.setLineDash([]);ctx.beginPath();c.arcPath.points.forEach((p,i)=>{const q=nav19CanvasPoint(v,p.east,p.north);if(i===0)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);});ctx.stroke();ctx.restore();}
+
+    function nav19UpdatePid(force=false){
+        if(!(nav19State.active.has('act:rudder-balance')||nav19State.active.has('act:rot-balance')))return;
+        const mass=nav19Mass();if(!mass)return;const target=nav19TargetHeading(mass),id=String(mass.id);if(!Number.isFinite(target)){nav19State.pidResultByMass.delete(id);nav19UpdateUi();return;}
+        const nowSec=(Number(simUnixTime)||Date.now())/1000,error=nav19Diff(target,mass.hdg);let ps=nav19State.pidByMass.get(id)||{integral:0,prevError:error,prevTimeSec:null,targetHeading:null};if(force||ps.targetHeading===null||Math.abs(nav19Diff(target,ps.targetHeading))>.1){ps.integral=0;ps.prevError=error;ps.prevTimeSec=nowSec;ps.targetHeading=target;}
+        let dt=1;if(Number.isFinite(ps.prevTimeSec)){const c=nowSec-ps.prevTimeSec;if(c>=.05&&c<=10)dt=c;}const rud=Number(mass.actualRudder)||0,rot=Number(mass.rot)||0,errorD=(error-ps.prevError)/Math.max(.1,dt),far=Math.abs(error)>12,KP=far?.90:.68,KI=.0015,KD=far?.22:.48,ROT_D=far?.25:.62,T=25,residual=rot*T/60,predErr=error-residual,moving=error*rot>0,brake=Math.abs(error)<=Math.abs(residual)*1.35+2.5,overshoot=moving&&(error*predErr<=0||brake);
+        if(overshoot)ps.integral*=.25;else if(Math.abs(error)<8){ps.integral*=.88;ps.integral=nav19Clamp(ps.integral+error*dt,-180,180);}else ps.integral=nav19Clamp(ps.integral+error*dt,-300,300);
+        let pid=KP*error+KI*ps.integral+KD*errorD-ROT_D*rot;if(overshoot&&Math.abs(rot)>.6){const over=Math.max(0,Math.abs(residual)-Math.abs(error)),counter=nav19Clamp(8+.60*Math.abs(rot)+1.5*over,8,25);pid=-Math.sign(rot)*counter;}pid=nav19Clamp(pid,-35,35);const intended=2*pid,rd=pid-rud,rotd=intended-rot;
+        ps.prevError=error;ps.prevTimeSec=nowSec;ps.targetHeading=target;nav19State.pidByMass.set(id,ps);
+        const dir=(delta,tol)=>Math.abs(delta)<=tol?nav19Text('유지','HOLD'):(delta>0?nav19Text('우현으로','TO STBD'):nav19Text('좌현으로','TO PORT'));
+        nav19State.pidResultByMass.set(id,{target,headingError:error,pidTargetRudder:pid,pidIntendedRot:intended,rudderSuggestion:dir(rd,2),rotSuggestion:dir(rotd,1)});nav19UpdateUi();
+    }
+    function nav19RenderAction(ctx,v,mass){const h=nav19TargetHeading(mass);if(!Number.isFinite(h))return;const rel=nav19Diff(h,mass.hdg),a=(rel-90)*DEG2RAD,len=Math.min(ctx.canvas.width,ctx.canvas.height)*.35;ctx.save();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(v.panX,v.panY);ctx.lineTo(v.panX+Math.cos(a)*len,v.panY+Math.sin(a)*len);ctx.stroke();ctx.restore();}
+
+    function nav19RenderDetailed(ctx,v,canvas){
+        if(!isSplitMode||v!==massViews[activeMassIndex]||!v.massEntity)return;const m=v.massEntity,a=nav19State.active;
+        if(a.has('sa:future-position'))nav19RenderFuture(ctx,v,m);
+        if(a.has('sa:threat-highlight'))nav19RenderThreat(ctx,v,m);
+        if(a.has('sa:approach-ranking'))nav19RenderPriority(ctx,v,m);
+        if(a.has('dm:safe-heading-band'))nav19RenderDanger(ctx,v,m);
+        if(a.has('dm:minimum-alteration'))nav19RenderRoute(ctx,v,m);
+        if(a.has('act:rudder-balance')||a.has('act:rot-balance'))nav19RenderAction(ctx,v,m);
+    }
+
+    function nav19UpdateUi(){
+        document.querySelectorAll('[data-nav19-key]').forEach(b=>b.classList.toggle('active-btn',nav19State.active.has(b.dataset.nav19Key)));
+        const f=document.getElementById('nav19-future-setting');if(f)f.textContent=`${nav19State.futureIntervalSec}s`;
+        const th=document.getElementById('nav19-threat-setting');if(th)th.textContent=`${NAV19_LANG==='en'?'DANGER CPA':'위험 CPA'}: ${nav19GetCpa('sa:threat-highlight').toFixed(2)} NM`;
+        const cpa=nav19GetCpa('dm:safe-heading-band');['nav19-safe-setting','nav19-route-setting'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=`${NAV19_LANG==='en'?'TARGET CPA':'목표 CPA'}: ${cpa.toFixed(2)} NM`;});
+        const mass=nav19Mass(),hdg=nav19TargetHeading(mass),ht=`${NAV19_LANG==='en'?'TARGET HDG':'목표 HDG'}: ${Number.isFinite(hdg)?hdg.toFixed(0).padStart(3,'0'):'---'}°`;['nav19-rudder-setting','nav19-rot-setting'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ht;});
+        const pv=document.getElementById('support-plan-adjustment-value');if(pv)pv.textContent=nav19PlanText(nav19State.planAdj);
+        const res=mass?nav19State.pidResultByMass.get(String(mass.id)):null,rb=document.getElementById('nav19-rudder-result'),rr=document.getElementById('nav19-rot-result');if(rb)rb.textContent=Number.isFinite(hdg)?(res?res.rudderSuggestion:nav19Text('계산 중','CALCULATING')):nav19Text('HDG 설정','SET HDG');if(rr)rr.textContent=Number.isFinite(hdg)?(res?res.rotSuggestion:nav19Text('계산 중','CALCULATING')):nav19Text('HDG 설정','SET HDG');
+    }
+    window.nav19ToggleSupport=function(key){if(nav19State.active.has(key))nav19State.active.delete(key);else nav19State.active.add(key);if(key==='dm:minimum-alteration')nav19ClearArc();if(key.startsWith('act:'))nav19UpdatePid(true);nav19UpdateUi();if(isSplitMode)render2D();};
+    window.nav19ToggleGroup=function(group){const keys=group==='sa'?['sa:future-position','sa:threat-highlight','sa:approach-ranking']:group==='dm'?['dm:safe-heading-band','dm:minimum-alteration']:['act:rudder-balance','act:rot-balance'];const all=keys.every(k=>nav19State.active.has(k));keys.forEach(k=>all?nav19State.active.delete(k):nav19State.active.add(k));if(group==='dm')nav19ClearArc();if(group==='act')nav19UpdatePid(true);nav19UpdateUi();if(isSplitMode)render2D();};
+    function nav19AttachWheel(id,fn){const el=document.getElementById(id);if(!el||el.dataset.nav19Wheel==='1')return;el.dataset.nav19Wheel='1';el.addEventListener('wheel',e=>{e.preventDefault();e.stopPropagation();fn(e);},{passive:false});}
+    function nav19Init(){if(nav19State.initialized)return;nav19State.initialized=true;
+        nav19AttachWheel('nav19-future',e=>{if(!nav19State.active.has('sa:future-position'))return;nav19State.futureIntervalSec=Math.max(30,nav19State.futureIntervalSec+(e.deltaY<0?30:-30));nav19UpdateUi();if(isSplitMode)render2D();});
+        nav19AttachWheel('nav19-threat',e=>{if(!nav19State.active.has('sa:threat-highlight'))return;nav19SetCpa('sa:threat-highlight',nav19GetCpa('sa:threat-highlight')+(e.deltaY>0?.05:-.05));nav19UpdateUi();if(isSplitMode)render2D();});
+        ['nav19-safe','nav19-route'].forEach(id=>nav19AttachWheel(id,e=>{const key=id==='nav19-safe'?'dm:safe-heading-band':'dm:minimum-alteration';if(!nav19State.active.has(key))return;nav19SetCpa(key,nav19GetCpa(key)+(e.deltaY>0?.05:-.05));nav19UpdateUi();if(isSplitMode)render2D();}));
+        ['nav19-rudder','nav19-rot'].forEach(id=>nav19AttachWheel(id,e=>{const key=id==='nav19-rudder'?'act:rudder-balance':'act:rot-balance';if(!nav19State.active.has(key))return;const m=nav19Mass();if(!m)return;const cur=nav19TargetHeading(m),base=Number.isFinite(cur)?cur:nav19Normalize(m.hdg);nav19SetTargetHeading(m,base+(e.deltaY>0?1:-1));if(isSplitMode)render2D();}));
+        nav19AttachWheel('support-plan-adjustment',e=>{const cur=nav19State.planAdj;let idx=0,b=Infinity;NAV19_PLAN_OPTIONS.forEach((v,i)=>{const d=Math.abs(v-cur);if(d<b){b=d;idx=i;}});const ni=nav19Clamp(idx+(e.deltaY>0?1:-1),0,NAV19_PLAN_OPTIONS.length-1),next=NAV19_PLAN_OPTIONS[ni];if(Math.abs(next-cur)<1e-12)return;nav19State.planAdj=next;nav19ApplyWeights();nav19ClearArc();nav19UpdateUi();if(isSplitMode)render2D();});
+        setInterval(()=>{if(isSplitMode&&(nav19State.active.has('act:rudder-balance')||nav19State.active.has('act:rot-balance')))nav19UpdatePid(false);},200);
+        nav19UpdateUi();
+    }
+
+    // Replace only the old Detailed-Monitoring support hooks. Other simulator functions are untouched.
+    function initSupportControls(){ nav19Init(); }
+    function initSteeringWorker(){ nav19Init(); }
+    function requestSteeringSupport(force=false){ nav19UpdatePid(!!force); }
+    function updateSupportButtonText(){ nav19UpdateUi(); }
+    function recordSupportHistory(nowMs) { /* v19 browser PID does not require the legacy Pyodide history buffer. */ }
+    function supportTargetHeading(mass){ return nav19TargetHeading(mass); }
+    function setSupportTargetHeading(mass,value){ nav19SetTargetHeading(mass,value); }
+    function renderDetailedSupport2D(ctx,v,canvas){ nav19RenderDetailed(ctx,v,canvas); }
+
 </script>
 </body>
 </html>
