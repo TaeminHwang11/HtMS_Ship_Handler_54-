@@ -225,6 +225,23 @@
         #online-pause-btn:hover { border-color: rgba(148,163,184,0.92); color: #ffffff; }
         #online-pause-btn.paused { color: #fde047; border-color: rgba(234,179,8,0.82); }
 
+        /* ARC recommendation cost weights: independent overlay beside the existing OS HUD. */
+        #arc-weight-controls {
+            display: none; position: absolute; z-index: 47; pointer-events: auto;
+            flex-direction: column; gap: 4px;
+        }
+        #arc-weight-controls.visible { display: flex; }
+        .arc-weight-btn {
+            width: 138px; height: 28px; box-sizing: border-box; padding: 0 8px;
+            border: 1px solid rgba(100,116,139,0.72); border-radius: 5px;
+            background: rgba(9,15,26,0.96); color: #cbd5e1;
+            font-family: 'Segoe UI', sans-serif; font-size: 11px; font-weight: 800;
+            letter-spacing: 0.25px; text-align: center; cursor: ns-resize; user-select: none;
+        }
+        .arc-weight-btn:hover { border-color: rgba(250,204,21,0.85); color: #ffffff; }
+        .arc-weight-btn:focus, .arc-weight-btn:focus-visible { outline: none; }
+        .arc-weight-btn b { color: #fde047; margin-left: 3px; font-weight: 800; }
+
         /* 실험용 ODD/OE 상태 라이트: 기존 HUD 레이아웃을 밀지 않는 독립 오버레이 */
         #odd-oe-light {
             display: none; position: absolute; z-index: 46; pointer-events: none;
@@ -324,8 +341,8 @@
             grid-template-rows: minmax(0, 1fr);
             gap: 4px;
         }
-        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .split-side-panel:nth-child(3) .control-btn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .placeholder-btn { padding: 5px 2px; font-size: clamp(18px, 2.30vh, 24px); line-height: 1.0; }
         .support-btn-code { display: block; min-width: 0; margin: 0 0 2px 0; font-size: 16px; }
@@ -415,8 +432,8 @@
         #bottom-view-wrapper { overflow-x: auto; overflow-y: hidden; }
         .split-side-panel { min-width: max-content; }
         .control-btn-grid { overflow: visible; }
-        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(4, minmax(max-content, 1fr)); }
-        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(3, minmax(max-content, 1fr)); }
+        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(3, minmax(max-content, 1fr)); }
+        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(2, minmax(max-content, 1fr)); }
         .split-side-panel:nth-child(3) .control-btn-grid { grid-template-columns: repeat(2, minmax(max-content, 1fr)); }
         .placeholder-btn { min-width: max-content; min-height: max-content; overflow: visible; }
         .support-feature-card { min-width: max-content; min-height: max-content; }
@@ -450,8 +467,8 @@
         #bottom-view-wrapper { overflow-x: hidden !important; overflow-y: hidden !important; }
         .split-side-panel { min-width: 0 !important; overflow: hidden !important; }
         .control-btn-grid { min-width: 0 !important; overflow: hidden !important; }
-        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        .split-side-panel:nth-child(1) .control-btn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        .split-side-panel:nth-child(2) .control-btn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
         .split-side-panel:nth-child(3) .control-btn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
         .placeholder-btn {
             min-width: 0 !important; max-width: 100% !important; overflow: hidden !important;
@@ -525,6 +542,9 @@
         <div id="top-view-area">
             <div class="hud-label">[HTMS] Navigation Supporter</div>
             <button type="button" id="online-pause-btn" onclick="toggleOnlinePause()">PAUSE</button>
+            <div id="arc-weight-controls" aria-label="ARC plan adjustment">
+                <button type="button" class="arc-weight-btn" id="arc-plan-adjustment" title="마우스 휠: PLAN ADJ 조정 · 1.0은 균형, 값이 커질수록 Goal 추종 우선, 작아질수록 변침 억제 우선">PLAN ADJ <b id="arc-plan-adjustment-value">1.00</b></button>
+            </div>
             <div id="os-fixed-hud">
                 <span class="os-hud-name">OS</span>
                 <span class="os-hud-item">HDG <b id="os-hud-hdg">---</b></span>
@@ -547,21 +567,19 @@
 
         <div id="bottom-view-wrapper">
             <div class="split-side-panel">
-                <div class="panel-title support-group-toggle" data-support-group-title="sa" title="클릭: 상황인지 4개 기능 전체 ON / OFF" style="color: var(--accent-cyan);">SITUATION AWARENESS</div>
+                <div class="panel-title support-group-toggle" data-support-group-title="sa" title="클릭: 상황인지 3개 기능 전체 ON / OFF" style="color: var(--accent-cyan);">SITUATION AWARENESS</div>
                 <div class="control-btn-grid">
                     <button class="placeholder-btn sa-btn has-inline-setting" data-support-group="sa" data-support-feature="future-position" title="본선 전방 5 NM·후방 1 NM 범위 선박의 미래 위치를 표시 · 버튼 위 휠로 시간 간격 조정"><span class="support-btn-main">미래 위치</span><span class="support-btn-setting" data-setting-role="future-interval">60s</span></button>
-                    <button class="placeholder-btn sa-btn" data-support-group="sa" data-support-feature="collision-point" title="현재 상대운동을 기준으로 계산된 미래 충돌·근접 위치를 해도에 표시"><span class="support-btn-main">충돌 예상 위치</span></button>
                     <button class="placeholder-btn sa-btn has-inline-setting" data-support-group="sa" data-support-feature="threat-highlight" title="설정 CPA보다 위험한 선박만 빨간색으로 강조 · 버튼 위 휠로 위험 CPA 0.05 NM씩 조정"><span class="support-btn-main">위험 선박 강조</span><span class="support-btn-setting" data-setting-role="target-cpa">위험 CPA : 0.50 NM</span></button>
                     <button class="placeholder-btn sa-btn" data-support-group="sa" data-support-feature="approach-ranking" title="본선 반경 5 NM 이내 모든 선박의 CPA와 TCPA를 기준으로 우선 감시 순위를 표시"><span class="support-btn-main">우선 감시 선박</span></button>
                 </div>
             </div>
 
             <div class="split-side-panel">
-                <div class="panel-title support-group-toggle" data-support-group-title="dm" title="클릭: 의사결정 3개 기능 전체 ON / OFF" style="color: var(--accent-yellow);">DECISION MAKING</div>
+                <div class="panel-title support-group-toggle" data-support-group-title="dm" title="클릭: 의사결정 2개 기능 전체 ON / OFF" style="color: var(--accent-yellow);">DECISION MAKING</div>
                 <div class="control-btn-grid">
                     <button class="placeholder-btn dm-btn has-inline-setting" data-support-group="dm" data-support-feature="safe-heading-band" title="설정 CPA 기준의 위험 ARC만 표시 · 버튼 위 휠로 목표 CPA 0.05 NM씩 조정"><span class="support-btn-main">위험 HDG 표시</span><span class="support-btn-setting" data-setting-role="target-cpa">목표 CPA : 0.50 NM</span></button>
                     <button class="placeholder-btn dm-btn has-inline-setting" data-support-group="dm" data-support-feature="minimum-alteration" title="ARC 1분 Time Ring 피항경로 · 현재 목표 웨이포인트까지 위험 HDG 벽을 피해 탐색 · 버튼 위 휠로 목표 CPA 0.05 NM씩 조정"><span class="support-btn-main">추천항로</span><span class="support-btn-setting" data-setting-role="target-cpa">목표 CPA : 0.50 NM</span></button>
-                    <button class="placeholder-btn dm-btn" data-support-group="dm" data-support-feature="what-if-course" title="ARC 기반 CPA 0.1~1.0 NM 기준별 피항·복귀 경로를 비교 표시"><span class="support-btn-main">가상 항로 비교</span></button>
                 </div>
             </div>
 
@@ -631,6 +649,9 @@
             whatIfMaxTurnLimitDeg: 90,
             whatIfHeadingStepDeg: 3,
             whatIfRecalcMs: 1000,
+            recommendedArcRecalcMs: 1000,
+            recommendedArcTRSec: 60,
+            recommendedArcTurnLimitStepDeg: 1,
             routeStepSec: 10,
             // Replaceable generic merchant-ship maneuver assumption for the temporary model.
             routeTurnRateDegPerMin: 12,
@@ -654,10 +675,22 @@
             easeTauSec: 20
         });
 
+        const ARC_PLAN_ADJUSTMENT_OPTIONS = Object.freeze([0.05, 0.10, 0.20, 1/3, 0.50, 1.00, 2.00, 3.00, 5.00, 10.00, 20.00]);
+        let arcPlanAdjustment = 1.00;
+        const arcCostWeightSettings = { goal: 1.0, altering: 1.0 };
+
+        function applyArcPlanAdjustment() {
+            const ratio = Math.max(0.01, Number(arcPlanAdjustment) || 1.0);
+            // Only the relative ratio matters to route ranking. Normalize the pair so
+            // W_goal + W_altering = 2, preventing arbitrary common scaling of all costs.
+            arcCostWeightSettings.goal = (2 * ratio) / (1 + ratio);
+            arcCostWeightSettings.altering = 2 / (1 + ratio);
+        }
+        applyArcPlanAdjustment();
+
         // 사용자에게 보이는 기능명/설명만 한글화. 계산 key와 내부 모델명은 그대로 유지한다.
         const SUPPORT_FEATURE_KO = Object.freeze({
             'sa:future-position': { label: '미래 위치', description: '전방 5 NM·후방 1 NM 범위의 본선/타선 미래 위치를 반투명 선박으로 표시' },
-            'sa:collision-point': { label: '충돌 예상 위치', description: '계산된 미래 충돌·근접 위치를 해도에 표시' },
             'sa:threat-highlight': { label: '위험 선박 강조', description: '설정 CPA보다 위험한 선박만 빨간색으로 강조' },
             'sa:relative-motion': { label: '상대운동', description: '본선 기준 상대운동으로 1·2·3·4·5분 후 상대 위치를 표시' },
             'sa:approach-ranking': { label: '우선 감시 선박', description: '본선 반경 5 NM 이내 모든 선박의 CPA와 TCPA를 기준으로 우선 감시 순위를 표시' },
@@ -666,7 +699,6 @@
             'dm:minimum-alteration': { label: '추천항로', description: '1분 Time Ring의 위험 HDG 벽을 피해 현재 목표 웨이포인트로 향하는 가능한 ARC 경로를 표시' },
             'dm:port-starboard': { label: 'PORT / STBD 비교', description: '양쪽 동일 변침 시 예상 CPA를 비교' },
             'dm:speed-option': { label: '속력 대안', description: '침로 유지 시 안전한 속력 대안을 표시' },
-            'dm:what-if-course': { label: '가상 항로 비교', description: 'ARC를 이용해 CPA 0.1~1.0 NM 기준별 피항·복귀 경로를 비교 표시' },
             'act:rudder-balance': { label: '러더 제안', description: '현재 Rudder와 PID 목표 Rudder를 비교해 우현·좌현·유지 방향을 표시' },
             'act:rot-balance': { label: 'ROT 제안', description: 'PID 목표 Rudder와 레이더 시뮬레이터 선박동역학으로 현재 ROT의 변화 방향을 표시' }
         });
@@ -841,7 +873,7 @@
         }
 
         function syncArcNavigationReferenceLifecycle() {
-            const arcUiActive = activeSupportFeatures.has('dm:minimum-alteration') || activeSupportFeatures.has('dm:what-if-course');
+            const arcUiActive = activeSupportFeatures.has('dm:minimum-alteration');
             if (!arcUiActive) resetArcNavigationReference();
         }
 
@@ -874,6 +906,9 @@
         const minCpaValue = document.getElementById('hud-min-cpa-value');
         const osFixedHud = document.getElementById('os-fixed-hud');
         const onlinePauseBtn = document.getElementById('online-pause-btn');
+        const arcWeightControls = document.getElementById('arc-weight-controls');
+        const arcPlanAdjustmentButton = document.getElementById('arc-plan-adjustment');
+        const arcPlanAdjustmentValue = document.getElementById('arc-plan-adjustment-value');
         const osHudHdg = document.getElementById('os-hud-hdg');
         const osHudCog = document.getElementById('os-hud-cog');
         const osHudSog = document.getElementById('os-hud-sog');
@@ -888,6 +923,48 @@
         const steeringModelStatus = document.getElementById('steering-model-status');
         const experimentRecordToggle = document.getElementById('experiment-record-toggle');
         const cursorBrgDist = document.getElementById('cursor-brg-dist');
+
+        function formatArcPlanAdjustment(value) {
+            const v = Number(value) || 1;
+            if (v < 0.1) return v.toFixed(2);
+            if (v < 1) return v.toFixed(2);
+            return v >= 10 ? v.toFixed(0) : v.toFixed(1);
+        }
+        function updateArcWeightControls() {
+            if (!arcPlanAdjustmentValue) return;
+            const ratio = Number(arcPlanAdjustment) || 1;
+            arcPlanAdjustmentValue.textContent = formatArcPlanAdjustment(ratio);
+            if (arcPlanAdjustmentButton) {
+                let meaning = '균형 (Goal:Altering = 1:1)';
+                if (ratio > 1 + 1e-9) meaning = `Goal 우선 (Goal:Altering = ${formatArcPlanAdjustment(ratio)}:1)`;
+                else if (ratio < 1 - 1e-9) meaning = `Altering 우선 (Goal:Altering = 1:${formatArcPlanAdjustment(1/ratio)})`;
+                arcPlanAdjustmentButton.title = meaning;
+            }
+        }
+        function adjustArcPlanAdjustmentFromWheel(e) {
+            e.preventDefault(); e.stopPropagation();
+            const current = Number(arcPlanAdjustment) || 1;
+            let idx = 0, best = Infinity;
+            ARC_PLAN_ADJUSTMENT_OPTIONS.forEach((v, i) => {
+                const d = Math.abs(v - current);
+                if (d < best) { best = d; idx = i; }
+            });
+            const dir = e.deltaY > 0 ? 1 : -1;
+            const nextIdx = clampValue(idx + dir, 0, ARC_PLAN_ADJUSTMENT_OPTIONS.length - 1);
+            const next = ARC_PLAN_ADJUSTMENT_OPTIONS[nextIdx];
+            if (Math.abs(next - current) < 1e-12) return;
+            const previous = current;
+            arcPlanAdjustment = next;
+            applyArcPlanAdjustment();
+            updateArcWeightControls();
+            recordExperimentEvent('arc_plan_adjustment_change', {
+                previous_value: previous,
+                new_value: next,
+                weight_goal: arcCostWeightSettings.goal,
+                weight_altering: arcCostWeightSettings.altering
+            });
+            if (isSimulationRunning) render2D(); else updateSupportCards();
+        }
 
         function updateInlineButtonSettings() {
             const futureText = `${futureProjectionSettings.intervalSec}s`;
@@ -1105,6 +1182,7 @@
             if (!os || !osFixedHud) {
                 if (osFixedHud) osFixedHud.classList.remove('visible');
                 if (onlinePauseBtn) onlinePauseBtn.classList.remove('visible');
+                if (arcWeightControls) arcWeightControls.classList.remove('visible');
                 return;
             }
             osFixedHud.classList.add('visible');
@@ -1116,6 +1194,31 @@
                 const gap = 8;
                 onlinePauseBtn.style.left = `${Math.max(8, hudRect.left - mapRect.left - buttonWidth - gap)}px`;
                 onlinePauseBtn.style.top = `${Math.max(8, hudRect.top - mapRect.top + (hudRect.height - (onlinePauseBtn.offsetHeight || 30)) * 0.5)}px`;
+            }
+            if (arcWeightControls) {
+                const showWeights = activeSupportFeatures.has('dm:minimum-alteration');
+                arcWeightControls.classList.toggle('visible', showWeights);
+                if (showWeights) {
+                    updateArcWeightControls();
+                    const mapRect = container.getBoundingClientRect();
+                    const hudRect = osFixedHud.getBoundingClientRect();
+                    const controlWidth = arcWeightControls.offsetWidth || 116;
+                    const gap = 8;
+                    const pauseRect = onlinePauseBtn && onlinePauseBtn.classList.contains('visible')
+                        ? onlinePauseBtn.getBoundingClientRect() : null;
+                    let left = pauseRect
+                        ? pauseRect.left - mapRect.left - controlWidth - gap
+                        : hudRect.left - mapRect.left - controlWidth - gap;
+                    let top = hudRect.top - mapRect.top;
+                    // Narrow-screen fallback: keep the ODD/OE light on the HUD's right side
+                    // untouched and move only the weight controls below the HUD.
+                    if (left < 8) {
+                        left = Math.max(8, Math.min(mapRect.width - controlWidth - 8, hudRect.left - mapRect.left));
+                        top = hudRect.bottom - mapRect.top + 5;
+                    }
+                    arcWeightControls.style.left = `${left}px`;
+                    arcWeightControls.style.top = `${Math.max(8, top)}px`;
+                }
             }
             if (osHudHdg) osHudHdg.textContent = `${Number(os.hdg || 0).toFixed(1)}°`;
             if (osHudCog) osHudCog.textContent = `${Number(os.cog || 0).toFixed(1)}°`;
@@ -2028,8 +2131,8 @@
             return sectors;
         }
 
-        function buildArcRingData(os, targets, safetyNM = getDesiredCpaNM('dm:minimum-alteration'), planningMinutes = SUPPORT_CONFIG.arcPlanningMaxMin, useFullCpaWall = false) {
-            const trSec = SUPPORT_CONFIG.arcTRSec;
+        function buildArcRingData(os, targets, safetyNM = getDesiredCpaNM('dm:minimum-alteration'), planningMinutes = SUPPORT_CONFIG.arcPlanningMaxMin, useFullCpaWall = false, trSecOverride = null) {
+            const trSec = Number.isFinite(Number(trSecOverride)) ? Math.max(1, Number(trSecOverride)) : SUPPORT_CONFIG.arcTRSec;
             const horizonMin = clampValue(Math.ceil(Number(planningMinutes) || SUPPORT_CONFIG.arcPlanningMaxMin), 1, SUPPORT_CONFIG.arcPlanningMaxMin);
             const horizonSec = Math.max(trSec, horizonMin * 60);
             const ownSpeedMps = Math.max(0.1, Number(os.sog) || 0) * 0.514444;
@@ -2401,6 +2504,256 @@
             };
         }
 
+
+        // Recommendation ARC planner; Time Ring is configured by recommendedArcTRSec.
+        // It preserves the same heading states, wall checks, and original ARC cost function.
+        // The existing turn-rate assumption is scaled to each configured Time Ring; if no route
+        // exists within that normal range, max-turn is relaxed by exactly 1 degree at a time.
+        // Extreme routes remain searchable up to 180 degrees instead of disappearing.
+        // Candidate headings are limited to those reachable from each previous state.
+        function planRecommendedArcSide(os, arcData, side, maxAllowedTurnLimitDeg = 180) {
+            const currentHeading = Math.round(normalize360(Number(os.cog) || Number(os.hdg) || 0)) % 360;
+            const ref = getArcNavigationReference(os);
+            if (!ref || !arcData) return null;
+            const goalHeading = Math.round(arcReferenceGoalHeading(os, ref)) % 360;
+            const sideSign = side === 'PORT' ? -1 : side === 'STBD' ? 1 : 0;
+            const ownWorld = shipPositionMeters(os);
+            const goalRel = { east: ref.goalEast - ownWorld.east, north: ref.goalNorth - ownWorld.north };
+            const goalDistance = Math.hypot(goalRel.east, goalRel.north);
+            if (goalDistance < 1) return null;
+            const wGoal = Math.max(0, Number(arcCostWeightSettings.goal) || 1.0);
+            const wAltering = Math.max(0, Number(arcCostWeightSettings.altering) || 1.0);
+            // Angular-only elastic DP cost. PLAN ADJ controls the Goal vs Altering/Smoothness balance.
+            // All three terms are angle based; no XY/path-length term is used in the primary cost.
+            const wSmooth = wAltering;
+
+            const ringStepMeters = Math.max(1, arcData.ownSpeedMps * arcData.trSec);
+            const goalTimeSec = goalDistance / Math.max(0.01, arcData.ownSpeedMps);
+            const fullRingPoints = Math.max(0, Math.floor((goalTimeSec - 1e-6) / arcData.trSec));
+            const planningRings = [];
+            for (let i = 1; i <= fullRingPoints; i++) {
+                planningRings.push({
+                    radiusMeters: ringStepMeters * i,
+                    timeSec: arcData.trSec * i,
+                    minute: arcData.trSec * i / 60,
+                    terminal: false
+                });
+            }
+            planningRings.push({
+                radiusMeters: goalDistance,
+                timeSec: goalTimeSec,
+                minute: goalTimeSec / 60,
+                terminal: true
+            });
+
+            const stateKey = (heading, firstAlterSign, lastTurn) => `${heading}|${firstAlterSign}|${lastTurn}`;
+            const makePoint = (heading, ring) => {
+                if (ring.terminal) {
+                    return { east: goalRel.east, north: goalRel.north, timeSec: ring.timeSec, minute: ring.minute, heading };
+                }
+                const rad = heading * DEG2RAD;
+                return {
+                    east: Math.sin(rad) * ring.radiusMeters,
+                    north: Math.cos(rad) * ring.radiusMeters,
+                    timeSec: ring.timeSec,
+                    minute: ring.minute,
+                    heading
+                };
+            };
+
+            const isBetterState = (candidate, existing) => (
+                !existing ||
+                candidate.cost < existing.cost - 1e-9 ||
+                (Math.abs(candidate.cost - existing.cost) <= 1e-9 && candidate.pathLengthMeters < existing.pathLengthMeters - 1e-6) ||
+                (Math.abs(candidate.cost - existing.cost) <= 1e-9 &&
+                 Math.abs(candidate.pathLengthMeters - existing.pathLengthMeters) <= 1e-6 &&
+                 candidate.cumulativeTurn < existing.cumulativeTurn)
+            );
+
+            const turnLimitCeiling = clampValue(Number(maxAllowedTurnLimitDeg) || 180, 0, 180);
+            const physicalTurnPerRingDeg = Math.max(
+                0,
+                (Number(SUPPORT_CONFIG.routeTurnRateDegPerMin) || 0) * (Number(arcData.trSec) || 0) / 60
+            );
+            const turnLimitStepDeg = Math.max(1, Number(SUPPORT_CONFIG.recommendedArcTurnLimitStepDeg) || 1);
+            // Start from the physically normal per-ring turn. A larger limit already contains
+            // all smaller angular transitions, so there is no need to rerun 0,1,2,... degrees.
+            // If no route exists, expand progressively while still keeping 180 deg as a last resort.
+            const physicalDiscreteTurnDeg = Math.max(1, Math.floor(physicalTurnPerRingDeg + 1e-9));
+            const turnLimits = [];
+            const pushTurnLimit = value => {
+                const v = clampValue(Math.round(value), 0, turnLimitCeiling);
+                if (!turnLimits.includes(v)) turnLimits.push(v);
+            };
+            const startTurnLimit = Math.min(physicalDiscreteTurnDeg, turnLimitCeiling);
+            pushTurnLimit(startTurnLimit);
+            const fineStep = Math.max(2, turnLimitStepDeg * 2);
+            for (let limit = startTurnLimit + fineStep; limit <= Math.min(20, turnLimitCeiling); limit += fineStep) pushTurnLimit(limit);
+            const mediumStart = Math.max(25, Math.ceil((Math.max(startTurnLimit, 20) + 1) / 5) * 5);
+            for (let limit = mediumStart; limit <= Math.min(60, turnLimitCeiling); limit += 5) pushTurnLimit(limit);
+            const coarseStart = Math.max(70, Math.ceil((Math.max(startTurnLimit, 60) + 1) / 10) * 10);
+            for (let limit = coarseStart; limit <= turnLimitCeiling; limit += 10) pushTurnLimit(limit);
+            pushTurnLimit(turnLimitCeiling);
+            turnLimits.sort((a, b) => a - b);
+
+            for (const maxTurnLimit of turnLimits) {
+                let states = new Map();
+                const initialPoint = { east: 0, north: 0, timeSec: 0, minute: 0, heading: currentHeading };
+                states.set(stateKey(currentHeading, 0, 0), {
+                    heading: currentHeading,
+                    firstAlterSign: 0,
+                    cost: 0,
+                    cumulativeTurn: 0,
+                    pathLengthMeters: 0,
+                    point: initialPoint,
+                    points: [initialPoint],
+                    lastTurn: 0
+                });
+
+                let failed = false;
+                for (const ring of planningRings) {
+                    // Keep only the best few incoming lastTurn states for each current heading.
+                    // This preserves the Angular-only smoothness term without allowing the
+                    // heading × lastTurn state space to grow without bound.
+                    const nextGroups = new Map();
+                    const maxStatesPerHeading = 3;
+
+                    const considerTransition = (prev, currAngle) => {
+                        currAngle = normalize360(currAngle);
+                        const signedTurn = signedAngleDiff(currAngle, prev.heading);
+                        const turnCost = Math.abs(signedTurn);
+                        if (turnCost > maxTurnLimit + 1e-9) return;
+
+                        let firstAlterSign = prev.firstAlterSign;
+                        if (firstAlterSign === 0 && turnCost > 1e-9) {
+                            firstAlterSign = Math.sign(signedTurn);
+                            if (sideSign !== 0 && firstAlterSign !== sideSign) return;
+                        }
+                        if (sideSign !== 0 && firstAlterSign !== 0 && firstAlterSign !== sideSign) return;
+
+                        const point = makePoint(currAngle, ring);
+                        if (!arcSegmentMovesOutward(prev.point, point)) return;
+                        if (arcTransitionCrossesAnyExactWall(prev.point, point, arcData)) return;
+
+                        const goalDiff = signedAngleDiff(currAngle, goalHeading);
+                        const prevTurn = Number(prev.lastTurn) || 0;
+                        const turnAcceleration = signedTurn - prevTurn;
+                        const cost = prev.cost
+                            + wGoal * goalDiff * goalDiff
+                            + wAltering * signedTurn * signedTurn
+                            + wSmooth * turnAcceleration * turnAcceleration;
+                        const segmentLength = Math.hypot(point.east - prev.point.east, point.north - prev.point.north);
+                        const candidate = {
+                            heading: currAngle,
+                            firstAlterSign,
+                            cost,
+                            cumulativeTurn: prev.cumulativeTurn + turnCost,
+                            pathLengthMeters: prev.pathLengthMeters + segmentLength,
+                            point,
+                            points: [...prev.points, point],
+                            lastTurn: signedTurn
+                        };
+                        const groupKey = `${currAngle}|${firstAlterSign}`;
+                        let group = nextGroups.get(groupKey);
+                        if (!group) {
+                            group = [];
+                            nextGroups.set(groupKey, group);
+                        }
+                        const sameTurnIndex = group.findIndex(st => Math.abs((Number(st.lastTurn) || 0) - signedTurn) <= 1e-9);
+                        if (sameTurnIndex >= 0) {
+                            if (isBetterState(candidate, group[sameTurnIndex])) group[sameTurnIndex] = candidate;
+                        } else {
+                            group.push(candidate);
+                        }
+                        group.sort((a, b) =>
+                            a.cost - b.cost ||
+                            a.pathLengthMeters - b.pathLengthMeters ||
+                            a.cumulativeTurn - b.cumulativeTurn
+                        );
+                        if (group.length > maxStatesPerHeading) group.length = maxStatesPerHeading;
+                    };
+
+                    for (const prev of states.values()) {
+                        if (ring.terminal) {
+                            considerTransition(prev, goalHeading);
+                            continue;
+                        }
+
+                        // Recommendation uses 1-degree heading states. Enumerating only
+                        // ±maxTurnLimit around the previous state is mathematically the
+                        // same candidate set that survives the original turn-limit test.
+                        const limit = Math.floor(maxTurnLimit + 1e-9);
+                        for (let delta = -limit; delta <= limit; delta++) {
+                            // +180 and -180 are the same wrapped heading; keep one.
+                            if (limit === 180 && delta === 180) continue;
+                            considerTransition(prev, prev.heading + delta);
+                        }
+                    }
+
+                    const next = new Map();
+                    for (const group of nextGroups.values()) {
+                        for (const candidate of group) {
+                            next.set(stateKey(candidate.heading, candidate.firstAlterSign, candidate.lastTurn), candidate);
+                        }
+                    }
+                    if (!next.size) { failed = true; break; }
+                    states = next;
+                }
+
+                if (failed || !states.size) continue;
+                const finals = Array.from(states.values())
+                    .filter(st => sideSign === 0 || st.firstAlterSign === 0 || st.firstAlterSign === sideSign)
+                    .sort((a, b) =>
+                        a.cost - b.cost ||
+                        a.pathLengthMeters - b.pathLengthMeters ||
+                        a.cumulativeTurn - b.cumulativeTurn
+                    );
+                if (!finals.length) continue;
+
+                const state = finals[0];
+                let peakPoint = state.points[0];
+                let peakDelta = 0;
+                state.points.forEach(pt => {
+                    const d = signedAngleDiff(pt.heading, ref.baseHeading);
+                    if (Math.abs(d) > Math.abs(peakDelta)) { peakDelta = d; peakPoint = pt; }
+                });
+                const validation = validateArcPath(state.points, arcData);
+                return {
+                    side: side || (state.firstAlterSign < 0 ? 'PORT' : state.firstAlterSign > 0 ? 'STBD' : 'STRAIGHT'),
+                    hasPath: true,
+                    safe: true,
+                    rejoined: true,
+                    points: state.points,
+                    cost: state.cost,
+                    pathLengthMeters: state.pathLengthMeters,
+                    cumulativeTurn: state.cumulativeTurn,
+                    peakHeading: peakPoint.heading,
+                    peakDelta,
+                    finalHeading: state.heading,
+                    finalCrossTrackMeters: 0,
+                    minSeparationNM: validation.minSeparationNM,
+                    usedTurnLimitDeg: maxTurnLimit,
+                    physicalTurnLimitDeg: physicalTurnPerRingDeg,
+                    extreme: maxTurnLimit > physicalTurnPerRingDeg + 1e-9,
+                    goalHeading,
+                    virtualGoal: { east: ref.goalEast, north: ref.goalNorth },
+                    referenceHeading: ref.baseHeading,
+                    targetWaypointIndex: ref.targetWaypointIndex,
+                    targetWaypointName: ref.targetWaypointName
+                };
+            }
+
+            return {
+                side, hasPath: false, safe: false, rejoined: false, points: [],
+                minSeparationNM: 0, usedTurnLimitDeg: turnLimitCeiling,
+                physicalTurnLimitDeg: physicalTurnPerRingDeg,
+                extreme: turnLimitCeiling > physicalTurnPerRingDeg + 1e-9,
+                goalHeading, referenceHeading: ref.baseHeading,
+                targetWaypointIndex: ref.targetWaypointIndex,
+                targetWaypointName: ref.targetWaypointName
+            };
+        }
+
         function arcPathConflictingTargetIds(points, allArcData) {
             const conflicts = new Set();
             if (!Array.isArray(points) || points.length < 2 || !allArcData) return conflicts;
@@ -2449,6 +2802,310 @@
             return { path: lastPath, arcData: lastData, targets: Array.from(included.values()) };
         }
 
+
+        // ===== v11: recommendation ARC Web Worker (single HTML file) =====
+        // The HTML remains one file. At runtime the browser turns this function into a Blob URL
+        // and executes it on a separate worker thread. Only recommendation DP runs there;
+        // simulation physics, HUD, input, rendering, PID, CPA and logging remain on the main thread.
+        function recommendationArcWorkerMain() {
+            const DEG2RAD_W = Math.PI / 180;
+            const normalize360W = d => ((Number(d) || 0) % 360 + 360) % 360;
+            const signedAngleDiffW = (target, current) => ((target - current + 540) % 360) - 180;
+            const clampW = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+            function futureTargetPoint(ts, timeSec) {
+                return { east: ts.relEast + ts.velEast * timeSec, north: ts.relNorth + ts.velNorth * timeSec };
+            }
+            function segmentMinSeparation(p0, p1, t0, t1, ts) {
+                const tf0 = futureTargetPoint(ts, t0), tf1 = futureTargetPoint(ts, t1);
+                const r0e = tf0.east - p0.east, r0n = tf0.north - p0.north;
+                const r1e = tf1.east - p1.east, r1n = tf1.north - p1.north;
+                const de = r1e - r0e, dn = r1n - r0n, dd = de*de + dn*dn;
+                const u = dd > 1e-12 ? clampW(-(r0e*de + r0n*dn)/dd, 0, 1) : 0;
+                return Math.hypot(r0e + de*u, r0n + dn*u);
+            }
+            function validatePath(points, arcData) {
+                let minMeters = Infinity;
+                for (let i=1; i<points.length; i++) {
+                    const p0=points[i-1], p1=points[i];
+                    for (const ts of arcData.targetStates) {
+                        minMeters = Math.min(minMeters, segmentMinSeparation(p0,p1,p0.timeSec,p1.timeSec,ts));
+                    }
+                }
+                if (!Number.isFinite(minMeters)) minMeters = Infinity;
+                return { minSeparationNM: minMeters/1852, safe: minMeters + 0.5 >= arcData.safetyMeters };
+            }
+            function movesOutward(p0,p1) {
+                const r0=Math.hypot(Number(p0.east)||0, Number(p0.north)||0);
+                if (r0 < 1e-6) return true;
+                const de=(Number(p1.east)||0)-(Number(p0.east)||0);
+                const dn=(Number(p1.north)||0)-(Number(p0.north)||0);
+                return (Number(p0.east)||0)*de + (Number(p0.north)||0)*dn >= -1e-6;
+            }
+            function segmentCrossesWall(p0,p1,arc) {
+                const x0=Number(p0.east)||0, y0=Number(p0.north)||0;
+                const x1=Number(p1.east)||0, y1=Number(p1.north)||0;
+                const dx=x1-x0, dy=y1-y0, rr=Number(arc && arc.radiusMeters);
+                if (!Number.isFinite(rr) || rr<=0) return false;
+                const A=dx*dx+dy*dy; if (A<1e-12) return false;
+                const B=2*(x0*dx+y0*dy), C=x0*x0+y0*y0-rr*rr, D=B*B-4*A*C;
+                if (D < -1e-9) return false;
+                const root=Math.sqrt(Math.max(0,D));
+                for (const u of [(-B-root)/(2*A),(-B+root)/(2*A)]) {
+                    if (u < -1e-9 || u > 1+1e-9) continue;
+                    const east=x0+dx*u, north=y0+dy*u;
+                    const bearing=normalize360W(Math.atan2(east,north)/DEG2RAD_W);
+                    if (Math.abs(signedAngleDiffW(bearing,Number(arc.bearing)||0)) <= Number(arc.halfDeg||0)+0.5) return true;
+                }
+                return false;
+            }
+            function crossesAnyWall(p0,p1,arcData) {
+                for (const wall of (arcData.exactArcs||[])) if (segmentCrossesWall(p0,p1,wall)) return true;
+                return false;
+            }
+            function reconstruct(state) {
+                const pts=[]; let cur=state;
+                while(cur){ pts.push(cur.point); cur=cur.parent; }
+                pts.reverse(); return pts;
+            }
+            function planSide(input, side) {
+                const { currentHeading, goalHeading, goalRel, arcData, routeTurnRateDegPerMin, turnLimitStepDeg, maxAllowedTurnLimitDeg, weightGoal, weightAltering } = input;
+                const wGoal=Math.max(0,Number(weightGoal)||1.0);
+                const wAltering=Math.max(0,Number(weightAltering)||1.0);
+                const wSmooth=wAltering;
+                const sideSign = side==='PORT' ? -1 : side==='STBD' ? 1 : 0;
+                const goalDistance=Math.hypot(goalRel.east,goalRel.north);
+                if (goalDistance < 1) return null;
+                const ringStepMeters=Math.max(1,arcData.ownSpeedMps*arcData.trSec);
+                const goalTimeSec=goalDistance/Math.max(0.01,arcData.ownSpeedMps);
+                const fullRingPoints=Math.max(0,Math.floor((goalTimeSec-1e-6)/arcData.trSec));
+                const rings=[];
+                for(let i=1;i<=fullRingPoints;i++) rings.push({radiusMeters:ringStepMeters*i,timeSec:arcData.trSec*i,minute:arcData.trSec*i/60,terminal:false});
+                rings.push({radiusMeters:goalDistance,timeSec:goalTimeSec,minute:goalTimeSec/60,terminal:true});
+
+                const stateKey=(h,s,lastTurn)=>`${h}|${s}|${lastTurn}`;
+                const makePoint=(heading,ring)=>{
+                    if(ring.terminal) return {east:goalRel.east,north:goalRel.north,timeSec:ring.timeSec,minute:ring.minute,heading};
+                    const rad=heading*DEG2RAD_W;
+                    return {east:Math.sin(rad)*ring.radiusMeters,north:Math.cos(rad)*ring.radiusMeters,timeSec:ring.timeSec,minute:ring.minute,heading};
+                };
+                const better=(c,e)=>!e || c.cost<e.cost-1e-9 ||
+                    (Math.abs(c.cost-e.cost)<=1e-9 && c.pathLengthMeters<e.pathLengthMeters-1e-6) ||
+                    (Math.abs(c.cost-e.cost)<=1e-9 && Math.abs(c.pathLengthMeters-e.pathLengthMeters)<=1e-6 && c.cumulativeTurn<e.cumulativeTurn);
+
+                const ceiling=clampW(Number(maxAllowedTurnLimitDeg)||180,0,180);
+                const physical=(Number(routeTurnRateDegPerMin)||0)*(Number(arcData.trSec)||0)/60;
+                const step=Math.max(1,Number(turnLimitStepDeg)||1);
+                const normal=Math.max(1,Math.floor(physical+1e-9));
+                const limits=[];
+                const pushLimit=value=>{
+                    const v=clampW(Math.round(value),0,ceiling);
+                    if(!limits.includes(v)) limits.push(v);
+                };
+                const start=Math.min(normal,ceiling);
+                pushLimit(start);
+                const fineStep=Math.max(2,step*2);
+                for(let x=start+fineStep;x<=Math.min(20,ceiling);x+=fineStep) pushLimit(x);
+                const mediumStart=Math.max(25,Math.ceil((Math.max(start,20)+1)/5)*5);
+                for(let x=mediumStart;x<=Math.min(60,ceiling);x+=5) pushLimit(x);
+                const coarseStart=Math.max(70,Math.ceil((Math.max(start,60)+1)/10)*10);
+                for(let x=coarseStart;x<=ceiling;x+=10) pushLimit(x);
+                pushLimit(ceiling);
+                limits.sort((a,b)=>a-b);
+
+                for(const maxTurnLimit of limits){
+                    let states=new Map();
+                    const initialPoint={east:0,north:0,timeSec:0,minute:0,heading:currentHeading};
+                    states.set(stateKey(currentHeading,0,0),{heading:currentHeading,firstAlterSign:0,cost:0,cumulativeTurn:0,pathLengthMeters:0,point:initialPoint,parent:null,lastTurn:0});
+                    let failed=false;
+                    for(const ring of rings){
+                        const nextGroups=new Map();
+                        const maxStatesPerHeading=3;
+                        const consider=(prev,currAngle)=>{
+                            currAngle=normalize360W(currAngle);
+                            const signedTurn=signedAngleDiffW(currAngle,prev.heading), turnCost=Math.abs(signedTurn);
+                            if(turnCost>maxTurnLimit+1e-9) return;
+                            let first=prev.firstAlterSign;
+                            if(first===0 && turnCost>1e-9){ first=Math.sign(signedTurn); if(sideSign!==0 && first!==sideSign) return; }
+                            if(sideSign!==0 && first!==0 && first!==sideSign) return;
+                            const point=makePoint(currAngle,ring);
+                            if(!movesOutward(prev.point,point) || crossesAnyWall(prev.point,point,arcData)) return;
+                            const goalDiff=signedAngleDiffW(currAngle,goalHeading);
+                            const prevTurn=Number(prev.lastTurn)||0;
+                            const turnAcceleration=signedTurn-prevTurn;
+                            const cost=prev.cost + wGoal*goalDiff*goalDiff + wAltering*signedTurn*signedTurn + wSmooth*turnAcceleration*turnAcceleration;
+                            const seg=Math.hypot(point.east-prev.point.east,point.north-prev.point.north);
+                            const cand={heading:currAngle,firstAlterSign:first,cost,cumulativeTurn:prev.cumulativeTurn+turnCost,pathLengthMeters:prev.pathLengthMeters+seg,point,parent:prev,lastTurn:signedTurn};
+                            const groupKey=`${currAngle}|${first}`;
+                            let group=nextGroups.get(groupKey);
+                            if(!group){ group=[]; nextGroups.set(groupKey,group); }
+                            const sameIndex=group.findIndex(st=>Math.abs((Number(st.lastTurn)||0)-signedTurn)<=1e-9);
+                            if(sameIndex>=0){
+                                if(better(cand,group[sameIndex])) group[sameIndex]=cand;
+                            } else {
+                                group.push(cand);
+                            }
+                            group.sort((a,b)=>a.cost-b.cost||a.pathLengthMeters-b.pathLengthMeters||a.cumulativeTurn-b.cumulativeTurn);
+                            if(group.length>maxStatesPerHeading) group.length=maxStatesPerHeading;
+                        };
+                        for(const prev of states.values()){
+                            if(ring.terminal){ consider(prev,goalHeading); continue; }
+                            const limit=Math.floor(maxTurnLimit+1e-9);
+                            for(let delta=-limit;delta<=limit;delta++){
+                                if(limit===180 && delta===180) continue;
+                                consider(prev,prev.heading+delta);
+                            }
+                        }
+                        const next=new Map();
+                        for(const group of nextGroups.values()){
+                            for(const cand of group) next.set(stateKey(cand.heading,cand.firstAlterSign,cand.lastTurn),cand);
+                        }
+                        if(!next.size){ failed=true; break; }
+                        states=next;
+                    }
+                    if(failed || !states.size) continue;
+                    const finals=Array.from(states.values()).filter(st=>sideSign===0||st.firstAlterSign===0||st.firstAlterSign===sideSign)
+                        .sort((a,b)=>a.cost-b.cost||a.pathLengthMeters-b.pathLengthMeters||a.cumulativeTurn-b.cumulativeTurn);
+                    if(!finals.length) continue;
+                    const state=finals[0], points=reconstruct(state), validation=validatePath(points,arcData);
+                    let peakPoint=points[0], peakDelta=0;
+                    for(const pt of points){ const d=signedAngleDiffW(pt.heading,input.referenceHeading); if(Math.abs(d)>Math.abs(peakDelta)){peakDelta=d;peakPoint=pt;} }
+                    return {side,hasPath:true,safe:true,rejoined:true,points,cost:state.cost,pathLengthMeters:state.pathLengthMeters,cumulativeTurn:state.cumulativeTurn,peakHeading:peakPoint.heading,peakDelta,finalHeading:state.heading,finalCrossTrackMeters:0,minSeparationNM:validation.minSeparationNM,usedTurnLimitDeg:maxTurnLimit,physicalTurnLimitDeg:physical,extreme:maxTurnLimit>physical+1e-9,goalHeading};
+                }
+                return {side,hasPath:false,safe:false,rejoined:false,points:[],minSeparationNM:0,usedTurnLimitDeg:ceiling,physicalTurnLimitDeg:physical,extreme:ceiling>physical+1e-9,goalHeading};
+            }
+
+            self.onmessage = event => {
+                const msg=event.data||{};
+                if(msg.type!=='plan') return;
+                try{
+                    const portPath=planSide(msg.input,'PORT');
+                    const starboardPath=planSide(msg.input,'STBD');
+                    self.postMessage({type:'result',id:msg.id,cacheKey:msg.cacheKey,stableKey:msg.stableKey,portPath,starboardPath});
+                }catch(err){
+                    self.postMessage({type:'error',id:msg.id,cacheKey:msg.cacheKey,stableKey:msg.stableKey,error:String(err&&err.stack||err)});
+                }
+            };
+        }
+
+        let recommendedArcWorker = null;
+        let recommendedArcWorkerUrl = null;
+        let recommendedArcWorkerBusy = false;
+        let recommendedArcWorkerSeq = 0;
+        let recommendedArcWorkerQueued = null;
+        let recommendedArcWorkerCurrent = null;
+        let recommendedArcLastSolution = null;
+
+        function createRecommendedArcWorker() {
+            if (recommendedArcWorker) return recommendedArcWorker;
+            if (typeof Worker !== 'function' || typeof Blob !== 'function' || typeof URL === 'undefined') return null;
+            try {
+                const source = `(${recommendationArcWorkerMain.toString()})();`;
+                recommendedArcWorkerUrl = URL.createObjectURL(new Blob([source], { type:'application/javascript' }));
+                recommendedArcWorker = new Worker(recommendedArcWorkerUrl);
+                recommendedArcWorker.onmessage = handleRecommendedArcWorkerMessage;
+                recommendedArcWorker.onerror = err => {
+                    console.error('[ARC Worker] error:', err);
+                    recommendedArcWorkerBusy = false;
+                    recommendedArcWorkerCurrent = null;
+                    dispatchQueuedRecommendedArcWork();
+                };
+                return recommendedArcWorker;
+            } catch (err) {
+                console.error('[ARC Worker] creation failed:', err);
+                return null;
+            }
+        }
+
+        function sanitizeArcDataForWorker(arcData) {
+            return {
+                trSec: arcData.trSec,
+                ownSpeedMps: arcData.ownSpeedMps,
+                safetyMeters: arcData.safetyMeters,
+                exactArcs: (arcData.exactArcs || []).map(a => ({ radiusMeters:a.radiusMeters, bearing:a.bearing, halfDeg:a.halfDeg })),
+                targetStates: (arcData.targetStates || []).map(t => ({ relEast:t.relEast, relNorth:t.relNorth, velEast:t.velEast, velNorth:t.velNorth }))
+            };
+        }
+
+        function prepareRecommendedArcWorkerJob(os, targets, cpaNM, cacheKey, stableKey) {
+            const allTargets = Array.isArray(targets) ? targets : [];
+            const ref = getArcNavigationReference(os);
+            if (!ref) return null;
+            const ownWorld = shipPositionMeters(os);
+            const goalRel = { east:ref.goalEast-ownWorld.east, north:ref.goalNorth-ownWorld.north };
+            const goalDistanceMeters = Math.hypot(goalRel.east,goalRel.north);
+            const ownSpeedMps = Math.max(0.1,Number(os.sog)||0)*0.514444;
+            const goalTravelMin = goalDistanceMeters/ownSpeedMps/60;
+            const planningMinutes = clampValue(Math.ceil(goalTravelMin),1,SUPPORT_CONFIG.arcPlanningMaxMin);
+            const arcData = buildArcRingData(os,allTargets,cpaNM,planningMinutes,true,SUPPORT_CONFIG.recommendedArcTRSec);
+            const input = {
+                currentHeading:Math.round(normalize360(Number(os.cog)||Number(os.hdg)||0))%360,
+                goalHeading:Math.round(arcReferenceGoalHeading(os,ref))%360,
+                goalRel,
+                referenceHeading:ref.baseHeading,
+                arcData:sanitizeArcDataForWorker(arcData),
+                routeTurnRateDegPerMin:SUPPORT_CONFIG.routeTurnRateDegPerMin,
+                turnLimitStepDeg:SUPPORT_CONFIG.recommendedArcTurnLimitStepDeg,
+                maxAllowedTurnLimitDeg:180,
+                weightGoal:arcCostWeightSettings.goal,
+                weightAltering:arcCostWeightSettings.altering
+            };
+            return { cacheKey, stableKey, input, meta:{ arcData, allTargets, planningMinutes, ref, baseHeading:normalize360(os.cog), cpaNM } };
+        }
+
+        function composeRecommendedArcWorkerSolution(job, portPath, starboardPath) {
+            const {arcData,allTargets,planningMinutes,ref,baseHeading}=job.meta;
+            const enrich = path => {
+                if (!path) return path;
+                return { ...path, virtualGoal:{east:ref.goalEast,north:ref.goalNorth}, referenceHeading:ref.baseHeading, targetWaypointIndex:ref.targetWaypointIndex, targetWaypointName:ref.targetWaypointName };
+            };
+            const p=enrich(portPath), s=enrich(starboardPath);
+            const asCandidate = path => path && path.hasPath ? {heading:path.peakHeading,delta:path.peakDelta,safe:true,unsafeCount:0,worst:{cpaNM:path.minSeparationNM,tcpaMin:null,ship:null},arcPath:path} : null;
+            return {baseHeading,arc:true,minCpaNM:arcData.safetyNM,arcTargets:allTargets,trSec:arcData.trSec,arcRings:arcData.rings,arcData,planningMinutes,targetWaypointIndex:ref.targetWaypointIndex,targetWaypointName:ref.targetWaypointName,portRecommended:asCandidate(p),starboardRecommended:asCandidate(s),portHasSafe:!!(p&&p.hasPath),starboardHasSafe:!!(s&&s.hasPath),portPath:p,starboardPath:s};
+        }
+
+        function dispatchRecommendedArcWork(job) {
+            const worker=createRecommendedArcWorker();
+            if (!worker) return false;
+            const id=++recommendedArcWorkerSeq;
+            recommendedArcWorkerBusy=true;
+            recommendedArcWorkerCurrent={id,job};
+            worker.postMessage({type:'plan',id,cacheKey:job.cacheKey,stableKey:job.stableKey,input:job.input});
+            return true;
+        }
+        function queueRecommendedArcWork(job) {
+            if (!job) return;
+            if (recommendedArcWorkerBusy) { recommendedArcWorkerQueued=job; return; }
+            dispatchRecommendedArcWork(job);
+        }
+        function dispatchQueuedRecommendedArcWork() {
+            if (recommendedArcWorkerBusy || !recommendedArcWorkerQueued) return;
+            const job=recommendedArcWorkerQueued;
+            recommendedArcWorkerQueued=null;
+            dispatchRecommendedArcWork(job);
+        }
+        function handleRecommendedArcWorkerMessage(event) {
+            const msg=event.data||{};
+            const current=recommendedArcWorkerCurrent;
+            if (!current || msg.id!==current.id) return;
+            recommendedArcWorkerBusy=false;
+            recommendedArcWorkerCurrent=null;
+            if (msg.type==='result') {
+                const solution=composeRecommendedArcWorkerSolution(current.job,msg.portPath,msg.starboardPath);
+                const model=SupportModels && SupportModels.collisionAvoidance;
+                if (model) {
+                    if (!model._arcCacheMap) model._arcCacheMap=new Map();
+                    model._arcCacheMap.set(current.job.cacheKey,solution);
+                    while(model._arcCacheMap.size>12) model._arcCacheMap.delete(model._arcCacheMap.keys().next().value);
+                }
+                recommendedArcLastSolution=solution;
+            } else if (msg.type==='error') {
+                console.error('[ARC Worker] planning error:',msg.error);
+            }
+            dispatchQueuedRecommendedArcWork();
+        }
+        // ===== end v11 Web Worker =====
+
         function buildArcMinimumAlterationOptions(os, targets, minCpaNM = getDesiredCpaNM('dm:minimum-alteration')) {
             if (!os) return null;
             const allTargets = Array.isArray(targets) ? targets : [];
@@ -2459,12 +3116,13 @@
             const ownSpeedMps = Math.max(0.1, Number(os.sog) || 0) * 0.514444;
             const goalTravelMin = goalDistanceMeters / ownSpeedMps / 60;
             const planningMinutes = clampValue(Math.ceil(goalTravelMin), 1, SUPPORT_CONFIG.arcPlanningMaxMin);
-            const arcData = buildArcRingData(os, allTargets, minCpaNM, planningMinutes, true);
+            const arcData = buildArcRingData(os, allTargets, minCpaNM, planningMinutes, true, SUPPORT_CONFIG.recommendedArcTRSec);
 
-            // Original ARC logic searches until a path exists.  Search both initial sides
-            // independently so all currently available recommended routes can be drawn.
-            const portPath = planArcSide(os, arcData, 'PORT');
-            const starboardPath = planArcSide(os, arcData, 'STBD');
+            // Recommendation ARC uses the configured Time Ring and is still recalculated at most once per second.
+            // The optimized planner preserves the original 1-degree ARC state/cost logic while
+            // avoiding full 360×state scans on every short ring.
+            const portPath = planRecommendedArcSide(os, arcData, 'PORT');
+            const starboardPath = planRecommendedArcSide(os, arcData, 'STBD');
 
             const asCandidate = path => path && path.hasPath ? {
                 heading: path.peakHeading,
@@ -2573,23 +3231,39 @@
                     if (!os) return null;
                     const cpaNM = clampValue(Number(minCpaNM) || getDesiredCpaNM('dm:minimum-alteration'), 0.10, 3.00);
                     const ref = getArcNavigationReference(os);
-                    const keyParts = [
-                        Number(os.x).toFixed(6), Number(os.z).toFixed(6), Number(os.cog).toFixed(3), Number(os.sog).toFixed(3),
-                        cpaNM.toFixed(3), SUPPORT_CONFIG.arcTRSec,
-                        ref ? Number(ref.baseHeading).toFixed(3) : 'NOREF',
-                        ref ? Number(ref.goalEast).toFixed(2) : 'NOREF',
-                        ref ? Number(ref.goalNorth).toFixed(2) : 'NOREF'
-                    ];
-                    targets.forEach(t => keyParts.push(String(t.id), Number(t.x).toFixed(6), Number(t.z).toFixed(6), Number(t.cog).toFixed(3), Number(t.sog).toFixed(3)));
-                    const cacheKey = keyParts.join('|');
+                    const simSec = Number(currentSimulatorTimeSec());
+                    const recalcMs = Number(SUPPORT_CONFIG.recommendedArcRecalcMs) || 1000;
+                    const timeBucket = Number.isFinite(simSec) ? Math.floor(simSec * 1000 / recalcMs) : Math.floor(performance.now() / recalcMs);
+                    const targetKey = (targets || []).map(t => String(t.id)).sort().join(',');
+                    const refKey = ref ? `${ref.targetWaypointIndex ?? ''}:${Number(ref.goalEast).toFixed(1)}:${Number(ref.goalNorth).toFixed(1)}:${Number(ref.baseHeading).toFixed(2)}` : 'NOREF';
+                    const stableKey = [onlineLoadedScenarioName, refKey, targetKey, cpaNM.toFixed(3), SUPPORT_CONFIG.recommendedArcTRSec, Number(arcPlanAdjustment).toFixed(4), Number(arcCostWeightSettings.goal).toFixed(4), Number(arcCostWeightSettings.altering).toFixed(4)].join('|');
+                    const cacheKey = `${stableKey}|${timeBucket}`;
+
                     if (!this._arcCacheMap) this._arcCacheMap = new Map();
                     if (this._arcCacheMap.has(cacheKey)) return this._arcCacheMap.get(cacheKey);
-                    const result = buildArcMinimumAlterationOptions(os, targets, cpaNM);
-                    this._arcCacheMap.set(cacheKey, result);
-                    while (this._arcCacheMap.size > 40) this._arcCacheMap.delete(this._arcCacheMap.keys().next().value);
-                    return result;
-                },
 
+                    // Important: do NOT run DP here. Rendering asks for a route synchronously,
+                    // so we return the last completed route immediately and send the new state
+                    // to the worker. If the worker is already busy, only the newest queued state
+                    // is kept; this prevents an ever-growing backlog on slower student PCs.
+                    const currentKey = recommendedArcWorkerCurrent && recommendedArcWorkerCurrent.job && recommendedArcWorkerCurrent.job.cacheKey;
+                    const queuedKey = recommendedArcWorkerQueued && recommendedArcWorkerQueued.cacheKey;
+                    if (currentKey !== cacheKey && queuedKey !== cacheKey) {
+                        const job = prepareRecommendedArcWorkerJob(os, targets, cpaNM, cacheKey, stableKey);
+                        if (job) {
+                            if (!createRecommendedArcWorker()) {
+                                // Very old/unsupported browser fallback: preserve the function once,
+                                // although modern Chrome/Edge will always use Worker.
+                                const result = buildArcMinimumAlterationOptions(os, targets, cpaNM);
+                                this._arcCacheMap.set(cacheKey, result);
+                                recommendedArcLastSolution = result;
+                                return result;
+                            }
+                            queueRecommendedArcWork(job);
+                        }
+                    }
+                    return recommendedArcLastSolution;
+                },
                 buildAvoidanceRoute(os, targets, solutionOrCandidate) {
                     if (!os || !solutionOrCandidate) return [];
                     const candidate = solutionOrCandidate.recommended || solutionOrCandidate;
@@ -2892,7 +3566,7 @@
                     arcWhatIfCache.scenarios = nextScenarios;
                     arcWhatIfCache.computing = false;
                     arcWhatIfCache.pendingKey = null;
-                    if (isSimulationRunning && activeSupportFeatures.has('dm:what-if-course')) render2D();
+                    if (false) render2D();
                     return;
                 }
                 const cpaNM = SUPPORT_CONFIG.whatIfCpaLevels[idx];
@@ -3497,14 +4171,12 @@
             renderDesiredHeadingGuide(ctx);
 
             if (activeSupportFeatures.has('sa:future-position')) renderFuturePositions(ctx);
-            if (activeSupportFeatures.has('sa:collision-point')) renderCollisionPoints(ctx);
             if (activeSupportFeatures.has('sa:threat-highlight')) renderThreatHighlight(ctx);
             if (activeSupportFeatures.has('sa:approach-ranking')) renderApproachRanking(ctx);
 
             if (activeSupportFeatures.has('dm:safe-heading-band')) renderDangerHeadingArcs(ctx);
             // Multi-CPA comparison routes are deliberately drawn first so the selected
             // minimum-alteration ARC solution remains visually dominant when both are ON.
-            if (activeSupportFeatures.has('dm:what-if-course')) renderWhatIfCourse(ctx);
             if (activeSupportFeatures.has('dm:minimum-alteration')) renderAvoidanceRoute(ctx);
 
             updateSupportCards();
@@ -4307,7 +4979,11 @@
                 adjustActionHeadingFromWheel(e, 'hud-wheel');
             }, { passive: false });
         }
+        if (arcPlanAdjustmentButton) {
+            arcPlanAdjustmentButton.addEventListener('wheel', adjustArcPlanAdjustmentFromWheel, { passive: false });
+        }
 
+        updateArcWeightControls();
         updateMinCpaControl();
         updateActionTargetControl();
         updateInlineButtonSettings();
@@ -4755,6 +5431,7 @@
         let onlineLastFrameTime = 0;
         let onlineLastUiTime = 0;
         const onlineTimeMultiplier = 1.0;
+        const ONLINE_MAX_PHYSICS_STEP_SEC = 0.1;
         let onlineSupportRecord = null;
 
         function toggleOnlinePause() {
@@ -5085,15 +5762,22 @@
             if (!onlineRunning || onlineFinished) return;
             let dt = (currentTime - onlineLastFrameTime) / 1000;
             if (!Number.isFinite(dt) || dt < 0) dt = 0;
-            if (dt > 0.1) dt = 0.1;
             onlineLastFrameTime = currentTime;
 
-            if (!onlinePaused) {
-                const simDtHours = (dt * onlineTimeMultiplier) / 3600;
-                updateOnlinePhysics(simDtHours, dt);
+            if (!onlinePaused && dt > 0) {
+                // Never discard elapsed real time. If a slow PC or an ARC calculation makes
+                // one frame late, integrate that whole elapsed interval in <=0.1 s pieces.
+                // Normal high-FPS machines keep their original small frame dt, while low-FPS
+                // machines no longer run the vessel in artificial slow motion.
+                let remainingSec = dt * onlineTimeMultiplier;
+                while (remainingSec > 1e-9 && onlineRunning && !onlineFinished) {
+                    const stepSec = Math.min(ONLINE_MAX_PHYSICS_STEP_SEC, remainingSec);
+                    updateOnlinePhysics(stepSec / 3600, stepSec);
+                    remainingSec -= stepSec;
+                }
             }
 
-            // Physics stays frame-rate based; support display is refreshed at 5 Hz to avoid unnecessary ARC recomputation.
+            // Support display remains 5 Hz; recommended ARC itself is cached at 1 Hz.
             if (currentTime - onlineLastUiTime >= 200) {
                 onlineLastUiTime = currentTime;
                 syncOnlineEntities();
