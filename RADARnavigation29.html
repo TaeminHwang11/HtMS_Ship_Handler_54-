@@ -643,7 +643,7 @@
         <div class="icon-btn" id="btn-offcent" onclick="toggleOffCenter()">Off<br>cent</div>
         <div class="icon-btn active" id="btn-rings" style="font-size:16px;" onclick="toggleRings()">◎</div>
         <div class="icon-btn" id="btn-tgt">TGT</div>
-        <div class="icon-btn" id="btn-arc" onclick="toggleArc()">ARC</div>
+        <div class="icon-btn" id="btn-arc" onclick="toggleArc()" title="Upgraded ARC: full CPA wall + exact wall crossing + PORT/STBD route-rejoin planning">ARC</div>
         <div class="icon-btn" id="btn-theme" style="font-size:14px;" onclick="toggleTheme()">◑</div>
         
         <div class="knob-container">
@@ -890,6 +890,7 @@
     let cachedArcNumRings = 0;
     let cachedArcRingData = [];
     let cachedArcBestPath = [];
+    let cachedArcBestPoints = []; // support-system ARC path points (relative metres)
     
     let arcUpdatePending = false;
     let framesSinceLastArc = 0;
@@ -1177,7 +1178,7 @@
         } else {
             zone.style.border = '1px solid transparent';
             zone.style.backgroundColor = 'transparent';
-            cachedArcRingData = []; cachedArcBestPath = [];
+            cachedArcRingData = []; cachedArcBestPath = []; cachedArcBestPoints = [];
         }
     }
 
@@ -1694,121 +1695,248 @@
         return true;
     }
 
+
+    // =====================================================================
+    // ARC UPGRADE: support-system method ported into the online RADAR build.
+    // - full requested CPA wall radius
+    // - exact segment/ARC-wall crossing rejection
+    // - PORT/STBD planning
+    // - squared goal/alteration/smoothness cost
+    // - target/route rejoin through a fixed/virtual goal
+    // - Web Worker so 1-degree search does not block the RADAR sweep
+    // =====================================================================
+    const ARC_UPGRADE = Object.freeze({
+        maxPlanningMin: 30,
+        virtualGoalNM: 5.0,
+        routeTurnRateDegPerMin: 12.0,
+        turnLimitStepDeg: 1
+    });
+    let arcPlannerWorker = null;
+    let arcPlannerSeq = 0;
+    let arcPlannerBusy = false;
+    let arcPlannerQueuedJob = null;
+    let arcPlannerCurrentId = 0;
+
+    function arcNorm360(d) { d = Number(d) || 0; return ((d % 360) + 360) % 360; }
+    function arcSignedDiff(target, current) { return ((target - current + 540) % 360) - 180; }
+    function arcClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function arcVelocityMps(courseDeg, speedKn) {
+        const s = Math.max(0, Number(speedKn) || 0) * 0.514444;
+        const r = arcNorm360(courseDeg) * Math.PI / 180;
+        return { east:s*Math.sin(r), north:s*Math.cos(r) };
+    }
+    function arcTRSeconds() {
+        if (manualRR === 'auto') {
+            const rrNM = Math.max(0.001, currentRange / 6);
+            return Math.max(1, rrNM / Math.max(0.1, Number(os.sog || os.spd) || 0.1) * 3600);
+        }
+        if (String(manualRR).endsWith('s')) return Math.max(1, parseFloat(manualRR));
+        if (String(manualRR).endsWith('m')) return Math.max(1, parseFloat(manualRR) * 60);
+        return 60;
+    }
+    function arcResolveGoal() {
+        let bearing = arcNorm360(Number(os.cog) || Number(os.hdg) || 0);
+        let actualDistNM = Infinity;
+        if (goalPoints.length > 0) {
+            const gp = goalPoints[0];
+            const dx = gp.x - os.x, dy = gp.y - os.y;
+            actualDistNM = Math.hypot(dx, dy);
+            if (actualDistNM > 1e-6) bearing = arcNorm360(Math.atan2(dx, dy) * 180 / Math.PI);
+            if (arcActive && !manualEblOverride) {
+                ebl1AngleTrue = bearing;
+                const el = document.getElementById('val-ebl1');
+                if (el) el.innerText = ebl1AngleTrue.toFixed(1).padStart(5,'0') + ' ° T';
+            }
+        } else if (ebl1Active) {
+            bearing = arcNorm360(ebl1AngleTrue);
+        }
+        const dNM = Number.isFinite(actualDistNM) ? Math.max(0.25, Math.min(actualDistNM, ARC_UPGRADE.virtualGoalNM)) : ARC_UPGRADE.virtualGoalNM;
+        const r = bearing * Math.PI / 180;
+        return { bearing, distanceNM:dNM, east:Math.sin(r)*dNM*1852, north:Math.cos(r)*dNM*1852 };
+    }
+    function arcBuildUpgradedData(displayRadius, maxDistNM, selected) {
+        const trSec = arcTRSeconds();
+        const ownSpeedMps = Math.max(0.1, Number(os.sog || os.spd) || 0) * 0.514444;
+        const safetyMeters = Math.max(0.02, Number(cpaLimitVal) || 0.5) * 1852; // full CPA wall
+        const ownVel = arcVelocityMps(os.cog, os.sog || os.spd);
+        const targetStates = [];
+        const exactArcs = [];
+        const ringStepMeters = Math.max(1, ownSpeedMps * trSec);
+        const maxDisplayMeters = Math.max(0.1, maxDistNM) * 1852;
+        const ringCount = Math.max(1, Math.min(150, Math.ceil(maxDisplayMeters / ringStepMeters) + 2));
+        const rings = [];
+        for (let i=1; i<=ringCount; i++) {
+            const radiusMeters = ringStepMeters * i;
+            rings.push({
+                index:i, timeSec:i*trSec,
+                r_NM:radiusMeters/1852,
+                r_Px:(radiusMeters/1852/currentRange)*displayRadius,
+                blockedAngles:new Array(360).fill(false), blockedSectors:[], arcs:[]
+            });
+        }
+        const goal = arcResolveGoal();
+        const goalTravelSec = Math.max(trSec, goal.distanceNM * 1852 / ownSpeedMps);
+        const arcHorizonSec = Math.max(trSec, Math.min(ARC_UPGRADE.maxPlanningMin*60, goalTravelSec));
+
+        for (const t of selected) {
+            const tv = arcVelocityMps(t.hdg, t.spd);
+            const relEast = (t.x - os.x) * 1852;
+            const relNorth = (t.y - os.y) * 1852;
+            const rvE = tv.east - ownVel.east, rvN = tv.north - ownVel.north;
+            const vv = rvE*rvE + rvN*rvN;
+            const tcpaSec = vv > 1e-10 ? -(relEast*rvE + relNorth*rvN)/vv : Infinity;
+            const state = { id:String(t.id), relEast, relNorth, velEast:tv.east, velNorth:tv.north, tcpaSec };
+            targetStates.push(state);
+            if (!Number.isFinite(tcpaSec) || tcpaSec <= 0 || tcpaSec > arcHorizonSec + 1e-9) continue;
+            const tfEast = relEast + tv.east*tcpaSec;
+            const tfNorth = relNorth + tv.north*tcpaSec;
+            const d = Math.hypot(tfEast, tfNorth);
+            if (d < 1e-9) continue;
+            const bearing = arcNorm360(Math.atan2(tfEast, tfNorth) * 180 / Math.PI);
+            const halfDeg = d <= safetyMeters ? 90 : Math.asin(arcClamp(safetyMeters/d,0,1))*180/Math.PI;
+            const wall = { targetId:String(t.id), tcpaSec, bearing, halfDeg, radiusMeters:ownSpeedMps*tcpaSec };
+            exactArcs.push(wall);
+            const ringIndex = Math.ceil(tcpaSec/trSec);
+            if (ringIndex >= 1 && ringIndex <= rings.length) {
+                const ring = rings[ringIndex-1];
+                ring.arcs.push(wall);
+                for (let a=0; a<360; a++) if (Math.abs(arcSignedDiff(a,bearing)) <= halfDeg+0.5) ring.blockedAngles[a] = true;
+            }
+        }
+        for (const ring of rings) {
+            let start = null;
+            for (let a=0; a<360; a++) {
+                if (ring.blockedAngles[a] && start===null) start=a;
+                if ((!ring.blockedAngles[a] || a===359) && start!==null) {
+                    ring.blockedSectors.push({start, end:(ring.blockedAngles[a]&&a===359)?359:a-1});
+                    start=null;
+                }
+            }
+        }
+        return {trSec, ownSpeedMps, safetyMeters, targetStates, exactArcs, rings, goal};
+    }
+
+    function arcWorkerMain() {
+        const D=Math.PI/180;
+        const n360=d=>((Number(d)||0)%360+360)%360;
+        const ad=(t,c)=>((t-c+540)%360)-180;
+        const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+        const future=(s,t)=>({east:s.relEast+s.velEast*t,north:s.relNorth+s.velNorth*t});
+        function sep(p0,p1,t0,t1,s){
+            const a=future(s,t0), b=future(s,t1);
+            const r0e=a.east-p0.east,r0n=a.north-p0.north,r1e=b.east-p1.east,r1n=b.north-p1.north;
+            const de=r1e-r0e,dn=r1n-r0n,dd=de*de+dn*dn;
+            const u=dd>1e-12?cl(-(r0e*de+r0n*dn)/dd,0,1):0;
+            return Math.hypot(r0e+de*u,r0n+dn*u);
+        }
+        function validate(points,data){
+            let m=Infinity;
+            for(let i=1;i<points.length;i++) for(const s of data.targetStates) m=Math.min(m,sep(points[i-1],points[i],points[i-1].timeSec,points[i].timeSec,s));
+            if(!Number.isFinite(m)) m=Infinity;
+            return {safe:m+0.5>=data.safetyMeters,minSeparationNM:m/1852};
+        }
+        function outward(p0,p1){const r=Math.hypot(p0.east||0,p0.north||0);if(r<1e-6)return true;return (p0.east||0)*(p1.east-p0.east)+(p0.north||0)*(p1.north-p0.north)>=-1e-6;}
+        function crossWall(p0,p1,w){
+            const x0=p0.east||0,y0=p0.north||0,x1=p1.east||0,y1=p1.north||0,dx=x1-x0,dy=y1-y0,rr=Number(w.radiusMeters);
+            const A=dx*dx+dy*dy;if(!Number.isFinite(rr)||rr<=0||A<1e-12)return false;
+            const B=2*(x0*dx+y0*dy),C=x0*x0+y0*y0-rr*rr,disc=B*B-4*A*C;if(disc<-1e-9)return false;
+            const root=Math.sqrt(Math.max(0,disc));
+            for(const u of [(-B-root)/(2*A),(-B+root)/(2*A)]){if(u<-1e-9||u>1+1e-9)continue;const e=x0+dx*u,n=y0+dy*u,b=n360(Math.atan2(e,n)/D);if(Math.abs(ad(b,w.bearing))<=Number(w.halfDeg||0)+0.5)return true;}
+            return false;
+        }
+        function crosses(p0,p1,data){for(const w of data.exactArcs||[])if(crossWall(p0,p1,w))return true;return false;}
+        function pathOf(s){const a=[];while(s){a.push(s.point);s=s.parent;}return a.reverse();}
+        function plan(input,side){
+            const data=input.arcData, sideSign=side==='PORT'?-1:1, gd=Math.hypot(input.goalRel.east,input.goalRel.north); if(gd<1)return null;
+            const goalTime=gd/Math.max(0.01,data.ownSpeedMps), stepM=Math.max(1,data.ownSpeedMps*data.trSec), rings=[];
+            const full=Math.max(0,Math.floor((goalTime-1e-6)/data.trSec));
+            for(let i=1;i<=full;i++)rings.push({radiusMeters:stepM*i,timeSec:data.trSec*i,terminal:false});
+            rings.push({radiusMeters:gd,timeSec:goalTime,terminal:true});
+            const physical=(Number(input.routeTurnRateDegPerMin)||0)*data.trSec/60, ceiling=cl(Number(input.maxAllowedTurnLimitDeg)||180,0,180), normal=Math.max(1,Math.floor(physical+1e-9));
+            const limits=[]; const push=v=>{v=cl(Math.round(v),0,ceiling);if(!limits.includes(v))limits.push(v);}; push(Math.min(normal,ceiling));
+            const fine=Math.max(2,(Number(input.turnLimitStepDeg)||1)*2); for(let x=normal+fine;x<=Math.min(20,ceiling);x+=fine)push(x);
+            for(let x=Math.max(25,Math.ceil((Math.max(normal,20)+1)/5)*5);x<=Math.min(60,ceiling);x+=5)push(x);
+            for(let x=Math.max(70,Math.ceil((Math.max(normal,60)+1)/10)*10);x<=ceiling;x+=10)push(x); push(ceiling); limits.sort((a,b)=>a-b);
+            const key=(h,s,l)=>`${h}|${s}|${l}`;
+            const mk=(h,r)=>r.terminal?{east:input.goalRel.east,north:input.goalRel.north,timeSec:r.timeSec,heading:h}:{east:Math.sin(h*D)*r.radiusMeters,north:Math.cos(h*D)*r.radiusMeters,timeSec:r.timeSec,heading:h};
+            const wg=Math.max(0,Number(input.weightGoal)||1), wa=Math.max(0,Number(input.weightAltering)||1), ws=wa;
+            for(const lim of limits){
+                let states=new Map(); const p0={east:0,north:0,timeSec:0,heading:input.currentHeading}; states.set(key(input.currentHeading,0,0),{heading:input.currentHeading,first:0,cost:0,len:0,turn:0,last:0,point:p0,parent:null}); let fail=false;
+                for(const ring of rings){
+                    const groups=new Map();
+                    const consider=(prev,h)=>{h=n360(h);const st=ad(h,prev.heading),tc=Math.abs(st);if(tc>lim+1e-9)return;let first=prev.first;if(first===0&&tc>1e-9){first=Math.sign(st);if(first!==sideSign)return;}if(first!==0&&first!==sideSign)return;const p=mk(h,ring);if(!outward(prev.point,p)||crosses(prev.point,p,data))return;const gdif=ad(h,input.goalHeading),acc=st-(prev.last||0),seg=Math.hypot(p.east-prev.point.east,p.north-prev.point.north),cand={heading:h,first,cost:prev.cost+wg*gdif*gdif+wa*st*st+ws*acc*acc,len:prev.len+seg,turn:prev.turn+tc,last:st,point:p,parent:prev};const gk=`${h}|${first}`;let g=groups.get(gk);if(!g){g=[];groups.set(gk,g);}const si=g.findIndex(q=>Math.abs((q.last||0)-st)<=1e-9);if(si>=0){if(cand.cost<g[si].cost-1e-9)g[si]=cand;}else g.push(cand);g.sort((a,b)=>a.cost-b.cost||a.len-b.len||a.turn-b.turn);if(g.length>3)g.length=3;};
+                    for(const prev of states.values()){if(ring.terminal){consider(prev,input.goalHeading);continue;}const L=Math.floor(lim+1e-9);for(let d=-L;d<=L;d++){if(L===180&&d===180)continue;consider(prev,prev.heading+d);}}
+                    const next=new Map();for(const g of groups.values())for(const c of g)next.set(key(c.heading,c.first,c.last),c);if(!next.size){fail=true;break;}states=next;
+                }
+                if(fail||!states.size)continue;const finals=Array.from(states.values()).filter(s=>s.first===0||s.first===sideSign).sort((a,b)=>a.cost-b.cost||a.len-b.len||a.turn-b.turn);
+                for(const st of finals){const points=pathOf(st), val=validate(points,data);if(!val.safe)continue;let peak=points[0],pd=0;for(const p of points){const d=ad(p.heading,input.referenceHeading);if(Math.abs(d)>Math.abs(pd)){pd=d;peak=p;}}return {side,hasPath:true,safe:true,points,cost:st.cost,pathLengthMeters:st.len,cumulativeTurn:st.turn,peakHeading:peak.heading,peakDelta:pd,finalHeading:st.heading,minSeparationNM:val.minSeparationNM,usedTurnLimitDeg:lim,physicalTurnLimitDeg:physical,extreme:lim>physical+1e-9};}
+            }
+            return {side,hasPath:false,safe:false,points:[]};
+        }
+        self.onmessage=e=>{const m=e.data||{};if(m.type!=='plan')return;try{self.postMessage({type:'result',id:m.id,port:plan(m.input,'PORT'),stbd:plan(m.input,'STBD')});}catch(err){self.postMessage({type:'error',id:m.id,error:String(err&&err.stack||err)});}};
+    }
+    function createArcPlannerWorker() {
+        if (arcPlannerWorker) return arcPlannerWorker;
+        if (typeof Worker !== 'function' || typeof Blob !== 'function') return null;
+        try {
+            const src = `(${arcWorkerMain.toString()})();`;
+            const url = URL.createObjectURL(new Blob([src], {type:'application/javascript'}));
+            arcPlannerWorker = new Worker(url);
+            arcPlannerWorker.onmessage = e => {
+                const m=e.data||{}; if (m.id !== arcPlannerCurrentId) return;
+                arcPlannerBusy=false;
+                if (m.type==='result') {
+                    const candidates=[m.port,m.stbd].filter(p=>p&&p.hasPath);
+                    candidates.sort((a,b)=>a.cost-b.cost || a.pathLengthMeters-b.pathLengthMeters || a.cumulativeTurn-b.cumulativeTurn);
+                    const best=candidates[0]||null;
+                    cachedArcBestPoints=best&&Array.isArray(best.points)?best.points:[];
+                    cachedArcBestPath=cachedArcBestPoints.map(p=>p.heading);
+                } else {
+                    console.error('[ARC UPGRADE] worker error:',m.error);
+                    cachedArcBestPoints=[]; cachedArcBestPath=[];
+                }
+                if (arcPlannerQueuedJob) { const q=arcPlannerQueuedJob; arcPlannerQueuedJob=null; dispatchArcPlanner(q); }
+            };
+            arcPlannerWorker.onerror = e => { console.error('[ARC UPGRADE] worker failed:',e); arcPlannerBusy=false; cachedArcBestPoints=[]; cachedArcBestPath=[]; };
+            return arcPlannerWorker;
+        } catch (e) { console.error('[ARC UPGRADE] worker creation failed:',e); return null; }
+    }
+    function dispatchArcPlanner(job) {
+        const w=createArcPlannerWorker();
+        if(!w){ cachedArcBestPoints=[]; cachedArcBestPath=[]; return; }
+        if(arcPlannerBusy){ arcPlannerQueuedJob=job; return; }
+        arcPlannerBusy=true; arcPlannerCurrentId=++arcPlannerSeq;
+        w.postMessage({type:'plan',id:arcPlannerCurrentId,input:job});
+    }
+
     function runARC(displayRadius, osPx, osPy, displayUpBrg, maxDistNM) {
         if (!arcActive) return;
-        
-        let rr_NM, dt_hours;
-        if (manualRR === 'auto') {
-            rr_NM = currentRange / 6; dt_hours = rr_NM / Math.max(0.1, os.spd);
-        } else {
-            let sec = 0;
-            if (manualRR.endsWith('s')) sec = parseInt(manualRR);
-            if (manualRR.endsWith('m')) sec = parseInt(manualRR) * 60;
-            dt_hours = sec / 3600; rr_NM = Math.max(0.1, os.spd) * dt_hours;
-        }
+        let all = targets.concat(aisTargets);
+        all = all.filter(t => Number.isFinite(t.x) && Number.isFinite(t.y) && Number.isFinite(t.spd) && Number.isFinite(t.hdg));
+        if (arcTargetMode === 'Selected') all = all.filter(t => selectedTargets.includes(t.id));
+        else all = all.filter(t => Math.hypot(t.x-os.x,t.y-os.y) <= Math.max(currentRange, maxDistNM) + 1e-9);
 
-        if (rr_NM < 0.001) rr_NM = 0.001; if (dt_hours < 0.0001) dt_hours = 0.0001;
-
-        let numRings = Math.ceil(maxDistNM / rr_NM) + 2;
-        if (numRings > 150) numRings = 150; 
-        
-        let safety_NM = cpaLimitVal / 2.0; 
-        let ringData = []; let allT = [];
-        if (arcTargetMode === 'Selected') { allT = targets.concat(aisTargets).filter(t => selectedTargets.includes(t.id)); } 
-        else { allT = targets.concat(aisTargets).filter(t => { let dist = Math.sqrt((t.x - os.x)**2 + (t.y - os.y)**2); return dist <= currentRange; }); }
-        
-        for (let i = 1; i <= numRings; i++) {
-            let t_ring = i * dt_hours; let r_NM = i * rr_NM; let r_Px = (r_NM / currentRange) * displayRadius;
-            let blockedAngles = new Array(360).fill(false);
-            
-            allT.forEach(t => {
-                let dx = t.x - os.x; let dy = t.y - os.y;
-                let osVx = os.sog * Math.sin(os.cog * Math.PI/180); 
-                let osVy = os.sog * Math.cos(os.cog * Math.PI/180);
-                let tVx = t.spd * Math.sin(t.hdg * Math.PI/180); 
-                let tVy = t.spd * Math.cos(t.hdg * Math.PI/180);
-                let rVx = tVx - osVx; let rVy = tVy - osVy; let vRelSq = (rVx*rVx) + (rVy*rVy);
-                if (vRelSq < 0.0001) return;
-                
-                let tcpaH = -(dx * rVx + dy * rVy) / vRelSq;
-                if (tcpaH > (i-1)*dt_hours && tcpaH <= i*dt_hours) {
-                    let tfX = t.x + tVx * tcpaH; let tfY = t.y + tVy * tcpaH;
-                    let brgToTf = Math.atan2(tfX - os.x, tfY - os.y) * 180 / Math.PI; if (brgToTf < 0) brgToTf += 360;
-                    let distToTf = Math.sqrt((tfX - os.x)**2 + (tfY - os.y)**2);
-                    let blockHalfAngle = 15; 
-                    if (distToTf > safety_NM) { blockHalfAngle = Math.asin(safety_NM / distToTf) * 180 / Math.PI; } 
-                    else { blockHalfAngle = 90; }
-                    
-                    for(let a=0; a<360; a++) {
-                        let diff = Math.abs(angleDiff(a, brgToTf));
-                        if (diff <= blockHalfAngle) { blockedAngles[a] = true; }
-                    }
-                }
-            });
-            
-            let blockedSectors = []; let inSector = false; let start = 0;
-            for(let a=0; a<360; a++) {
-                if (blockedAngles[a] && !inSector) { start = a; inSector = true; } 
-                else if (!blockedAngles[a] && inSector) { blockedSectors.push({start: start, end: a - 1}); inSector = false; }
-            }
-            if (inSector) {
-                if (blockedSectors.length > 0 && blockedSectors[0].start === 0) { blockedSectors[0].start = start; } 
-                else { blockedSectors.push({start: start, end: 359}); }
-            }
-            ringData.push({ r_NM, r_Px, t_ring, blockedAngles, blockedSectors });
-        }
-        
-        let goal_angle = null; 
-        if (goalPoints.length > 0 && !manualEblOverride) {
-            let gp = goalPoints[0];
-            let dx = gp.x - os.x; let dy = gp.y - os.y;
-            goal_angle = Math.atan2(dx, dy) * (180 / Math.PI); if (goal_angle < 0) goal_angle += 360;
-            if (arcActive) { ebl1AngleTrue = goal_angle; document.getElementById('val-ebl1').innerText = ebl1AngleTrue.toFixed(1).padStart(5, '0') + " ° T"; }
-        } else if (ebl1Active) { goal_angle = ebl1AngleTrue; }
-
-        let foundPath = false; let finalStates = []; let max_turn_limit = 15; 
-
-        while (!foundPath && max_turn_limit <= 180) {
-            let dp = []; let initialMap = new Map();
-            initialMap.set(os.hdg, { cost: 0, path: [os.hdg] }); dp[0] = initialMap;
-            
-            for (let i = 0; i < numRings; i++) {
-                let nextDp = new Map(); let currentRing = ringData[i];
-                let r1 = i === 0 ? 0 : ringData[i-1].r_NM; let r2 = currentRing.r_NM;
-                
-                let validAngles = [];
-                for (let a = 0; a < 360; a += 3) { 
-                    let aInt = Math.round(a) % 360;
-                    if (currentRing.blockedAngles[aInt]) continue;
-                    validAngles.push(a);
-                }
-                if (validAngles.length === 0) validAngles.push(os.hdg);
-                
-                for (let a of validAngles) {
-                    let minCost = Infinity; let bestPath = [];
-                    for (let [prevAngle, prevData] of dp[i].entries()) {
-                        let turnCost = Math.abs(angleDiff(a, prevAngle));
-                        if (turnCost > max_turn_limit) continue; 
-                        if (i > 0 && !isPathClear(r1, prevAngle, r2, a, ringData, numRings, rr_NM)) continue;
-                        let goalCost = 0;
-                        if (goal_angle !== null) { goalCost = Math.abs(angleDiff(a, goal_angle)); }
-                        let cost = prevData.cost + (turnCost * wTurnVal) + (goalCost * wGoalVal); 
-                        if (cost < minCost) { minCost = cost; bestPath = [...prevData.path, a]; }
-                    }
-                    if (minCost !== Infinity) { nextDp.set(a, { cost: minCost, path: bestPath }); }
-                }
-                if (nextDp.size === 0) break; 
-                dp[i+1] = nextDp;
-            }
-            if (dp.length === numRings + 1 && dp[numRings].size > 0) {
-                finalStates = Array.from(dp[numRings].values());
-                finalStates.sort((a, b) => a.cost - b.cost); foundPath = true; 
-            } else { max_turn_limit += 10; }
-        }
-
-        if (finalStates.length > 0) { cachedArcBestPath = finalStates[0].path; } 
-        else { cachedArcBestPath = []; }
-        cachedArcRingData = ringData; cachedArcNumRings = numRings;
+        const data = arcBuildUpgradedData(displayRadius, maxDistNM, all);
+        cachedArcRingData = data.rings;
+        cachedArcNumRings = data.rings.length;
+        const currentHeading = Math.round(arcNorm360(Number(os.cog)||Number(os.hdg)||0)) % 360;
+        const input = {
+            currentHeading,
+            goalHeading: Math.round(data.goal.bearing) % 360,
+            referenceHeading: data.goal.bearing,
+            goalRel: {east:data.goal.east, north:data.goal.north},
+            arcData: {
+                trSec:data.trSec, ownSpeedMps:data.ownSpeedMps, safetyMeters:data.safetyMeters,
+                exactArcs:data.exactArcs.map(a=>({radiusMeters:a.radiusMeters,bearing:a.bearing,halfDeg:a.halfDeg})),
+                targetStates:data.targetStates.map(t=>({relEast:t.relEast,relNorth:t.relNorth,velEast:t.velEast,velNorth:t.velNorth}))
+            },
+            routeTurnRateDegPerMin: ARC_UPGRADE.routeTurnRateDegPerMin,
+            turnLimitStepDeg: ARC_UPGRADE.turnLimitStepDeg,
+            maxAllowedTurnLimitDeg: 180,
+            weightGoal: Math.max(0.01, Number(wGoalVal)||1),
+            weightAltering: Math.max(0.01, Number(wTurnVal)||2)
+        };
+        dispatchArcPlanner(input);
     }
 
     function updatePhysics(simDtHours, realDt) {
@@ -2042,23 +2170,30 @@
         let allEntities = targets.concat(aisTargets); 
 
         if (arcActive && cachedArcRingData.length > 0) {
-            ctx.save(); ctx.fillStyle = 'rgba(126, 47, 142, 0.35)'; 
+            ctx.save(); ctx.fillStyle = 'rgba(126, 47, 142, 0.35)';
             for (let i = 0; i < cachedArcNumRings; i++) {
-                let rd = cachedArcRingData[i]; if (!rd) continue;
-                let prevR = i === 0 ? 0 : cachedArcRingData[i-1].r_Px;
-                for (let b of rd.blockedSectors) {
-                    let startTrue = b.start; let endTrue = b.end; if (startTrue > endTrue) endTrue += 360;
-                    let startScreen = (startTrue - displayUpBrg - 90) * Math.PI / 180; let endScreen = (endTrue - displayUpBrg - 90) * Math.PI / 180;
-                    ctx.beginPath(); ctx.arc(osPx, osPy, rd.r_Px, startScreen, endScreen, false); ctx.arc(osPx, osPy, prevR, endScreen, startScreen, true); ctx.closePath(); ctx.fill();
+                const rd = cachedArcRingData[i]; if (!rd) continue;
+                const prevR = i === 0 ? 0 : cachedArcRingData[i-1].r_Px;
+                for (const b of rd.blockedSectors) {
+                    let startTrue=b.start, endTrue=b.end; if(startTrue>endTrue) endTrue+=360;
+                    const startScreen=(startTrue-displayUpBrg-90)*Math.PI/180;
+                    const endScreen=(endTrue-displayUpBrg-90)*Math.PI/180;
+                    ctx.beginPath(); ctx.arc(osPx,osPy,rd.r_Px,startScreen,endScreen,false); ctx.arc(osPx,osPy,prevR,endScreen,startScreen,true); ctx.closePath(); ctx.fill();
                 }
             }
-            ctx.lineWidth = 2; ctx.strokeStyle = '#ff3333'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(osPx, osPy);
-            for (let i = 1; i <= cachedArcNumRings; i++) {
-                let a = cachedArcBestPath[i]; if (a === undefined) continue;
-                let r_Px = cachedArcRingData[i-1].r_Px; let screenRad = (a - displayUpBrg - 90) * Math.PI / 180;
-                let px = osPx + Math.cos(screenRad) * r_Px; let py = osPy + Math.sin(screenRad) * r_Px; ctx.lineTo(px, py);
+            if (cachedArcBestPoints.length > 1) {
+                ctx.lineWidth=2; ctx.strokeStyle='#ff3333'; ctx.setLineDash([5,5]); ctx.beginPath(); ctx.moveTo(osPx,osPy);
+                for (let i=1; i<cachedArcBestPoints.length; i++) {
+                    const p=cachedArcBestPoints[i];
+                    const rNM=Math.hypot(p.east,p.north)/1852;
+                    const brg=arcNorm360(Math.atan2(p.east,p.north)*180/Math.PI);
+                    const screenRad=(brg-displayUpBrg-90)*Math.PI/180;
+                    const rPx=(rNM/currentRange)*displayRadius;
+                    ctx.lineTo(osPx+Math.cos(screenRad)*rPx, osPy+Math.sin(screenRad)*rPx);
+                }
+                ctx.stroke(); ctx.setLineDash([]);
             }
-            ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+            ctx.restore();
         }
 
         if (trailTimeMins > 0 && !hideTargets) {
