@@ -5572,7 +5572,15 @@
                         x: onlineOs.x + rawX,
                         y: onlineOs.y + rawY,
                         hdg: ((Number(t.hdg) || 0) % 360 + 360) % 360,
-                        spd: Number(t.spd) || 0
+                        spd: Number(t.spd) || 0,
+                        // Target waypoints are absolute scenario coordinates (400 units = 1 NM).
+                        waypoints: (Array.isArray(t.waypoints) ? t.waypoints : [])
+                            .map(wp => ({ x: Number(wp.x) / 400, y: -Number(wp.z) / 400 }))
+                            .filter(wp => Number.isFinite(wp.x) && Number.isFinite(wp.y)),
+                        waypointIndex: 0,
+                        routeStartX: onlineOs.x + rawX,
+                        routeStartY: onlineOs.y + rawY,
+                        rot: 0
                     });
                 });
             }
@@ -5634,7 +5642,7 @@
             const trafficEntities = onlineTargets.map(t => ({
                 id: t.id, name: t.name, isMASS: false,
                 x: t.x * 400, z: -t.y * 400,
-                hdg: t.hdg, cog: t.hdg, sog: t.spd, spd: t.spd, rot: 0,
+                hdg: t.hdg, cog: t.hdg, sog: t.spd, spd: t.spd, rot: t.rot || 0,
                 lat: onlineOs.lat + ((t.y - onlineOs.y) / 60),
                 lon: onlineOs.lon + ((t.x - onlineOs.x) / (60 * Math.cos(onlineOs.lat * Math.PI / 180))),
                 color: '#f8fafc'
@@ -5660,7 +5668,7 @@
                     'MMSI': t.id, 'Name': t.name,
                     'East(m)': t.x * 1852, 'North(m)': t.y * 1852,
                     'Heading': t.hdg, 'Course': t.hdg, 'SOG(knot)': t.spd,
-                    'RateOfTurn': 0
+                    'RateOfTurn': t.rot || 0
                 })),
                 scenario_route: scenarioRouteData
             };
@@ -5680,7 +5688,7 @@
                     time: String(timeText), name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6),
                     x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2),
                     hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1),
-                    rot: '0.00', rud_cmd: '0.0', rud_act: '0.0'
+                    rot: (t.rot || 0).toFixed(2), rud_cmd: '0.0', rud_act: '0.0'
                 });
             });
         }
@@ -5732,6 +5740,34 @@
             onlineOs.latMove = actualVx * Math.cos(osHdgRad) - actualVy * Math.sin(osHdgRad);
 
             onlineTargets.forEach(t => {
+                // Follow each target's own saved route; preserve straight-line motion
+                // for targets without waypoints and after the final waypoint.
+                const route = t.waypoints || [];
+                let targetWp = t.waypointIndex < route.length ? route[t.waypointIndex] : null;
+                if (targetWp) {
+                    const legStart = t.waypointIndex === 0
+                        ? { x: t.routeStartX, y: t.routeStartY }
+                        : route[t.waypointIndex - 1];
+                    const distToWp = Math.hypot(targetWp.x - t.x, targetWp.y - t.y);
+                    const legDx = targetWp.x - legStart.x;
+                    const legDy = targetWp.y - legStart.y;
+                    const passedWp = legDx * legDx + legDy * legDy > 1e-9 &&
+                        (t.x - targetWp.x) * legDx + (t.y - targetWp.y) * legDy >= 0;
+                    if (distToWp < 0.3 || passedWp) {
+                        t.waypointIndex++;
+                        targetWp = t.waypointIndex < route.length ? route[t.waypointIndex] : null;
+                    }
+                }
+                const previousHdg = t.hdg;
+                if (targetWp) {
+                    const desiredHdg = (Math.atan2(targetWp.x - t.x, targetWp.y - t.y) * 180 / Math.PI + 360) % 360;
+                    const error = ((desiredHdg - t.hdg + 540) % 360) - 180;
+                    // Limited, continuous turn; no instantaneous heading jumps.
+                    const maxTurnDeg = 12.0 * realDt / 60;
+                    const turnDeg = Math.max(-maxTurnDeg, Math.min(maxTurnDeg, error));
+                    t.hdg = (t.hdg + turnDeg + 360) % 360;
+                }
+                t.rot = (((t.hdg - previousHdg + 540) % 360) - 180) * 60 / Math.max(1e-9, realDt);
                 const r = t.hdg * Math.PI / 180;
                 t.x += t.spd * simDtHours * Math.sin(r);
                 t.y += t.spd * simDtHours * Math.cos(r);
