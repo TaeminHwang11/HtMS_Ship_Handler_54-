@@ -225,23 +225,6 @@
         #online-pause-btn:hover { border-color: rgba(148,163,184,0.92); color: #ffffff; }
         #online-pause-btn.paused { color: #fde047; border-color: rgba(234,179,8,0.82); }
 
-        /* ARC recommendation cost weights: independent overlay beside the existing OS HUD. */
-        #arc-weight-controls {
-            display: none; position: absolute; z-index: 47; pointer-events: auto;
-            flex-direction: column; gap: 4px;
-        }
-        #arc-weight-controls.visible { display: flex; }
-        .arc-weight-btn {
-            width: 138px; height: 28px; box-sizing: border-box; padding: 0 8px;
-            border: 1px solid rgba(100,116,139,0.72); border-radius: 5px;
-            background: rgba(9,15,26,0.96); color: #cbd5e1;
-            font-family: 'Segoe UI', sans-serif; font-size: 11px; font-weight: 800;
-            letter-spacing: 0.25px; text-align: center; cursor: ns-resize; user-select: none;
-        }
-        .arc-weight-btn:hover { border-color: rgba(250,204,21,0.85); color: #ffffff; }
-        .arc-weight-btn:focus, .arc-weight-btn:focus-visible { outline: none; }
-        .arc-weight-btn b { color: #fde047; margin-left: 3px; font-weight: 800; }
-
         /* 실험용 ODD/OE 상태 라이트: 기존 HUD 레이아웃을 밀지 않는 독립 오버레이 */
         #odd-oe-light {
             display: none; position: absolute; z-index: 46; pointer-events: none;
@@ -542,9 +525,6 @@
         <div id="top-view-area">
             <div class="hud-label">[HTMS] Navigation Supporter</div>
             <button type="button" id="online-pause-btn" onclick="toggleOnlinePause()">PAUSE</button>
-            <div id="arc-weight-controls" aria-label="ARC plan adjustment">
-                <button type="button" class="arc-weight-btn" id="arc-plan-adjustment" title="마우스 휠: PLAN ADJ 조정 · 1.0은 균형, 값이 커질수록 Goal 추종 우선, 작아질수록 변침 억제 우선">PLAN ADJ <b id="arc-plan-adjustment-value">1.00</b></button>
-            </div>
             <div id="os-fixed-hud">
                 <span class="os-hud-name">OS</span>
                 <span class="os-hud-item">HDG <b id="os-hud-hdg">---</b></span>
@@ -675,18 +655,13 @@
             easeTauSec: 20
         });
 
-        const ARC_PLAN_ADJUSTMENT_OPTIONS = Object.freeze([0.05, 0.10, 0.20, 1/3, 0.50, 1.00, 2.00, 3.00, 5.00, 10.00, 20.00]);
-        let arcPlanAdjustment = 1.00;
-        const arcCostWeightSettings = { goal: 1.0, altering: 1.0 };
-
-        function applyArcPlanAdjustment() {
-            const ratio = Math.max(0.01, Number(arcPlanAdjustment) || 1.0);
-            // Only the relative ratio matters to route ranking. Normalize the pair so
-            // W_goal + W_altering = 2, preventing arbitrary common scaling of all costs.
-            arcCostWeightSettings.goal = (2 * ratio) / (1 + ratio);
-            arcCostWeightSettings.altering = 2 / (1 + ratio);
-        }
-        applyArcPlanAdjustment();
+        // Fixed ARC planning objective (non-adjustable): Goal / Altering = 0.05.
+        // Preserve the original normalized cost-weight formula (W_goal + W_altering = 2).
+        const arcPlanAdjustment = 0.05;
+        const arcCostWeightSettings = Object.freeze({
+            goal: (2 * arcPlanAdjustment) / (1 + arcPlanAdjustment),
+            altering: 2 / (1 + arcPlanAdjustment)
+        });
 
         // 사용자에게 보이는 기능명/설명만 한글화. 계산 key와 내부 모델명은 그대로 유지한다.
         const SUPPORT_FEATURE_KO = Object.freeze({
@@ -906,9 +881,6 @@
         const minCpaValue = document.getElementById('hud-min-cpa-value');
         const osFixedHud = document.getElementById('os-fixed-hud');
         const onlinePauseBtn = document.getElementById('online-pause-btn');
-        const arcWeightControls = document.getElementById('arc-weight-controls');
-        const arcPlanAdjustmentButton = document.getElementById('arc-plan-adjustment');
-        const arcPlanAdjustmentValue = document.getElementById('arc-plan-adjustment-value');
         const osHudHdg = document.getElementById('os-hud-hdg');
         const osHudCog = document.getElementById('os-hud-cog');
         const osHudSog = document.getElementById('os-hud-sog');
@@ -923,48 +895,6 @@
         const steeringModelStatus = document.getElementById('steering-model-status');
         const experimentRecordToggle = document.getElementById('experiment-record-toggle');
         const cursorBrgDist = document.getElementById('cursor-brg-dist');
-
-        function formatArcPlanAdjustment(value) {
-            const v = Number(value) || 1;
-            if (v < 0.1) return v.toFixed(2);
-            if (v < 1) return v.toFixed(2);
-            return v >= 10 ? v.toFixed(0) : v.toFixed(1);
-        }
-        function updateArcWeightControls() {
-            if (!arcPlanAdjustmentValue) return;
-            const ratio = Number(arcPlanAdjustment) || 1;
-            arcPlanAdjustmentValue.textContent = formatArcPlanAdjustment(ratio);
-            if (arcPlanAdjustmentButton) {
-                let meaning = '균형 (Goal:Altering = 1:1)';
-                if (ratio > 1 + 1e-9) meaning = `Goal 우선 (Goal:Altering = ${formatArcPlanAdjustment(ratio)}:1)`;
-                else if (ratio < 1 - 1e-9) meaning = `Altering 우선 (Goal:Altering = 1:${formatArcPlanAdjustment(1/ratio)})`;
-                arcPlanAdjustmentButton.title = meaning;
-            }
-        }
-        function adjustArcPlanAdjustmentFromWheel(e) {
-            e.preventDefault(); e.stopPropagation();
-            const current = Number(arcPlanAdjustment) || 1;
-            let idx = 0, best = Infinity;
-            ARC_PLAN_ADJUSTMENT_OPTIONS.forEach((v, i) => {
-                const d = Math.abs(v - current);
-                if (d < best) { best = d; idx = i; }
-            });
-            const dir = e.deltaY > 0 ? 1 : -1;
-            const nextIdx = clampValue(idx + dir, 0, ARC_PLAN_ADJUSTMENT_OPTIONS.length - 1);
-            const next = ARC_PLAN_ADJUSTMENT_OPTIONS[nextIdx];
-            if (Math.abs(next - current) < 1e-12) return;
-            const previous = current;
-            arcPlanAdjustment = next;
-            applyArcPlanAdjustment();
-            updateArcWeightControls();
-            recordExperimentEvent('arc_plan_adjustment_change', {
-                previous_value: previous,
-                new_value: next,
-                weight_goal: arcCostWeightSettings.goal,
-                weight_altering: arcCostWeightSettings.altering
-            });
-            if (isSimulationRunning) render2D(); else updateSupportCards();
-        }
 
         function updateInlineButtonSettings() {
             const futureText = `${futureProjectionSettings.intervalSec}s`;
@@ -1182,7 +1112,6 @@
             if (!os || !osFixedHud) {
                 if (osFixedHud) osFixedHud.classList.remove('visible');
                 if (onlinePauseBtn) onlinePauseBtn.classList.remove('visible');
-                if (arcWeightControls) arcWeightControls.classList.remove('visible');
                 return;
             }
             osFixedHud.classList.add('visible');
@@ -1194,31 +1123,6 @@
                 const gap = 8;
                 onlinePauseBtn.style.left = `${Math.max(8, hudRect.left - mapRect.left - buttonWidth - gap)}px`;
                 onlinePauseBtn.style.top = `${Math.max(8, hudRect.top - mapRect.top + (hudRect.height - (onlinePauseBtn.offsetHeight || 30)) * 0.5)}px`;
-            }
-            if (arcWeightControls) {
-                const showWeights = activeSupportFeatures.has('dm:minimum-alteration');
-                arcWeightControls.classList.toggle('visible', showWeights);
-                if (showWeights) {
-                    updateArcWeightControls();
-                    const mapRect = container.getBoundingClientRect();
-                    const hudRect = osFixedHud.getBoundingClientRect();
-                    const controlWidth = arcWeightControls.offsetWidth || 116;
-                    const gap = 8;
-                    const pauseRect = onlinePauseBtn && onlinePauseBtn.classList.contains('visible')
-                        ? onlinePauseBtn.getBoundingClientRect() : null;
-                    let left = pauseRect
-                        ? pauseRect.left - mapRect.left - controlWidth - gap
-                        : hudRect.left - mapRect.left - controlWidth - gap;
-                    let top = hudRect.top - mapRect.top;
-                    // Narrow-screen fallback: keep the ODD/OE light on the HUD's right side
-                    // untouched and move only the weight controls below the HUD.
-                    if (left < 8) {
-                        left = Math.max(8, Math.min(mapRect.width - controlWidth - 8, hudRect.left - mapRect.left));
-                        top = hudRect.bottom - mapRect.top + 5;
-                    }
-                    arcWeightControls.style.left = `${left}px`;
-                    arcWeightControls.style.top = `${Math.max(8, top)}px`;
-                }
             }
             if (osHudHdg) osHudHdg.textContent = `${Number(os.hdg || 0).toFixed(1)}°`;
             if (osHudCog) osHudCog.textContent = `${Number(os.cog || 0).toFixed(1)}°`;
@@ -4979,11 +4883,6 @@
                 adjustActionHeadingFromWheel(e, 'hud-wheel');
             }, { passive: false });
         }
-        if (arcPlanAdjustmentButton) {
-            arcPlanAdjustmentButton.addEventListener('wheel', adjustArcPlanAdjustmentFromWheel, { passive: false });
-        }
-
-        updateArcWeightControls();
         updateMinCpaControl();
         updateActionTargetControl();
         updateInlineButtonSettings();
