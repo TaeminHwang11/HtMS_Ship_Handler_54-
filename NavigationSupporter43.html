@@ -1124,8 +1124,8 @@
                 onlinePauseBtn.style.left = `${Math.max(8, hudRect.left - mapRect.left - buttonWidth - gap)}px`;
                 onlinePauseBtn.style.top = `${Math.max(8, hudRect.top - mapRect.top + (hudRect.height - (onlinePauseBtn.offsetHeight || 30)) * 0.5)}px`;
             }
-            if (osHudHdg) osHudHdg.textContent = `${Number(os.hdg || 0).toFixed(1)}°`;
-            if (osHudCog) osHudCog.textContent = `${Number(os.cog || 0).toFixed(1)}°`;
+            if (osHudHdg) osHudHdg.textContent = `${String(Math.round(normalize360(Number(os.hdg) || 0)) % 360).padStart(3, '0')}°`;
+            if (osHudCog) osHudCog.textContent = `${String(Math.round(normalize360(Number(os.cog) || 0)) % 360).padStart(3, '0')}°`;
             if (osHudSog) osHudSog.textContent = `${Number(os.sog || 0).toFixed(1)} kt`;
             if (osHudRot) osHudRot.textContent = `${Number(os.rot || 0).toFixed(1)}°/min`;
 
