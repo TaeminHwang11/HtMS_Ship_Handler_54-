@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -235,14 +235,14 @@
         <h3 style="color:#06b6d4; margin-top:0; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">ECDIS Route Viewer (Degree-Min)</h3>
         <div id="ecdisContent"></div>
         <div style="display:flex; gap:10px;">
-            <button class="tool-btn" id="downloadEcdisCsvBtn" style="background:#0ea5e9;">CSV 다운로드</button>
-            <button class="tool-btn" onclick="document.getElementById('ecdisModal').style.display='none'">닫기</button>
+            <button class="tool-btn" id="downloadEcdisCsvBtn" style="background:#0ea5e9;">DOWNLOAD CSV</button>
+            <button class="tool-btn" onclick="document.getElementById('ecdisModal').style.display='none'">Close</button>
         </div>
     </div>
 </div>
 
 <!-- 너비 조절 리사이저 추가 -->
-<div id="resizer" title="드래그하여 크기 조절"></div>
+<div id="resizer" title="Drag to resize"></div>
 
 <div id="sidebar">
     <div id="main-title">[HTMS] SCENARIO GENERATOR</div>
@@ -265,26 +265,26 @@
     <div id="editor-only-controls">
         <div style="background: #172033; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #334155;">
             <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">SCENARIO FILE NAME</label>
-            <input type="text" id="scenarioNameInput" placeholder="빈칸 시 자동 번호 생성" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; margin-bottom:10px; box-sizing:border-box;">
+            <input type="text" id="scenarioNameInput" placeholder="Leave blank for an automatic number" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; margin-bottom:10px; box-sizing:border-box;">
             
             <div class="btn-group" style="flex-direction: row; margin-bottom: 0;">
-                <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">목록 열기</button>
-                <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">드라이브 저장</button>
+                <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">OPEN LIST</button>
+                <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">SAVE TO DRIVE</button>
             </div>
             <div class="btn-group" style="flex-direction: row; margin-bottom: 0; margin-top: 8px;">
-                <button class="tool-btn btn-load" id="loadLocalScenarioBtn" style="flex: 1;">로컬 JSON 열기</button>
-                <button class="tool-btn" id="saveLocalScenarioBtn" style="flex: 1; background:#065f46; border-color:#047857; color:#a7f3d0;">로컬 JSON 저장</button>
+                <button class="tool-btn btn-load" id="loadLocalScenarioBtn" style="flex: 1;">OPEN LOCAL JSON</button>
+                <button class="tool-btn" id="saveLocalScenarioBtn" style="flex: 1; background:#065f46; border-color:#047857; color:#a7f3d0;">SAVE LOCAL JSON</button>
             </div>
             <input type="file" id="localScenarioInput" accept=".json,application/json" style="display:none;">
         </div>
         
         <div id="scenarioDriveLoadContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">시나리오 파일 선택</label>
+            <label id="scenarioDriveLabel" style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">SELECT SCENARIO FILE</label>
             <select id="scenarioDriveSelect" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
-                <option value="">목록 로딩 중...</option>
+                <option value="">Loading list...</option>
             </select>
-            <button class="tool-btn" id="loadSelectedScenarioBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">선택 시나리오 불러오기</button>
-            <div id="scenarioLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">통신 중... 잠시만 기다려주세요.</div>
+            <button class="tool-btn" id="loadSelectedScenarioBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">LOAD SELECTED SCENARIO(S)</button>
+            <div id="scenarioLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">Communicating with server...</div>
         </div>
 
         <div class="origin-control">
@@ -311,10 +311,10 @@
     <!-- 에디터 전용 패널 -->
     <div id="panel-editor" class="panel active">
         <div class="instruction">
-            • <b>선박 조작</b>: <u>화살표 끝(회전)</u> 또는 <u>몸체(이동)</u> 드래그<br>
-            • <b>선속 조절</b>: 선박을 누른 채로 마우스 휠 스크롤<br>
-            • <b>화면 조작</b>: 빈 공간 휠/핀치(확대축소) 및 드래그(패닝)<br>
-            • <b>뷰포트</b>: 분할 창 클릭 시 <span style="color:var(--accent-yellow)">노란색</span> 활성화
+            • <b>Ship controls</b>: Drag the <u>arrow tip (rotate)</u> or <u>hull (move)</u><br>
+            • <b>Speed</b>: Hold the ship and scroll the mouse wheel<br>
+            • <b>View</b>: Wheel/pinch to zoom; drag empty space to pan<br>
+            • <b>Viewport</b>: Click a pane to activate it (<span style="color:var(--accent-yellow)">yellow</span>)
         </div>
         
         <div id="selectedShipDisplay">
@@ -328,21 +328,21 @@
 
         <div class="btn-group">
             <div class="btn-row" id="massBtnRow" style="display: none;">
-                <button class="tool-btn btn-mass" id="addMassBtn">새 MASS</button>
-                <button class="tool-btn btn-mass" id="dupMassBtn">MASS 복사</button>
-                <button class="tool-btn btn-del-mass" id="delMassBtn">삭제</button>
+                <button class="tool-btn btn-mass" id="addMassBtn">NEW MASS</button>
+                <button class="tool-btn btn-mass" id="dupMassBtn">COPY MASS</button>
+                <button class="tool-btn btn-del-mass" id="delMassBtn">DELETE</button>
                 <button class="tool-btn btn-ecdis" id="exportEcdisBtn">ECDIS</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn" id="rotLeftBtn" style="border-color:#3b82f6;">시나리오 회전 (-15°)</button>
-                <button class="tool-btn" id="rotRightBtn" style="border-color:#3b82f6;">시나리오 회전 (+15°)</button>
+                <button class="tool-btn" id="rotLeftBtn" style="border-color:#3b82f6;">ROTATE SCENARIO (-15°)</button>
+                <button class="tool-btn" id="rotRightBtn" style="border-color:#3b82f6;">ROTATE SCENARIO (+15°)</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn btn-add-goal" id="addGoalBtn">목표지점 추가</button>
-                <button class="tool-btn btn-add" id="addShipBtn">타선 추가</button>
+                <button class="tool-btn btn-add-goal" id="addGoalBtn">ADD WAYPOINT</button>
+                <button class="tool-btn btn-add" id="addShipBtn">ADD TARGET</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn" id="deleteToggleBtn" style="background:#7f1d1d; border-color:#991b1b; color:#fca5a5;">삭제 모드: OFF</button>
+                <button class="tool-btn" id="deleteToggleBtn" style="background:#7f1d1d; border-color:#991b1b; color:#fca5a5;">DELETE MODE: OFF</button>
             </div>
         </div>
         
@@ -352,7 +352,7 @@
         <textarea id="jsonOutput" readonly></textarea>
         
         <!-- 에디터용 올씽크 패드 (margin-top: auto 를 통해 바닥에 고정) -->
-        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
+        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="Drag: Pan all views&#10;Wheel/Pinch: Zoom all views">
             <div class="gvc-icon">✥</div>
             <div class="gvc-text">ALL SYNC CONTROL</div>
         </div>
@@ -361,27 +361,27 @@
     <!-- 리플레이 전용 패널 -->
     <div id="panel-replay" class="panel">
         <div class="instruction">
-            • <b>다중 선택 가능:</b> <code>Ctrl</code> 또는 <code>Shift</code>를 누른 채 여러 파일을 선택해 동시 비교 재생이 가능합니다.<br>
-            • 각 뷰포트 창마다 개별적으로 <b>드래그(패닝)</b> 및 <b>휠/핀치(확대/축소)</b>를 지원합니다.
+            • <b>Multi-select:</b> Hold <code>Ctrl</code> or <code>Shift</code> to compare several replay files at once.<br>
+            • Each viewport supports independent <b>drag-to-pan</b> and <b>wheel/pinch-to-zoom</b>.
         </div>
         
         <div class="btn-group">
             <div class="btn-row">
-                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">로컬 로그 여러개 열기</button>
-                <button class="tool-btn" id="fetchDriveListBtn" style="flex: 1; background:#0ea5e9; border-color:#0284c7; color:#fff;">구글 드라이브 열기</button>
+                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">OPEN MULTIPLE LOCAL LOGS</button>
+                <button class="tool-btn" id="fetchDriveListBtn" style="flex: 1; background:#0ea5e9; border-color:#0284c7; color:#fff;">OPEN GOOGLE DRIVE</button>
             </div>
         </div>
         <input type="file" id="localJsonInput" accept=".json" multiple style="display: none;">
 
         <!-- 구글 드라이브 목록 창 (남는 공간 flex:1 로 전부 꽉 채움) -->
         <div id="driveFileContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155; flex-direction:column; flex:1; min-height:0;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE LOG LIST (다중 선택 가능)</label>
+            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE LOG LIST (Multi-select)</label>
             <select id="driveFileSelect" multiple style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer; flex:1; min-height:50px; overflow-y:auto;">
-                <option value="">파일을 선택하세요...</option>
+                <option value="">Select a file...</option>
             </select>
             <!-- 파일 재생하기 버튼 (매우 얇게 고정) -->
-            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff; flex: none; height: 28px; min-height: 28px; padding: 0; box-sizing:border-box;">선택 파일(들) 재생하기</button>
-            <div id="driveLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px; flex-shrink:0;">통신 중... 잠시만 기다려주세요.</div>
+            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff; flex: none; height: 28px; min-height: 28px; padding: 0; box-sizing:border-box;">REPLAY SELECTED FILE(S)</button>
+            <div id="driveLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px; flex-shrink:0;">Communicating with server...</div>
         </div>
         
         <!-- 재생 컨트롤 패널 (margin-top:auto 적용으로 항상 우측 하단 고정) -->
@@ -397,7 +397,7 @@
         </div>
 
         <!-- 리플레이용 와이드 올씽크 패드 4:3 비율 (재생 컨트롤 아래 고정) -->
-        <div id="replaySyncControl" class="sync-control-pad" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
+        <div id="replaySyncControl" class="sync-control-pad" title="Drag: Pan all views&#10;Wheel/Pinch: Zoom all views">
             <div class="gvc-icon">✥</div>
             <div class="gvc-text">ALL SYNC CONTROL</div>
         </div>
@@ -619,7 +619,22 @@
         };
     }
 
+    // MASS 모드에서만 시나리오 다중 선택 허용 (HTMS는 기존 단일 선택 유지)
+    function updateScenarioSelectionMode() {
+        const isMassMode = simMode === 'MASS';
+        const driveSelect = document.getElementById('scenarioDriveSelect');
+        const localInput = document.getElementById('localScenarioInput');
+        driveSelect.multiple = isMassMode;
+        if (isMassMode) driveSelect.size = 7;
+        else driveSelect.removeAttribute('size');
+        localInput.multiple = isMassMode;
+        document.getElementById('scenarioDriveLabel').textContent = isMassMode
+            ? 'SELECT SCENARIOS (Ctrl / Shift for multiple)'
+            : 'SELECT SCENARIO FILE';
+    }
+
     function initSystem() {
+        updateScenarioSelectionMode();
         massList = [createMassState(globalOrigin.lat, globalOrigin.lon)];
         activeMassIndex = 0;
         
@@ -661,6 +676,7 @@
 
     simModeSelect.addEventListener('change', (e) => {
         simMode = e.target.value;
+        document.getElementById('scenarioDriveLoadContainer').style.display = 'none';
         initSystem();
     });
 
@@ -745,7 +761,7 @@
     deleteToggleBtn.addEventListener('click', toggleDeleteMode);
     function toggleDeleteMode() {
         isDeleteMode = !isDeleteMode;
-        deleteToggleBtn.textContent = isDeleteMode ? '삭제 모드: ON' : '삭제 모드: OFF';
+        deleteToggleBtn.textContent = isDeleteMode ? 'DELETE MODE: ON' : 'DELETE MODE: OFF';
         deleteToggleBtn.style.background = isDeleteMode ? '#ef4444' : '#7f1d1d';
         deleteToggleBtn.style.color = isDeleteMode ? '#ffffff' : '#fca5a5';
         gridContainer.style.cursor = isDeleteMode ? 'crosshair' : 'default';
@@ -783,7 +799,7 @@
         let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
         if (total + addCount > 20) {
             if (!hasWarnedShipLimit) {
-                alert("20척이 넘었습니다!");
+                alert("The 20-ship limit has been exceeded!");
                 hasWarnedShipLimit = true;
             }
             return false;
@@ -1503,12 +1519,25 @@
         }
     }
 
-    function applyLoadedScenario(parsed) {
+    // HTMS 시나리오를 MASS 모드에서 불러올 때 선종을 지원 가능한 MASS 모델로 치환
+    function getMassCompatibleShipType(type) {
+        if (MASS_SHIP_TYPES.includes(type)) return type;
+        const typeMap = {
+            BulkCarrier: 'BULK_3000_F',
+            ContainerShip1: 'CNTR_2700', ContainerShip2: 'CNTR_4K_F',
+            CargoShip1: 'CNTR_2700', CargoShip2: 'CNTR_4K_F',
+            FishingBoat1: 'FISHER_249GT', GasCarrier1: 'UNLNG_210KA',
+            PassengerShip1: 'MMU_SEAGEARO'
+        };
+        return typeMap[type] || 'CNTR_2700';
+    }
+
+    function applyLoadedScenario(parsed, options = {}) {
         const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
         const isIncomingHTMSArray = Array.isArray(parsed);
         const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && !!parsed.os;
 
-        if (parsed.environment) {
+        if (parsed.environment && !options.skipEnvironment) {
             if (parsed.environment.wind) {
                 globalEnv.windDir = Number(parsed.environment.wind.dir ?? 45);
                 globalEnv.windSpd = Number(parsed.environment.wind.spd ?? 12.5);
@@ -1586,7 +1615,7 @@
             massList = [];
             if (isIncomingMASS) {
                 const osShips = parsed.ships.filter(s => s.isMASS === 1);
-                if (osShips.length === 0) throw new Error("시나리오에 isMASS=1 인 선박이 없습니다.");
+                if (osShips.length === 0) throw new Error("The scenario has no ship with isMASS=1.");
                 osShips.forEach(osShipMASS => {
                     let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
                     let oLat = 34.800000; let oLon = 126.400000;
@@ -1650,7 +1679,7 @@
                     }
                     const safeOs = parsed.os || {};
                     newMass.osData = { 
-                        type: safeOs.type || 'CNTR_2700', 
+                        type: getMassCompatibleShipType(safeOs.type), 
                         hdg: Number(safeOs.hdg) || 0, 
                         spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
                         waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
@@ -1658,7 +1687,7 @@
                     newMass.targets = (parsed.targets || []).map(t => {
                         const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
                         return {
-                            type: t.type || 'CNTR_2700',
+                            type: getMassCompatibleShipType(t.type),
                             x: Number(t.x) || 0, z: Number(t.z) || 0,
                             hdg: Number(t.hdg) || 0,
                             spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
@@ -1670,10 +1699,60 @@
             }
         }
         
-        activeMassIndex = 0;
-        updateShipTypeOptions();
-        if (currentMode === 'editor') renderGrid(); 
-        else renderReplayGrid();
+        if (!options.deferRender) {
+            activeMassIndex = 0;
+            updateShipTypeOptions();
+            if (currentMode === 'editor') renderGrid();
+            else renderReplayGrid();
+        }
+    }
+
+    // 각 파일은 독립적으로 해석 후 MASS 목록을 결합한다.
+    // 각 파일의 MASS-타선 소속 관계와 경로를 유지하고, 전체 렌더링은 한 번만 수행한다.
+    function applyLoadedScenarioBatch(parsedScenarios) {
+        if (!parsedScenarios.length) throw new Error('No scenarios selected.');
+        if (simMode !== 'MASS' && parsedScenarios.length !== 1) {
+            throw new Error('Ship Handler can load one scenario at a time.');
+        }
+
+        const previousMassList = massList;
+        const previousMassIndex = activeMassIndex;
+        const previousEnv = { ...globalEnv };
+        const allImportedMasses = [];
+
+        try {
+            parsedScenarios.forEach((parsed, index) => {
+                const hasMassFormat = parsed && Array.isArray(parsed.ships) && Array.isArray(parsed.WayPointSet);
+                const hasHtmsFormat = Array.isArray(parsed) || (parsed && parsed.os && typeof parsed.os === 'object');
+                if (!hasMassFormat && !hasHtmsFormat) {
+                    throw new Error(`${index + 1} file has an unsupported scenario format.`);
+                }
+
+                applyLoadedScenario(parsed, { deferRender: true, skipEnvironment: index > 0 });
+                if (simMode === 'MASS') {
+                    allImportedMasses.push(...massList);
+                    if (allImportedMasses.length > 8) {
+                        throw new Error('You can load up to 8 MASS vessels at once.');
+                    }
+                }
+            });
+
+            if (simMode === 'MASS') massList = allImportedMasses;
+            activeMassIndex = 0;
+            updateShipTypeOptions();
+            if (currentMode === 'editor') renderGrid();
+            else renderReplayGrid();
+        } catch (err) {
+            // 파일 하나에 문제가 있으면 기존 작업 상태를 그대로 복원한다.
+            massList = previousMassList;
+            activeMassIndex = previousMassIndex;
+            globalEnv = previousEnv;
+            document.getElementById('envWindDir').value = globalEnv.windDir;
+            document.getElementById('envWindSpd').value = globalEnv.windSpd;
+            document.getElementById('envCurrDir').value = globalEnv.currDir;
+            document.getElementById('envCurrSpd').value = globalEnv.currSpd;
+            throw err;
+        }
     }
 
 
@@ -1683,8 +1762,8 @@
     });
 
     document.getElementById('localScenarioInput').addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
         const btn = document.getElementById('loadLocalScenarioBtn');
         const originalText = btn.textContent;
@@ -1692,20 +1771,20 @@
         const originalColor = btn.style.color;
 
         btn.disabled = true;
-        btn.textContent = '로컬 파일 읽는 중...';
+        btn.textContent = 'Reading local file(s)...';
 
         try {
-            const text = await file.text();
-            const parsed = JSON.parse(text);
-            applyLoadedScenario(parsed);
+            const parsedScenarios = await Promise.all(files.map(async file => JSON.parse(await file.text())));
+            applyLoadedScenarioBatch(parsedScenarios);
 
-            document.getElementById('scenarioNameInput').value = file.name.replace(/\.json$/i, '');
-            btn.textContent = '✅ 불러오기 완료!';
+            document.getElementById('scenarioNameInput').value = files.length === 1
+                ? files[0].name.replace(/\.json$/i, '') : '';
+            btn.textContent = files.length === 1 ? '✅ Load complete!' : `✅ Loaded ${files.length} files!`;
             btn.style.background = '#10b981';
             btn.style.color = '#fff';
         } catch (err) {
-            console.error('로컬 시나리오 불러오기 에러:', err);
-            btn.textContent = '❌ JSON 불러오기 실패';
+            console.error('Error loading local scenario:', err);
+            btn.textContent = '❌ Failed to load JSON';
             btn.style.background = '#ef4444';
             btn.style.color = '#fff';
         } finally {
@@ -1741,12 +1820,12 @@
             generateJSONOutput();
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === '') {
-                showTempMessage('❌ 저장 실패 (데이터 없음)', '#ef4444');
+                showTempMessage('❌ Save failed (no data)', '#ef4444');
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = '로컬 저장 중...';
+            btn.textContent = 'Saving locally...';
 
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
             const inputVal = document.getElementById('scenarioNameInput').value.trim();
@@ -1772,10 +1851,10 @@
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 0);
 
-            showTempMessage('✅ 로컬 저장 완료!', '#10b981');
+            showTempMessage('✅ Saved locally!', '#10b981');
         } catch (err) {
-            console.error('로컬 시나리오 저장 에러:', err);
-            showTempMessage('❌ 로컬 저장 실패', '#ef4444');
+            console.error('Error saving local scenario:', err);
+            showTempMessage('❌ Local save failed', '#ef4444');
         }
     });
 
@@ -1791,9 +1870,9 @@
         
         container.style.display = 'block';
         msg.style.display = 'block';
-        msg.textContent = "구글 드라이브에서 시나리오 목록을 가져오는 중...";
+        msg.textContent = "Fetching scenario files from Google Drive...";
         msg.style.color = "var(--accent-yellow)";
-        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        select.innerHTML = '<option value="">Loading list...</option>';
         select.disabled = true;
 
         fetch(`${SCENARIO_SCRIPT_URL}?action=list`)
@@ -1804,13 +1883,13 @@
                 // 시뮬레이터 모드에 따른 파일 필터링
                 const filteredFiles = files.filter(file => {
                     if (simMode === 'HTMS') return file.name.includes('Scenario');
-                    if (simMode === 'MASS') return file.name.includes('MASS');
+                    if (simMode === 'MASS') return true;
                     return true;
                 });
                 
                 select.innerHTML = '';
                 if(filteredFiles.length === 0) {
-                    select.innerHTML = '<option value="">조건에 맞는 시나리오가 없습니다.</option>';
+                    select.innerHTML = '<option value="">No matching scenarios found.</option>';
                 } else {
                     filteredFiles.forEach(file => {
                         const opt = document.createElement('option');
@@ -1823,7 +1902,7 @@
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 상태를 확인하세요.";
+                msg.textContent = "Failed to fetch the list. Check the script status.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -1831,13 +1910,14 @@
 
     document.getElementById('loadSelectedScenarioBtn').addEventListener('click', async () => {
         const select = document.getElementById('scenarioDriveSelect');
+        const selectedOptions = Array.from(select.selectedOptions).filter(opt => opt.value);
         const msg = document.getElementById('scenarioLoadingMsg');
         const btn = document.getElementById('loadSelectedScenarioBtn');
         const originalText = btn.textContent;
         const originalBg = btn.style.background;
         
-        if (!select.value) {
-            btn.textContent = "❌ 파일을 선택해주세요";
+        if (selectedOptions.length === 0) {
+            btn.textContent = "❌ Select a file";
             btn.style.background = "#ef4444";
             setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; }, 1500);
             return;
@@ -1845,22 +1925,26 @@
 
         msg.style.display = 'block';
         msg.style.color = "var(--accent-yellow)";
-        msg.textContent = "시나리오 데이터를 다운로드하는 중...";
+        msg.textContent = "Downloading scenario data...";
         btn.disabled = true;
         
         try {
-            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${select.value}`);
-            const parsed = await res.json();
-            
-            if (parsed.error) throw new Error(parsed.error);
+            const parsedScenarios = await Promise.all(selectedOptions.map(async (option) => {
+                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${encodeURIComponent(option.value)}`);
+                if (!res.ok) throw new Error(`${option.text}: HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.error) throw new Error(`${option.text}: ${data.error}`);
+                return data;
+            }));
 
-            applyLoadedScenario(parsed);
+            applyLoadedScenarioBatch(parsedScenarios);
 
-            document.getElementById('scenarioNameInput').value = select.options[select.selectedIndex].text.replace('.json', '');
+            document.getElementById('scenarioNameInput').value = selectedOptions.length === 1
+                ? selectedOptions[0].text.replace(/\.json$/i, '') : '';
 
-            msg.textContent = "✅ 성공적으로 불러왔습니다!";
+            msg.textContent = "✅ Successfully loaded!";
             msg.style.color = "var(--accent-green)";
-            btn.textContent = "✅ 불러오기 완료!";
+            btn.textContent = selectedOptions.length === 1 ? "✅ Load complete!" : `✅ Loaded ${selectedOptions.length} files!`;
             btn.style.background = "#10b981";
 
             setTimeout(() => {
@@ -1872,9 +1956,9 @@
             }, 1500);
 
         } catch (err) {
-            msg.textContent = "❌ 불러오기 실패!";
+            msg.textContent = "❌ Load failed!";
             msg.style.color = "var(--accent-red)";
-            btn.textContent = "❌ 에러 발생";
+            btn.textContent = "❌ Error";
             btn.style.background = "#ef4444";
             console.error(err);
             setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; btn.disabled = false; }, 2000);
@@ -1903,11 +1987,11 @@
             generateJSONOutput(); 
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === "") {
-                showTempMessage('❌ 저장 실패 (데이터 없음)', '#ef4444');
+                showTempMessage('❌ Save failed (no data)', '#ef4444');
                 return;
             }
             
-            btn.textContent = '이름 확인 중...';
+            btn.textContent = 'Checking file name...';
             btn.disabled = true;
             
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
@@ -1938,7 +2022,7 @@
                 finalName = `${prefix}${nextNumStr}.json`;
             }
 
-            btn.textContent = '드라이브 저장 중...';
+            btn.textContent = 'Saving to Drive...';
 
             const postRes = await fetch(SCENARIO_SCRIPT_URL, {
                 method: 'POST',
@@ -1952,14 +2036,14 @@
             
             if(postData.success) {
                 document.getElementById('scenarioNameInput').value = postData.fileName.replace('.json', '');
-                showTempMessage('✅ 저장 완료!', '#10b981');
+                showTempMessage('✅ Save complete!', '#10b981');
             } else {
-                showTempMessage('❌ 저장 실패', '#ef4444');
+                showTempMessage('❌ Save failed', '#ef4444');
             }
 
         } catch (e) {
-            console.error("저장 에러:", e);
-            showTempMessage('❌ 에러 발생', '#ef4444');
+            console.error("Save error:", e);
+            showTempMessage('❌ Error', '#ef4444');
         }
     });
 
@@ -1973,9 +2057,9 @@
 
             if (logArray.length === 0) {
                 if (data.os || data.targets || data.ships) {
-                    console.warn(`[${fileName}] 선택하신 파일은 리플레이가 아닌 시나리오 파일입니다.`);
+                    console.warn(`[${fileName}] The selected file is a scenario, not a replay log.`);
                 } else {
-                    console.warn(`[${fileName}] 유효한 리플레이 데이터가 없습니다.`);
+                    console.warn(`[${fileName}] No valid replay data was found.`);
                 }
                 return null;
             }
@@ -2236,7 +2320,7 @@
     document.getElementById('localJsonInput').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files); 
         if (files.length === 0) return;
-        if (files.length > 50) { alert("최대 50개까지만 동시 재생 가능합니다."); return; }
+        if (files.length > 50) { alert("You can replay up to 50 files at a time."); return; }
 
         if (isPlaying) document.getElementById('playPauseBtn').click();
         replayList = [];
@@ -2262,8 +2346,8 @@
         
         container.style.display = 'flex';
         msg.style.display = 'block';
-        msg.textContent = "구글 드라이브에서 파일 목록을 가져오는 중...";
-        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        msg.textContent = "Fetching files from Google Drive...";
+        select.innerHTML = '<option value="">Loading list...</option>';
         select.disabled = true;
 
         fetch(`${REPLAY_SCRIPT_URL}?action=list`)
@@ -2273,7 +2357,7 @@
 
                 select.innerHTML = '';
                 if(files.length === 0) {
-                    select.innerHTML = '<option value="">저장된 로그 파일이 없습니다.</option>';
+                    select.innerHTML = '<option value="">No saved log files.</option>';
                 } else {
                     files.forEach(file => {
                         const opt = document.createElement('option');
@@ -2286,7 +2370,7 @@
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립 상태를 확인하세요.";
+                msg.textContent = "Failed to fetch the list. Check the script status.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -2301,13 +2385,13 @@
         const origBg = btn.style.background;
 
         if (selectedOptions.length === 0) {
-            btn.textContent = '❌ 파일을 선택하세요';
+            btn.textContent = '❌ Select a file';
             btn.style.background = '#ef4444';
             setTimeout(() => { btn.textContent = orig; btn.style.background = origBg; }, 1500);
             return;
         }
         if (selectedOptions.length > 50) {
-            alert("최대 50개까지만 동시 재생 가능합니다.");
+            alert("You can replay up to 50 files at a time.");
             return;
         }
 
@@ -2315,7 +2399,7 @@
         
         msg.style.display = 'block';
         msg.style.color = "var(--accent-yellow)";
-        msg.textContent = "시뮬레이션 데이터를 다운로드하는 중...";
+        msg.textContent = "Downloading simulation data...";
         btn.disabled = true;
         
         replayList = [];
@@ -2333,9 +2417,9 @@
             const results = await Promise.all(promises);
             results.forEach(r => { if (r) replayList.push(r); });
 
-            msg.textContent = "✅ 성공적으로 불러왔습니다!";
+            msg.textContent = "✅ Successfully loaded!";
             msg.style.color = "var(--accent-green)";
-            btn.textContent = "✅ 재생 준비 완료!";
+            btn.textContent = "✅ Replay ready!";
             btn.style.background = "#10b981";
 
             setTimeout(() => {
@@ -2347,9 +2431,9 @@
             
             if (replayList.length > 0) initReplayPlayback();
         } catch (err) {
-            msg.textContent = "❌ 파일 로드 실패!";
+            msg.textContent = "❌ File loading failed!";
             msg.style.color = "var(--accent-red)";
-            btn.textContent = "❌ 에러 발생";
+            btn.textContent = "❌ Error";
             btn.style.background = "#ef4444";
             console.error(err);
             setTimeout(() => { btn.textContent = orig; btn.style.background = origBg; btn.disabled = false; }, 2000);
