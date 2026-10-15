@@ -484,7 +484,7 @@
         // Simulation Physics & State
         let currentMode = 'NONE'; 
         let simSpeed = 1.0; 
-        const moveScale = 0.15; 
+        const moveScale = 400 / 3600; // 400 scenario units/NM; knots -> units/second 
         
         const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
         const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, sog: 10.0, cog: 0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
@@ -1897,7 +1897,7 @@
             const rotDerivative = (targetRot - shipPhysics.rot) / T_nom; 
             
             shipPhysics.rot += rotDerivative * dt; 
-            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
+            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt) % 360; 
             if (shipPhysics.heading < 0) shipPhysics.heading += 360;
             
             const headingRad = shipPhysics.heading * DEG2RAD;
@@ -2289,16 +2289,22 @@
             requestAnimationFrame(animate);
             if (gameState === 'PLAYING') {
                 if (!isPaused) { 
-                    const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
-                    if (graphicMode === 'HIGH') {
-                        water.material.uniforms['time'].value += dt * 0.3; 
-                    } else if (graphicMode === 'MID') {
-                        if (midWater.material.normalMap) {
-                            midWater.material.normalMap.offset.x += dt * 0.02;
-                            midWater.material.normalMap.offset.y += dt * 0.03;
+                    // Integrate all elapsed simulation time in <=0.1-second steps,
+                    // matching the radar simulator instead of discarding slow-frame time.
+                    let remainingSec = clock.getDelta() * simSpeed;
+                    while (remainingSec > 1e-9 && gameState === 'PLAYING' && !isPaused) {
+                        const dt = Math.min(0.1, remainingSec);
+                        if (graphicMode === 'HIGH') {
+                            water.material.uniforms['time'].value += dt * 0.3;
+                        } else if (graphicMode === 'MID') {
+                            if (midWater.material.normalMap) {
+                                midWater.material.normalMap.offset.x += dt * 0.02;
+                                midWater.material.normalMap.offset.y += dt * 0.03;
+                            }
                         }
+                        updatePhysics(dt);
+                        remainingSec -= dt;
                     }
-                    updatePhysics(dt); 
                 } else { 
                     clock.getDelta(); 
                 }
