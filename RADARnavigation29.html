@@ -1113,7 +1113,11 @@
 
                 let isAIS = Math.random() > 0.5; 
                 
-                let targetObj = { x: finalX, y: finalY, hdg: finalHdg, spd: Number(t.spd), history: [], state: 0, acqTime: 0, blipAlpha: 0 };
+                let targetObj = { x: finalX, y: finalY, hdg: finalHdg, spd: Number(t.spd), history: [], state: 0, acqTime: 0, blipAlpha: 0,
+                    waypoints: (Array.isArray(t.waypoints) ? t.waypoints : []).map(wp => ({
+                        x: os.x + Number(wp.x) / 400, y: os.y - Number(wp.z) / 400
+                    })).filter(wp => Number.isFinite(wp.x) && Number.isFinite(wp.y)),
+                    waypointIndex: 0, rot: 0, scenarioTarget: true };
 
                 if (isAIS) {
                     targetObj.id = 'AIS_S' + i;
@@ -1135,7 +1139,7 @@
         logData.push({ time: "0.0", name: "OS", lat: os.lat.toFixed(6), lon: os.lon.toFixed(6), x: (os.x * 400).toFixed(2), y: (-os.y * 400).toFixed(2), hdg: os.hdg.toFixed(1), sog: (os.sog||os.spd).toFixed(1), cog: (os.cog||os.hdg).toFixed(1), rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1) });
         targets.concat(aisTargets).forEach(t => {
             let tLat = os.lat + ((t.y - os.y) / 60); let tLon = os.lon + ((t.x - os.x) / (60 * Math.cos(os.lat * Math.PI/180)));
-            logData.push({ time: "0.0", name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6), x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2), hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" });
+            logData.push({ time: "0.0", name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6), x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2), hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1), rot: (t.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" });
         });
 
         isPaused = false;
@@ -1643,11 +1647,31 @@
     radarCanvas.addEventListener('mouseup', () => { isDraggingEBL = false; isDraggingVRM = false; isDraggingEBL2 = false; isDraggingVRM2 = false; isDraggingPIRotate = false; isDraggingPIScale = false; activePiIdx = -1;});
     radarCanvas.addEventListener('mouseleave', () => { isDraggingEBL = false; isDraggingVRM = false; isDraggingEBL2 = false; isDraggingVRM2 = false; isDraggingPIRotate = false; isDraggingPIScale = false; activePiIdx = -1;});
 
+    // Scenario targets only: follow each saved waypoint; random traffic keeps original motion.
+    function steerScenarioTarget(t, dtSeconds) {
+        if (!Array.isArray(t.waypoints) || t.waypointIndex >= t.waypoints.length) { t.rot = 0; return; }
+        const arrivalNM = 0.20;
+        while (t.waypointIndex < t.waypoints.length) {
+            const wp = t.waypoints[t.waypointIndex];
+            if (Math.hypot(wp.x - t.x, wp.y - t.y) > arrivalNM) break;
+            t.waypointIndex++;
+        }
+        if (t.waypointIndex >= t.waypoints.length) { t.rot = 0; return; }
+        const wp = t.waypoints[t.waypointIndex];
+        const desired = (Math.atan2(wp.x - t.x, wp.y - t.y) * 180 / Math.PI + 360) % 360;
+        const diff = angleDiff(desired, t.hdg);
+        const dt = Math.max(1e-6, dtSeconds);
+        const maxStep = 90 * dt / 60; // 90 degrees per minute, bounded turn rather than a heading jump.
+        const step = Math.max(-maxStep, Math.min(maxStep, diff));
+        t.hdg = (t.hdg + step + 360) % 360;
+        t.rot = step / dt * 60;
+    }
+
     function keepTargetsAlive(arr) {
         let outOfBounds = Math.max(16.0, currentRange * 2.2);
         arr.forEach(t => {
             const dist = Math.sqrt(Math.pow(t.x - os.x, 2) + Math.pow(t.y - os.y, 2));
-            if (dist > outOfBounds) {
+            if (dist > outOfBounds && !t.scenarioTarget) {
                 const spawnDist = outOfBounds * 0.8 + Math.random() * (currentRange * 0.5);
                 const spawnAng = (os.hdg + (Math.random() * 120 - 60)) * Math.PI / 180;
                 t.x = os.x + Math.sin(spawnAng) * spawnDist; t.y = os.y + Math.cos(spawnAng) * spawnDist;
@@ -2027,7 +2051,7 @@
             logData.push({ time: tStr, name: "OS", lat: os.lat.toFixed(6), lon: os.lon.toFixed(6), x: (os.x * 400).toFixed(2), y: (-os.y * 400).toFixed(2), hdg: os.hdg.toFixed(1), sog: os.sog.toFixed(1), cog: os.cog.toFixed(1), rot: os.rot.toFixed(2), rud_cmd: os.targetRudder.toFixed(1), rud_act: os.actualRudder.toFixed(1) });
             targets.concat(aisTargets).forEach(t => {
                 let tLat = os.lat + ((t.y - os.y) / 60); let tLon = os.lon + ((t.x - os.x) / (60 * Math.cos(os.lat * Math.PI/180)));
-                logData.push({ time: tStr, name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6), x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2), hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" });
+                logData.push({ time: tStr, name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6), x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2), hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1), rot: (t.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" });
             });
         }
 
@@ -2051,6 +2075,8 @@
                 }
                 checkAlarms(t, false);
             }
+            if (!(threatMode && t.state === 2)) steerScenarioTarget(t, realDt);
+            else t.rot = 0;
             const tHdgRad = t.hdg * (Math.PI / 180); t.x += (t.spd * simDtHours) * Math.sin(tHdgRad); t.y += (t.spd * simDtHours) * Math.cos(tHdgRad);
         });
         
@@ -2060,6 +2086,8 @@
                 let diff = desiredHdg - t.hdg; if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
                 t.hdg += diff * (simDtHours * 100); if (t.hdg >= 360) t.hdg -= 360; if (t.hdg < 0) t.hdg += 360;
             }
+            if (!threatMode) steerScenarioTarget(t, realDt);
+            else t.rot = 0;
             const tHdgRad = t.hdg * (Math.PI / 180); t.x += (t.spd * simDtHours) * Math.sin(tHdgRad); t.y += (t.spd * simDtHours) * Math.cos(tHdgRad);
             if (aisActive || t.state === 2) checkAlarms(t, aisActive);
         });
