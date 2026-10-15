@@ -390,7 +390,8 @@
             padding: 4px 9px; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 800;
             letter-spacing: 0.35px; cursor: ns-resize; user-select: none;
         }
-        #support-plan-adjustment:hover { border-color: #facc15; color: #facc15; }
+        #support-plan-adjustment:not(:disabled):hover { border-color: #facc15; color: #facc15; }
+        #support-plan-adjustment:disabled { opacity: 1; cursor: default; }
         #support-plan-adjustment b { color: #facc15; margin-left: 4px; }
         #support-group-header-row .split-group-title { cursor: pointer; user-select: none; }
         #support-group-header-row .split-group-title:hover { filter: brightness(1.25); }
@@ -498,7 +499,7 @@
 
                 <div id="split-left-panel" class="split-side-panel">
                     <div id="nav19-plan-row">
-                        <button type="button" id="support-plan-adjustment" title="Mouse wheel: PLAN ADJ · 1.0 balanced · higher favors Goal tracking">PLAN ADJ <b id="support-plan-adjustment-value">1.0</b></button>
+                        <button type="button" id="support-plan-adjustment" title="Fixed ARC planning adjustment: 0.05" disabled>PLAN ADJ <b id="support-plan-adjustment-value">0.05</b></button>
                     </div>
                     <div id="support-group-header-row">
                         <div class="split-group-title sa" onclick="nav19ToggleGroup('sa')">SITUATION AWARENESS</div>
@@ -3644,7 +3645,8 @@
         routeTurnRateDegPerMin: 12,
         arcPlanningMaxMin: 30
     });
-    const NAV19_PLAN_OPTIONS = Object.freeze([0.05,0.10,0.20,1/3,0.50,1.00,2.00,3.00,5.00,10.00,20.00]);
+    // ARC PLAN ADJ follows the Navigation Supporter: fixed at 0.05.
+    const NAV19_FIXED_PLAN_ADJ = 0.05;
     const nav19State = {
         active: new Set(),
         futureIntervalSec: 60,
@@ -3656,8 +3658,8 @@
         targetHeadingByMass: new Map(),
         pidByMass: new Map(),
         pidResultByMass: new Map(),
-        planAdj: 1.0,
-        weights: { goal: 1.0, altering: 1.0 },
+        planAdj: NAV19_FIXED_PLAN_ADJ,
+        weights: { goal: (2*NAV19_FIXED_PLAN_ADJ)/(1+NAV19_FIXED_PLAN_ADJ), altering: 2/(1+NAV19_FIXED_PLAN_ADJ) },
         arcCache: new Map(),
         arcLastSolution: null,
         arcWorker: null,
@@ -3679,6 +3681,11 @@
         simEntities.forEach(s => { if (!s.isMASS) unique.set(String(s.id), s); });
         return Array.from(unique.values());
     }
+    // DANGER HDG uses only traffic within the same 10 NM support radius as Navigation Supporter.
+    function nav19NearbyTraffic(mass, radiusNM = NAV19_CONFIG.supportRadiusNM) {
+        if (!mass) return [];
+        return nav19Traffic().filter(ts => nav19EvalMotion(mass, ts).distanceNM <= radiusNM + 1e-9);
+    }
     function nav19ShipMeters(ship) {
         return { east: (Number(ship.x)||0) * 1852 / 400, north: -(Number(ship.z)||0) * 1852 / 400 };
     }
@@ -3690,7 +3697,7 @@
     function nav19Course(ship) { return Number.isFinite(Number(ship && ship.cog)) ? Number(ship.cog) : Number(ship && ship.hdg)||0; }
     function nav19Speed(ship) { return Number(ship && (ship.sog ?? ship.spd)) || 0; }
     function nav19ApplyWeights() {
-        const ratio = Math.max(0.01, Number(nav19State.planAdj)||1);
+        const ratio = NAV19_FIXED_PLAN_ADJ;
         nav19State.weights.goal = (2*ratio)/(1+ratio);
         nav19State.weights.altering = 2/(1+ratio);
     }
@@ -3795,7 +3802,7 @@
         return{arcs,safetyNM:safety};
     }
     function nav19RenderDanger(ctx,v,mass){
-        const snap=nav19DangerSnapshot(mass,nav19Traffic(),nav19GetCpa('dm:safe-heading-band')),maxVisible=Math.hypot(v.panX,v.panY,ctx.canvas.width-v.panX,ctx.canvas.height-v.panY);
+        const snap=nav19DangerSnapshot(mass,nav19NearbyTraffic(mass),nav19GetCpa('dm:safe-heading-band')),maxVisible=Math.hypot(v.panX,v.panY,ctx.canvas.width-v.panX,ctx.canvas.height-v.panY);
         snap.arcs.forEach(a=>{const radiusPx=a.radiusMeters*(400/1852)*v.viewScale;if(!Number.isFinite(radiusPx)||radiusPx<2||radiusPx>maxVisible)return;const rel=nav19Diff(a.bearing,mass.hdg),center=(rel-90)*DEG2RAD,half=a.halfDeg*DEG2RAD;ctx.save();ctx.strokeStyle='rgba(244,63,94,.86)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(v.panX,v.panY,radiusPx,center-half,center+half,false);ctx.stroke();ctx.restore();});
     }
     function nav19GoalRef(mass){
@@ -3869,7 +3876,6 @@
         nav19AttachWheel('nav19-threat',e=>{if(!nav19State.active.has('sa:threat-highlight'))return;nav19SetCpa('sa:threat-highlight',nav19GetCpa('sa:threat-highlight')+(e.deltaY>0?.05:-.05));nav19UpdateUi();if(isSplitMode)render2D();});
         ['nav19-safe','nav19-route'].forEach(id=>nav19AttachWheel(id,e=>{const key=id==='nav19-safe'?'dm:safe-heading-band':'dm:minimum-alteration';if(!nav19State.active.has(key))return;nav19SetCpa(key,nav19GetCpa(key)+(e.deltaY>0?.05:-.05));nav19UpdateUi();if(isSplitMode)render2D();}));
         ['nav19-rudder','nav19-rot'].forEach(id=>nav19AttachWheel(id,e=>{const key=id==='nav19-rudder'?'act:rudder-balance':'act:rot-balance';if(!nav19State.active.has(key))return;const m=nav19Mass();if(!m)return;const cur=nav19TargetHeading(m),base=Number.isFinite(cur)?cur:nav19Normalize(m.hdg);nav19SetTargetHeading(m,base+(e.deltaY>0?1:-1));if(isSplitMode)render2D();}));
-        nav19AttachWheel('support-plan-adjustment',e=>{const cur=nav19State.planAdj;let idx=0,b=Infinity;NAV19_PLAN_OPTIONS.forEach((v,i)=>{const d=Math.abs(v-cur);if(d<b){b=d;idx=i;}});const ni=nav19Clamp(idx+(e.deltaY>0?1:-1),0,NAV19_PLAN_OPTIONS.length-1),next=NAV19_PLAN_OPTIONS[ni];if(Math.abs(next-cur)<1e-12)return;nav19State.planAdj=next;nav19ApplyWeights();nav19ClearArc();nav19UpdateUi();if(isSplitMode)render2D();});
         setInterval(()=>{if(isSplitMode&&(nav19State.active.has('act:rudder-balance')||nav19State.active.has('act:rot-balance')))nav19UpdatePid(false);},200);
         nav19UpdateUi();
     }
