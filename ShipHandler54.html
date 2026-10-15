@@ -1622,7 +1622,7 @@
             const filesList = Object.keys(parsedModels);
             let targetIndex = 1;
 
-            function createTarget(x, z, hdg, spd, explicitFile = null) {
+            function createTarget(x, z, hdg, spd, explicitFile = null, routeWaypoints = []) {
                 const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
                 const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
                 const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
@@ -1631,7 +1631,10 @@
                 
                 tsGroup.add(tModel); 
                 tsGroup.position.set(x, 0, z); 
-                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; 
+                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999),
+                    waypoints: (Array.isArray(routeWaypoints) ? routeWaypoints : []).map(w => ({ x: Number(w.x), z: Number(w.z) }))
+                        .filter(w => Number.isFinite(w.x) && Number.isFinite(w.z)),
+                    waypointIndex: 0, rot: 0 }; 
                 tsGroup.rotation.y = -hdg * DEG2RAD; 
                 targetShips.push(tsGroup); scene.add(tsGroup);
                 
@@ -1653,7 +1656,7 @@
                         if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
                     }
                     if (loadedScenarioConfig.targets) {
-                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
+                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile, t.waypoints); });
                     }
                     if (loadedScenarioConfig.environment) {
                         if (loadedScenarioConfig.environment.wind) {
@@ -1674,7 +1677,7 @@
 
             let tStr = "0.0"; 
             logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
-            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
+            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: (ts.userData.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" }); });
             
             isPaused = false;
             const btnPause = document.getElementById('btn-pause');
@@ -1854,6 +1857,30 @@
         // ==========================================
         // 8. UPDATE LOGIC (Physics & AI)
         // ==========================================
+        // Only scenario targets with waypoint arrays use this bounded-turn guidance.
+        function steerTargetAlongWaypoints(ts, dt) {
+            const data = ts.userData;
+            if (!Array.isArray(data.waypoints) || data.waypointIndex >= data.waypoints.length) {
+                data.rot = 0;
+                return;
+            }
+            const arrivalUnits = 80; // 0.20 NM at the existing 400-units/NM scenario scale.
+            while (data.waypointIndex < data.waypoints.length) {
+                const wp = data.waypoints[data.waypointIndex];
+                if (Math.hypot(wp.x - ts.position.x, wp.z - ts.position.z) > arrivalUnits) break;
+                data.waypointIndex++;
+            }
+            if (data.waypointIndex >= data.waypoints.length) { data.rot = 0; return; }
+            const wp = data.waypoints[data.waypointIndex];
+            const desired = (Math.atan2(wp.x - ts.position.x, -(wp.z - ts.position.z)) * 180 / Math.PI + 360) % 360;
+            const diff = ((desired - data.heading + 540) % 360) - 180;
+            const stepLimit = 90 * dt / 60;
+            const step = Math.max(-stepLimit, Math.min(stepLimit, diff));
+            data.heading = (data.heading + step + 360) % 360;
+            data.rot = dt > 0 ? step / dt * 60 : 0;
+            ts.rotation.y = -data.heading * DEG2RAD;
+        }
+
         function updatePhysics(dt) {
             if (dt <= 0) return;
             shipPhysics.simTime += dt; 
@@ -1928,6 +1955,7 @@
             }
 
             targetShips.forEach(ts => {
+                steerTargetAlongWaypoints(ts, dt);
                 const tsRad = ts.userData.heading * DEG2RAD; 
                 ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt; 
                 ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
@@ -2215,7 +2243,7 @@
                 let tStr = shipPhysics.simTime.toFixed(1);
                 logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
                 targetShips.forEach(ts => { 
-                    logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); 
+                    logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: (ts.userData.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" }); 
                 });
             }
 
