@@ -484,7 +484,7 @@
         // Simulation Physics & State
         let currentMode = 'NONE'; 
         let simSpeed = 1.0; 
-        const moveScale = 0.15; 
+        const moveScale = 400 / 3600; // 400 scenario units/NM; knots -> units/second 
         
         const env = { waveForce: 0.3, windDir: 45, windSpd: 12.5, currentDir: 0, currentSpd: 0.0 };
         const shipPhysics = { speed: 10.0, cmdSpeed: 10.0, sog: 10.0, cog: 0, rot: 0, heading: 0, targetRudder: 0, actualRudder: 0, lat: 0, roll: 0, pitch: 0, simTime: 0, wps: [], wakeTimer: 0 };
@@ -833,12 +833,16 @@
 
             if (isRadarOpen) {
                 container.style.display = 'block';
+                // Restore the original docked position whenever RADAR is reopened.
                 container.style.left = '50%';
                 container.style.top = 'auto';
                 container.style.bottom = '20px';
                 container.style.right = 'auto';
                 container.style.transform = 'translateX(-50%)';
                 container.style.margin = '0';
+                // Dragging elevates z-index; restore the original stacking order on reopen.
+                container.style.zIndex = '100';
+                keepSimulatorPanelVisible(container);
                 btn.classList.add('active');
             } else {
                 container.style.display = 'none';
@@ -914,9 +918,36 @@
                     isPanelDragging = false; 
                     isHudDragged = false; // <--- 이 부분이 누락되어 있었음
                     panel.style.zIndex = panel.id === 'digital-hud-container' ? '9999' : ''; 
+                    keepSimulatorPanelVisible(panel);
                 } 
             });
         });
+
+        // Keep existing floating windows reachable after browser zoom or window resize.
+        // Their positions and sizes are unchanged unless a visible window is off-screen.
+        function keepSimulatorPanelVisible(panel) {
+            if (!panel || getComputedStyle(panel).display === 'none') return;
+            const rect = panel.getBoundingClientRect();
+            const vw = document.documentElement.clientWidth;
+            const vh = document.documentElement.clientHeight;
+            const margin = 8;
+            if (!vw || !vh || !rect.width || !rect.height) return;
+            const maxLeft = Math.max(margin, vw - rect.width - margin);
+            const maxTop = Math.max(margin, vh - rect.height - margin);
+            const nextLeft = Math.max(margin, Math.min(rect.left, maxLeft));
+            const nextTop = Math.max(margin, Math.min(rect.top, maxTop));
+            if (Math.abs(nextLeft - rect.left) <= 0.5 && Math.abs(nextTop - rect.top) <= 0.5) return;
+            panel.style.left = `${Math.round(nextLeft)}px`;
+            panel.style.top = `${Math.round(nextTop)}px`;
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+            panel.style.transform = 'none';
+        }
+
+        function keepSimulatorWindowsVisible() {
+            document.querySelectorAll('.draggable-panel').forEach(keepSimulatorPanelVisible);
+        }
+        window.addEventListener('resize', keepSimulatorWindowsVisible);
 
         window.setSeaColor = function(level) {
             document.getElementById('btn-sea-bright').classList.remove('active'); 
@@ -1291,6 +1322,7 @@
                 isRadarWindowDragging = false;
                 UI_ELEMENTS.ecdisContainer.style.zIndex = 100;
                 UI_ELEMENTS.ecdisContainer.style.border = '2px solid rgba(0, 255, 255, 0.4)'; // 원래대로
+                keepSimulatorPanelVisible(UI_ELEMENTS.ecdisContainer);
             }
             isRadarDragging = false; 
         });
@@ -1622,7 +1654,7 @@
             const filesList = Object.keys(parsedModels);
             let targetIndex = 1;
 
-            function createTarget(x, z, hdg, spd, explicitFile = null) {
+            function createTarget(x, z, hdg, spd, explicitFile = null, routeWaypoints = []) {
                 const name = `Target ${targetIndex++}`; const tsGroup = new THREE.Group();
                 const randomFile = explicitFile && parsedModels[explicitFile] ? explicitFile : filesList[Math.floor(Math.random() * filesList.length)];
                 const tData = parsedModels[randomFile]; const tModel = tData.group.clone();
@@ -1631,7 +1663,10 @@
                 
                 tsGroup.add(tModel); 
                 tsGroup.position.set(x, 0, z); 
-                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999) }; 
+                tsGroup.userData = { name: name, heading: hdg, speed: spd, mmsi: Math.floor(440000000 + Math.random()*999999),
+                    waypoints: (Array.isArray(routeWaypoints) ? routeWaypoints : []).map(w => ({ x: Number(w.x), z: Number(w.z) }))
+                        .filter(w => Number.isFinite(w.x) && Number.isFinite(w.z)),
+                    waypointIndex: 0, rot: 0 }; 
                 tsGroup.rotation.y = -hdg * DEG2RAD; 
                 targetShips.push(tsGroup); scene.add(tsGroup);
                 
@@ -1653,7 +1688,7 @@
                         if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
                     }
                     if (loadedScenarioConfig.targets) {
-                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile); });
+                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile, t.waypoints); });
                     }
                     if (loadedScenarioConfig.environment) {
                         if (loadedScenarioConfig.environment.wind) {
@@ -1674,7 +1709,7 @@
 
             let tStr = "0.0"; 
             logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
-            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); });
+            targetShips.forEach(ts => { logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: (ts.userData.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" }); });
             
             isPaused = false;
             const btnPause = document.getElementById('btn-pause');
@@ -1854,6 +1889,30 @@
         // ==========================================
         // 8. UPDATE LOGIC (Physics & AI)
         // ==========================================
+        // Only scenario targets with waypoint arrays use this bounded-turn guidance.
+        function steerTargetAlongWaypoints(ts, dt) {
+            const data = ts.userData;
+            if (!Array.isArray(data.waypoints) || data.waypointIndex >= data.waypoints.length) {
+                data.rot = 0;
+                return;
+            }
+            const arrivalUnits = 80; // 0.20 NM at the existing 400-units/NM scenario scale.
+            while (data.waypointIndex < data.waypoints.length) {
+                const wp = data.waypoints[data.waypointIndex];
+                if (Math.hypot(wp.x - ts.position.x, wp.z - ts.position.z) > arrivalUnits) break;
+                data.waypointIndex++;
+            }
+            if (data.waypointIndex >= data.waypoints.length) { data.rot = 0; return; }
+            const wp = data.waypoints[data.waypointIndex];
+            const desired = (Math.atan2(wp.x - ts.position.x, -(wp.z - ts.position.z)) * 180 / Math.PI + 360) % 360;
+            const diff = ((desired - data.heading + 540) % 360) - 180;
+            const stepLimit = 90 * dt / 60;
+            const step = Math.max(-stepLimit, Math.min(stepLimit, diff));
+            data.heading = (data.heading + step + 360) % 360;
+            data.rot = dt > 0 ? step / dt * 60 : 0;
+            ts.rotation.y = -data.heading * DEG2RAD;
+        }
+
         function updatePhysics(dt) {
             if (dt <= 0) return;
             shipPhysics.simTime += dt; 
@@ -1870,7 +1929,7 @@
             const rotDerivative = (targetRot - shipPhysics.rot) / T_nom; 
             
             shipPhysics.rot += rotDerivative * dt; 
-            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt * 3) % 360; 
+            shipPhysics.heading = (shipPhysics.heading + (shipPhysics.rot / 60.0) * dt) % 360; 
             if (shipPhysics.heading < 0) shipPhysics.heading += 360;
             
             const headingRad = shipPhysics.heading * DEG2RAD;
@@ -1928,6 +1987,7 @@
             }
 
             targetShips.forEach(ts => {
+                steerTargetAlongWaypoints(ts, dt);
                 const tsRad = ts.userData.heading * DEG2RAD; 
                 ts.position.x += (ts.userData.speed * moveScale) * Math.sin(tsRad) * dt; 
                 ts.position.z -= (ts.userData.speed * moveScale) * Math.cos(tsRad) * dt;
@@ -2062,45 +2122,40 @@
                 if (obj.userData.name) hoveredShip = obj; 
             }
 
-            if (shipPhysics.wps && shipPhysics.wps.length > 0 && currentWpIndex < shipPhysics.wps.length) {
-                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)'; 
-                ctxR.lineWidth = 1.5; 
-                ctxR.setLineDash([5, 5]); 
+            if (shipPhysics.wps && shipPhysics.wps.length > 0) {
+                ctxR.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+                ctxR.lineWidth = 1.5;
+                ctxR.setLineDash([5, 5]);
                 ctxR.beginPath();
-                
-                let startIndex = Math.max(0, currentWpIndex - 1);
-                if (currentWpIndex === 0) { ctxR.moveTo(0, 0); }
-            
-                for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
-                    let relX = shipPhysics.wps[i].x - osShip.position.x; 
-                    let relZ = shipPhysics.wps[i].z - osShip.position.z; 
-                    let true_brg = Math.atan2(relX, -relZ); 
-                    let rel_brg = true_brg - (shipPhysics.heading * DEG2RAD); 
-                    let distSq = relX*relX + relZ*relZ; 
-                    let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
-                    let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
-                    
-                    if (i === startIndex && currentWpIndex !== 0) {
-                        ctxR.moveTo(rotX, rotY);
-                    } else {
-                        ctxR.lineTo(rotX, rotY);
-                    }
-                }
-                ctxR.stroke(); ctxR.setLineDash([]);
-                
-                for(let i = startIndex; i < shipPhysics.wps.length; i++) { 
-                    let relX = shipPhysics.wps[i].x - osShip.position.x; 
-                    let relZ = shipPhysics.wps[i].z - osShip.position.z; 
-                    let true_brg = Math.atan2(relX, -relZ); 
-                    let rel_brg = true_brg - (shipPhysics.heading * DEG2RAD); 
-                    let distSq = relX*relX + relZ*relZ; 
-                    let rotX = Math.sin(rel_brg) * Math.sqrt(distSq) * mapScale; 
-                    let rotY = -Math.cos(rel_brg) * Math.sqrt(distSq) * mapScale; 
-                    ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888'; 
-                    ctxR.beginPath(); 
-                    ctxR.arc(rotX, rotY, (i === currentWpIndex) ? 4 : 2, 0, Math.PI*2); 
-                    ctxR.fill(); 
-                }
+
+                // The planned route is fixed in world coordinates: START (0,0)
+                // followed by every original waypoint, including completed legs.
+                // Only its screen projection changes with OS motion / heading.
+                const routeScreenPoint = (worldX, worldZ) => {
+                    const relX = worldX - osShip.position.x;
+                    const relZ = worldZ - osShip.position.z;
+                    const trueBrg = Math.atan2(relX, -relZ);
+                    const relBrg = trueBrg - shipPhysics.heading * DEG2RAD;
+                    const distance = Math.hypot(relX, relZ);
+                    return { x: Math.sin(relBrg) * distance * mapScale,
+                             y: -Math.cos(relBrg) * distance * mapScale };
+                };
+                const routeStart = routeScreenPoint(0, 0);
+                ctxR.moveTo(routeStart.x, routeStart.y);
+                shipPhysics.wps.forEach(wp => {
+                    const pt = routeScreenPoint(wp.x, wp.z);
+                    ctxR.lineTo(pt.x, pt.y);
+                });
+                ctxR.stroke();
+                ctxR.setLineDash([]);
+
+                shipPhysics.wps.forEach((wp, i) => {
+                    const pt = routeScreenPoint(wp.x, wp.z);
+                    ctxR.fillStyle = (i === currentWpIndex) ? '#00ffff' : '#008888';
+                    ctxR.beginPath();
+                    ctxR.arc(pt.x, pt.y, (i === currentWpIndex) ? 4 : 2, 0, Math.PI * 2);
+                    ctxR.fill();
+                });
             }
 
             const osSog = shipPhysics.sog !== undefined ? shipPhysics.sog : shipPhysics.speed;
@@ -2215,7 +2270,7 @@
                 let tStr = shipPhysics.simTime.toFixed(1);
                 logData.push({ time: tStr, name: "OS", lat: convertToLat(osShip.position.z), lon: convertToLon(osShip.position.x), x: osShip.position.x.toFixed(2), y: osShip.position.z.toFixed(2), hdg: shipPhysics.heading.toFixed(1), sog: (shipPhysics.sog||shipPhysics.speed).toFixed(1), cog: (shipPhysics.cog||shipPhysics.heading).toFixed(1), rot: shipPhysics.rot.toFixed(2), rud_cmd: shipPhysics.targetRudder.toFixed(1), rud_act: shipPhysics.actualRudder.toFixed(1) });
                 targetShips.forEach(ts => { 
-                    logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: "0.00", rud_cmd: "0.0", rud_act: "0.0" }); 
+                    logData.push({ time: tStr, name: ts.userData.name, lat: convertToLat(ts.position.z), lon: convertToLon(ts.position.x), x: ts.position.x.toFixed(2), y: ts.position.z.toFixed(2), hdg: ts.userData.heading.toFixed(1), sog: ts.userData.speed.toFixed(1), cog: ts.userData.heading.toFixed(1), rot: (ts.userData.rot || 0).toFixed(2), rud_cmd: "0.0", rud_act: "0.0" }); 
                 });
             }
 
@@ -2261,16 +2316,22 @@
             requestAnimationFrame(animate);
             if (gameState === 'PLAYING') {
                 if (!isPaused) { 
-                    const dt = Math.min(clock.getDelta(), 0.1) * simSpeed; 
-                    if (graphicMode === 'HIGH') {
-                        water.material.uniforms['time'].value += dt * 0.3; 
-                    } else if (graphicMode === 'MID') {
-                        if (midWater.material.normalMap) {
-                            midWater.material.normalMap.offset.x += dt * 0.02;
-                            midWater.material.normalMap.offset.y += dt * 0.03;
+                    // Integrate all elapsed simulation time in <=0.1-second steps,
+                    // matching the radar simulator instead of discarding slow-frame time.
+                    let remainingSec = clock.getDelta() * simSpeed;
+                    while (remainingSec > 1e-9 && gameState === 'PLAYING' && !isPaused) {
+                        const dt = Math.min(0.1, remainingSec);
+                        if (graphicMode === 'HIGH') {
+                            water.material.uniforms['time'].value += dt * 0.3;
+                        } else if (graphicMode === 'MID') {
+                            if (midWater.material.normalMap) {
+                                midWater.material.normalMap.offset.x += dt * 0.02;
+                                midWater.material.normalMap.offset.y += dt * 0.03;
+                            }
                         }
+                        updatePhysics(dt);
+                        remainingSec -= dt;
                     }
-                    updatePhysics(dt); 
                 } else { 
                     clock.getDelta(); 
                 }

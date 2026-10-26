@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-analysis-language="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -224,31 +224,214 @@
         /* 구글 드라이브 파일 목록 옵션 패딩 최소화 */
         #driveFileSelect option, #scenarioDriveSelect option { padding: 4px; }
         #driveFileSelect option:checked, #scenarioDriveSelect option:checked { background: var(--accent-cyan); color: #000; }
+
+/* Only the new HTMS Data Analysis workspace; legacy editor and replay CSS stay untouched. */
+#analysis-workspace { display:none; flex:1; min-height:0; min-width:0; flex-direction:column; overflow:hidden; background:#0b0f19; }
+#analysis-workspace * {box-sizing:border-box;}
+#analysis-top {height:48%;min-height:0; flex:none;display:flex;flex-direction:column;border-bottom:3px solid #334155;}
+#analysis-topbar {display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 12px;background:#121b2d;border-bottom:1px solid #29374f;min-height:35px;}
+.analysis-smallhead {font-size:12px;font-weight:800;color:#38bdf8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.analysis-mini-note{font-size:10px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#analysis-track-grid {flex:1;min-height:0;display:grid;gap:3px;background:#182235;overflow:hidden;}
+.analysis-track-card {position:relative;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(circle at center,#172239,#0d1423);border:2px solid transparent;cursor:pointer;}
+.analysis-track-card.selected {border-color:#eab308;}
+.analysis-track-card canvas{width:100%;height:100%;display:block;touch-action:none;}
+.analysis-track-label{position:absolute;z-index:2;right:5px;top:5px;max-width:85%;padding:3px 6px;background:#060d1ecc;color:#e2e8f0;border-radius:3px;font:700 11px Pretendard,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;}
+.analysis-track-card.selected .analysis-track-label{color:#fde047;}
+.analysis-track-score{position:absolute;z-index:2;left:5px;bottom:5px;max-width:90%;background:#0b1225db;color:#e2e8f0;font-size:10px;padding:3px 5px;border-radius:3px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#analysis-bottom{flex:1;display:flex;min-height:0;min-width:0;overflow:hidden;gap:4px;background:#0b0f19;padding:5px;}
+.analysis-section {background:#111827;border:1px solid #2a374d;border-radius:7px;min-width:0;min-height:0;flex:1 1 50%;display:flex;flex-direction:column;overflow:hidden;transition:flex-basis .19s ease;}
+#analysis-bottom.steering .analysis-section.steering{flex:1 1 auto;}
+#analysis-bottom.steering .analysis-section.risk{flex:0 0 165px;}
+#analysis-bottom.risk .analysis-section.risk{flex:1 1 auto;}
+#analysis-bottom.risk .analysis-section.steering{flex:0 0 165px;}
+.analysis-section-header{width:100%;padding:10px;border:0;border-bottom:1px solid #34425b;background:#1a2639;color:#e2e8f0;cursor:pointer;text-align:left;display:block;flex:none;}
+.analysis-section-header:hover {background:#243550;}
+.analysis-title-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.analysis-section-title{font-size:13px;font-weight:800;color:#38bdf8;word-wrap:break-word;}
+.analysis-hero-score{font-size:17px;font-weight:800;color:#f8fafc;white-space:nowrap;}
+.analysis-subscore{color:#9ca3af;font-size:11px;margin-top:4px;line-height:1.35;word-wrap:break-word;}
+.analysis-expanded-content {display:none;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:10px;scrollbar-width:thin;}
+#analysis-bottom.steering .steering .analysis-expanded-content,#analysis-bottom.risk .risk .analysis-expanded-content{display:block;}
+.analysis-plot-card{border:1px solid #293b51;border-radius:5px;padding:8px;background:#0b1220;margin:6px 0 10px;min-width:0;}
+.analysis-plot-title {font-size:11px;font-weight:bold;color:#bae6fd;margin:0 0 7px;}
+.analysis-plot-card canvas{display:block;width:100%;height:142px;}
+#analysis-heading-canvas{height:174px;cursor:crosshair;}
+#analysis-command-canvas{height:160px;}
+.analysis-chart-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.analysis-chart-pair canvas{height:210px;}
+.analysis-chip-list {display:flex;gap:5px;flex-wrap:wrap;padding:4px 0 5px;max-height:98px;overflow-y:auto;}
+.analysis-chip{font:700 11px sans-serif;border:1px solid #394863;background:#1c2d43;color:#e2e8f0;border-radius:5px;padding:6px 9px;cursor:pointer;}
+.analysis-chip.active{border-color:#facc15;color:#fef08a;background:#28394c;}
+.analysis-key-row{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:#cbd5e1;line-height:1.6;}
+.analysis-kv{display:flex;flex-wrap:wrap;gap:5px 13px;color:#cbd5e1;font-size:11px;margin:8px 0;}
+.analysis-kv strong {color:#f8fafc;}
+.analysis-msg{font-size:11px;line-height:1.55;white-space:normal;color:#d1d5db;background:#182236;border-left:2px solid #0ea5e9;border-radius:3px;padding:7px 9px;margin:7px 0;}
+.analysis-msg.warning{border-left-color:#f59e0b;color:#fbbf24;}
+.analysis-matrix{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px;font-size:11px;text-align:center;}
+.analysis-matrix th,.analysis-matrix td{border:1px solid #29374b;padding:7px 2px;overflow-wrap:break-word;}
+.analysis-matrix th{font-size:10px;color:#cbd5e1;background:#172338;}
+.analysis-matrix td{font-weight:800;color:#fff;}
+.analysis-table{width:100%;border-collapse:collapse;font-size:11px;}
+.analysis-table th,.analysis-table td{border-bottom:1px solid #29374b;padding:5px;text-align:left;}
+.analysis-table th{color:#8ecae6;}
+.analysis-risk-history{max-height:240px;overflow-y:auto;border:1px solid #29374b;border-radius:4px;}
+.analysis-risk-event{width:100%;text-align:left;padding:6px;border:0;border-bottom:1px solid #203045;background:#121e2e;color:#cbd5e1;font:11px sans-serif;cursor:pointer;}
+.analysis-risk-event:hover{background:#20314a;}
+.analysis-count-dot{width:9px;height:9px;display:inline-block;border-radius:50%;margin-right:4px;vertical-align:middle;}
+#analysis-risk-track-canvas{height:240px;cursor:crosshair;}
+#analysis-risk-time-canvas{height:100px;cursor:crosshair;}
+#analysis-trend-canvas{width:100%;height:140px;background:#0d1525;border:1px solid #253349;border-radius:4px;display:block;}
+#panel-analysis .analysis-side-stat{color:#e2e8f0;font-size:11px;line-height:1.55;padding:9px;background:#182235;border-radius:5px;margin-top:8px;white-space:pre-line;}
+#panel-analysis select{width:100%;font-size:12px;color:#f8fafc;background:#0b1222;border:1px solid #334155;border-radius:4px;padding:7px;}
+#panel-analysis .analysis-info-label{color:#67e8f9;font-size:11px;font-weight:700;display:block;margin:3px 0 6px;}
+#panel-analysis #analysis-side-progress{flex:1;min-height:0;overflow-y:auto;}
+.analysis-time-range{width:100%;accent-color:#06b6d4;}
+.analysis-nodata{display:flex;align-items:center;justify-content:center;height:100%;min-height:0;text-align:center;padding:15px;color:#94a3b8;font-size:12px;line-height:1.6;}
+#analysis-bottom.steering .analysis-section.risk .analysis-subscore,#analysis-bottom.risk .analysis-section.steering .analysis-subscore{font-size:10px;}
+@media(max-width:900px){#analysis-bottom.steering .analysis-section.risk,#analysis-bottom.risk .analysis-section.steering{flex-basis:118px;}.analysis-chart-pair{grid-template-columns:1fr;}.analysis-section-header{padding:6px;}.analysis-section-title{font-size:11px;}.analysis-hero-score{font-size:13px;}}
+@media(max-width:768px),(max-aspect-ratio:4/5){#analysis-top{height:41%;}.analysis-plot-card canvas{height:115px;}#analysis-risk-track-canvas{height:155px;}#analysis-heading-canvas{height:138px;}.analysis-chart-pair canvas{height:165px;}}
+
+.analysis-risk-overview{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(205px,1fr);gap:8px;align-items:stretch;}
+.analysis-risk-overview .analysis-plot-card{margin-top:5px;}
+@media(max-width:950px){.analysis-risk-overview{grid-template-columns:1fr;}}
+
+/* V2: scoped to DATA ANALYSIS. All original editor/replay layout is unchanged. */
+body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
+#analysis-workspace{width:100%;max-width:100%;}
+#analysis-top{height:25%;flex:0 0 25%;min-height:0;}
+#analysis-topbar{min-height:30px;padding:5px 10px;}
+#analysis-track-grid{width:100%;max-width:100%;flex:1;min-height:0;min-width:0;display:flex;flex-wrap:nowrap;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 6px;background:#182235;scrollbar-width:thin;scrollbar-color:#64748b #172239;}
+.analysis-track-card{flex:0 0 245px;width:245px;min-width:245px;min-height:0;border:2px solid #26354e;border-radius:4px;}
+.analysis-track-head{position:absolute;z-index:3;left:4px;right:4px;top:4px;display:flex;align-items:center;gap:4px;background:#060d1eea;border-radius:4px;padding:3px 4px;cursor:grab;user-select:none;max-height:25px;}
+.analysis-track-head:active{cursor:grabbing;}
+.analysis-drag-handle{flex:none;font-size:15px;color:#67e8f9;line-height:1;letter-spacing:-2px;}
+.analysis-track-label{position:static;flex:1;min-width:0;max-width:none;padding:0;background:none;font:700 10px Pretendard,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.analysis-track-card.dragging{opacity:.42;}
+.analysis-track-card.drop-before{box-shadow:inset 5px 0 #22d3ee;}
+.analysis-track-card.drop-after{box-shadow:inset -5px 0 #22d3ee;}
+#analysis-bottom{display:flex;flex:1;flex-direction:column;min-height:0;gap:5px;padding:5px;}
+.analysis-section{flex:1 1 0%;min-width:0;min-height:0;transition:flex-basis .16s ease;}
+#analysis-bottom.steering .analysis-section.steering,#analysis-bottom.risk .analysis-section.risk{flex:1 1 0%;}
+#analysis-bottom.steering .analysis-section.risk,#analysis-bottom.risk .analysis-section.steering{flex:0 0 63px;}
+.analysis-section-header{padding:7px 11px;cursor:zoom-in;user-select:none;}
+.analysis-expanded-content{display:block;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 10px;scrollbar-width:thin;}
+#analysis-bottom.steering .risk .analysis-expanded-content,#analysis-bottom.risk .steering .analysis-expanded-content{display:none;}
+#analysis-risk-track-canvas{height:192px;}
+#analysis-risk-time-canvas{height:85px;}
+.analysis-risk-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,1fr);gap:8px;align-items:stretch;}
+.analysis-risk-overview .analysis-plot-card{margin-top:4px;}
+.analysis-score-tiles{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 8px;}
+.analysis-score-tile{min-width:88px;flex:1 1 105px;background:#172338;border:1px solid #29374b;border-radius:5px;padding:6px 8px;}
+.analysis-score-tile strong{font-size:16px;color:#f8fafc;display:block;font-variant-numeric:tabular-nums;line-height:1.15;}
+.analysis-score-tile span{font-size:10px;color:#94a3b8;line-height:1.35;display:block;margin-top:3px;}
+.analysis-matrix.occupancy{margin-top:3px;table-layout:fixed;font-size:11px;}
+.analysis-matrix.occupancy th,.analysis-matrix.occupancy td{padding:2px;}
+.analysis-matrix.occupancy th{font-size:10px;line-height:1.35;}
+.analysis-matrix.occupancy th:first-child{width:91px;}
+.analysis-matrix.occupancy td{background:#142035;color:#fff;}
+.analysis-matrix.occupancy td button{color:#f8fafc;border:1px solid transparent;background:linear-gradient(0deg,color-mix(in srgb,var(--severity),transparent 77%),#132039);padding:5px 1px 4px;width:100%;min-height:49px;border-radius:3px;position:relative;cursor:pointer;}
+.analysis-matrix.occupancy td.is-empty button{background:#182438;color:#718096;}
+.analysis-matrix.occupancy td button:hover,.analysis-matrix.occupancy td button:focus-visible{border-color:#f8fafc;}
+.analysis-matrix.occupancy td.active button{border-color:#fef08a;box-shadow:inset 0 0 0 1px #fef08a;}
+.analysis-cell-level{font-size:9px;display:block;position:absolute;left:4px;top:3px;color:var(--severity);font-weight:700;}
+.analysis-matrix.occupancy td.is-empty .analysis-cell-level{opacity:.75;}
+.analysis-cell-qty{font-size:17px;line-height:1.1;display:inline-block;position:relative;z-index:1;font-variant-numeric:tabular-nums;}
+.analysis-cell-units{font-size:9px;margin-left:2px;opacity:.75;position:relative;z-index:1;}
+.analysis-cell-fill{position:absolute;bottom:0;left:0;display:block;height:4px;background:var(--severity);transition:width .15s;}
+.analysis-matrix-foot{font-size:10px;color:#94a3b8;line-height:1.5;margin:5px 0;}
+.analysis-matrix-detail{font-size:11px;margin-top:5px;padding:5px 7px;border:1px solid #334155;border-radius:4px;background:#172239;color:#cbd5e1;line-height:1.45;max-height:115px;overflow:auto;}
+.analysis-matrix-detail[hidden]{display:none;}
+.analysis-moment-levels{display:flex;gap:5px;flex-wrap:wrap;font-size:11px;color:#cbd5e1;margin-top:6px;}
+.analysis-moment-level{padding:3px 7px;background:#1e293b;border:1px solid #334155;border-radius:5px;font-weight:700;white-space:nowrap;}
+.analysis-moment-level b{font-size:13px;color:#fff;}
+.analysis-fold{border:1px solid #2a374d;border-radius:5px;background:#0b1220;margin:7px 0;}
+.analysis-fold summary{cursor:pointer;padding:9px 10px;font-weight:700;font-size:11px;color:#bae6fd;user-select:none;}
+.analysis-fold > div{padding:0 9px 9px;}
+.analysis-fold .analysis-risk-history{max-height:220px;}
+#analysis-risk-moment{padding:6px 9px;margin:5px 0;}
+/* The 25% track strip and horizontal arrangement remain fixed on all viewports. */
+@media(max-width:900px){#analysis-top{height:25%;flex:0 0 25%;}.analysis-track-card{flex-basis:225px;min-width:225px;width:225px;}}
+@media(max-width:700px){.analysis-risk-overview{grid-template-columns:1fr;}}
+
+
+/* V3: Only the two Collision Risk graphs receive mouse panning and zoom cursors. */
+#analysis-risk-track-canvas,#analysis-risk-time-canvas{cursor:grab;touch-action:none;user-select:none;}
+#analysis-risk-track-canvas:active,#analysis-risk-time-canvas:active{cursor:grabbing;}
     </style>
 </head>
 <body>
 
 <div id="canvas-wrapper">
     <div id="grid-container"></div>
-    
-    <div id="ecdisModal">
+<!-- HTMS 평가 탭; 불러온 시나리오와 리플레이를 재사용 -->
+<div id="analysis-workspace">
+    <div id="analysis-top">
+        <div id="analysis-topbar"><span id="analysis-group-header" class="analysis-smallhead">실습 결과 항적</span><span class="analysis-mini-note">항적 클릭: 평가 선택 · 상단 손잡이 끌기: 순서 변경 · 휠: 확대/축소</span></div>
+        <div id="analysis-track-grid"><div class="analysis-nodata">REPLAY VIEWER에서 결과 파일을 불러오세요.</div></div>
+    </div>
+    <div id="analysis-bottom">
+        <section id="analysis-steering-section" class="analysis-section steering">
+            <button id="analysis-steering-toggle" class="analysis-section-header" type="button" title="더블클릭하여 평가창 확대/복원">
+                <span class="analysis-title-row"><span class="analysis-section-title">STEERING 평가</span><span id="analysis-steering-score" class="analysis-hero-score">—</span></span>
+                <span id="analysis-steering-caption" class="analysis-subscore">실습 결과를 선택하세요.</span>
+            </button>
+            <div class="analysis-expanded-content" id="analysis-steering-expanded">
+                <div class="analysis-msg" id="analysis-steering-notice"></div>
+                <div class="analysis-plot-card"><div class="analysis-plot-title">HEADING · 정침 / 변침 구간 (선회 클릭 가능)</div><canvas id="analysis-heading-canvas"></canvas></div>
+                <div id="analysis-turn-kv" class="analysis-kv"></div>
+                <div class="analysis-chip-list" id="analysis-turn-chips"></div>
+                <div class="analysis-plot-card"><div class="analysis-plot-title">RUDDER ORDER · 명령타각 및 실제타각 (°)</div><canvas id="analysis-command-canvas"></canvas></div>
+                <div class="analysis-msg" id="analysis-rudder-sequence"></div>
+                <div class="analysis-chart-pair">
+                    <div class="analysis-plot-card"><div class="analysis-plot-title">원래 값 · X: Rudder (°) · Y: ROT (°/min)</div><canvas id="analysis-rot-raw-canvas"></canvas></div>
+                    <div class="analysis-plot-card"><div class="analysis-plot-title">정규화 · X: Rudder/35 · Y: ROT/70</div><canvas id="analysis-rot-norm-canvas"></canvas></div>
+                </div>
+                <div id="analysis-ellipse-note" class="analysis-msg"></div>
+            </div>
+        </section>
+        <section id="analysis-risk-section" class="analysis-section risk">
+            <button id="analysis-risk-toggle" class="analysis-section-header" type="button" title="더블클릭하여 평가창 확대/복원">
+                <span class="analysis-title-row"><span class="analysis-section-title">COLLISION RISK 평가</span><span id="analysis-risk-score" class="analysis-hero-score">—</span></span>
+                <span id="analysis-risk-caption" class="analysis-subscore">실습 결과를 선택하세요.</span>
+            </button>
+            <div class="analysis-expanded-content" id="analysis-risk-expanded">
+                <div class="analysis-msg" id="analysis-risk-notice"></div>
+                <div id="analysis-risk-kv" class="analysis-kv"></div>
+                <div id="analysis-risk-quick-stats" class="analysis-score-tiles"></div>
+                <div class="analysis-risk-overview">
+                    <div class="analysis-plot-card"><div class="analysis-plot-title">본선 항적 · 시점별 최대 위험도 색상</div><canvas id="analysis-risk-track-canvas"></canvas></div>
+                    <div class="analysis-plot-card"><div class="analysis-plot-title">DCPA × TCPA · 각 구역의 타선 수 (2D)</div><div id="analysis-risk-matrix"></div><div id="analysis-risk-cell-detail" class="analysis-matrix-detail" hidden></div></div>
+                </div>
+                <div id="analysis-risk-moment" class="analysis-msg"></div>
+                <div id="analysis-risk-moment-levels" class="analysis-moment-levels"></div>
+                <div class="analysis-plot-card"><div class="analysis-plot-title">시점별 위험도 · 그래프 / 슬라이더에서 시점 선택</div><canvas id="analysis-risk-time-canvas"></canvas><input class="analysis-time-range" type="range" id="analysis-risk-time-slider" min="0" max="100" value="0" step="1"></div>
+                <details class="analysis-fold"><summary>위험도별 구간 수·지속 시간 상세 보기</summary><div id="analysis-risk-counts"></div></details>
+                <details class="analysis-fold"><summary>위험도 단계 변화 상세 기록 보기</summary><div class="analysis-risk-history" id="analysis-risk-events"></div></details>
+            </div>
+        </section>
+    </div>
+</div>
+
+
+        <div id="ecdisModal">
         <h3 style="color:#06b6d4; margin-top:0; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">ECDIS Route Viewer (Degree-Min)</h3>
         <div id="ecdisContent"></div>
         <div style="display:flex; gap:10px;">
-            <button class="tool-btn" id="downloadEcdisCsvBtn" style="background:#0ea5e9;">CSV 다운로드</button>
-            <button class="tool-btn" onclick="document.getElementById('ecdisModal').style.display='none'">닫기</button>
+            <button class="tool-btn" id="downloadEcdisCsvBtn" style="background:#0ea5e9;">DOWNLOAD CSV</button>
+            <button class="tool-btn" onclick="document.getElementById('ecdisModal').style.display='none'">Close</button>
         </div>
     </div>
 </div>
 
 <!-- 너비 조절 리사이저 추가 -->
-<div id="resizer" title="드래그하여 크기 조절"></div>
+<div id="resizer" title="Drag to resize"></div>
 
 <div id="sidebar">
-    <div id="main-title">[HTMS] SCENARIO GENERATOR</div>
+    <div id="main-title">[HTMS] 시나리오 제작·평가</div>
 
     <div class="sim-selector">
-        <label>TARGET SIMULATOR</label>
+        <label>대상 시뮬레이터</label>
         <select id="simModeSelect">
             <option value="HTMS">[HTMS] Ship Handler</option>
             <option value="MASS">[MASS] Remote Operation Simulator</option>
@@ -257,38 +440,39 @@
 
     <!-- 탭 메뉴 -->
     <div class="tab-menu" id="tabMenu">
-        <button class="tab-btn active" data-mode="editor">SCENARIO EDITOR</button>
-        <button class="tab-btn" data-mode="replay">REPLAY VIEWER</button>
+        <button class="tab-btn active" data-mode="editor">시나리오 편집</button>
+        <button class="tab-btn" data-mode="replay">결과 리플레이</button>
+        <button class="tab-btn" data-mode="analysis">데이터 분석</button>
     </div>
 
     <!-- 에디터 모드에서만 보이는 공통 환경/시나리오 컨트롤 (리플레이 땐 통째로 숨김) -->
     <div id="editor-only-controls">
         <div style="background: #172033; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #334155;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">SCENARIO FILE NAME</label>
-            <input type="text" id="scenarioNameInput" placeholder="빈칸 시 자동 번호 생성" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; margin-bottom:10px; box-sizing:border-box;">
+            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">시나리오 파일 이름</label>
+            <input type="text" id="scenarioNameInput" placeholder="Leave blank for an automatic number" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; margin-bottom:10px; box-sizing:border-box;">
             
             <div class="btn-group" style="flex-direction: row; margin-bottom: 0;">
-                <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">목록 열기</button>
+                <button class="tool-btn btn-load" id="loadScenarioBtn" style="flex: 1;">드라이브 목록</button>
                 <button class="tool-btn" id="saveScenarioBtn" style="flex: 1; background:#0369a1; border-color:#0284c7; color:#bae6fd;">드라이브 저장</button>
             </div>
             <div class="btn-group" style="flex-direction: row; margin-bottom: 0; margin-top: 8px;">
-                <button class="tool-btn btn-load" id="loadLocalScenarioBtn" style="flex: 1;">로컬 JSON 열기</button>
-                <button class="tool-btn" id="saveLocalScenarioBtn" style="flex: 1; background:#065f46; border-color:#047857; color:#a7f3d0;">로컬 JSON 저장</button>
+                <button class="tool-btn btn-load" id="loadLocalScenarioBtn" style="flex: 1;">로컬 파일 열기</button>
+                <button class="tool-btn" id="saveLocalScenarioBtn" style="flex: 1; background:#065f46; border-color:#047857; color:#a7f3d0;">로컬 저장</button>
             </div>
             <input type="file" id="localScenarioInput" accept=".json,application/json" style="display:none;">
         </div>
         
         <div id="scenarioDriveLoadContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">시나리오 파일 선택</label>
+            <label id="scenarioDriveLabel" style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">시나리오 파일 선택</label>
             <select id="scenarioDriveSelect" style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
-                <option value="">목록 로딩 중...</option>
+                <option value="">Loading list...</option>
             </select>
             <button class="tool-btn" id="loadSelectedScenarioBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff;">선택 시나리오 불러오기</button>
-            <div id="scenarioLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">통신 중... 잠시만 기다려주세요.</div>
+            <div id="scenarioLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px;">Communicating with server...</div>
         </div>
 
         <div class="origin-control">
-            <label>REFERENCE ORIGIN (LAT / LON)</label>
+            <label>기준 위치 (위도 / 경도)</label>
             <div class="origin-inputs">
                 <input type="number" id="originLat" step="0.000001" placeholder="Latitude">
                 <input type="number" id="originLon" step="0.000001" placeholder="Longitude">
@@ -296,7 +480,7 @@
         </div>
 
         <div class="origin-control" style="border-left-color: #0ea5e9;">
-            <label style="color: #38bdf8;">ENVIRONMENT (WIND & CURRENT)</label>
+            <label style="color: #38bdf8;">환경 조건 (바람 / 해류)</label>
             <div class="origin-inputs" style="margin-bottom: 6px;">
                 <input type="number" id="envWindDir" step="1" placeholder="Wind Dir (°)" value="45" title="Wind Direction (Degree)">
                 <input type="number" id="envWindSpd" step="0.1" placeholder="Wind Spd (m/s)" value="12.5" title="Wind Speed (m/s)">
@@ -311,16 +495,16 @@
     <!-- 에디터 전용 패널 -->
     <div id="panel-editor" class="panel active">
         <div class="instruction">
-            • <b>선박 조작</b>: <u>화살표 끝(회전)</u> 또는 <u>몸체(이동)</u> 드래그<br>
-            • <b>선속 조절</b>: 선박을 누른 채로 마우스 휠 스크롤<br>
-            • <b>화면 조작</b>: 빈 공간 휠/핀치(확대축소) 및 드래그(패닝)<br>
-            • <b>뷰포트</b>: 분할 창 클릭 시 <span style="color:var(--accent-yellow)">노란색</span> 활성화
+            • <b>Ship controls</b>: Drag the <u>arrow tip (rotate)</u> or <u>hull (move)</u><br>
+            • <b>Speed</b>: Hold the ship and scroll the mouse wheel<br>
+            • <b>View</b>: Wheel/pinch to zoom; drag empty space to pan<br>
+            • <b>Viewport</b>: Click a pane to activate it (<span style="color:var(--accent-yellow)">yellow</span>)
         </div>
         
         <div id="selectedShipDisplay">
-            <div>SELECTED: <span id="selShipName" style="font-weight:bold; color:var(--accent-yellow);">OWN SHIP (OS)</span></div>
+            <div>선택 선박: <span id="selShipName" style="font-weight:bold; color:var(--accent-yellow);">OWN SHIP (OS)</span></div>
             <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                <label style="font-size:11px; color:#88c0d0; font-weight:bold;">SHIP TYPE:</label>
+                <label style="font-size:11px; color:#88c0d0; font-weight:bold;">선종:</label>
                 <select id="shipTypeSelect" style="flex:1; background:#0b0f19; color:white; border:1px solid #334155; padding:4px; border-radius:4px; font-size:12px; outline:none; cursor:pointer;">
                 </select>
             </div>
@@ -328,9 +512,9 @@
 
         <div class="btn-group">
             <div class="btn-row" id="massBtnRow" style="display: none;">
-                <button class="tool-btn btn-mass" id="addMassBtn">새 MASS</button>
-                <button class="tool-btn btn-mass" id="dupMassBtn">MASS 복사</button>
-                <button class="tool-btn btn-del-mass" id="delMassBtn">삭제</button>
+                <button class="tool-btn btn-mass" id="addMassBtn">NEW MASS</button>
+                <button class="tool-btn btn-mass" id="dupMassBtn">COPY MASS</button>
+                <button class="tool-btn btn-del-mass" id="delMassBtn">DELETE</button>
                 <button class="tool-btn btn-ecdis" id="exportEcdisBtn">ECDIS</button>
             </div>
             <div class="btn-row">
@@ -338,36 +522,36 @@
                 <button class="tool-btn" id="rotRightBtn" style="border-color:#3b82f6;">시나리오 회전 (+15°)</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn btn-add-goal" id="addGoalBtn">목표지점 추가</button>
+                <button class="tool-btn btn-add-goal" id="addGoalBtn">웨이포인트 추가</button>
                 <button class="tool-btn btn-add" id="addShipBtn">타선 추가</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn" id="deleteToggleBtn" style="background:#7f1d1d; border-color:#991b1b; color:#fca5a5;">삭제 모드: OFF</button>
+                <button class="tool-btn" id="deleteToggleBtn" style="background:#7f1d1d; border-color:#991b1b; color:#fca5a5;">DELETE MODE: OFF</button>
             </div>
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">JSON OUTPUT</span>
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">JSON 출력</span>
         </div>
         <textarea id="jsonOutput" readonly></textarea>
         
         <!-- 에디터용 올씽크 패드 (margin-top: auto 를 통해 바닥에 고정) -->
-        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
+        <div id="editorSyncControl" class="sync-control-pad" style="margin-top: auto;" title="Drag: Pan all views&#10;Wheel/Pinch: Zoom all views">
             <div class="gvc-icon">✥</div>
-            <div class="gvc-text">ALL SYNC CONTROL</div>
+            <div class="gvc-text">전체 화면 동기 제어</div>
         </div>
     </div>
 
     <!-- 리플레이 전용 패널 -->
     <div id="panel-replay" class="panel">
         <div class="instruction">
-            • <b>다중 선택 가능:</b> <code>Ctrl</code> 또는 <code>Shift</code>를 누른 채 여러 파일을 선택해 동시 비교 재생이 가능합니다.<br>
-            • 각 뷰포트 창마다 개별적으로 <b>드래그(패닝)</b> 및 <b>휠/핀치(확대/축소)</b>를 지원합니다.
+            • <b>Multi-select:</b> Hold <code>Ctrl</code> or <code>Shift</code> to compare several replay files at once.<br>
+            • Each viewport supports independent <b>drag-to-pan</b> and <b>wheel/pinch-to-zoom</b>.
         </div>
         
         <div class="btn-group">
             <div class="btn-row">
-                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">로컬 로그 여러개 열기</button>
+                <button class="tool-btn btn-load" id="loadLocalJsonBtn" style="flex: 1;">실습 결과 파일 열기</button>
                 <button class="tool-btn" id="fetchDriveListBtn" style="flex: 1; background:#0ea5e9; border-color:#0284c7; color:#fff;">구글 드라이브 열기</button>
             </div>
         </div>
@@ -375,21 +559,21 @@
 
         <!-- 구글 드라이브 목록 창 (남는 공간 flex:1 로 전부 꽉 채움) -->
         <div id="driveFileContainer" style="display:none; background:#172033; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #334155; flex-direction:column; flex:1; min-height:0;">
-            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">DRIVE LOG LIST (다중 선택 가능)</label>
+            <label style="font-size:11px; color:#38bdf8; font-weight:bold; display:block; margin-bottom:6px;">드라이브 실습 결과 (복수 선택)</label>
             <select id="driveFileSelect" multiple style="width:100%; background:#0b0f19; color:white; border:1px solid #334155; padding:8px; border-radius:4px; font-size:12px; outline:none; cursor:pointer; flex:1; min-height:50px; overflow-y:auto;">
-                <option value="">파일을 선택하세요...</option>
+                <option value="">Select a file...</option>
             </select>
             <!-- 파일 재생하기 버튼 (매우 얇게 고정) -->
-            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff; flex: none; height: 28px; min-height: 28px; padding: 0; box-sizing:border-box;">선택 파일(들) 재생하기</button>
-            <div id="driveLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px; flex-shrink:0;">통신 중... 잠시만 기다려주세요.</div>
+            <button class="tool-btn" id="loadSelectedDriveFileBtn" style="width:100%; margin-top:8px; background:#10b981; border-color:#047857; color:#fff; flex: none; height: 28px; min-height: 28px; padding: 0; box-sizing:border-box;">선택 결과 리플레이</button>
+            <div id="driveLoadingMsg" style="display:none; color:var(--accent-yellow); font-size:11px; font-weight:bold; text-align:center; margin-top:8px; flex-shrink:0;">Communicating with server...</div>
         </div>
         
         <!-- 재생 컨트롤 패널 (margin-top:auto 적용으로 항상 우측 하단 고정) -->
         <div class="replay-controls">
-            <div class="time-display" id="timeDisplay">TIME: 0.0 s</div>
+            <div class="time-display" id="timeDisplay">시간: 0.0 s</div>
             <input type="range" id="timeSlider" min="0" max="100" value="0" step="1">
             <div class="btn-row">
-                <button class="tool-btn" id="playPauseBtn">PLAY</button>
+                <button class="tool-btn" id="playPauseBtn">재생</button>
                 <button class="tool-btn" id="speed1xBtn" style="background:var(--accent-cyan); color:#000;">1x</button>
                 <button class="tool-btn" id="speed3xBtn">3x</button>
                 <button class="tool-btn" id="speed5xBtn">5x</button>
@@ -397,11 +581,24 @@
         </div>
 
         <!-- 리플레이용 와이드 올씽크 패드 4:3 비율 (재생 컨트롤 아래 고정) -->
-        <div id="replaySyncControl" class="sync-control-pad" title="드래그: 전체 화면 동시 패닝&#10;휠/핀치: 전체 화면 동시 확대/축소">
+        <div id="replaySyncControl" class="sync-control-pad" title="Drag: Pan all views&#10;Wheel/Pinch: Zoom all views">
             <div class="gvc-icon">✥</div>
-            <div class="gvc-text">ALL SYNC CONTROL</div>
+            <div class="gvc-text">전체 화면 동기 제어</div>
         </div>
     </div>
+
+<!-- 추가되는 HTMS 결과 평가용 사이드바 (기존 기능 유지) -->
+<div id="panel-analysis" class="panel">
+    <div class="instruction">• 시나리오·학번·이름이 동일한 반복 실습을 함께 비교합니다.<br>• 항적을 클릭해 결과를 선택하고, 항적 상단 손잡이를 끌어 순서를 바꿉니다.<br>• STEERING / COLLISION RISK 제목을 더블클릭하면 해당 평가창이 확대되며, 다시 더블클릭하면 반반 배치로 돌아옵니다.</div>
+    <label for="analysis-group-select" class="analysis-info-label">시나리오 / 학번 / 이름</label>
+    <select id="analysis-group-select"><option value="">불러온 결과가 없습니다</option></select>
+    <div class="analysis-side-stat" id="analysis-selected-summary">SCENARIO EDITOR에서 시나리오를 읽고 REPLAY VIEWER에서 결과 파일을 불러오세요.</div>
+    <div style="padding:9px 0 4px;color:#67e8f9;font-size:11px;font-weight:700;">반복 실습 · 점수 변화</div>
+    <canvas id="analysis-trend-canvas"></canvas>
+    <div class="analysis-mini-note" style="margin:6px 0 12px;white-space:normal;">Steering 점수는 높을수록 우수(0–100), 위험도 점수는 낮을수록 안전(0–4)합니다. 점수는 교육용 임시 지표입니다.</div>
+    <div class="analysis-side-stat" id="analysis-group-table" style="overflow-y:auto;max-height:35%;">—</div>
+    <div id="analysis-side-progress"></div>
+</div>
 </div>
 
 <script>
@@ -619,7 +816,22 @@
         };
     }
 
+    // MASS 모드에서만 시나리오 다중 선택 허용 (HTMS는 기존 단일 선택 유지)
+    function updateScenarioSelectionMode() {
+        const isMassMode = simMode === 'MASS';
+        const driveSelect = document.getElementById('scenarioDriveSelect');
+        const localInput = document.getElementById('localScenarioInput');
+        driveSelect.multiple = isMassMode;
+        if (isMassMode) driveSelect.size = 7;
+        else driveSelect.removeAttribute('size');
+        localInput.multiple = isMassMode;
+        document.getElementById('scenarioDriveLabel').textContent = isMassMode
+            ? 'SELECT SCENARIOS (Ctrl / Shift for multiple)'
+            : 'SELECT SCENARIO FILE';
+    }
+
     function initSystem() {
+        updateScenarioSelectionMode();
         massList = [createMassState(globalOrigin.lat, globalOrigin.lon)];
         activeMassIndex = 0;
         
@@ -640,6 +852,8 @@
             tabMenu.style.display = 'none';
             
             currentMode = 'editor';
+            gridContainer.style.display = 'grid';
+            document.getElementById('analysis-workspace').style.display = 'none';
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelector('.tab-btn[data-mode="editor"]').classList.add('active');
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -661,6 +875,7 @@
 
     simModeSelect.addEventListener('change', (e) => {
         simMode = e.target.value;
+        document.getElementById('scenarioDriveLoadContainer').style.display = 'none';
         initSystem();
     });
 
@@ -675,12 +890,18 @@
             // 탭 변경 시 환경설정, 시나리오 로드/세이브 영역 토글
             document.getElementById('editor-only-controls').style.display = (currentMode === 'editor') ? 'block' : 'none';
 
+            // The analysis-only pane replaces the grid without touching the old canvases.
+            gridContainer.style.display = (currentMode === 'analysis') ? 'none' : 'grid';
+            document.getElementById('analysis-workspace').style.display = (currentMode === 'analysis') ? 'flex' : 'none';
             if (isDeleteMode) toggleDeleteMode(); 
             if (currentMode === 'editor') {
                 if (isPlaying) document.getElementById('playPauseBtn').click();
                 renderGrid();
-            } else {
+            } else if (currentMode === 'replay') {
                 renderReplayGrid();
+            } else if (currentMode === 'analysis') {
+                if (isPlaying) document.getElementById('playPauseBtn').click();
+                Analysis.scenarioChanged();
             }
             updateGlobalControlVisibility();
         });
@@ -745,7 +966,7 @@
     deleteToggleBtn.addEventListener('click', toggleDeleteMode);
     function toggleDeleteMode() {
         isDeleteMode = !isDeleteMode;
-        deleteToggleBtn.textContent = isDeleteMode ? '삭제 모드: ON' : '삭제 모드: OFF';
+        deleteToggleBtn.textContent = isDeleteMode ? 'DELETE MODE: ON' : 'DELETE MODE: OFF';
         deleteToggleBtn.style.background = isDeleteMode ? '#ef4444' : '#7f1d1d';
         deleteToggleBtn.style.color = isDeleteMode ? '#ffffff' : '#fca5a5';
         gridContainer.style.cursor = isDeleteMode ? 'crosshair' : 'default';
@@ -783,7 +1004,7 @@
         let total = massList.length + massList.reduce((acc, m) => acc + m.targets.length, 0);
         if (total + addCount > 20) {
             if (!hasWarnedShipLimit) {
-                alert("20척이 넘었습니다!");
+                alert("The 20-ship limit has been exceeded!");
                 hasWarnedShipLimit = true;
             }
             return false;
@@ -792,7 +1013,7 @@
     }
 
     function renderGrid() {
-        if (currentMode === 'replay') return; 
+        if (currentMode !== 'editor') return; 
         gridContainer.innerHTML = '';
         
         let cols = 1, rows = 1;
@@ -878,7 +1099,7 @@
                 }
             });
             updateAllCanvases();
-        } else {
+        } else if (currentMode === 'replay') {
             if (replayList.length === 0) {
                 const canvas = document.getElementById('replay-canvas-empty');
                 if (canvas) {
@@ -896,6 +1117,8 @@
                 });
                 drawAllReplayCanvases();
             }
+        } else if (currentMode === 'analysis') {
+            Analysis.resize();
         }
     });
 
@@ -1503,12 +1726,25 @@
         }
     }
 
-    function applyLoadedScenario(parsed) {
+    // HTMS 시나리오를 MASS 모드에서 불러올 때 선종을 지원 가능한 MASS 모델로 치환
+    function getMassCompatibleShipType(type) {
+        if (MASS_SHIP_TYPES.includes(type)) return type;
+        const typeMap = {
+            BulkCarrier: 'BULK_3000_F',
+            ContainerShip1: 'CNTR_2700', ContainerShip2: 'CNTR_4K_F',
+            CargoShip1: 'CNTR_2700', CargoShip2: 'CNTR_4K_F',
+            FishingBoat1: 'FISHER_249GT', GasCarrier1: 'UNLNG_210KA',
+            PassengerShip1: 'MMU_SEAGEARO'
+        };
+        return typeMap[type] || 'CNTR_2700';
+    }
+
+    function applyLoadedScenario(parsed, options = {}) {
         const isIncomingMASS = !!(parsed.WayPointSet && parsed.ships);
         const isIncomingHTMSArray = Array.isArray(parsed);
         const isIncomingHTMSObj = !isIncomingMASS && !isIncomingHTMSArray && !!parsed.os;
 
-        if (parsed.environment) {
+        if (parsed.environment && !options.skipEnvironment) {
             if (parsed.environment.wind) {
                 globalEnv.windDir = Number(parsed.environment.wind.dir ?? 45);
                 globalEnv.windSpd = Number(parsed.environment.wind.spd ?? 12.5);
@@ -1586,7 +1822,7 @@
             massList = [];
             if (isIncomingMASS) {
                 const osShips = parsed.ships.filter(s => s.isMASS === 1);
-                if (osShips.length === 0) throw new Error("시나리오에 isMASS=1 인 선박이 없습니다.");
+                if (osShips.length === 0) throw new Error("The scenario has no ship with isMASS=1.");
                 osShips.forEach(osShipMASS => {
                     let osWpSet = parsed.WayPointSet.find(ws => ws.WayPointSetID === osShipMASS.waypointSetID);
                     let oLat = 34.800000; let oLon = 126.400000;
@@ -1650,7 +1886,7 @@
                     }
                     const safeOs = parsed.os || {};
                     newMass.osData = { 
-                        type: safeOs.type || 'CNTR_2700', 
+                        type: getMassCompatibleShipType(safeOs.type), 
                         hdg: Number(safeOs.hdg) || 0, 
                         spd: safeOs.spd !== undefined ? Number(safeOs.spd) : OS_SPD, 
                         waypoints: (safeOs.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
@@ -1658,7 +1894,7 @@
                     newMass.targets = (parsed.targets || []).map(t => {
                         const tSpd = t.spd !== undefined ? Number(t.spd) : 10;
                         return {
-                            type: t.type || 'CNTR_2700',
+                            type: getMassCompatibleShipType(t.type),
                             x: Number(t.x) || 0, z: Number(t.z) || 0,
                             hdg: Number(t.hdg) || 0,
                             spd: tSpd, wpDist: tSpd * VECTOR_SCALE,
@@ -1670,10 +1906,61 @@
             }
         }
         
-        activeMassIndex = 0;
-        updateShipTypeOptions();
-        if (currentMode === 'editor') renderGrid(); 
-        else renderReplayGrid();
+        if (!options.deferRender) {
+            activeMassIndex = 0;
+            updateShipTypeOptions();
+            if (currentMode === 'editor') renderGrid();
+            else renderReplayGrid();
+        }
+    }
+
+    // 각 파일은 독립적으로 해석 후 MASS 목록을 결합한다.
+    // 각 파일의 MASS-타선 소속 관계와 경로를 유지하고, 전체 렌더링은 한 번만 수행한다.
+    function applyLoadedScenarioBatch(parsedScenarios) {
+        if (!parsedScenarios.length) throw new Error('No scenarios selected.');
+        if (simMode !== 'MASS' && parsedScenarios.length !== 1) {
+            throw new Error('Ship Handler can load one scenario at a time.');
+        }
+
+        const previousMassList = massList;
+        const previousMassIndex = activeMassIndex;
+        const previousEnv = { ...globalEnv };
+        const allImportedMasses = [];
+
+        try {
+            parsedScenarios.forEach((parsed, index) => {
+                const hasMassFormat = parsed && Array.isArray(parsed.ships) && Array.isArray(parsed.WayPointSet);
+                const hasHtmsFormat = Array.isArray(parsed) || (parsed && parsed.os && typeof parsed.os === 'object');
+                if (!hasMassFormat && !hasHtmsFormat) {
+                    throw new Error(`${index + 1} file has an unsupported scenario format.`);
+                }
+
+                applyLoadedScenario(parsed, { deferRender: true, skipEnvironment: index > 0 });
+                if (simMode === 'MASS') {
+                    allImportedMasses.push(...massList);
+                    if (allImportedMasses.length > 8) {
+                        throw new Error('You can load up to 8 MASS vessels at once.');
+                    }
+                }
+            });
+
+            if (simMode === 'MASS') massList = allImportedMasses;
+            activeMassIndex = 0;
+            updateShipTypeOptions();
+            if (currentMode === 'editor') renderGrid();
+            else if (currentMode === 'replay') renderReplayGrid();
+            if (typeof Analysis !== 'undefined') Analysis.scenarioChanged();
+        } catch (err) {
+            // 파일 하나에 문제가 있으면 기존 작업 상태를 그대로 복원한다.
+            massList = previousMassList;
+            activeMassIndex = previousMassIndex;
+            globalEnv = previousEnv;
+            document.getElementById('envWindDir').value = globalEnv.windDir;
+            document.getElementById('envWindSpd').value = globalEnv.windSpd;
+            document.getElementById('envCurrDir').value = globalEnv.currDir;
+            document.getElementById('envCurrSpd').value = globalEnv.currSpd;
+            throw err;
+        }
     }
 
 
@@ -1683,8 +1970,8 @@
     });
 
     document.getElementById('localScenarioInput').addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
         const btn = document.getElementById('loadLocalScenarioBtn');
         const originalText = btn.textContent;
@@ -1692,20 +1979,20 @@
         const originalColor = btn.style.color;
 
         btn.disabled = true;
-        btn.textContent = '로컬 파일 읽는 중...';
+        btn.textContent = 'Reading local file(s)...';
 
         try {
-            const text = await file.text();
-            const parsed = JSON.parse(text);
-            applyLoadedScenario(parsed);
+            const parsedScenarios = await Promise.all(files.map(async file => JSON.parse(await file.text())));
+            applyLoadedScenarioBatch(parsedScenarios);
 
-            document.getElementById('scenarioNameInput').value = file.name.replace(/\.json$/i, '');
-            btn.textContent = '✅ 불러오기 완료!';
+            document.getElementById('scenarioNameInput').value = files.length === 1
+                ? files[0].name.replace(/\.json$/i, '') : '';
+            btn.textContent = files.length === 1 ? '✅ Load complete!' : `✅ Loaded ${files.length} files!`;
             btn.style.background = '#10b981';
             btn.style.color = '#fff';
         } catch (err) {
-            console.error('로컬 시나리오 불러오기 에러:', err);
-            btn.textContent = '❌ JSON 불러오기 실패';
+            console.error('Error loading local scenario:', err);
+            btn.textContent = '❌ Failed to load JSON';
             btn.style.background = '#ef4444';
             btn.style.color = '#fff';
         } finally {
@@ -1741,12 +2028,12 @@
             generateJSONOutput();
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === '') {
-                showTempMessage('❌ 저장 실패 (데이터 없음)', '#ef4444');
+                showTempMessage('❌ Save failed (no data)', '#ef4444');
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = '로컬 저장 중...';
+            btn.textContent = 'Saving locally...';
 
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
             const inputVal = document.getElementById('scenarioNameInput').value.trim();
@@ -1772,10 +2059,10 @@
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 0);
 
-            showTempMessage('✅ 로컬 저장 완료!', '#10b981');
+            showTempMessage('✅ Saved locally!', '#10b981');
         } catch (err) {
-            console.error('로컬 시나리오 저장 에러:', err);
-            showTempMessage('❌ 로컬 저장 실패', '#ef4444');
+            console.error('Error saving local scenario:', err);
+            showTempMessage('❌ Local save failed', '#ef4444');
         }
     });
 
@@ -1791,9 +2078,9 @@
         
         container.style.display = 'block';
         msg.style.display = 'block';
-        msg.textContent = "구글 드라이브에서 시나리오 목록을 가져오는 중...";
+        msg.textContent = "Fetching scenario files from Google Drive...";
         msg.style.color = "var(--accent-yellow)";
-        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        select.innerHTML = '<option value="">Loading list...</option>';
         select.disabled = true;
 
         fetch(`${SCENARIO_SCRIPT_URL}?action=list`)
@@ -1804,13 +2091,13 @@
                 // 시뮬레이터 모드에 따른 파일 필터링
                 const filteredFiles = files.filter(file => {
                     if (simMode === 'HTMS') return file.name.includes('Scenario');
-                    if (simMode === 'MASS') return file.name.includes('MASS');
+                    if (simMode === 'MASS') return true;
                     return true;
                 });
                 
                 select.innerHTML = '';
                 if(filteredFiles.length === 0) {
-                    select.innerHTML = '<option value="">조건에 맞는 시나리오가 없습니다.</option>';
+                    select.innerHTML = '<option value="">No matching scenarios found.</option>';
                 } else {
                     filteredFiles.forEach(file => {
                         const opt = document.createElement('option');
@@ -1823,7 +2110,7 @@
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립트 상태를 확인하세요.";
+                msg.textContent = "Failed to fetch the list. Check the script status.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -1831,13 +2118,14 @@
 
     document.getElementById('loadSelectedScenarioBtn').addEventListener('click', async () => {
         const select = document.getElementById('scenarioDriveSelect');
+        const selectedOptions = Array.from(select.selectedOptions).filter(opt => opt.value);
         const msg = document.getElementById('scenarioLoadingMsg');
         const btn = document.getElementById('loadSelectedScenarioBtn');
         const originalText = btn.textContent;
         const originalBg = btn.style.background;
         
-        if (!select.value) {
-            btn.textContent = "❌ 파일을 선택해주세요";
+        if (selectedOptions.length === 0) {
+            btn.textContent = "❌ Select a file";
             btn.style.background = "#ef4444";
             setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; }, 1500);
             return;
@@ -1845,22 +2133,26 @@
 
         msg.style.display = 'block';
         msg.style.color = "var(--accent-yellow)";
-        msg.textContent = "시나리오 데이터를 다운로드하는 중...";
+        msg.textContent = "Downloading scenario data...";
         btn.disabled = true;
         
         try {
-            const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${select.value}`);
-            const parsed = await res.json();
-            
-            if (parsed.error) throw new Error(parsed.error);
+            const parsedScenarios = await Promise.all(selectedOptions.map(async (option) => {
+                const res = await fetch(`${SCENARIO_SCRIPT_URL}?action=load&fileId=${encodeURIComponent(option.value)}`);
+                if (!res.ok) throw new Error(`${option.text}: HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.error) throw new Error(`${option.text}: ${data.error}`);
+                return data;
+            }));
 
-            applyLoadedScenario(parsed);
+            applyLoadedScenarioBatch(parsedScenarios);
 
-            document.getElementById('scenarioNameInput').value = select.options[select.selectedIndex].text.replace('.json', '');
+            document.getElementById('scenarioNameInput').value = selectedOptions.length === 1
+                ? selectedOptions[0].text.replace(/\.json$/i, '') : '';
 
-            msg.textContent = "✅ 성공적으로 불러왔습니다!";
+            msg.textContent = "✅ Successfully loaded!";
             msg.style.color = "var(--accent-green)";
-            btn.textContent = "✅ 불러오기 완료!";
+            btn.textContent = selectedOptions.length === 1 ? "✅ Load complete!" : `✅ Loaded ${selectedOptions.length} files!`;
             btn.style.background = "#10b981";
 
             setTimeout(() => {
@@ -1872,9 +2164,9 @@
             }, 1500);
 
         } catch (err) {
-            msg.textContent = "❌ 불러오기 실패!";
+            msg.textContent = "❌ Load failed!";
             msg.style.color = "var(--accent-red)";
-            btn.textContent = "❌ 에러 발생";
+            btn.textContent = "❌ Error";
             btn.style.background = "#ef4444";
             console.error(err);
             setTimeout(() => { btn.textContent = originalText; btn.style.background = originalBg; btn.disabled = false; }, 2000);
@@ -1903,11 +2195,11 @@
             generateJSONOutput(); 
             const dataStr = document.getElementById('jsonOutput').value;
             if (!dataStr || dataStr.trim() === "") {
-                showTempMessage('❌ 저장 실패 (데이터 없음)', '#ef4444');
+                showTempMessage('❌ Save failed (no data)', '#ef4444');
                 return;
             }
             
-            btn.textContent = '이름 확인 중...';
+            btn.textContent = 'Checking file name...';
             btn.disabled = true;
             
             const prefix = simModeSelect.value === 'HTMS' ? 'HTMS_Scenario_' : 'MASS_Scenario_';
@@ -1938,7 +2230,7 @@
                 finalName = `${prefix}${nextNumStr}.json`;
             }
 
-            btn.textContent = '드라이브 저장 중...';
+            btn.textContent = 'Saving to Drive...';
 
             const postRes = await fetch(SCENARIO_SCRIPT_URL, {
                 method: 'POST',
@@ -1952,14 +2244,14 @@
             
             if(postData.success) {
                 document.getElementById('scenarioNameInput').value = postData.fileName.replace('.json', '');
-                showTempMessage('✅ 저장 완료!', '#10b981');
+                showTempMessage('✅ Save complete!', '#10b981');
             } else {
-                showTempMessage('❌ 저장 실패', '#ef4444');
+                showTempMessage('❌ Save failed', '#ef4444');
             }
 
         } catch (e) {
-            console.error("저장 에러:", e);
-            showTempMessage('❌ 에러 발생', '#ef4444');
+            console.error("Save error:", e);
+            showTempMessage('❌ Error', '#ef4444');
         }
     });
 
@@ -1973,9 +2265,9 @@
 
             if (logArray.length === 0) {
                 if (data.os || data.targets || data.ships) {
-                    console.warn(`[${fileName}] 선택하신 파일은 리플레이가 아닌 시나리오 파일입니다.`);
+                    console.warn(`[${fileName}] The selected file is a scenario, not a replay log.`);
                 } else {
-                    console.warn(`[${fileName}] 유효한 리플레이 데이터가 없습니다.`);
+                    console.warn(`[${fileName}] No valid replay data was found.`);
                 }
                 return null;
             }
@@ -2010,7 +2302,10 @@
                 const sog = parseFloat(row.sog) || 0;
 
                 if (!frames[t]) frames[t] = [];
-                frames[t].push({ name, x: simX, z: simZ, hdg, cog, sog });
+                frames[t].push({ name, x: simX, z: simZ, hdg, cog, sog,
+                    rot: (row.rot === undefined ? null : Number(row.rot)),
+                    rudCmd: (row.rud_cmd === undefined ? null : Number(row.rud_cmd)),
+                    rudAct: (row.rud_act === undefined ? null : Number(row.rud_act)) });
             });
             
             const parsedFrames = Object.keys(frames).map(Number).sort((a,b)=>a-b).map(t => ({ time: t, ships: frames[t] }));
@@ -2222,7 +2517,7 @@
         slider.value = 0; 
         
         currentReplayTime = replayList[0].frames[0]?.time || 0;
-        document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+        document.getElementById('timeDisplay').textContent = `시간: ${currentReplayTime.toFixed(1)} s`;
         
         renderReplayGrid();
     }
@@ -2236,7 +2531,7 @@
     document.getElementById('localJsonInput').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files); 
         if (files.length === 0) return;
-        if (files.length > 50) { alert("최대 50개까지만 동시 재생 가능합니다."); return; }
+        if (files.length > 50) { alert("You can replay up to 50 files at a time."); return; }
 
         if (isPlaying) document.getElementById('playPauseBtn').click();
         replayList = [];
@@ -2262,8 +2557,8 @@
         
         container.style.display = 'flex';
         msg.style.display = 'block';
-        msg.textContent = "구글 드라이브에서 파일 목록을 가져오는 중...";
-        select.innerHTML = '<option value="">목록 로딩 중...</option>';
+        msg.textContent = "Fetching files from Google Drive...";
+        select.innerHTML = '<option value="">Loading list...</option>';
         select.disabled = true;
 
         fetch(`${REPLAY_SCRIPT_URL}?action=list`)
@@ -2273,7 +2568,7 @@
 
                 select.innerHTML = '';
                 if(files.length === 0) {
-                    select.innerHTML = '<option value="">저장된 로그 파일이 없습니다.</option>';
+                    select.innerHTML = '<option value="">No saved log files.</option>';
                 } else {
                     files.forEach(file => {
                         const opt = document.createElement('option');
@@ -2286,7 +2581,7 @@
                 msg.style.display = 'none';
             })
             .catch(err => {
-                msg.textContent = "목록을 불러오는 데 실패했습니다. 스크립 상태를 확인하세요.";
+                msg.textContent = "Failed to fetch the list. Check the script status.";
                 msg.style.color = "var(--accent-red)";
                 console.error(err);
             });
@@ -2301,13 +2596,13 @@
         const origBg = btn.style.background;
 
         if (selectedOptions.length === 0) {
-            btn.textContent = '❌ 파일을 선택하세요';
+            btn.textContent = '❌ Select a file';
             btn.style.background = '#ef4444';
             setTimeout(() => { btn.textContent = orig; btn.style.background = origBg; }, 1500);
             return;
         }
         if (selectedOptions.length > 50) {
-            alert("최대 50개까지만 동시 재생 가능합니다.");
+            alert("You can replay up to 50 files at a time.");
             return;
         }
 
@@ -2315,7 +2610,7 @@
         
         msg.style.display = 'block';
         msg.style.color = "var(--accent-yellow)";
-        msg.textContent = "시뮬레이션 데이터를 다운로드하는 중...";
+        msg.textContent = "Downloading simulation data...";
         btn.disabled = true;
         
         replayList = [];
@@ -2333,9 +2628,9 @@
             const results = await Promise.all(promises);
             results.forEach(r => { if (r) replayList.push(r); });
 
-            msg.textContent = "✅ 성공적으로 불러왔습니다!";
+            msg.textContent = "✅ Successfully loaded!";
             msg.style.color = "var(--accent-green)";
-            btn.textContent = "✅ 재생 준비 완료!";
+            btn.textContent = "✅ Replay ready!";
             btn.style.background = "#10b981";
 
             setTimeout(() => {
@@ -2347,9 +2642,9 @@
             
             if (replayList.length > 0) initReplayPlayback();
         } catch (err) {
-            msg.textContent = "❌ 파일 로드 실패!";
+            msg.textContent = "❌ File loading failed!";
             msg.style.color = "var(--accent-red)";
-            btn.textContent = "❌ 에러 발생";
+            btn.textContent = "❌ Error";
             btn.style.background = "#ef4444";
             console.error(err);
             setTimeout(() => { btn.textContent = orig; btn.style.background = origBg; btn.disabled = false; }, 2000);
@@ -2363,7 +2658,7 @@
         const refReplay = replayList[0];
         const safeIdx = Math.min(globalIdx, refReplay.frames.length - 1);
         currentReplayTime = refReplay.frames[safeIdx]?.time || globalIdx;
-        document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+        document.getElementById('timeDisplay').textContent = `시간: ${currentReplayTime.toFixed(1)} s`;
         drawAllReplayCanvases();
     });
 
@@ -2371,11 +2666,11 @@
     playPauseBtn.addEventListener('click', () => {
         if (replayList.length === 0) return;
         if (isPlaying) {
-            isPlaying = false; playPauseBtn.textContent = 'PLAY';
+            isPlaying = false; playPauseBtn.textContent = '재생';
             playPauseBtn.style.background = '#1f293d'; playPauseBtn.style.color = 'var(--text-main)';
             clearInterval(playInterval);
         } else {
-            isPlaying = true; playPauseBtn.textContent = 'PAUSE';
+            isPlaying = true; playPauseBtn.textContent = '일시정지';
             playPauseBtn.style.background = '#eab308'; playPauseBtn.style.color = '#000';
             playInterval = setInterval(() => {
                 let idx = parseInt(slider.value) + 1;
@@ -2386,7 +2681,7 @@
                 const safeIdx = Math.min(idx, refReplay.frames.length - 1);
                 currentReplayTime = refReplay.frames[safeIdx]?.time || idx;
                 
-                document.getElementById('timeDisplay').textContent = `TIME: ${currentReplayTime.toFixed(1)} s`;
+                document.getElementById('timeDisplay').textContent = `시간: ${currentReplayTime.toFixed(1)} s`;
                 drawAllReplayCanvases();
             }, 1000 / playSpeed); 
         }
@@ -2558,6 +2853,801 @@
     }
     window.addEventListener('mouseup', stopResizer);
     window.addEventListener('touchend', stopResizer);
+
+// ================================================================
+// HTMS DATA ANALYSIS EXTENSION (does not change editor algorithms)
+// All thresholds and score weights are kept in one object so the
+// teaching rubric can be changed without modifying the views.
+// ================================================================
+const Analysis = (() => {
+    const SETTINGS = {
+        rudderLimit:35, rotLimit:70, straightThreshold:0.1, minStraightSeconds:10,
+        stableOrderSeconds:3, minAssessableTurnSeconds:3,
+        turnAngleBands:[15,45,90],
+        steeringWeights:{command:0.55, shape:0.45},
+        commandWeights:{hold:0.50, simplicity:0.25, settle:0.15, counter:0.10},
+        // DCPA rows from nearest to farthest; TCPA columns from soonest to latest.
+        cpaEdges:[0.3,0.5,1], tcpaEdges:[3,10,20],
+        riskMatrix:[[4,3,2,1],[3,2,1,0],[2,1,1,0],[0,0,0,0]],
+        riskColors:['#10b981','#eab308','#f97316','#ef4444','#b91c1c'],
+        riskNamesEN:['Clear','Watch','Caution','High','Critical'],
+        riskNamesKO:['안전','관심','주의','위험','심각']
+    };
+    const ko = (document.documentElement.dataset.analysisLanguage === 'ko');
+    const tr = (en,kr) => ko?kr:en;
+    const $ = (id) => document.getElementById(id);
+    const esc = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const n = (a) => {if(a === undefined || a === null || a === '') return null;const x=Number(a);return Number.isFinite(x)?x:null;};
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    const fmt=(v,d=1)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
+    const avoidanceScore=(severity)=>Number.isFinite(severity)?clamp(100-25*severity,0,100):null;
+    const tstr=(sec)=>!Number.isFinite(sec)?'—':`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(Math.floor(sec%60)).padStart(2,'0')}`;
+    const osShip = (frame) => (frame?.ships || []).find(s=>s.name === 'OS' || /^MASS(?:_\d+)?$/i.test(s.name));
+    const side=(v)=>Math.abs(v)<0.5?'MIDSHIP':(v>0?'STBD':'PORT');
+    const degDiff=(a,b)=>((b-a+540)%360)-180;
+    const mod=(v)=>((v%360)+360)%360;
+    let groupKey='', selectedReplay=null, selectedTurn=0, activeSection='', selectedRiskIndex=0;
+    let activeList=[], renderedCache=new WeakMap(), sceneVersion=0;
+    let upperPan=new WeakMap();
+    const riskTrackPan=new WeakMap();
+    const riskTimePan=new WeakMap();
+    const groupOrders=new Map();
+    let draggedTrack=null, focusedRiskCell=null;
+
+    function parseIdentity(fileName) {
+        const base=String(fileName).replace(/\.json$/i,'').replace(/\s*\(\d+\)$/,'').trim();
+        const m=base.match(/^(HTMS_Scenario_\d+)_R_(\d{8})_(\d{6})_(\d+)_([^]+)$/i);
+        if(m) return {scenario:m[1], date:m[2], clock:m[3], sid:m[4], person:m[5], key:`${m[1].toLowerCase()}|${m[4]}|${m[5]}`, dateText:`${m[2].slice(0,4)}-${m[2].slice(4,6)}-${m[2].slice(6)} ${m[3].slice(0,2)}:${m[3].slice(2,4)}:${m[3].slice(4)}`,sort:m[2]+m[3]};
+        const m2=base.match(/^(.*)_R_(\d{8})_(\d{6})_(\d+)_([^]+)$/i);
+        if(m2) return {scenario:m2[1],date:m2[2],clock:m2[3],sid:m2[4],person:m2[5],key:`${m2[1].toLowerCase()}|${m2[4]}|${m2[5]}`,dateText:m2[2]+' '+m2[3],sort:m2[2]+m2[3]};
+        return {scenario:base,sid:'?',person:tr('Unidentified','미확인'),key:`file:${base}`,dateText:base,sort:base};
+    }
+    function availableGroups(){
+        const map=new Map();
+        replayList.forEach((r,i)=>{
+            const info=parseIdentity(r.name);
+            if(!map.has(info.key))map.set(info.key,{...info,replays:[]});
+            map.get(info.key).replays.push({r,index:i,meta:info});
+        });
+        for(const g of map.values()){
+            g.replays.sort((a,b)=>a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index);
+            const order=groupOrders.get(g.key);
+            if(order){
+                const rank=new Map(order.map((r,i)=>[r,i]));
+                g.replays.sort((a,b)=>{
+                    const x=rank.get(a.r),y=rank.get(b.r);
+                    return x!==undefined&&y!==undefined?x-y:x!==undefined?-1:y!==undefined?1:a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index;
+                });
+            }
+        }
+        return [...map.values()].sort((a,b)=>a.scenario.localeCompare(b.scenario)||a.sid.localeCompare(b.sid)||a.person.localeCompare(b.person));
+    }
+    function sceneStatus(r){
+        const curr=massList[0];
+        const targets=curr && Array.isArray(curr.targets)?curr.targets:[];
+        const sourceScenario=$('scenarioNameInput').value.trim().replace(/\.json$/i,'');
+        const identity=parseIdentity(r.name);
+        const scenarioToken=(sourceScenario.match(/HTMS_Scenario_\d+/i)||[])[0];
+        const sameName=!sourceScenario||!scenarioToken||scenarioToken.toLowerCase()===identity.scenario.toLowerCase();
+        const os=r.frames.map(osShip).find(Boolean);
+        let sameStart=true;
+        if(os && curr){
+            if(n(os.sog)!==null&&Math.abs(os.sog-curr.osData.spd)>1.5)sameStart=false;
+            if(n(os.hdg)!==null&&Math.abs(degDiff(curr.osData.hdg,os.hdg))>20)sameStart=false;
+            if(Number.isFinite(os.x)&&Number.isFinite(os.z)&&Math.hypot(os.x,os.z)>160)sameStart=false;
+        }
+        let matchCnt=0;
+        const first=r.frames.find(f=>(f.ships||[]).some(s=>s.name!=='OS'));
+        if(first && targets.length){
+            const logTargets=first.ships.filter(s=>s.name!=='OS' && !s.name.startsWith('MASS'));
+            for(const obj of logTargets){
+                const ix=Number((obj.name||'').match(/_S(\d+)$/)?.[1]);
+                if(Number.isInteger(ix)&&targets[ix]){
+                    const a=targets[ix];
+                    if(Math.hypot(obj.x-a.x,obj.z-a.z)<60)matchCnt++;
+                }
+            }
+            if(logTargets.length && matchCnt<Math.min(3,logTargets.length))sameStart=false;
+        }
+        const ok=sameName&&sameStart;
+        const exists=targets.length>0;
+        let warning='';
+        if(!exists && !r.frames.some(f=>f.ships.length>1)) warning=tr('No target ships in the loaded scenario. Steering analysis still works.','불러온 시나리오에 타선이 없습니다. Steering 평가는 계속 가능합니다.');
+        else if(!sameName) warning=tr('Scenario names do not match. Verify that these files belong together.','시나리오 번호가 서로 다릅니다. 같은 실습 자료인지 확인하세요.');
+        else if(!sameStart) warning=tr('Scenario target/OS initial conditions differ from the result log. Risk estimates based on this scenario are disabled.','시나리오의 본선·타선 초기 조건과 결과가 일치하지 않습니다. 이 시나리오를 이용한 추정 위험도는 계산하지 않습니다.');
+        return {exists,ok,warning,targets,sourceScenario,logTargetsPresent:r.frames.some(f=>f.ships.length>1)};
+    }
+    function getSampleShips(r,f,scene){
+        const recorded=f.ships.filter(s=>s.name !== 'OS' && !/^MASS(?:_\d+)?$/i.test(s.name));
+        if(recorded.length){ // Exact recorded target states override route approximation.
+            return {ships:recorded,source:'recorded'};
+        }
+        if(!scene.ok || !scene.exists)return {ships:[],source:'none'};
+        return {ships:scene.targets.map((t,i)=>predictedTarget(t,f.time,i)),source:'scenario'};
+    }
+    function predictedTarget(t,sec,index){
+        // HTMS scenario units: 400 world units per nautical mile; y/z grows SOUTH.
+        const distance=Number(t.spd||0)*Math.max(0,sec)*400/3600;
+        const p0={x:Number(t.x||0),z:Number(t.z||0)};
+        const points=[p0,...(t.waypoints||[]).map(p=>({x:Number(p.x),z:Number(p.z)}))];
+        let dist=distance;let x=p0.x,z=p0.z, heading=Number(t.hdg||0);
+        if(points.length===1){const rd=heading*Math.PI/180;x+=Math.sin(rd)*dist;z-=Math.cos(rd)*dist;}
+        else {
+            for(let i=1;i<points.length;i++){
+                const from=points[i-1],to=points[i],len=Math.hypot(to.x-from.x,to.z-from.z);
+                if(len<1e-8)continue;
+                const ux=(to.x-from.x)/len,uz=(to.z-from.z)/len;
+                heading=mod(Math.atan2(ux,-uz)*180/Math.PI);
+                const step=Math.min(dist,len);x+=ux*step;z+=uz*step;dist-=step;
+                if(dist<=0)break;
+                if(i===points.length-1){x+=ux*dist;z+=uz*dist;dist=0;}
+            }
+        }
+        return {name:`T${index+1}`,x,z,hdg:heading,cog:heading,sog:Number(t.spd||0)};
+    }
+    function calcCPA(os,target){
+        const px=(target.x-os.x)/400,py=-(target.z-os.z)/400;
+        const rb=(Number(os.cog??os.hdg)||0)*Math.PI/180;
+        const tb=(Number(target.cog??target.hdg)||0)*Math.PI/180;
+        const sv=Number(os.sog||0),tv=Number(target.sog||0);
+        const vx=tv*Math.sin(tb)-sv*Math.sin(rb),vy=tv*Math.cos(tb)-sv*Math.cos(rb);
+        const vv=vx*vx+vy*vy;
+        const range=Math.hypot(px,py);
+        if(vv<1e-10)return {cpa:range,tcpa:range<0.3?0:Infinity,range};
+        const th=-(px*vx+py*vy)/vv;
+        const cpa=Math.hypot(px+th*vx,py+th*vy);
+        return {cpa,tcpa:th*60,range};
+    }
+    function riskCell(cpa,tcpa){
+        // Counts include only future, finite TCPA. Passed and unprojectable ships are shown separately.
+        if(!Number.isFinite(cpa)||!Number.isFinite(tcpa)||tcpa<0)return null;
+        return {row:cpa<SETTINGS.cpaEdges[0]?0:cpa<SETTINGS.cpaEdges[1]?1:cpa<SETTINGS.cpaEdges[2]?2:3,
+                col:tcpa<SETTINGS.tcpaEdges[0]?0:tcpa<SETTINGS.tcpaEdges[1]?1:tcpa<SETTINGS.tcpaEdges[2]?2:3};
+    }
+    function riskLevel(cpa,tcpa){
+        const cell=riskCell(cpa,tcpa);
+        return cell?SETTINGS.riskMatrix[cell.row][cell.col]:0;
+    }
+    function analyzeRisk(r,scene){
+        const instants=[];const frames=r.frames;
+        let valid=0, observed=0, scenarioRows=0;
+        for(const f of frames){
+            const os=osShip(f);if(!os)continue;
+            const source=getSampleShips(r,f,scene);
+            if(source.source==='recorded')observed++;
+            if(source.source==='scenario')scenarioRows++;
+            let winner=null,worst=0;
+            const levels=[],levelShipCounts=Array(5).fill(0);
+            const cellCounts=Array.from({length:4},()=>Array(4).fill(0));
+            const cellShips=Array.from({length:4},()=>Array.from({length:4},()=>[]));
+            let passed=0,unprojected=0;
+            for(const target of source.ships){
+                if(!Number.isFinite(target.x)||!Number.isFinite(target.z))continue;
+                const info=calcCPA(os,target),lvl=riskLevel(info.cpa,info.tcpa);
+                levels.push(lvl);levelShipCounts[lvl]++;
+                const cell=riskCell(info.cpa,info.tcpa);
+                if(cell){
+                    cellCounts[cell.row][cell.col]++;
+                    cellShips[cell.row][cell.col].push({name:target.name,cpa:info.cpa,tcpa:info.tcpa,level:lvl});
+                }else if(Number.isFinite(info.tcpa)&&info.tcpa<0)passed++;
+                else unprojected++;
+                if(winner===null||lvl>worst||(lvl===worst&&info.cpa<winner.cpa)){
+                    winner={...info,level:lvl,name:target.name};worst=lvl;
+                }
+            }
+            const has=levels.length>0;if(has)valid++;
+            instants.push({t:f.time,os,level:worst,winner,valid:has,shipCount:levels.length,
+                source:source.source,levels,levelShipCounts,cellCounts,cellShips,passed,unprojected});
+        }
+        if(!valid)return {valid:false,instants,mean:null,counts:[],episodes:[],events:[],source:'none',warning:scene.warning||tr('No valid target states. Load the matching scenario first.','유효한 타선 정보가 없습니다. 해당 시나리오를 먼저 읽어오세요.')};
+        let total=0,weighted=0,highSeconds=0,highSamples=0,weightedHigh=0,maxHigh=0;
+        const levelShipSamples=Array(5).fill(0);
+        const counts=Array.from({length:5},(_,lv)=>({level:lv,seconds:0,samples:0,episodes:0}));
+        const medianDt=instants.length>1?Math.max(0.1,Math.min(3,instants[1].t-instants[0].t)):1;
+        instants.forEach((r,i)=>{
+            if(!r.valid)return;
+            const dt=clamp((instants[i+1]?.t ?? (r.t+medianDt))-r.t,0.01,5);
+            counts[r.level].seconds+=dt;counts[r.level].samples++;total+=dt;weighted+=dt*r.level;
+            const high=(r.levelShipCounts[3]||0)+(r.levelShipCounts[4]||0);
+            weightedHigh+=high*dt;maxHigh=Math.max(maxHigh,high);
+            if(high){highSeconds+=dt;highSamples++;}
+            for(let k=0;k<5;k++)levelShipSamples[k]+=r.levelShipCounts[k]||0;
+        });
+        const episodes=[],events=[];
+        let current=null;
+        for(let i=0;i<instants.length;i++){
+            const item=instants[i];
+            if(!item.valid){if(current){episodes.push(current);current=null;}continue;}
+            const discontinuity=current&&(item.t-current.lastT)>6;
+            if(!current||current.level!==item.level||discontinuity){
+                if(current){
+                    episodes.push(current);
+                    if(!discontinuity)events.push({index:i,from:current.level,to:item.level,t:item.t,ship:item.winner?.name || ''});
+                }
+                current={level:item.level,start:item.t,end:item.t,lastT:item.t,startIndex:i,endIndex:i,ship:item.winner?.name||''};
+                counts[item.level].episodes++;
+            } else {current.lastT=item.t;current.end=item.t;current.endIndex=i;}
+        }
+        if(current)episodes.push(current);
+        return {valid:true,instants,counts,episodes,events,mean:weighted/Math.max(total,1),seconds:total,highSeconds,highSamples,highMean:weightedHigh/Math.max(total,1),maxHigh,levelShipSamples,source:observed>0?(scenarioRows>0?'mixed':'recorded'):'scenario',warning:scene.warning||''};
+    }
+    function makeSegments(samples){
+        if(samples.length<2)return {segments:[],turns:[],steadySeconds:0};
+        const candidate=samples.map(s => Number.isFinite(s.rudAct)&&Number.isFinite(s.rot)&&Math.sqrt(((s.rudAct/35)**2+(s.rot/70)**2)/2)<SETTINGS.straightThreshold);
+        // Require a *continuous* ten-second low-energy interval to be a straight segment.
+        const stable=Array(samples.length).fill(false);
+        for(let start=0;start<samples.length;){
+            let end=start+1;
+            while(end<samples.length&&candidate[end]===candidate[start]&&samples[end].t-samples[end-1].t<=5)end++;
+            if(candidate[start]&&samples[end-1].t-samples[start].t>=SETTINGS.minStraightSeconds){
+                for(let j=start;j<end;j++)stable[j]=true;
+            }
+            start=end;
+        }
+        const segments=[];
+        for(let a=0;a<samples.length;){
+            let b=a+1;
+            while(b<samples.length&&stable[b]===stable[a]&&samples[b].t-samples[b-1].t<=5)b++;
+            segments.push({type:stable[a]?'steady':'turn',a,b:b-1,start:samples[a].t,end:samples[b-1].t});
+            a=b;
+        }
+        let turnNo=0;const turns=[];
+        for(let s of segments){
+            if(s.type==='turn'){
+                const item={...s,number:++turnNo};
+                turns.push(item);Object.assign(s,{number:item.number});
+            }
+        }
+        const steadySeconds=segments.filter(s=>s.type==='steady').reduce((tot,s)=>tot+s.end-s.start,0);
+        return {segments,turns,steadySeconds};
+    }
+    function ellipseMetrics(rows){
+        if(rows.length<8)return null;
+        const pairs=rows.filter(s=>Number.isFinite(s.rudAct)&&Number.isFinite(s.rot)).map(s=>[clamp(s.rudAct/35,-1,1),clamp(s.rot/70,-1,1)]);
+        if(pairs.length<8)return null;
+        const mx=pairs.reduce((a,p)=>a+p[0],0)/pairs.length,my=pairs.reduce((a,p)=>a+p[1],0)/pairs.length;
+        let xx=0,xy=0,yy=0;
+        for(const [x,y] of pairs){xx+=(x-mx)**2;xy+=(x-mx)*(y-my);yy+=(y-my)**2;}
+        xx/=pairs.length;xy/=pairs.length;yy/=pairs.length;
+        const theta=0.5*Math.atan2(2*xy,xx-yy),ct=Math.cos(theta),st=Math.sin(theta);
+        const d=Math.sqrt((xx-yy)**2+4*xy*xy);const major=Math.sqrt(Math.max(0.0000001,xx+yy+d)),minor=Math.sqrt(Math.max(0.0000001,xx+yy-d));
+        const radii=[],angles=new Set();
+        for(const [x,y] of pairs){
+            const u=(x-mx)*ct+(y-my)*st,v=-(x-mx)*st+(y-my)*ct;
+            const radius=Math.hypot(u/major,v/minor);radii.push(radius);
+            const ang=Math.atan2(v/minor,u/major);angles.add(Math.floor((ang+Math.PI)/(2*Math.PI)*12)%12);
+        }
+        const radialError=Math.sqrt(radii.reduce((a,v)=>a+Math.min(2,Math.abs(v-1))**2,0)/radii.length);
+        const elongation=major/minor;
+        const coverage=angles.size/12;
+        const regularity=clamp(1-radialError/0.65,0,1);
+        const degenerate=clamp((elongation-4)/12,0,0.85);
+        const shape=100*clamp((regularity*0.60+coverage*0.40)*(1-degenerate),0,1);
+        return {mx,my,theta,major,minor,radialError,elongation,coverage,score:shape};
+    }
+    function turnDetail(samples,turn){
+        const rows=samples.slice(turn.a,turn.b+1);
+        const d=rows.length?rows[rows.length-1].hdgUnwrapped-rows[0].hdgUnwrapped:0;
+        const duration=turn.end-turn.start;
+        const bands=SETTINGS.turnAngleBands;
+        const band=Math.abs(d)<bands[0]?`<${bands[0]}°`:Math.abs(d)<bands[1]?`${bands[0]}–${bands[1]}°`:Math.abs(d)<bands[2]?`${bands[1]}–${bands[2]}°`:`≥${bands[2]}°`;
+        let orderRuns=[];
+        rows.forEach((r,i)=>{
+            const val=Number.isFinite(r.rudCmd)?r.rudCmd:null;
+            const last=orderRuns[orderRuns.length-1];
+            if(last&&last.val===val){last.end=r.t;last.count++;}
+            else orderRuns.push({val,start:r.t,end:r.t,count:1});
+        });
+        const dts=rows.length>1?Math.max(.1,rows[1].t-rows[0].t):1;
+        const stableRuns=orderRuns.filter(run=>run.val!==null&&(run.end-run.start+dts)>=SETTINGS.stableOrderSeconds);
+        const held=orderRuns.reduce((sum,run)=>(run.end-run.start+dts>=SETTINGS.stableOrderSeconds?sum+run.end-run.start+dts:sum),0);
+        const hold=clamp(held/Math.max(duration,dts),0,1);
+        const meaningful=orderRuns.filter(run=>run.val!==null&&(run.end-run.start+dts)>=2);
+        const effectiveChanges=Math.max(0,meaningful.length-1);
+        const rapidChanges=orderRuns.slice(1).filter(run=>run.end-run.start+dts<SETTINGS.stableOrderSeconds).length;
+        const simplicity=clamp(1/(1+0.20*Math.max(0,effectiveChanges-2)+0.24*rapidChanges),0,1);
+        const nonzero=stableRuns.filter(run=>Math.abs(run.val)>=2);
+        const initDir=Math.sign(nonzero[0]?.val||0);
+        const midship=stableRuns.some(run=>Math.abs(run.val)<=0.5);
+        const hasCounter=!!(initDir&&nonzero.some(run=>Math.sign(run.val)===-initDir&&run.start>nonzero[0].start));
+        // Neutral or counter-steer can settle ROT; they are optional for small turns.
+        const settle=midship?1:rows.some(s=>Math.abs(s.rudCmd||0)<0.5)?0.55:0.25;
+        const counter=hasCounter?1:Math.abs(d)<15?0.85:0.3;
+        const w=SETTINGS.commandWeights;
+        const command=100*(w.hold*hold+w.simplicity*simplicity+w.settle*settle+w.counter*counter);
+        const shape=ellipseMetrics(rows);
+        const enough=duration>=SETTINGS.minAssessableTurnSeconds&&rows.some(s=>Number.isFinite(s.rudCmd))&&rows.some(s=>Number.isFinite(s.rot));
+        const score=enough&&shape?clamp(SETTINGS.steeringWeights.command*command+SETTINGS.steeringWeights.shape*shape.score,0,100):null;
+        const sequence=orderRuns.filter(run=>run.val!==null).map(run=>`${side(run.val)} ${Math.abs(run.val).toFixed(0)}° (${fmt(run.end-run.start+dts,0)}s)`);
+        return {...turn,angle:d,angleBand:band,duration,rows,shape,score,command,sequence,hold,simplicity,settle,counter,hasCounter,midship,orderRuns,effectiveChanges,rapidChanges};
+    }
+    function analyzeSteering(r){
+        const osRecords=r.frames.map(f=>{const s=osShip(f);return s?{t:f.time,hdg:Number(s.hdg),rudCmd:n(s.rudCmd),rudAct:n(s.rudAct),rot:n(s.rot),x:s.x,z:s.z}:null;}).filter(Boolean);
+        if(!osRecords.length)return {valid:false,samples:[],turns:[],mean:null};
+        let cum=osRecords[0].hdg;
+        osRecords.forEach((s,i)=>{if(i)cum+=degDiff(osRecords[i-1].hdg,s.hdg);s.hdgUnwrapped=cum;});
+        const hasRudder=osRecords.some(r=>r.rudAct!==null),hasRot=osRecords.some(r=>r.rot!==null);
+        if(!hasRudder||!hasRot)return {valid:false,samples:osRecords,turns:[],mean:null};
+        const samples=osRecords.map(s=>({...s,rudAct:s.rudAct??s.rudCmd,energy:Math.hypot((s.rudAct??s.rudCmd??0)/35,(s.rot??0)/70)/Math.SQRT2}));
+        const groups=makeSegments(samples);
+        const turns=groups.turns.map(t=>turnDetail(samples,t));
+        const scored=turns.filter(t=>t.score!==null);
+        const mean=scored.length?scored.reduce((a,t)=>a+t.score,0)/scored.length:null;
+        return {valid:true,samples,segments:groups.segments,turns,mean,steadySeconds:groups.steadySeconds,assessed:scored.length};
+    }
+    function getAnalysis(r){
+        const cache=renderedCache.get(r);
+        if(cache?.version===sceneVersion)return cache.data;
+        const scene=sceneStatus(r);
+        const data={scene,steering:analyzeSteering(r),risk:analyzeRisk(r,scene),meta:parseIdentity(r.name)};
+        renderedCache.set(r,{version:sceneVersion,data});return data;
+    }
+    function resized(canvas){
+        if(!canvas)return null;
+        const rect=canvas.getBoundingClientRect();if(rect.width<3||rect.height<3)return null;
+        const dpr=Math.min(2,window.devicePixelRatio||1);
+        const cw=Math.max(1,Math.round(rect.width*dpr)),ch=Math.max(1,Math.round(rect.height*dpr));
+        if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;}
+        const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,rect.width,rect.height);
+        return {ctx,w:rect.width,h:rect.height};
+    }
+    function plotBase(p,margin={l:41,r:13,t:12,b:27}){
+        const {ctx,w,h}=p;const L=margin.l,R=w-margin.r,T=margin.t,B=h-margin.b;
+        ctx.save();ctx.strokeStyle='#29394c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(R,B);ctx.stroke();ctx.restore();return {L,R,T,B,W:R-L,H:B-T};
+    }
+    function textAt(ctx,txt,x,y,color='#94a3b8',align='left',size=10){ctx.fillStyle=color;ctx.font=`${size}px Arial,sans-serif`;ctx.textAlign=align;ctx.fillText(txt,x,y);}
+    function lineSeries(ctx,arr,X,Y,color,lineWidth=1.7,dash=[],filter=()=>true){
+        ctx.save();ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.setLineDash(dash);ctx.beginPath();let started=false;
+        arr.forEach((v,i)=>{if(!filter(v,i))return;const x=X(v,i),y=Y(v,i);if(!Number.isFinite(x)||!Number.isFinite(y)){started=false;return;}if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);});ctx.stroke();ctx.restore();
+    }
+    function drawTrack(canvas,r,mini=false){
+        const p=resized(canvas);if(!p)return;
+        const {ctx,w,h}=p,data=getAnalysis(r),risk=data.risk;
+        const points=data.steering.samples.length?data.steering.samples:r.frames.map(f=>osShip(f)).filter(Boolean).map(s=>({x:s.x,z:s.z,t:0}));
+        if(!points.length){textAt(ctx,tr('No own-ship trajectory','본선 항적 없음'),w/2,h/2,'#94a3b8','center');return;}
+        const minX=Math.min(...points.map(s=>s.x)),maxX=Math.max(...points.map(s=>s.x));
+        const minY=Math.min(...points.map(s=>s.z)),maxY=Math.max(...points.map(s=>s.z));
+        const pad=mini?12:26;
+        const bbW=Math.max(240,maxX-minX),bbH=Math.max(240,maxY-minY);
+        const state=(mini?upperPan:riskTrackPan).get(r)||{zoom:1,dx:0,dy:0};
+        const scale=Math.min((w-2*pad)/bbW,(h-2*pad)/bbH)*state.zoom;
+        const X=(s)=>w/2+(s.x-(minX+maxX)/2)*scale+state.dx;
+        const Y=(s)=>h/2+(s.z-(minY+maxY)/2)*scale+state.dy;
+        ctx.strokeStyle='#203249';ctx.lineWidth=1;ctx.setLineDash([3,7]);for(let x=30;x<w;x+=55){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}for(let y=20;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}ctx.setLineDash([]);
+        if(!mini&&data.scene.ok&&massList[0]?.osData.waypoints.length){
+            ctx.strokeStyle='#22d3ee';ctx.globalAlpha=.65;ctx.setLineDash([5,4]);ctx.lineWidth=1.3;ctx.beginPath();
+            ctx.moveTo(X({x:0}),Y({z:0}));massList[0].osData.waypoints.forEach(a=>ctx.lineTo(X(a),Y(a)));ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+        }
+        ctx.lineCap='round';
+        // Color each own-ship leg by the time-indexed, worst target risk.
+        for(let i=1;i<points.length;i++){
+            const a=points[i-1],b=points[i];
+            const severity=risk.valid?(risk.instants[Math.min(i,risk.instants.length-1)]?.level||0):0;
+            ctx.strokeStyle=risk.valid?SETTINGS.riskColors[severity]:'#94a3b8';ctx.globalAlpha=.92;
+            ctx.lineWidth=mini?Math.max(1.2,Math.min(2.3,w/210)):2.7;
+            ctx.beginPath();ctx.moveTo(X(a),Y(a));ctx.lineTo(X(b),Y(b));ctx.stroke();
+        }ctx.globalAlpha=1;
+        if(!mini){
+            risk.events?.forEach(e=>{
+                const os=points[Math.min(e.index,points.length-1)];if(!os)return;
+                ctx.fillStyle=SETTINGS.riskColors[e.to];ctx.strokeStyle='#f8fafc';ctx.lineWidth=.75;ctx.beginPath();ctx.arc(X(os),Y(os),3,0,2*Math.PI);ctx.fill();ctx.stroke();
+            });
+            if(risk.valid){
+                const cur=risk.instants[Math.min(selectedRiskIndex,risk.instants.length-1)];if(cur){ctx.strokeStyle='#fef08a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(cur.os),Y(cur.os),6,0,2*Math.PI);ctx.stroke();}
+            }
+        }
+        ctx.fillStyle='#67e8f9';ctx.beginPath();ctx.arc(X(points[0]),Y(points[0]),Math.min(4,w/70),0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#f1f5f9';ctx.beginPath();ctx.arc(X(points[points.length-1]),Y(points[points.length-1]),Math.min(4,w/70),0,Math.PI*2);ctx.fill();
+        if(!mini){canvas._analysisPoints=points.map((a,i)=>({x:X(a),y:Y(a),index:i}));}
+        if(!mini){textAt(ctx,tr('START','시작'),X(points[0])+6,Y(points[0])-5,'#93c5fd');textAt(ctx,tr('END','종료'),X(points[points.length-1])+6,Y(points[points.length-1])-5,'#e2e8f0');}
+    }
+    function drawTrend(){
+        const p=resized($('analysis-trend-canvas'));if(!p)return;const {ctx,w,h}=p;
+        const box=plotBase(p,{l:27,r:11,t:15,b:29});
+        if(!activeList.length){textAt(ctx,tr('No results','결과 없음'),w/2,h/2,'#64748b','center',12);return;}
+        const chronological=[...activeList].sort((a,b)=>a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index);
+        const x=i=>box.L+(chronological.length===1?box.W/2:i*box.W/(chronological.length-1));
+        const y=v=>box.B-clamp(v,0,100)/100*box.H;
+        for(let v=0;v<=100;v+=25){ctx.strokeStyle='#273347';ctx.beginPath();ctx.moveTo(box.L,y(v));ctx.lineTo(box.R,y(v));ctx.stroke();if(v%50===0)textAt(ctx,String(v),box.L-3,y(v)+3,'#7890a4','right',9);}
+        const st=chronological.map(a=>getAnalysis(a.r).steering.mean),ri=chronological.map(a=>avoidanceScore(getAnalysis(a.r).risk.mean));
+        for(const [vals,color] of [[st,'#22d3ee'],[ri,'#f59e0b']]){
+            lineSeries(ctx,vals,(v,i)=>x(i),(v)=>v===null?null:y(v),color,1.7);
+            vals.forEach((v,i)=>{if(v===null)return;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(i),y(v),3.3,0,Math.PI*2);ctx.fill();});
+        }
+        textAt(ctx,tr('Steer','조종'),box.L+2,10,'#22d3ee');textAt(ctx,tr('Avoidance','충돌회피'),box.L+70,10,'#f59e0b');
+        chronological.forEach((a,i)=>textAt(ctx,String(i+1),x(i),h-9,'#cbd5e1','center'));
+    }
+    function drawHeading(){
+        const r=replayList[selectedReplay],p=resized($('analysis-heading-canvas'));if(!p||!r)return;
+        const {ctx,h}=p,st=getAnalysis(r).steering,samples=st.samples;if(!samples.length)return;
+        const box=plotBase(p);const start=samples[0].t,end=samples[samples.length-1].t;
+        const ymin=Math.min(...samples.map(s=>s.hdgUnwrapped)),ymax=Math.max(...samples.map(s=>s.hdgUnwrapped));
+        const lo=ymin-Math.max(5,(ymax-ymin)*.09),hi=ymax+Math.max(5,(ymax-ymin)*.09);
+        const X=t=>box.L+(t-start)/Math.max(1,end-start)*box.W;
+        const Y=deg=>box.B-(deg-lo)/Math.max(1,hi-lo)*box.H;
+        st.segments.forEach(seg=>{ctx.fillStyle=seg.type==='steady'?'#07544a4a':(seg.number%2?'#2563eb29':'#9d4edd24');ctx.fillRect(X(seg.start),box.T,Math.max(1,X(seg.end)-X(seg.start)),box.H);});
+        for(let j=0;j<=4;j++){const v=lo+(hi-lo)*j/4;ctx.strokeStyle='#263449';ctx.beginPath();ctx.moveTo(box.L,Y(v));ctx.lineTo(box.R,Y(v));ctx.stroke();textAt(ctx,`${v.toFixed(0)}°`,box.L-4,Y(v)+3,'#94a3b8','right',9);}
+        lineSeries(ctx,samples,s=>X(s.t),s=>Y(s.hdgUnwrapped),'#e2e8f0',1.6);
+        st.turns.forEach(turn=>{
+            const middle=X((turn.start+turn.end)/2);textAt(ctx,String(turn.number),middle,box.T+11,'#fef08a','center',10);
+        });
+        textAt(ctx,tstr(start),box.L,h-8,'#a5b4c3');textAt(ctx,tstr(end),box.R,h-8,'#a5b4c3','right');
+        $('analysis-heading-canvas')._scale={left:box.L,right:box.R,start,end};
+    }
+    function drawCommands(turn){
+        const p=resized($('analysis-command-canvas'));if(!p||!turn)return;
+        const {ctx,h}=p,box=plotBase(p),samples=turn.rows;
+        const start=turn.start,end=turn.end;
+        const X=t=>box.L+(t-start)/Math.max(1,end-start)*box.W;
+        const Y=val=>box.B-(val+35)/70*box.H;
+        for(let v=-35;v<=35;v+=17.5){ctx.strokeStyle='#263449';ctx.beginPath();ctx.moveTo(box.L,Y(v));ctx.lineTo(box.R,Y(v));ctx.stroke();textAt(ctx,String(v),box.L-4,Y(v)+3,'#94a3b8','right',9);}
+        ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.9;ctx.beginPath();samples.forEach((s,i)=>{const x=X(s.t),y=Y(s.rudCmd??0);if(!i)ctx.moveTo(x,y);else{ctx.lineTo(x,Y(samples[i-1].rudCmd??0));ctx.lineTo(x,y);}});ctx.stroke();
+        lineSeries(ctx,samples,s=>X(s.t),s=>Y(s.rudAct??0),'#fde68a',1.5);
+        textAt(ctx,'CMD',box.L+5,box.T+10,'#38bdf8');textAt(ctx,'ACT',box.L+52,box.T+10,'#fde68a');
+        textAt(ctx,tstr(start),box.L,h-8);textAt(ctx,tstr(end),box.R,h-8,'#94a3b8','right');
+    }
+    function drawEllipse(canvas,turn,normalized){
+        const p=resized(canvas);if(!p||!turn)return;const {ctx}=p;
+        const box=plotBase(p,{l:37,r:12,t:11,b:23});
+        const xlim=normalized?1.03:35,ylim=normalized?1.03:70;
+        const X=x=>box.L+(x+xlim)/(2*xlim)*box.W;
+        const Y=y=>box.B-(y+ylim)/(2*ylim)*box.H;
+        ctx.strokeStyle='#36475f';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(0),box.T);ctx.lineTo(X(0),box.B);ctx.moveTo(box.L,Y(0));ctx.lineTo(box.R,Y(0));ctx.stroke();
+        for(const x of [-xlim,0,xlim])textAt(ctx,normalized?x.toFixed(1):x.toFixed(0),X(x),box.B+13,'#8ba4bb','center',9);
+        for(const y of [-ylim,0,ylim])textAt(ctx,normalized?y.toFixed(1):y.toFixed(0),box.L-4,Y(y)+3,'#8ba4bb','right',9);
+        const px=r=>normalized?clamp((r.rudAct??0)/35,-1,1):r.rudAct??0;
+        const py=r=>normalized?clamp((r.rot??0)/70,-1,1):r.rot??0;
+        lineSeries(ctx,turn.rows,r=>X(px(r)),r=>Y(py(r)),'#22d3ee',1.5);
+        // Mark start and end of the observed rudder/ROT trajectory.
+        for(const [p0,color] of [[turn.rows[0],'#10b981'],[turn.rows[turn.rows.length-1],'#f59e0b']]){
+            ctx.fillStyle=color;ctx.beginPath();ctx.arc(X(px(p0)),Y(py(p0)),3.2,0,Math.PI*2);ctx.fill();
+        }
+        const e=turn.shape;
+        if(e){
+            ctx.save();ctx.strokeStyle='#facc15';ctx.setLineDash([5,4]);ctx.lineWidth=1.8;ctx.beginPath();
+            for(let i=0;i<=90;i++){
+                const a=2*Math.PI*i/90;
+                const u=e.major*Math.cos(a),v=e.minor*Math.sin(a);
+                const ex=(e.mx+u*Math.cos(e.theta)-v*Math.sin(e.theta))*(normalized?1:35);
+                const ey=(e.my+u*Math.sin(e.theta)+v*Math.cos(e.theta))*(normalized?1:70);
+                if(i===0)ctx.moveTo(X(ex),Y(ey));else ctx.lineTo(X(ex),Y(ey));
+            }ctx.stroke();ctx.restore();
+        }
+    }
+    function renderSteering(){
+        if(selectedReplay===null)return;
+        const st=getAnalysis(replayList[selectedReplay]).steering;
+        if(!st.valid){$('analysis-steering-notice').textContent=tr('No Rudder/ROT measurement: steering score unavailable.','Rudder/ROT 기록이 없어 조종 점수를 산출할 수 없습니다.');return;}
+        $('analysis-steering-notice').textContent=tr(`Steady = RMS(actual Rudder/35, ROT/70) < 0.1 continuously for at least 10s. Other intervals are turns. ${st.turns.length} turning intervals found.`,`정침 = RMS(실제 Rudder/35, ROT/70) < 0.1 상태가 10초 이상 연속 유지. 나머지는 변침 구간입니다. 변침 ${st.turns.length}회 탐지.`);
+        $('analysis-turn-chips').innerHTML=st.turns.map((t,i)=>`<button type="button" class="analysis-chip ${i===selectedTurn?'active':''}" data-turn="${i}">#${t.number} · ${fmt(t.angle,0)}° · ${t.score===null?'N/A':fmt(t.score,0)}</button>`).join('');
+        $('analysis-turn-chips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setTurn(Number(b.dataset.turn))));
+        selectedTurn=clamp(selectedTurn,0,Math.max(0,st.turns.length-1));
+        const turn=st.turns[selectedTurn];
+        if(turn){
+            $('analysis-turn-kv').innerHTML=`<span><strong>#${turn.number}</strong> ${tr('Turn','변침')}</span><span>${tstr(turn.start)}–${tstr(turn.end)}</span><span><strong>ΔHDG ${fmt(turn.angle,1)}°</strong></span><span>${esc(turn.angleBand)}</span><span>${tr('Duration','지속시간')} ${fmt(turn.duration,0)}s</span><span>${tr('Order changes','타각 변경')} ${turn.effectiveChanges}</span><span>${tr('Rapid changes','빈번한 변경')} ${turn.rapidChanges}</span><span>${tr('Order clarity','명령 명확성')} <strong>${fmt(turn.command,1)}</strong></span><span>${tr('Ellipse shape','타원 형태')} <strong>${fmt(turn.shape?.score,1)}</strong></span><span>${tr('Turn score','변침 점수')} <strong>${fmt(turn.score,1)}/100</strong></span>`;
+            const seq=turn.sequence.length?turn.sequence.join(' → '):tr('No rudder orders','조타 명령 없음');
+            $('analysis-rudder-sequence').textContent=tr('Order sequence: ','러더 오더 순서: ')+seq;
+            $('analysis-ellipse-note').textContent=turn.shape?
+                tr(`Dashed ellipse = covariance reference, not a universal ideal. Shape ${fmt(turn.shape.score,1)}/100; radial deviation ${fmt(turn.shape.radialError,2)}; angular coverage ${fmt(turn.shape.coverage*100,0)}%; axis ratio ${fmt(turn.shape.elongation,1)}. Combined score = 55% command clarity + 45% shape; reference values are provisional.`,`점선은 관측 궤적의 공분산 타원으로 절대적인 이상 선회형은 아닙니다. 형태 ${fmt(turn.shape.score,1)}/100 · 타원 반경 오차 ${fmt(turn.shape.radialError,2)} · 각방향 점유 ${fmt(turn.shape.coverage*100,0)}% · 축비 ${fmt(turn.shape.elongation,1)}. 선회 점수는 명령 명확성 55% + 형태 45%의 교육용 임시 기준입니다.`):tr('Not enough samples for ellipse fitting.','타원 평가에 필요한 데이터가 부족합니다.');
+        }else{
+            $('analysis-turn-kv').textContent=tr('No turning interval detected','변침 구간이 없습니다.');
+            $('analysis-rudder-sequence').textContent='—';$('analysis-ellipse-note').textContent='—';
+        }
+        requestAnimationFrame(()=>{if(!canShow('steering'))return;drawHeading();if(turn){drawCommands(turn);drawEllipse($('analysis-rot-raw-canvas'),turn,false);drawEllipse($('analysis-rot-norm-canvas'),turn,true);}});
+    }
+    function setTurn(i){selectedTurn=i;renderSteering();}
+    function riskMatrixHTML(instant){
+        const cols=['<3','3–10','10–20','≥20'],rows=['<0.3','0.3–0.5','0.5–1','≥1'];
+        const maxCount=Math.max(1,...instant.cellCounts.flat());
+        const header=`<tr><th>DCPA (NM) ↓<br>TCPA (min) →</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+        const body=rows.map((r,i)=>`<tr><th>${r}</th>${SETTINGS.riskMatrix[i].map((level,j)=>{
+            const count=instant.cellCounts[i][j],key=`${i},${j}`,color=SETTINGS.riskColors[level];
+            return `<td class="${count?'is-populated':'is-empty'}${focusedRiskCell===key?' active':''}" style="--severity:${color}"><button type="button" data-cell="${key}" title="${tr(`${count} ship(s) · severity ${level} · click for names`,`${count}척 · 위험도 ${level} · 클릭하여 선박 확인`)}"><span class="analysis-cell-level">L${level}</span><b class="analysis-cell-qty">${count}</b><span class="analysis-cell-units">${tr('ships','척')}</span><span class="analysis-cell-fill" style="width:${count/maxCount*100}%"></span></button></td>`;
+        }).join('')}</tr>`).join('');
+        const included=instant.cellCounts.flat().reduce((a,v)=>a+v,0);
+        return `<table class="analysis-matrix occupancy">${header}${body}</table>
+            <div class="analysis-matrix-foot">${tr(`At ${tstr(instant.t)} · cells contain ${included} ships · past TCPA ${instant.passed} · indeterminate ${instant.unprojected}. Color = risk level, number/bar = simultaneous ship count. Click a cell for details.`,`시각 ${tstr(instant.t)} · 매트릭스 내 ${included}척 · TCPA 경과 ${instant.passed}척 · 계산 불가 ${instant.unprojected}척. 색상은 위험도, 숫자·막대는 동시 타선 수입니다. 셀을 클릭하면 상세 정보가 표시됩니다.`)}</div>`;
+    }
+    function updateRiskMatrix(instant){
+        if(!instant)return;
+        const wrap=$('analysis-risk-matrix');wrap.innerHTML=riskMatrixHTML(instant);
+        wrap.querySelectorAll('button[data-cell]').forEach(el=>el.addEventListener('click',()=>{
+            focusedRiskCell=(focusedRiskCell===el.dataset.cell)?null:el.dataset.cell;
+            updateRiskMatrix(instant);
+        }));
+        const detail=$('analysis-risk-cell-detail');
+        if(!focusedRiskCell){detail.hidden=true;detail.textContent='';return;}
+        const [row,col]=focusedRiskCell.split(',').map(Number);
+        const ships=instant.cellShips[row][col],level=SETTINGS.riskMatrix[row][col];
+        detail.hidden=false;
+        detail.innerHTML=`<strong>${tr('Selected cell','선택한 구역')} · L${level} · ${ships.length}${tr(' ships','척')}</strong>`+
+            (ships.length?ships.map(o=>`<div>${esc(o.name)} · DCPA ${fmt(o.cpa,2)} NM · TCPA ${fmt(o.tcpa,1)} min</div>`).join(''):
+            `<div>${tr('No target ships in this cell at the selected instant.','해당 시점에 이 구역에 해당하는 타선이 없습니다.')}</div>`);
+    }
+    function drawRiskHistory(){
+        const r=replayList[selectedReplay],p=resized($('analysis-risk-time-canvas'));if(!p||!r)return;
+        const {ctx,w,h}=p,data=getAnalysis(r).risk;if(!data.valid)return;
+        const items=data.instants;const first=items[0]?.t||0,last=items[items.length-1]?.t||0;
+        const box=plotBase(p,{l:29,r:11,t:10,b:21});
+        const state=riskTimePan.get(r)||{zoom:1,dx:0};
+        // Zoom the time domain horizontally, retaining the y-axis and risk-level bins.
+        const duration=Math.max(1,last-first),centre=(box.L+box.R)/2,zoom=clamp(state.zoom,1,64);
+        const X=t=>centre+(((t-first)/duration)*box.W-box.W/2)*zoom+state.dx;
+        const toT=x=>first+((x-centre-state.dx)/zoom+box.W/2)/box.W*duration;
+        for(let lv=0;lv<=4;lv++)textAt(ctx,String(lv),box.L-7,box.B-lv*box.H/4+3,'#94a3b8','right',9);
+        ctx.save();ctx.beginPath();ctx.rect(box.L,box.T,box.W,box.H);ctx.clip();
+        for(let i=0;i<items.length;i++){
+            const e=items[i],next=items[i+1]||e;
+            if(!e.valid)continue;
+            const x=X(e.t),x2=X(next.t);
+            if(x>box.R||x2<box.L)continue;
+            const width=Math.max(.7,x2-x+.2),yt=box.B-(e.level+1)*box.H/5;
+            ctx.fillStyle=SETTINGS.riskColors[e.level];ctx.fillRect(x,yt,width,box.B-yt);
+        }
+        const sel=items[Math.min(selectedRiskIndex,items.length-1)];if(sel){ctx.strokeStyle='#f8fafc';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(X(sel.t),box.T);ctx.lineTo(X(sel.t),box.B);ctx.stroke();}
+        ctx.restore();
+        textAt(ctx,tstr(clamp(toT(box.L),first,last)),box.L,h-5);
+        textAt(ctx,tstr(clamp(toT(box.R),first,last)),box.R,h-5,'#94a3b8','right');
+        $('analysis-risk-time-canvas')._scale={left:box.L,right:box.R,min:toT(box.L),max:toT(box.R)};
+    }
+    function renderRisk(){
+        if(selectedReplay===null)return;
+        const data=getAnalysis(replayList[selectedReplay]);const ri=data.risk;
+        if(!ri.valid){
+            $('analysis-risk-notice').className='analysis-msg warning';$('analysis-risk-notice').textContent=ri.warning;
+            for(const id of ['analysis-risk-kv','analysis-risk-quick-stats','analysis-risk-matrix',
+                'analysis-risk-counts','analysis-risk-moment','analysis-risk-moment-levels','analysis-risk-events'])$(id).textContent='—';
+            $('analysis-risk-cell-detail').hidden=true;return;
+        }
+        const labels=tr('measured targets from result log','결과 파일의 타선 기록');
+        const source=ri.source==='recorded'?labels:ri.source==='scenario'?tr('scenario-reconstructed targets (estimated)','시나리오 재구성 타선 (추정)'):tr('result + scenario fallback','결과 + 시나리오 보완');
+        $('analysis-risk-notice').className='analysis-msg'+(ri.warning?' warning':'');
+        $('analysis-risk-notice').textContent=tr('Target source: ','타선 자료: ')+source+(ri.warning?' · '+ri.warning:'');
+        const worse=ri.events.filter(e=>e.to>e.from).length,better=ri.events.filter(e=>e.to<e.from).length;
+        const positive=ri.episodes.filter(e=>e.level>0).length;
+        $('analysis-risk-kv').innerHTML=`<span title="${tr('Provisional score = 100 − 25 × time-weighted mean maximum severity; not a validated collision-avoidance performance grade.','잠정 환산점수 = 100 − 25 × 시간가중 평균 최대 위험도이며, 검증된 실제 충돌회피 성능 점수는 아닙니다.')}">${tr('Collision-avoidance score','충돌회피 점수')} <strong>${fmt(avoidanceScore(ri.mean),1)}/100</strong></span>
+            <span>${tr('Avg severity','평균 위험도')} <strong>${fmt(ri.mean,2)}/4</strong></span>
+            <span>${tr('Observed','관측시간')} <strong>${fmt(ri.seconds/60,1)} min</strong></span>
+            ${ri.counts.filter(c=>c.level>0).map(c=>`<span><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[c.level]}"></i>L${c.level}: <strong>${c.episodes}${tr(' episodes','구간')}</strong></span>`).join('')}`;
+        const metrics=[
+            [positive,tr('Risk episodes (L1–4)','위험 구간 (L1~4)')],
+            [worse,tr('Worsening transitions','위험도 악화 횟수')],
+            [better,tr('Improving transitions','위험도 완화 횟수')],
+            [ri.maxHigh,tr('Max simultaneous L3–4 ships','최대 동시 고위험 타선 (L3~4)')],
+            [fmt(ri.highSeconds/60,1)+tr(' min','분'),tr('Time ≥1 high-risk ship','고위험 타선 1척 이상 지속')],
+        ];
+        $('analysis-risk-quick-stats').innerHTML=metrics.map(([value,label])=>`<div class="analysis-score-tile"><strong>${value}</strong><span>${label}</span></div>`).join('');
+        $('analysis-risk-counts').innerHTML=`<table class="analysis-table"><thead><tr><th>${tr('Color','색상')}</th><th>${tr('Severity','위험도')}</th><th>${tr('Episodes','연속 구간')}</th><th>${tr('Duration','시간')}</th><th>${tr('Samples','표본')}</th><th>${tr('Ship×samples','선박·표본')}</th></tr></thead><tbody>${ri.counts.map(c=>`<tr><td><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[c.level]}"></i>${tr(SETTINGS.riskNamesEN[c.level],SETTINGS.riskNamesKO[c.level])}</td><td>${c.level}</td><td>${c.episodes}</td><td>${fmt(c.seconds/60,1)}min</td><td>${c.samples}</td><td>${ri.levelShipSamples[c.level]}</td></tr>`).join('')}</tbody></table><div class="analysis-matrix-foot">${tr('Episodes: runs of identical maximum severity; ship×samples: total target observations in this level, not unique vessels.','연속 구간: 최대 위험도가 같은 기간의 수. 선박·표본: 해당 위험도의 타선 관측 합계이며 서로 다른 선박 수가 아닙니다.')}</div>`;
+        $('analysis-risk-events').innerHTML=ri.events.length?ri.events.map(ev=>`<button class="analysis-risk-event" data-idx="${ev.index}"><span class="analysis-count-dot" style="background:${SETTINGS.riskColors[ev.to]}"></span>${tstr(ev.t)} · ${ev.from} → ${ev.to} · <strong>${ev.to>ev.from?tr('WORSENED','악화'):tr('IMPROVED','완화')}</strong> · ${esc(ev.ship)}</button>`).join(''):`<div class="analysis-msg">${tr('No changes in risk levels.','위험도 단계의 변화가 없습니다.')}</div>`;
+        $('analysis-risk-events').querySelectorAll('button[data-idx]').forEach(b=>b.addEventListener('click',()=>setRiskMoment(Number(b.dataset.idx))));
+        const slider=$('analysis-risk-time-slider');slider.max=Math.max(0,ri.instants.length-1);slider.value=clamp(selectedRiskIndex,0,Math.max(0,ri.instants.length-1));
+        updateRiskMomentText();
+        requestAnimationFrame(()=>{if(!canShow('risk'))return;drawRiskHistory();drawTrack($('analysis-risk-track-canvas'),replayList[selectedReplay]);});
+    }
+    function updateRiskMomentText(){
+        if(selectedReplay===null)return;const ri=getAnalysis(replayList[selectedReplay]).risk;
+        if(!ri.valid)return;
+        selectedRiskIndex=clamp(selectedRiskIndex,0,ri.instants.length-1);
+        const s=ri.instants[selectedRiskIndex];if(!s)return;
+        const high=(s.levelShipCounts[3]||0)+(s.levelShipCounts[4]||0);
+        $('analysis-risk-moment').textContent=tr(`At ${tstr(s.t)} · Peak risk L${s.level} (${SETTINGS.riskNamesEN[s.level]}) · worst target ${s.winner?.name||'—'} · DCPA ${fmt(s.winner?.cpa,2)} NM / TCPA ${fmt(s.winner?.tcpa,1)} min · tracked ${s.shipCount} ships · high-risk L3–4 ${high} ships`,`시각 ${tstr(s.t)} · 최대 위험도 L${s.level} (${SETTINGS.riskNamesKO[s.level]}) · 가장 위험한 타선 ${s.winner?.name||'—'} · DCPA ${fmt(s.winner?.cpa,2)} NM / TCPA ${fmt(s.winner?.tcpa,1)} min · 감시 ${s.shipCount}척 · 고위험 L3~4 ${high}척`);
+        $('analysis-risk-moment-levels').innerHTML=s.levelShipCounts.map((count,level)=>`<span class="analysis-moment-level"><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[level]}"></i>L${level} <b>${count}</b>${tr(' ships','척')}</span>`).join('');
+        updateRiskMatrix(s);
+    }
+    function setRiskMoment(i){
+        selectedRiskIndex=i;$('analysis-risk-time-slider').value=i;
+        updateRiskMomentText();
+        requestAnimationFrame(()=>{if(canShow('risk')){drawRiskHistory();drawTrack($('analysis-risk-track-canvas'),replayList[selectedReplay]);}});
+    }
+    function makeTop(){
+        const holder=$('analysis-track-grid'),oldScroll=holder.scrollLeft;
+        holder.innerHTML='';
+        if(!activeList.length){holder.innerHTML=`<div class="analysis-nodata">${tr('Load result files in REPLAY VIEWER first.','먼저 REPLAY VIEWER에서 결과 파일을 불러오세요.')}</div>`;return;}
+        activeList.forEach((entry,i)=>{
+            const globalIdx=entry.index,analysis=getAnalysis(entry.r);
+            const div=document.createElement('div');div.className='analysis-track-card'+(globalIdx===selectedReplay?' selected':'');
+            div.dataset.replay=String(globalIdx);
+            const mainLabel=entry.meta.dateText||entry.r.name,steer=analysis.steering.mean,risk=avoidanceScore(analysis.risk.mean);
+            const gripLabel=tr('Drag to reorder this result','이 결과를 드래그하여 순서 변경');
+            div.innerHTML=`<div class="analysis-track-head" draggable="true" title="${gripLabel}" aria-label="${gripLabel}"><span class="analysis-drag-handle" aria-hidden="true">⠿</span><span class="analysis-track-label">#${i+1} · ${esc(mainLabel)}</span></div><canvas></canvas><span class="analysis-track-score">${tr('Steer','조종')} ${steer===null?'N/A':fmt(steer,0)} (${analysis.steering.turns.length}${tr(' turns','회')}) · ${tr('Avoidance','충돌회피')} ${risk===null?'N/A':fmt(risk,0)+'/100'} (${analysis.risk.episodes?.filter(e=>e.level>0).length||0}${tr(' episodes','구간')})</span>`;
+            holder.appendChild(div);const canvas=div.querySelector('canvas'),handle=div.querySelector('.analysis-track-head');
+            let down=null,suppressClick=false,wasDrag=false;
+            div.addEventListener('click',()=>{if(suppressClick||wasDrag){suppressClick=false;wasDrag=false;return;}selectReplay(globalIdx);});
+            handle.addEventListener('dragstart',e=>{
+                draggedTrack=globalIdx;wasDrag=true;
+                e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(globalIdx));
+                div.classList.add('dragging');
+            });
+            handle.addEventListener('dragend',()=>{draggedTrack=null;holder.querySelectorAll('.analysis-track-card').forEach(el=>el.classList.remove('dragging','drop-before','drop-after'));});
+            div.addEventListener('dragover',e=>{
+                if(draggedTrack===null||draggedTrack===globalIdx)return;
+                e.preventDefault();e.dataTransfer.dropEffect='move';
+                holder.querySelectorAll('.analysis-track-card').forEach(el=>el.classList.remove('drop-before','drop-after'));
+                const from=activeList.findIndex(a=>a.index===draggedTrack),to=activeList.findIndex(a=>a.index===globalIdx);
+                div.classList.add(from<to?'drop-after':'drop-before');
+            });
+            div.addEventListener('drop',e=>{
+                e.preventDefault();const from=draggedTrack;
+                if(from!==null&&from!==globalIdx)reorderTracks(from,globalIdx);
+                draggedTrack=null;
+            });
+            canvas.addEventListener('wheel',e=>{e.preventDefault();const st=upperPan.get(entry.r)||{zoom:1,dx:0,dy:0};st.zoom=clamp(st.zoom*(e.deltaY<0?1.14:1/1.14),.2,18);upperPan.set(entry.r,st);drawTrack(canvas,entry.r,true);},{passive:false});
+            canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+            canvas.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>3){suppressClick=true;const st=upperPan.get(entry.r)||{zoom:1,dx:0,dy:0};st.dx+=dx;st.dy+=dy;upperPan.set(entry.r,st);down={x:e.clientX,y:e.clientY};drawTrack(canvas,entry.r,true);}});
+            canvas.addEventListener('pointerup',()=>{down=null;});canvas.addEventListener('pointercancel',()=>{down=null;});
+        });
+        requestAnimationFrame(()=>{
+            holder.scrollLeft=oldScroll;
+            holder.querySelectorAll('.analysis-track-card').forEach((el,i)=>drawTrack(el.querySelector('canvas'),activeList[i].r,true));
+        });
+    }
+    function reorderTracks(fromGlobal,toGlobal){
+        const from=activeList.findIndex(e=>e.index===fromGlobal),to=activeList.findIndex(e=>e.index===toGlobal);
+        if(from<0||to<0||from===to)return;
+        const changed=[...activeList],moved=changed.splice(from,1)[0];changed.splice(to,0,moved);
+        activeList=changed;groupOrders.set(groupKey,changed.map(e=>e.r));
+        makeTop();showSideResults();drawTrend();
+    }
+    function makeSidebar(groups){
+        const sel=$('analysis-group-select'),old=sel.value;
+        sel.innerHTML=groups.map(g=>`<option value="${esc(g.key)}">${esc(g.scenario)} / ${esc(g.sid)} / ${esc(g.person)} (${g.replays.length})</option>`).join('');
+        if(groups.length && groups.some(g=>g.key===groupKey))sel.value=groupKey;
+        else if(groups.length){groupKey=groups[0].key;sel.value=groupKey;}
+        else {groupKey='';sel.innerHTML=`<option>${tr('No results loaded','불러온 결과 없음')}</option>`;}
+        const g=groups.find(g=>g.key===groupKey);
+        activeList=g?.replays||[];
+        if(activeList.length&&!activeList.some(r=>r.index===selectedReplay))selectedReplay=activeList[0].index;
+        if(!activeList.length)selectedReplay=null;
+        $('analysis-group-header').textContent=g?`${g.scenario} · ${g.sid} ${g.person} · ${activeList.length} ${tr('runs','회')}`:tr('PRACTICE RESULTS','실습 결과 항적');
+    }
+    function showSideResults(){
+        if(selectedReplay===null){$('analysis-selected-summary').textContent=tr('No result selected.','선택한 실습 결과 없음.');$('analysis-group-table').textContent='—';return;}
+        const r=replayList[selectedReplay],a=getAnalysis(r),st=a.steering,ri=a.risk;
+        $('analysis-selected-summary').textContent=tr(`Selected: ${r.name}\nTurns: ${st.turns.length} | Steering: ${fmt(st.mean,1)}/100\nAvoidance: ${fmt(avoidanceScore(ri.mean),1)}/100 | Avg severity: ${fmt(ri.mean,2)}/4 | Target source: ${ri.source}`,`선택 결과: ${r.name}\n변침: ${st.turns.length}회 | 조종점수: ${fmt(st.mean,1)}/100\n충돌회피: ${fmt(avoidanceScore(ri.mean),1)}/100 | 평균 위험도: ${fmt(ri.mean,2)}/4 | 타선 출처: ${ri.source}`);
+        $('analysis-group-table').innerHTML=activeList.map((e,i)=>{
+            const s=getAnalysis(e.r);const selected=e.index===selectedReplay;
+            return `<div style="cursor:pointer;padding:5px;border-bottom:1px solid #2c3a50;color:${selected?'#fde047':'#cbd5e1'}" data-replay="${e.index}">${i+1}. ${esc(e.meta.dateText)} · Steer <b>${fmt(s.steering.mean,0)}</b> · ${tr('Avoid','회피')} <b>${fmt(avoidanceScore(s.risk.mean),0)}/100</b></div>`;
+        }).join('');
+        $('analysis-group-table').querySelectorAll('[data-replay]').forEach(el=>el.addEventListener('click',()=>selectReplay(Number(el.dataset.replay))));
+    }
+    function showHeaderSummaries(){
+        if(selectedReplay===null){$('analysis-steering-score').textContent='—';$('analysis-risk-score').textContent='—';$('analysis-steering-caption').textContent='—';$('analysis-risk-caption').textContent='—';return;}
+        const a=getAnalysis(replayList[selectedReplay]),st=a.steering,ri=a.risk;
+        $('analysis-steering-score').textContent=st.mean===null?'N/A':fmt(st.mean,1)+'/100';
+        $('analysis-steering-caption').textContent=tr(`${st.turns.length} turns · ${st.assessed||0} evaluated · ${fmt(st.steadySeconds/60,1)} min steady`,`${st.turns.length}회 변침 · ${st.assessed||0}회 평가 · 정침 ${fmt(st.steadySeconds/60,1)}분`);
+        $('analysis-risk-score').textContent=ri.mean===null?'N/A':fmt(avoidanceScore(ri.mean),1)+'/100';
+        $('analysis-risk-caption').textContent=ri.valid?tr(`${ri.episodes.filter(e=>e.level>0).length} risk episodes · ${ri.events.filter(e=>e.to>e.from).length} worsening / ${ri.events.filter(e=>e.to<e.from).length} easing`,`${ri.episodes.filter(e=>e.level>0).length}개 위험 구간 · 악화 ${ri.events.filter(e=>e.to>e.from).length}회 / 완화 ${ri.events.filter(e=>e.to<e.from).length}회`):tr('Target information not available','타선 자료 부족 · 평가 불가');
+    }
+    function selectReplay(globalIdx){
+        if(!replayList[globalIdx])return;
+        selectedReplay=globalIdx;selectedTurn=0;selectedRiskIndex=0;focusedRiskCell=null;
+        showHeaderSummaries();showSideResults();makeTop();drawTrend();
+        if(canShow('steering'))renderSteering();
+        if(canShow('risk'))renderRisk();
+    }
+    const canShow=(section)=>!activeSection||activeSection===section;
+    function expand(section){
+        activeSection=activeSection===section?'':section;
+        $('analysis-bottom').className=activeSection;
+        if(canShow('steering'))renderSteering();
+        if(canShow('risk'))renderRisk();
+        // The panes animate their heights: redraw their canvases after layout settles.
+        setTimeout(()=>{if(currentMode==='analysis')resize();},195);
+    }
+    function render(){
+        if(currentMode!=='analysis')return;
+        const groups=availableGroups();makeSidebar(groups);
+        showHeaderSummaries();showSideResults();makeTop();
+        requestAnimationFrame(drawTrend);
+        if(canShow('steering'))renderSteering();
+        if(canShow('risk'))renderRisk();
+    }
+    function resize(){
+        if(currentMode!=='analysis')return;
+        $('analysis-track-grid').querySelectorAll('.analysis-track-card').forEach((el,i)=>{if(activeList[i])drawTrack(el.querySelector('canvas'),activeList[i].r,true);});
+        drawTrend();
+        if(canShow('steering'))renderSteering();
+        if(canShow('risk'))renderRisk();
+    }
+    function scenarioChanged(){sceneVersion++;renderedCache=new WeakMap();if(currentMode==='analysis')render();}
+    $('analysis-group-select').addEventListener('change',e=>{groupKey=e.target.value;selectedReplay=null;selectedTurn=0;selectedRiskIndex=0;focusedRiskCell=null;render();});
+    $('analysis-steering-toggle').addEventListener('dblclick',()=>expand('steering'));
+    $('analysis-risk-toggle').addEventListener('dblclick',()=>expand('risk'));
+    $('analysis-risk-time-slider').addEventListener('input',e=>setRiskMoment(Number(e.target.value)));
+    $('analysis-heading-canvas').addEventListener('click',e=>{
+        if(selectedReplay===null)return;
+        const c=e.currentTarget,m=c._scale;if(!m)return;
+        const t=m.start+(e.offsetX-m.left)/(m.right-m.left)*(m.end-m.start);
+        const turns=getAnalysis(replayList[selectedReplay]).steering.turns;
+        const ix=turns.findIndex(s=>s.start<=t&&t<=s.end);
+        if(ix>=0)setTurn(ix);
+    });
+    function enableRiskChartPanZoom(canvasId,kind){
+        const canvas=$(canvasId),registry=kind==='track'?riskTrackPan:riskTimePan;
+        canvas.title=tr('Wheel: zoom · Drag: pan · Double-click: reset view','마우스 휠: 확대·축소 · 드래그: 패닝 · 더블클릭: 화면 초기화');
+        const redraw=()=>{
+            if(selectedReplay===null||currentMode!=='analysis'||!canShow('risk'))return;
+            if(kind==='track')drawTrack(canvas,replayList[selectedReplay],false);
+            else drawRiskHistory();
+        };
+        const limitTimePan=(st)=>{
+            if(kind!=='time')return;
+            const sc=canvas._scale;
+            if(!sc)return;
+            const plotWidth=Math.max(1,sc.right-sc.left);
+            st.dx=clamp(st.dx,-(st.zoom-1)*plotWidth/2,(st.zoom-1)*plotWidth/2);
+        };
+        canvas.addEventListener('wheel',e=>{
+            if(selectedReplay===null)return;
+            e.preventDefault();
+            const r=replayList[selectedReplay];
+            const st={...(registry.get(r)||{zoom:1,dx:0,dy:0})};
+            const zoom=clamp(st.zoom*(e.deltaY<0?1.18:1/1.18),kind==='time'?1:0.2,kind==='time'?64:25);
+            const ratio=zoom/st.zoom;
+            const rect=canvas.getBoundingClientRect();
+            const sc=canvas._scale;
+            const cx=kind==='time'&&sc?(sc.left+sc.right)/2:rect.width/2;
+            const cy=rect.height/2;
+            const px=e.clientX-rect.left,py=e.clientY-rect.top;
+            // Preserve the data point under the mouse while zooming.
+            st.dx=(px-cx)-(px-cx-st.dx)*ratio;
+            if(kind==='track')st.dy=(py-cy)-(py-cy-st.dy)*ratio;
+            st.zoom=zoom;
+            limitTimePan(st);
+            registry.set(r,st);redraw();
+        },{passive:false});
+        let drag=null;
+        canvas.addEventListener('pointerdown',e=>{
+            if(e.button!==0||selectedReplay===null)return;
+            canvas._analysisSuppressClick=false;
+            drag={id:e.pointerId,replay:replayList[selectedReplay],x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};
+            canvas.setPointerCapture(e.pointerId);
+        });
+        canvas.addEventListener('pointermove',e=>{
+            if(!drag||e.pointerId!==drag.id)return;
+            if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
+            drag.moved=true;
+            const st={...(registry.get(drag.replay)||{zoom:1,dx:0,dy:0})};
+            st.dx+=e.clientX-drag.lastX;
+            if(kind==='track')st.dy+=e.clientY-drag.lastY;
+            limitTimePan(st);
+            drag.lastX=e.clientX;drag.lastY=e.clientY;
+            registry.set(drag.replay,st);redraw();
+        });
+        const stop=e=>{
+            if(!drag||e.pointerId!==drag.id)return;
+            if(drag.moved)canvas._analysisSuppressClick=true;
+            drag=null;
+            if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+        };
+        canvas.addEventListener('pointerup',stop);
+        canvas.addEventListener('pointercancel',stop);
+        canvas.addEventListener('dblclick',()=>{
+            if(selectedReplay===null)return;
+            registry.delete(replayList[selectedReplay]);redraw();
+        });
+    }
+    enableRiskChartPanZoom('analysis-risk-track-canvas','track');
+    enableRiskChartPanZoom('analysis-risk-time-canvas','time');
+    $('analysis-risk-time-canvas').addEventListener('click',e=>{
+        if(e.currentTarget._analysisSuppressClick){e.currentTarget._analysisSuppressClick=false;return;}
+        if(selectedReplay===null)return;const m=e.currentTarget._scale;if(!m)return;
+        const t=m.min+(e.offsetX-m.left)/(m.right-m.left)*(m.max-m.min);
+        const pts=getAnalysis(replayList[selectedReplay]).risk.instants;
+        if(!pts.length)return;
+        let lo=0,hi=pts.length-1;while(lo<hi){let mid=(lo+hi)>>1;if(pts[mid].t<t)lo=mid+1;else hi=mid;}setRiskMoment(lo);
+    });
+    $('analysis-risk-track-canvas').addEventListener('click',e=>{
+        if(e.currentTarget._analysisSuppressClick){e.currentTarget._analysisSuppressClick=false;return;}
+        if(selectedReplay===null)return;
+        const c=e.currentTarget,points=c._analysisPoints||[];
+        let best=null,d=Infinity;
+        for(const p of points){const ds=(p.x-e.offsetX)**2+(p.y-e.offsetY)**2;if(ds<d){best=p;d=ds;}}
+        if(best&&d<900)setRiskMoment(best.index);
+    });
+    return {render,resize,scenarioChanged,settings:SETTINGS};
+})();
 
     initSystem();
 </script>
