@@ -1739,11 +1739,20 @@
         }
 
         async function postResultPayload(payload) {
-            return await fetchJsonWithTimeout(GOOGLE_SCRIPT_URL, {
+            const response = await fetchJsonWithTimeout(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             }, 60000);
+
+            // HTTP 200만으로 성공 처리하지 않음. Drive의 실제 파일 생성 응답 검증.
+            if (!response || response.result !== 'success' ||
+                typeof response.fileId !== 'string' || !response.fileId ||
+                response.fileName !== payload.fileName) {
+                throw new Error((response && (response.error || response.message)) ||
+                    'Google Drive 결과파일 저장을 확인하지 못했습니다.');
+            }
+            return response;
         }
 
         async function processPendingResultQueue() {
