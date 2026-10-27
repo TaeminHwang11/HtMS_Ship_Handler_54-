@@ -1019,7 +1019,7 @@
             }
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
 
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL, {
@@ -1030,7 +1030,16 @@
                 });
 
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                await res.json();
+                const response = await res.json();
+
+                // Drive에 실제 결과 파일이 생성되어 파일 ID가 반환된 경우에만 성공 인정.
+                // Apps Script가 HTTP 200 + {result:"error"}를 보내도 자동 재시도를 계속함.
+                if (!response || response.result !== 'success' ||
+                    typeof response.fileId !== 'string' || !response.fileId ||
+                    response.fileName !== payload.fileName) {
+                    throw new Error((response && (response.error || response.message)) ||
+                        'Google Drive 결과파일 저장을 확인하지 못했습니다.');
+                }
 
                 clearTimeout(timeoutId);
                 finishTitle.innerText = "데이터 전송 성공!";
