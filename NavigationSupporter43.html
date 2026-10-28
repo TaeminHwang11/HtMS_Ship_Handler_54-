@@ -490,6 +490,17 @@
         .online-finish-title { font-size: 30px; font-weight: 800; color: #34d399; margin-bottom: 12px; }
         .online-finish-desc { color: #cbd5e1; font-size: 16px; }
 
+        /* Online display v2: initial text size follows the supplied 1910x939 reference.
+           The top-left logo is deliberately smaller than that reference to clear PAUSE/HUD. */
+        .hud-label { top: 12px; left: 12px; font-size: clamp(12px, 0.97vw, 19px); padding: 7px 10px; }
+        #os-fixed-hud { font-size: clamp(12px, 0.95vw, 18px); max-width: min(90vw, 1020px); }
+        #online-pause-btn { font-size: 14px; min-width: 78px; height: 34px; }
+        .panel-title { font-size: clamp(11px, 1.55vh, 16px); }
+        .placeholder-btn { font-size: clamp(18px, 2.55vh, 27px); }
+        .support-card-title { font-size: clamp(16px, 1.1vw, 21px); }
+        .support-card-primary { font-size: clamp(22px, 1.85vw, 35px); }
+        .tgt-title { font-size: 18px; }
+        .tgt-row { font-size: 15px; }
     </style>
 </head>
 <body>
@@ -597,7 +608,7 @@
         let vObj = {
             panX: 0, panY: 0, 
             panOffsetX: 0, panOffsetY: 0,
-            viewScale: 1 / 3.0, 
+            viewScale: 1.175, // initial view: 0.2 NM scale bar and enlarged ship geometry in the reference
             isDragging: false, 
             dragStartX: 0, dragStartY: 0, 
             hasDragged: false,
@@ -1383,12 +1394,22 @@
             }
             panelsContainer.querySelectorAll('.target-info-panel[data-manual="true"]').forEach(panel => occupied.push(domRectRelativeToMap(panel)));
 
+            const mapRect = container.getBoundingClientRect();
+            const logoRect = document.querySelector('.hud-label')?.getBoundingClientRect();
+            const topAfterLogo = Math.max(targetPanelMargin,
+                Math.ceil((logoRect ? logoRect.bottom - mapRect.top : 54) + 12));
+
             panels.forEach((panel, index) => {
                 const w = panel.offsetWidth, h = panel.offsetHeight;
-                const preferred = [
-                    { x: container.clientWidth - targetPanelMargin - w, y: targetPanelMargin + index * (h + targetPanelGap) },
-                    { x: targetPanelMargin, y: targetPanelMargin + index * (h + targetPanelGap) }
-                ];
+                const preferred = [];
+                // Search in column-major order, always starting under the left logo.
+                for (let x = targetPanelMargin; x + w <= container.clientWidth - targetPanelMargin;
+                    x += w + targetPanelGap) {
+                    for (let y = topAfterLogo; y + h <= container.clientHeight - targetPanelMargin;
+                        y += h + targetPanelGap) {
+                        preferred.push({ x, y });
+                    }
+                }
                 const pos = findFreeMapPosition(w, h, occupied, preferred);
                 panel.style.left = `${Math.round(pos.x)}px`;
                 panel.style.top = `${Math.round(pos.y)}px`;
@@ -3612,7 +3633,8 @@
             integral: 0,
             prevError: 0,
             prevTimeSec: null,
-            targetHeading: null
+            targetHeading: null,
+            phase: 'TURN'
         };
 
         async function resetSteeringSession({ clearTarget = true, showStatus = true } = {}) {
@@ -3628,6 +3650,7 @@
             browserPidState.prevError = 0;
             browserPidState.prevTimeSec = null;
             browserPidState.targetHeading = null;
+            browserPidState.phase = 'TURN';
 
             if (clearTarget) {
                 actionTargetSettings.manualHeading = null;
@@ -4592,6 +4615,36 @@
 
         function findFreeSupportPosition(card, group, index, occupied) {
             const W = supportCardsContainer.clientWidth, H = supportCardsContainer.clientHeight;
+            if (group === 'act' && card.dataset.userPlaced !== 'true') {
+                const feature = String(card.dataset.supportKey || '').split(':')[1];
+                const button = document.querySelector(`button[data-support-group="act"][data-support-feature="${feature}"]`);
+                if (button) {
+                    const buttonRect = button.getBoundingClientRect();
+                    const parentRect = supportCardsContainer.getBoundingClientRect();
+                    // Keep manual resize of an ACT card if the user has adjusted its dimensions.
+                    const priorWidth = Number(card.dataset.actAutoWidth);
+                    const priorHeight = Number(card.dataset.actAutoHeight);
+                    if (Number.isFinite(priorWidth) && priorWidth > 0 &&
+                        (Math.abs(card.offsetWidth - priorWidth) > 3 || Math.abs(card.offsetHeight - priorHeight) > 3)) {
+                        card.dataset.actUserResized = 'true';
+                    }
+                    const userResized = card.dataset.actUserResized === 'true';
+                    const width = userResized ? card.offsetWidth :
+                        clampValue(Math.round(buttonRect.width - 8), 190, 390);
+                    const height = userResized ? card.offsetHeight :
+                        supportGroupGeometry('act', 0).height;
+                    card.dataset.actAutoWidth = String(width);
+                    card.dataset.actAutoHeight = String(height);
+                    const x = clampValue(Math.round(buttonRect.left - parentRect.left +
+                        (buttonRect.width - width) / 2), 0, Math.max(0, W - width));
+                    const y = Math.max(0, H - height);
+                    // Very narrow view: two cards cannot be side by side, so keep both readable.
+                    if (buttonRect.width < 198 && feature === 'rudder-balance') {
+                        return { x, y:Math.max(0, y - height - 9), width, height, side:'right' };
+                    }
+                    return { x, y, width, height, side:'right' };
+                }
+            }
             const w = Math.max(card.offsetWidth, 190), h = Math.max(card.offsetHeight, 104), gap = 9;
             const preferred = [];
             preferred.push(supportGroupGeometry(group, index));
@@ -4920,7 +4973,7 @@
             
             if (label) { 
                 ctx.fillStyle = color; 
-                ctx.font = '700 12px Segoe UI'; 
+                ctx.font = '700 15px Segoe UI'; 
                 ctx.textAlign = 'center'; 
                 ctx.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * viewScale + 15)); 
             }
@@ -4983,7 +5036,7 @@
             ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5);
             ctx.moveTo(x + len, y - 5); ctx.lineTo(x + len, y + 5);
             ctx.stroke();
-            ctx.font = '600 11px Segoe UI';
+            ctx.font = '600 13px Segoe UI';
             ctx.textAlign = 'left';
             ctx.fillText(`${scaleNM < 1 ? scaleNM.toFixed(1) : scaleNM.toFixed(0)} NM`, x, y - 8);
             ctx.restore();
@@ -5009,7 +5062,7 @@
                 if (labelY >= canvas.height * 0.70 && labelY <= canvas.height - 32 && (nm <= 5 || nm % 2 === 0)) {
                     ctx.setLineDash([]);
                     ctx.fillStyle = '#7f8b9d';
-                    ctx.font = '600 10px Segoe UI';
+                    ctx.font = '600 12px Segoe UI';
                     ctx.textAlign = 'left';
                     ctx.fillText(`${nm} NM`, vObj.panX + 6, labelY - 4);
                     ctx.setLineDash([4, 6]);
@@ -5196,6 +5249,38 @@
             return defaultVal;
         }
 
+        // PID TUNING (same as offline v2): predicts achievable stopping angle under maximum counter-rudder.
+        // Same rudder servo (2.5 deg/s) and Nomoto ROT dynamics (K=2, T=25s) as updateOnlinePhysics.
+        // direction = signed desired heading correction (+1 STBD / -1 PORT).
+        // No vessel physics or keyboard steering was changed: this is the guidance calculation.
+        function predictPidStoppingAngle(rotDegMin, actualRudderDeg, proposedRudderDeg,
+                                         direction = 1, lookaheadSec = 0) {
+            const timeStep = 0.2;
+            const rudderRate = 2.5;
+            const rudderLimit = 35.0;
+            const kNom = 2.0;
+            const tNom = 25.0;
+            let rot = Number(rotDegMin) * direction;
+            let rudder = Number(actualRudderDeg) * direction;
+            const proposed = Number(proposedRudderDeg) * direction;
+            let travelled = 0;
+
+            // Candidate command is held briefly, then the maximum opposite helm is applied.
+            const lookaheadSteps = Math.round(Math.max(0, lookaheadSec) / timeStep);
+            for (let i = 0; i < lookaheadSteps; i++) {
+                rudder += clampValue(proposed - rudder, -rudderRate * timeStep, rudderRate * timeStep);
+                rot += ((kNom * rudder - rot) / tNom) * timeStep;
+                travelled += (rot / 60.0) * timeStep;
+            }
+            // Continue until forward ROT is arrested. Include rudder reversal delay.
+            for (let i = 0; i < 700 && rot > 0; i++) {
+                rudder += clampValue(-rudderLimit - rudder, -rudderRate * timeStep, rudderRate * timeStep);
+                rot += ((kNom * rudder - rot) / tNom) * timeStep;
+                if (rot > 0) travelled += (rot / 60.0) * timeStep;
+            }
+            return Math.max(0, travelled);
+        }
+
         function fetchControlGuidance(options = {}) {
             const forceRefresh = options.forceRefresh === true;
             if (!vObj.massEntity || !isAnyActionControlActive()) {
@@ -5221,61 +5306,98 @@
             const nowSec = Number(currentSimulatorTimeSec());
             const error = signedAngleDiff(normalizedTarget, Number(os.hdg) || 0);
 
-            if (forceRefresh || browserPidState.targetHeading === null || Math.abs(signedAngleDiff(normalizedTarget, browserPidState.targetHeading)) > 0.1) {
+            if (forceRefresh || browserPidState.targetHeading === null ||
+                Math.abs(signedAngleDiff(normalizedTarget, browserPidState.targetHeading)) > 0.1) {
                 browserPidState.integral = 0;
                 browserPidState.prevError = error;
                 browserPidState.prevTimeSec = Number.isFinite(nowSec) ? nowSec : null;
                 browserPidState.targetHeading = normalizedTarget;
+                browserPidState.phase = 'TURN';
             }
 
-            let dt = 1.0;
+            let dt = 0.2;
             if (Number.isFinite(nowSec) && Number.isFinite(browserPidState.prevTimeSec)) {
-                const candidate = nowSec - browserPidState.prevTimeSec;
-                if (candidate >= 0.05 && candidate <= 10.0) dt = candidate;
+                const measuredDt = nowSec - browserPidState.prevTimeSec;
+                if (measuredDt >= 0.05 && measuredDt <= 10.0) dt = measuredDt;
             }
             const currentRudder = Number(os.rudder) || 0;
             const currentRot = Number(os.rot) || 0;
             const errorD = (error - browserPidState.prevError) / Math.max(0.1, dt);
+            const magnitude = Math.abs(error);
+            const direction = error >= 0 ? 1 : -1;
+            const signedRot = currentRot * direction;
+            const signedRudder = currentRudder * direction;
 
-            // Browser-only PID support cue.  Use a two-stage response for emergency manoeuvring:
-            // turn more decisively while the heading error is large, then brake earlier and harder
-            // as the accumulated ROT can carry the ship through the target heading.
-            const FAR_ERROR_DEG = 12.0;
-            const farFromTarget = Math.abs(error) > FAR_ERROR_DEG;
-            const KP = farFromTarget ? 0.90 : 0.68;
-            const KI = 0.0015;
-            const KD = farFromTarget ? 0.22 : 0.48;
-            const ROT_DAMPING = farFromTarget ? 0.25 : 0.62;
-            const T_NOM_SEC = 25.0;
-            const residualTurnDeg = currentRot * T_NOM_SEC / 60.0;
-            const predictedErrorAfterCoast = error - residualTurnDeg;
-            const movingTowardTarget = error * currentRot > 0;
-            const brakingZone = Math.abs(error) <= Math.abs(residualTurnDeg) * 1.35 + 2.5;
-            const predictedOvershoot = movingTowardTarget && (error * predictedErrorAfterCoast <= 0 || brakingZone);
-
-            if (predictedOvershoot) {
-                browserPidState.integral *= 0.25;
-            } else if (Math.abs(error) < 8) {
-                browserPidState.integral *= 0.88;
-                browserPidState.integral = clampValue(browserPidState.integral + error * dt, -180, 180);
-            } else {
-                browserPidState.integral = clampValue(browserPidState.integral + error * dt, -300, 300);
+            // Gain scheduling:
+            //  1) TURN: prompt hard-over rudder to create a decisive initial ROT.
+            //  2) APPROACH: reduce desired ROT as the heading closes, with stronger reverse helm.
+            // Switch before the remaining error reaches the fully reversing stopping distance.
+            const hardStopDistance = predictPidStoppingAngle(currentRot, currentRudder,
+                -direction * 35, direction, 0);
+            if (browserPidState.phase === 'TURN' && magnitude <= hardStopDistance + 7.0) {
+                browserPidState.phase = 'APPROACH';
             }
+            const highPowerTurn = browserPidState.phase === 'TURN' && magnitude > 12.0;
+            const KP = highPowerTurn ? 2.50 : 0.65;
+            const KI = 0.0;  // Integral disabled intentionally: prevents windup and overshoot.
+            const KD = highPowerTurn ? 0.28 : 0.15;
+            const ROT_DAMPING = highPowerTurn ? 0.10 : 1.80;
 
-            let pidRudder = KP * error + KI * browserPidState.integral + KD * errorD - ROT_DAMPING * currentRot;
-            if (predictedOvershoot && Math.abs(currentRot) > 0.6) {
-                const overshootDeg = Math.max(0, Math.abs(residualTurnDeg) - Math.abs(error));
-                const counterRudder = clampValue(8.0 + 0.60 * Math.abs(currentRot) + 1.5 * overshootDeg, 8.0, 25.0);
-                pidRudder = -Math.sign(currentRot) * counterRudder;
+            browserPidState.integral = 0;
+            let pidRudder;
+            if (highPowerTurn) {
+                pidRudder = KP * error + KI * browserPidState.integral
+                    + KD * errorD - ROT_DAMPING * currentRot;
+            } else {
+                // Final ROT envelope drops to zero with the remaining heading error.
+                const desiredRot = direction * Math.min(9.0, magnitude * 2.35);
+                pidRudder = KP * error + KI * browserPidState.integral
+                    + KD * errorD + 0.5 * desiredRot
+                    - ROT_DAMPING * (currentRot - desiredRot);
             }
             pidRudder = clampValue(pidRudder, -35, 35);
 
-            // Same Nomoto-like equilibrium used by the online radar ship model: targetRot = K_nom * Rudder, K_nom=2.0.
+            // 0.24-deg capture zone: only tiny corrections; never apply a sudden hard-over helm.
+            const gentleCapture = magnitude < 0.24 && Math.abs(currentRot) < 0.7;
+            if (gentleCapture) {
+                pidRudder = clampValue(-1.5 * currentRot + 0.7 * error, -2.5, 2.5);
+            }
+
+            // Nomoto-model predictive safety filter: among feasible rudder commands, take
+            // the strongest one that can still stop before the target heading.  In the
+            // unlikely case stopping is already infeasible, use maximum opposing rudder.
+            if (!gentleCapture && signedRot > 0.08 && magnitude > 0.24) {
+                const reserveDeg = Math.min(magnitude * 0.45,
+                    0.18 + Math.min(1.0, Math.abs(signedRot) * 0.012));
+                const availableDeg = Math.max(0, magnitude - reserveDeg);
+                const candidateDistance = predictPidStoppingAngle(currentRot, currentRudder,
+                    pidRudder, direction, 1.2);
+                if (candidateDistance > availableDeg) {
+                    const strongestBrakeDistance = predictPidStoppingAngle(currentRot, currentRudder,
+                        -direction * 35, direction, 1.2);
+                    if (strongestBrakeDistance >= availableDeg) {
+                        pidRudder = -direction * 35;
+                    } else {
+                        let lower = -35, upper = pidRudder * direction;
+                        for (let i = 0; i < 9; i++) {
+                            const mid = (lower + upper) * 0.5;
+                            if (predictPidStoppingAngle(currentRot, currentRudder,
+                                    mid * direction, direction, 1.2) > availableDeg) upper = mid;
+                            else lower = mid;
+                        }
+                        pidRudder = lower * direction;
+                    }
+                }
+            }
+            pidRudder = clampValue(pidRudder, -35, 35);
+
             const pidIntendedRot = 2.0 * pidRudder;
             const rudderDelta = pidRudder - currentRudder;
             const rotDelta = pidIntendedRot - currentRot;
-            const rudderAssessment = Math.abs(rudderDelta) <= 2.0 ? 'GOOD' : (Math.abs(pidRudder) > Math.abs(currentRudder) ? 'INCREASE' : 'REDUCE');
-            const rotAssessment = Math.abs(rotDelta) <= 1.0 ? 'GOOD' : (Math.abs(pidIntendedRot) > Math.abs(currentRot) ? 'INCREASE' : 'REDUCE');
+            const rudderAssessment = Math.abs(rudderDelta) <= 2.0 ? 'GOOD'
+                : (Math.abs(pidRudder) > Math.abs(currentRudder) ? 'INCREASE' : 'REDUCE');
+            const rotAssessment = Math.abs(rotDelta) <= 1.0 ? 'GOOD'
+                : (Math.abs(pidIntendedRot) > Math.abs(currentRot) ? 'INCREASE' : 'REDUCE');
 
             browserPidState.prevError = error;
             browserPidState.prevTimeSec = Number.isFinite(nowSec) ? nowSec : browserPidState.prevTimeSec;
@@ -5283,7 +5405,7 @@
 
             latestControlGuidance = {
                 available: true,
-                source: 'browser-fixed-pid-radar-dynamics',
+                source: 'browser-predictive-pid-radar-dynamics',
                 session_id: steeringSessionId,
                 target_heading: normalizedTarget,
                 heading_error: error,
@@ -5294,6 +5416,8 @@
                 pid_intended_rot: pidIntendedRot,
                 rudder_assessment: rudderAssessment,
                 rot_assessment: rotAssessment,
+                controller_phase: browserPidState.phase,
+                estimated_full_brake_deg: hardStopDistance,
                 kp: KP, ki: KI, kd: KD
             };
             controlGuidanceDirty = false;
@@ -5498,7 +5622,8 @@
 
             isSimulationRunning = true;
             vObj.panOffsetX = 0;
-            vObj.panOffsetY = 0;
+            // Reference screenshot: own ship at ~91% of chart height (lower center).
+            vObj.panOffsetY = Math.round(container.clientHeight * 0.41);
             syncOnlineEntities();
             appendOnlineLog('0.0');
 
