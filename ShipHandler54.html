@@ -1680,7 +1680,7 @@
 
             if (loadedScenarioConfig) {
                 if (Array.isArray(loadedScenarioConfig)) {
-                    loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15); } });
+                    loadedScenarioConfig.forEach(t => { if(t.isGoal) { shipPhysics.wps.push({ x: t.x || 0, z: t.z || 0 }); } else { createTarget(t.x ?? 0, t.z ?? -1000, t.hdg ?? 180, t.spd ?? 15); } });
                 } else {
                     if (loadedScenarioConfig.os) {
                         if (loadedScenarioConfig.os.spd !== undefined) { shipPhysics.cmdSpeed = loadedScenarioConfig.os.spd; shipPhysics.speed = loadedScenarioConfig.os.spd; }
@@ -1688,7 +1688,7 @@
                         if (loadedScenarioConfig.os.waypoints && Array.isArray(loadedScenarioConfig.os.waypoints)) { loadedScenarioConfig.os.waypoints.forEach(wp => { shipPhysics.wps.push({ x: wp.x || 0, z: wp.z || 0 }); }); }
                     }
                     if (loadedScenarioConfig.targets) {
-                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x || 0, t.z || -1000, t.hdg || 180, t.spd || 15, explicitFile, t.waypoints); });
+                        loadedScenarioConfig.targets.forEach(t => { let explicitFile = null; if (t.type) explicitFile = filesList.find(name => name.includes(t.type)) || null; createTarget(t.x ?? 0, t.z ?? -1000, t.hdg ?? 180, t.spd ?? 15, explicitFile, t.waypoints); });
                     }
                     if (loadedScenarioConfig.environment) {
                         if (loadedScenarioConfig.environment.wind) {
