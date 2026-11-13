@@ -521,6 +521,12 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                 <button class="tool-btn" id="rotLeftBtn" style="border-color:#3b82f6;">시나리오 회전 (-15°)</button>
                 <button class="tool-btn" id="rotRightBtn" style="border-color:#3b82f6;">시나리오 회전 (+15°)</button>
             </div>
+            <!-- HTMS only: adjust the own-ship-centred relative scene without changing Origin inputs. -->
+            <div class="btn-row" id="osRelativeControls" style="display:none; align-items:center;">
+                <button class="tool-btn" id="moveOsBtn" style="border-color:#0ea5e9;" title="클릭한 위치를 본선의 새 기준점으로 설정합니다. 본선은 중심에 남고 나머지 객체가 이동합니다.">본선 위치 이동: OFF</button>
+                <label for="osHeadingInput" style="font-size:11px; color:#88c0d0; font-weight:bold; white-space:nowrap;">OS HDG</label>
+                <input id="osHeadingInput" type="number" min="0" max="359.9" step="1" value="0" title="본선 헤딩을 변경하면 주변 지도가 회전해 보입니다. JSON의 지형 좌표는 바뀌지 않습니다." style="min-width:0; width:68px; box-sizing:border-box; padding:6px 4px; background:#0b0f19; border:1px solid #334155; color:#fff; border-radius:4px; font:12px monospace; text-align:center; user-select:auto;">
+            </div>
             <div class="btn-row">
                 <button class="tool-btn btn-add-goal" id="addGoalBtn">웨이포인트 추가</button>
                 <button class="tool-btn btn-add" id="addShipBtn">타선 추가</button>
@@ -643,6 +649,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     let landEditMode = false;
     let landDraft = null;
     let landDraftCursor = null;
+    // HTMS: OS is the permanent (0,0) scene origin; relocation is a rebase of all other objects.
+    let osRelocateMode = false;
 
     // 글로벌 컨트롤 전용 변수
     let globalDrag = false;
@@ -694,13 +702,17 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
 
     // 글로벌 마우스/터치 이벤트 통합
     function handleGlobalUp() {
+        let osRebased = false;
         massList.forEach((mass, idx) => {
+            if (simMode === 'HTMS' && mass.draggingObj?.type === 'ship' &&
+                mass.draggingObj.index === 'OS' && mass.draggingObj.didRebase) osRebased = true;
             mass.draggingObj = null;
             const hud = document.querySelector(`#hud-${idx} .hud-target`);
             if (hud) hud.style.display = 'none'; 
         });
         replayList.forEach(r => { r.dragObj = null; });
-        globalDrag = false; 
+        globalDrag = false;
+        if (osRebased) generateJSONOutput();
     }
 
     window.addEventListener('mouseup', handleGlobalUp);
@@ -853,6 +865,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         landEditMode = false;
         landDraft = null;
         landDraftCursor = null;
+        osRelocateMode = false;
         updateScenarioSelectionMode();
         massList = [createMassState(globalOrigin.lat, globalOrigin.lon)];
         activeMassIndex = 0;
@@ -945,6 +958,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         
         originLatInput.value = mass.originLat.toFixed(6);
         originLonInput.value = mass.originLon.toFixed(6);
+        const osHdgEl = document.getElementById('osHeadingInput');
+        if (osHdgEl && simMode === 'HTMS') osHdgEl.value = Number(mass.osData.hdg || 0).toFixed(1);
         
         if (mass.selectedShip === 'OS' || !mass.targets[mass.selectedShip]) {
             mass.selectedShip = 'OS';
@@ -1018,6 +1033,14 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
 
     function updateLandControls() {
         const htms = simMode === 'HTMS';
+        document.getElementById('osRelativeControls').style.display = htms ? 'flex' : 'none';
+        document.getElementById('rotLeftBtn').textContent = htms ? '본선 HDG (-15°)' : '시나리오 회전 (-15°)';
+        document.getElementById('rotRightBtn').textContent = htms ? '본선 HDG (+15°)' : '시나리오 회전 (+15°)';
+        const relocateBtn = document.getElementById('moveOsBtn');
+        relocateBtn.textContent = '본선 위치 이동: ' + (osRelocateMode ? 'ON (위치 클릭)' : 'OFF');
+        relocateBtn.style.background = osRelocateMode ? '#075985' : '';
+        relocateBtn.style.color = osRelocateMode ? '#fff' : '';
+        if (htms && massList[activeMassIndex]) document.getElementById('osHeadingInput').value = Number(massList[activeMassIndex].osData.hdg || 0).toFixed(1);
         document.getElementById('landControls').style.display = htms ? 'flex' : 'none';
         document.getElementById('landDrawActions').style.display = (htms && landDraft) ? 'flex' : 'none';
         const edit = document.getElementById('editLandBtn');
@@ -1194,7 +1217,11 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             }
             if(!draft && pts.length>=3) {
                 const cx=pts.reduce((s,p)=>s+px(p),0)/pts.length,cy=pts.reduce((s,p)=>s+py(p),0)/pts.length;
-                ctxL.fillStyle=color;ctxL.textAlign='center';ctxL.font='bold 10px monospace';ctxL.fillText(feature.id||feature.type,cx,cy);
+                ctxL.fillStyle=color;ctxL.textAlign='center';ctxL.font='bold 10px monospace';
+                if(simMode==='HTMS'){
+                    ctxL.save();ctxL.translate(cx,cy);ctxL.rotate((Number(mass.osData.hdg)||0)*Math.PI/180);
+                    ctxL.fillText(feature.id||feature.type,0,0);ctxL.restore();
+                } else ctxL.fillText(feature.id||feature.type,cx,cy);
             }
             ctxL.restore();
         };
@@ -1202,8 +1229,68 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         if(landDraft)draw(landDraft,true);
     }
 
+    // HTMS: the saved coordinate axes stay East (+x), South (+z).
+    // Changing OS heading rotates ONLY the editor's camera view (H-UP), never the
+    // geographic Land/target/route coordinates. RADAR thus loads the same geometry.
+    function setOwnShipHeading(newHeading) {
+        if (simMode !== 'HTMS' || !Number.isFinite(Number(newHeading))) return;
+        const mass = massList[activeMassIndex];
+        if (!mass) return;
+        mass.osData.hdg = ((Number(newHeading) % 360) + 360) % 360;
+        document.getElementById('osHeadingInput').value = mass.osData.hdg.toFixed(1);
+        updateCanvas(activeMassIndex);
+        generateJSONOutput();
+    }
+
+    document.getElementById('osHeadingInput').addEventListener('change', e => {
+        const n = Number(e.target.value);
+        if (e.target.value.trim() !== '' && Number.isFinite(n)) setOwnShipHeading(n);
+        else if (massList[activeMassIndex]) e.target.value = massList[activeMassIndex].osData.hdg.toFixed(1);
+    });
+
+    // Move the reference ship *within the drawn geography*: the OS remains at (0,0),
+    // and every other scene position is re-expressed relative to that new origin.
+    // This does NOT change the user-entered Origin lat/lon or ship/target headings.
+    function rebaseSceneAroundOwnShip(mass, dx, dz) {
+        if (!mass || !Number.isFinite(dx) || !Number.isFinite(dz)) return;
+        if (Math.abs(dx) + Math.abs(dz) < 1e-12) return;
+        const move = pt => { pt.x -= dx; pt.z -= dz; };
+        (mass.osData.waypoints || []).forEach(move);
+        (mass.targets || []).forEach(target => {
+            move(target);
+            (target.waypoints || []).forEach(move);
+        });
+        (mass.land || []).forEach(area => (area.points || []).forEach(move));
+        if (landDraft) landDraft.points.forEach(move);
+        if (landDraftCursor) move(landDraftCursor);
+    }
+
+    // A rotated H-UP editor is a *display transform only*. Hit testing and
+    // clicking use its exact inverse; JSON values remain true East/South coordinates.
+    function editorPointerToWorld(mass, canvas, clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const rawX = clientX - rect.left, rawY = clientY - rect.top;
+        const a = (simMode === 'HTMS' ? Number(mass.osData.hdg) || 0 : 0) * Math.PI / 180;
+        const c = Math.cos(a), si = Math.sin(a);
+        const u = rawX - mass.panX, v = rawY - mass.panY;
+        const mx = mass.panX + u*c - v*si, my = mass.panY + u*si + v*c;
+        return { rawX, rawY, mx, my, x:(mx-mass.panX)/mass.viewScale, z:(my-mass.panY)/mass.viewScale };
+    }
+
+    document.getElementById('moveOsBtn').addEventListener('click', () => {
+        if (simMode !== 'HTMS') return;
+        if (landDraft) { alert('먼저 LAND/SHALLOW 그리기를 완료하거나 취소해 주세요.'); return; }
+        if (isDeleteMode) toggleDeleteMode();
+        osRelocateMode = !osRelocateMode;
+        updateLandControls();
+    });
+
     function rotateScenario(angleDeg) {
         const mass = massList[activeMassIndex];
+        if (simMode === 'HTMS') {
+            setOwnShipHeading(mass.osData.hdg + angleDeg);
+            return;
+        }
         const rad = angleDeg * Math.PI / 180;
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
@@ -1474,11 +1561,11 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     function bindCanvasEvents(canvas, idx) {
         function handleCanvasMove(clientX, clientY) {
             const mass = massList[idx];
-            const rect = canvas.getBoundingClientRect();
-            const mx = clientX - rect.left; const my = clientY - rect.top;
+            const pointer = editorPointerToWorld(mass, canvas, clientX, clientY);
+            const {mx, my, rawX, rawY} = pointer;
 
-            const simX = Math.round((mx - mass.panX) / mass.viewScale);
-            const simZ = Math.round((my - mass.panY) / mass.viewScale);
+            const simX = Math.round(pointer.x);
+            const simZ = Math.round(pointer.z);
             document.querySelector(`#hud-${idx} .hud-cursor`).textContent = `CURSOR: X: ${simX} | Z: ${simZ} (${(Math.hypot(simX, simZ)/40).toFixed(1)} Cbl)`;
 
             if (landDraft && simMode==='HTMS') {
@@ -1487,13 +1574,29 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             if (!mass.draggingObj) return;
 
             if (mass.draggingObj.type === 'pan') {
-                mass.panX = mx - mass.draggingObj.startX;
-                mass.panY = my - mass.draggingObj.startY;
+                mass.panX = rawX - mass.draggingObj.startX;
+                mass.panY = rawY - mass.draggingObj.startY;
                 updateCanvas(idx);
                 return;
             }
 
             if (isDeleteMode) return;
+
+            // Dragging OS moves the entire relative scenario in the opposite
+            // direction, while the OS marker remains at the same (0,0) anchor.
+            if (simMode === 'HTMS' && mass.draggingObj.type === 'ship' && mass.draggingObj.index === 'OS') {
+                const drag = mass.draggingObj;
+                const ddx = rawX - drag.lastRawX, ddy = rawY - drag.lastRawY;
+                drag.lastRawX = rawX; drag.lastRawY = rawY;
+                const heading = (Number(mass.osData.hdg) || 0) * Math.PI / 180;
+                const c = Math.cos(heading), si = Math.sin(heading);
+                if (Math.abs(ddx)+Math.abs(ddy) > 1e-12) {
+                    rebaseSceneAroundOwnShip(mass, (ddx*c-ddy*si)/mass.viewScale, (ddx*si+ddy*c)/mass.viewScale);
+                    drag.didRebase = true;
+                    updateCanvas(idx);
+                }
+                return;
+            }
 
             if (mass.draggingObj.type === 'land-vertex') {
                 const area=mass.land?.[mass.draggingObj.landIndex];
@@ -1538,11 +1641,23 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
 
         function handleCanvasDown(clientX, clientY) {
             const mass = massList[idx];
-            const rect = canvas.getBoundingClientRect();
-            const mx = clientX - rect.left; const my = clientY - rect.top;
+            const pointer = editorPointerToWorld(mass, canvas, clientX, clientY);
+            const {mx, my, rawX, rawY} = pointer;
 
-            const landX=Math.round((mx-mass.panX)/mass.viewScale);
-            const landZ=Math.round((my-mass.panY)/mass.viewScale);
+            // Explicit one-click relocation: choose the NEW OS position in the
+            // current land/target map. All other saved geometry shifts together.
+            if (simMode === 'HTMS' && osRelocateMode) {
+                rebaseSceneAroundOwnShip(mass, pointer.x, pointer.z);
+                osRelocateMode = false;
+                mass.selectedShip = 'OS';
+                mass.draggingObj = null;
+                updateSidebarForActiveMass(); updateLandControls();
+                updateCanvas(idx); generateJSONOutput();
+                return;
+            }
+
+            const landX=Math.round(pointer.x);
+            const landZ=Math.round(pointer.z);
             if (handleLandCanvasDown(mass,mx,my,landX,landZ)) return;
 
             const checkWp = (wpArray) => {
@@ -1607,13 +1722,13 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
 
             if (Math.hypot(mx - mass.panX, my - mass.panY) < hitRadius) {
                 if (!isDeleteMode) {
-                    mass.draggingObj = { type: 'ship', index: 'OS' }; 
+                    mass.draggingObj = { type: 'ship', index: 'OS', lastRawX:rawX, lastRawY:rawY }; 
                     mass.selectedShip = 'OS'; updateSidebarForActiveMass(); updateTargetHudLocal(mass, idx, mass.draggingObj); updateCanvas(idx); return;
                 }
             }
             
             if (!isDeleteMode) {
-                mass.draggingObj = { type: 'pan', startX: mx - mass.panX, startY: my - mass.panY };
+                mass.draggingObj = { type: 'pan', startX: rawX - mass.panX, startY: rawY - mass.panY };
             }
         }
 
@@ -1801,19 +1916,20 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         }
         ctxL.setLineDash([]);
 
-        // Land is in the same fixed origin frame and stays behind route/ship symbols.
-        drawLandLocal(ctxL,mass);
-
-        drawRouteLocal(ctxL, mass, mass.osData.waypoints, 0, 0, '#0ea5e9'); 
-        mass.targets.forEach(t => drawRouteLocal(ctxL, mass, t.waypoints, t.x, t.z, '#ef4444')); 
-
-        if (mass.selectedShip === 'OS') {
-            ctxL.beginPath(); ctxL.arc(mass.panX, mass.panY, (SHIP_LEN_UNIT/2)*mass.viewScale + 10, 0, Math.PI*2);
-            ctxL.strokeStyle = '#eab308'; ctxL.lineWidth = 2; ctxL.stroke();
+        // HTMS view is H-UP: rotate only the *drawing* of the surrounding world.
+        // All saved Land, route, and target points stay in the North/East frame.
+        ctxL.save();
+        if (simMode === 'HTMS') {
+            ctxL.translate(mass.panX, mass.panY);
+            ctxL.rotate(-(Number(mass.osData.hdg) || 0) * Math.PI / 180);
+            ctxL.translate(-mass.panX, -mass.panY);
         }
-        drawShipHullLocal(ctxL, mass, 0, 0, mass.osData.hdg, '#10b981', true, 'OS');
+        // Land stays behind the existing route and target symbols.
+        drawLandLocal(ctxL,mass);
+        drawRouteLocal(ctxL, mass, mass.osData.waypoints, 0, 0, '#0ea5e9');
+        mass.targets.forEach(t => drawRouteLocal(ctxL, mass, t.waypoints, t.x, t.z, '#ef4444'));
         drawWaypointsLocal(ctxL, mass, mass.osData.waypoints, '#0ea5e9', 'OS');
-        
+
         mass.targets.forEach((target, i) => {
             if (mass.selectedShip === i) {
                 ctxL.beginPath(); ctxL.arc(mass.panX + target.x * mass.viewScale, mass.panY + target.z * mass.viewScale, (SHIP_LEN_UNIT/2)*mass.viewScale + 10, 0, Math.PI*2);
@@ -1823,6 +1939,15 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             drawShipHullLocal(ctxL, mass, target.x, target.z, target.hdg, '#ef4444', false, `T${i + 1}`);
             drawWaypointsLocal(ctxL, mass, target.waypoints, '#ef4444', `T${i + 1}`);
         });
+        ctxL.restore();
+
+        // OS is always at relative (0,0) and its bow points up in the HTMS
+        // editor. The exported os.hdg still contains the correct true heading.
+        if (mass.selectedShip === 'OS') {
+            ctxL.beginPath(); ctxL.arc(mass.panX, mass.panY, (SHIP_LEN_UNIT/2)*mass.viewScale + 10, 0, Math.PI*2);
+            ctxL.strokeStyle = '#eab308'; ctxL.lineWidth = 2; ctxL.stroke();
+        }
+        drawShipHullLocal(ctxL, mass, 0, 0, simMode === 'HTMS' ? 0 : mass.osData.hdg, '#10b981', true, 'OS');
     }
 
     function drawRouteLocal(ctxL, mass, wpArray, startX, startZ, lineColor) {
@@ -1841,7 +1966,10 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             ctxL.beginPath(); ctxL.arc(cx, cy, 6, 0, Math.PI * 2); ctxL.fill();
             ctxL.lineWidth = 1.5; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.shadowBlur = 0;
             ctxL.fillStyle = '#ffffff'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
-            ctxL.fillText(`${namePrefix} WP${i + 1}`, cx, cy + 18);
+            if (simMode === 'HTMS') {
+                ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate((Number(mass.osData.hdg) || 0) * Math.PI/180);
+                ctxL.fillText(`${namePrefix} WP${i + 1}`, 0, 18); ctxL.restore();
+            } else ctxL.fillText(`${namePrefix} WP${i + 1}`, cx, cy + 18);
         });
     }
 
@@ -1865,7 +1993,11 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         ctxL.lineWidth = 1 / mass.viewScale; ctxL.strokeStyle = '#ffffff'; ctxL.stroke(); ctxL.restore();
         if (label) {
             ctxL.fillStyle = isOwnShip ? '#10b981' : '#f87171'; ctxL.font = 'bold 11px monospace'; ctxL.textAlign = 'center';
-            ctxL.fillText(label, cx, cy + Math.max(25, (SHIP_LEN_UNIT / 2) * mass.viewScale + 15));
+            const textY = Math.max(25, (SHIP_LEN_UNIT / 2) * mass.viewScale + 15);
+            if (simMode === 'HTMS' && !isOwnShip) {
+                ctxL.save(); ctxL.translate(cx, cy); ctxL.rotate((Number(mass.osData.hdg) || 0) * Math.PI/180);
+                ctxL.fillText(label, 0, textY); ctxL.restore();
+            } else ctxL.fillText(label, cx, cy + textY);
         }
     }
 
@@ -2083,6 +2215,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                 newMass.land = normalizeLandData(parsed.Land);
             }
             massList = [newMass];
+            osRelocateMode = false;
+            updateLandControls();
         } else { 
             massList = [];
             if (isIncomingMASS) {
