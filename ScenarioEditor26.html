@@ -651,6 +651,9 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     let landDraftCursor = null;
     // HTMS: OS is the permanent (0,0) scene origin; relocation is a rebase of all other objects.
     let osRelocateMode = false;
+    // HTMS only: click-to-place modes; existing MASS add-button behavior stays unchanged.
+    let placementMode = null; // null | 'target' | 'waypoint'
+    let waypointOwner = 'OS';
 
     // 글로벌 컨트롤 전용 변수
     let globalDrag = false;
@@ -866,6 +869,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         landDraft = null;
         landDraftCursor = null;
         osRelocateMode = false;
+        placementMode = null;
+        waypointOwner = 'OS';
         updateScenarioSelectionMode();
         massList = [createMassState(globalOrigin.lat, globalOrigin.lon)];
         activeMassIndex = 0;
@@ -918,6 +923,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             currentMode = btn.dataset.mode;
+            if (currentMode !== 'editor' && placementMode) setPlacementMode(null);
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
@@ -1004,6 +1010,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     deleteToggleBtn.addEventListener('click', toggleDeleteMode);
     function toggleDeleteMode() {
         isDeleteMode = !isDeleteMode;
+        if (isDeleteMode && placementMode) setPlacementMode(null);
         deleteToggleBtn.textContent = isDeleteMode ? 'DELETE MODE: ON' : 'DELETE MODE: OFF';
         deleteToggleBtn.style.background = isDeleteMode ? '#ef4444' : '#7f1d1d';
         deleteToggleBtn.style.color = isDeleteMode ? '#ffffff' : '#fca5a5';
@@ -1049,6 +1056,32 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         const finish = document.getElementById('finishLandBtn');
         finish.disabled = !landDraft || landDraft.points.length < 3;
         finish.title = landDraft ? `현재 점: ${landDraft.points.length}개 (3개 이상 필요)` : '';
+        updatePlacementControls();
+    }
+
+    // The two original add buttons become persistent ON/OFF tools in HTMS mode.
+    // In MASS mode they retain the original instantaneous add behavior and labels.
+    function updatePlacementControls() {
+        const htms = simMode === 'HTMS';
+        const goalBtn = document.getElementById('addGoalBtn');
+        const shipBtn = document.getElementById('addShipBtn');
+        const goalOn = htms && placementMode === 'waypoint';
+        const shipOn = htms && placementMode === 'target';
+        goalBtn.textContent = htms ? `웨이포인트 생성: ${goalOn ? 'ON' : 'OFF'}` : '웨이포인트 추가';
+        shipBtn.textContent = htms ? `타선 생성: ${shipOn ? 'ON' : 'OFF'}` : '타선 추가';
+        goalBtn.style.boxShadow = goalOn ? 'inset 0 0 0 2px #ffffff' : '';
+        shipBtn.style.boxShadow = shipOn ? 'inset 0 0 0 2px #ffffff' : '';
+        goalBtn.title = goalOn ? `클릭 위치마다 ${waypointOwner === 'OS' ? '본선' : `T${waypointOwner + 1}`} 웨이포인트 추가 · 다시 클릭하면 OFF` : 'HTMS: ON 후 화면에서 웨이포인트 위치 클릭';
+        shipBtn.title = shipOn ? '화면 클릭 위치마다 타선 생성 · 다시 클릭하면 OFF' : 'HTMS: ON 후 화면에서 타선 위치 클릭';
+    }
+
+    function setPlacementMode(nextMode) {
+        placementMode = nextMode;
+        if (nextMode === 'waypoint') {
+            const mass = massList[activeMassIndex];
+            waypointOwner = mass?.selectedShip === 'OS' || typeof mass?.selectedShip !== 'number' ? 'OS' : mass.selectedShip;
+        }
+        updatePlacementControls();
     }
 
     function newLandId(mass, type) {
@@ -1093,6 +1126,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     function startLandDrawing(type) {
         if (simMode !== 'HTMS') return;
         if (landDraft && landDraft.points.length && !confirm('작성 중인 영역을 취소하고 새로 그릴까요?')) return;
+        setPlacementMode(null);
         if (isDeleteMode) toggleDeleteMode();
         landEditMode = true;
         landDraft = {type, points:[]};
@@ -1112,6 +1146,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     document.getElementById('addShallowBtn').addEventListener('click', () => startLandDrawing('SHALLOW'));
     document.getElementById('editLandBtn').addEventListener('click', () => {
         if (landDraft) { alert('먼저 육지를 완료하거나 그리기를 취소해 주세요.'); return; }
+        if (!landEditMode) setPlacementMode(null);
         landEditMode = !landEditMode;
         updateLandControls(); updateCanvas(activeMassIndex);
     });
@@ -1281,6 +1316,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         if (simMode !== 'HTMS') return;
         if (landDraft) { alert('먼저 LAND/SHALLOW 그리기를 완료하거나 취소해 주세요.'); return; }
         if (isDeleteMode) toggleDeleteMode();
+        if (!osRelocateMode) setPlacementMode(null);
         osRelocateMode = !osRelocateMode;
         updateLandControls();
     });
@@ -1481,6 +1517,18 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     });
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
+        if (simMode === 'HTMS') {
+            if (landDraft) { alert('먼저 LAND/SHALLOW 그리기를 완료하거나 취소해 주세요.'); return; }
+            const next = placementMode === 'waypoint' ? null : 'waypoint';
+            if (next) {
+                if (isDeleteMode) toggleDeleteMode();
+                osRelocateMode = false;
+                landEditMode = false;
+            }
+            setPlacementMode(next);
+            updateLandControls();
+            return;
+        }
         const mass = massList[activeMassIndex];
         const canvas = document.getElementById(`canvas-${activeMassIndex}`);
         let xPos = (canvas.width - 60 - mass.panX) / mass.viewScale;
@@ -1492,6 +1540,18 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     });
 
     document.getElementById('addShipBtn').addEventListener('click', () => {
+        if (simMode === 'HTMS') {
+            if (landDraft) { alert('먼저 LAND/SHALLOW 그리기를 완료하거나 취소해 주세요.'); return; }
+            const next = placementMode === 'target' ? null : 'target';
+            if (next) {
+                if (isDeleteMode) toggleDeleteMode();
+                osRelocateMode = false;
+                landEditMode = false;
+            }
+            setPlacementMode(next);
+            updateLandControls();
+            return;
+        }
         if (checkShipLimit(1)) return;
         const mass = massList[activeMassIndex];
         const canvas = document.getElementById(`canvas-${activeMassIndex}`);
@@ -1644,6 +1704,27 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             const pointer = editorPointerToWorld(mass, canvas, clientX, clientY);
             const {mx, my, rawX, rawY} = pointer;
 
+            // HTMS placement overrides picking all existing geometry, including Land.
+            // Coordinates come from the inverse H-UP view transform, not raw pixels.
+            if (simMode === 'HTMS' && placementMode) {
+                const x = Math.round(pointer.x), z = Math.round(pointer.z);
+                if (placementMode === 'target') {
+                    const spd = 10;
+                    mass.targets.push({type:'ContainerShip1', x, z, hdg:180, spd,
+                        wpDist:spd * VECTOR_SCALE, waypoints:[]});
+                    mass.selectedShip = mass.targets.length - 1;
+                    updateSidebarForActiveMass();
+                } else if (placementMode === 'waypoint') {
+                    const owner = waypointOwner === 'OS' ? mass.osData : mass.targets[waypointOwner];
+                    if (!owner) { setPlacementMode(null); return; }
+                    owner.waypoints.push({x, z});
+                }
+                mass.draggingObj = null;
+                updateCanvas(idx);
+                generateJSONOutput();
+                return;
+            }
+
             // Explicit one-click relocation: choose the NEW OS position in the
             // current land/target map. All other saved geometry shifts together.
             if (simMode === 'HTMS' && osRelocateMode) {
@@ -1658,7 +1739,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
 
             const landX=Math.round(pointer.x);
             const landZ=Math.round(pointer.z);
-            if (handleLandCanvasDown(mass,mx,my,landX,landZ)) return;
+            if (landDraft && handleLandCanvasDown(mass,mx,my,landX,landZ)) return;
 
             const checkWp = (wpArray) => {
                 for (let i = wpArray.length - 1; i >= 0; i--) {
@@ -1727,6 +1808,9 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                 }
             }
             
+            // Only when no waypoint/ship/OS was hit, allow editing the Land below.
+            if (handleLandCanvasDown(mass,mx,my,landX,landZ)) return;
+
             if (!isDeleteMode) {
                 mass.draggingObj = { type: 'pan', startX: rawX - mass.panX, startY: rawY - mass.panY };
             }
@@ -2317,6 +2401,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     // 각 파일의 MASS-타선 소속 관계와 경로를 유지하고, 전체 렌더링은 한 번만 수행한다.
     function applyLoadedScenarioBatch(parsedScenarios) {
         if (!parsedScenarios.length) throw new Error('No scenarios selected.');
+        if (placementMode) setPlacementMode(null);
         if (simMode !== 'MASS' && parsedScenarios.length !== 1) {
             throw new Error('Ship Handler can load one scenario at a time.');
         }
