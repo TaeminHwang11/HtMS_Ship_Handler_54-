@@ -844,6 +844,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
             osData: { type: simMode === 'HTMS' ? 'ContainerShip1' : 'CNTR_2700', hdg: 0, spd: OS_SPD, waypoints: [] },
             targets: [],
             land: [],
+            // Preserve optional teaching depth/draft assumptions on HTMS save/reload.
+            trainingInfo: null,
             selectedLandIndex: -1,
             selectedShip: 'OS', draggingObj: null
         };
@@ -1033,6 +1035,7 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                 type, geometry: 'polygon',
                 radarEcho: item.radarEcho === undefined ? type === 'LAND' : Boolean(item.radarEcho),
                 noGo: item.noGo === undefined ? true : Boolean(item.noGo),
+                ...(item.depthM !== undefined && Number.isFinite(Number(item.depthM)) && Number(item.depthM)>0 ? {depthM:Number(item.depthM)} : {}),
                 points: pts
             };
         }).filter(Boolean);
@@ -2107,8 +2110,10 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                     Land: (mass.land || []).map(f => ({
                         id:f.id, name:f.name, type:f.type, geometry:'polygon',
                         radarEcho:!!f.radarEcho, noGo:!!f.noGo,
-                        points:f.points.map(p=>({x:Math.round(p.x),z:Math.round(p.z)}))
-                    }))
+                        points:f.points.map(p=>({x:Math.round(p.x),z:Math.round(p.z)})),
+                        ...(Number.isFinite(Number(f.depthM)) && Number(f.depthM)>0 ? {depthM:Number(f.depthM)} : {})
+                    })),
+                    ...(mass.trainingInfo ? {trainingInfo:mass.trainingInfo} : {})
                 };
                 document.getElementById('jsonOutput').value = JSON.stringify(outputData, null, 2);
             } else {
@@ -2297,6 +2302,8 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                     };
                 });
                 newMass.land = normalizeLandData(parsed.Land);
+                newMass.trainingInfo = parsed.trainingInfo && typeof parsed.trainingInfo === 'object'
+                    ? JSON.parse(JSON.stringify(parsed.trainingInfo)) : null;
             }
             massList = [newMass];
             osRelocateMode = false;
@@ -3185,6 +3192,42 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     document.getElementById('speed3xBtn').addEventListener('click', () => setSpeed(3, 'speed3xBtn'));
     document.getElementById('speed5xBtn').addEventListener('click', () => setSpeed(5, 'speed5xBtn'));
 
+    // Replay only: draw the already-loaded HTMS scenario Land/SHALLOW polygons
+    // in the SAME fixed x/z frame as the recorded ship positions and route.
+    // No new JSON, controls, or changes to the editor / original replay logic.
+    function drawReplayScenarioLand(ctxL, replay) {
+        if (simMode !== 'HTMS') return;
+        const scenario = massList[0];
+        if (!scenario || !Array.isArray(scenario.land)) return;
+        for (const feature of scenario.land) {
+            const pts = feature.points;
+            if (!Array.isArray(pts) || pts.length < 3) continue;
+            const shallow = feature.type === 'SHALLOW';
+            const color = shallow ? '#fb7185' : '#eab308';
+            const px = p => replay.panX + p.x * replay.viewScale;
+            const py = p => replay.panY + p.z * replay.viewScale;
+            ctxL.save();
+            ctxL.beginPath();
+            ctxL.moveTo(px(pts[0]), py(pts[0]));
+            for (let k = 1; k < pts.length; k++) ctxL.lineTo(px(pts[k]), py(pts[k]));
+            ctxL.closePath();
+            ctxL.fillStyle = shallow ? 'rgba(251,113,133,0.13)' : 'rgba(234,179,8,0.20)';
+            ctxL.fill();
+            ctxL.strokeStyle = color;
+            ctxL.lineWidth = 1.5;
+            if (shallow) ctxL.setLineDash([5, 4]);
+            ctxL.stroke();
+            ctxL.setLineDash([]);
+            const labelX = pts.reduce((sum, p) => sum + px(p), 0) / pts.length;
+            const labelY = pts.reduce((sum, p) => sum + py(p), 0) / pts.length;
+            ctxL.fillStyle = color;
+            ctxL.textAlign = 'center';
+            ctxL.font = 'bold 10px monospace';
+            ctxL.fillText(feature.id || feature.type, labelX, labelY);
+            ctxL.restore();
+        }
+    }
+
     function drawAllReplayCanvases() {
         if (replayList.length === 0) return;
         const globalIdx = parseInt(document.getElementById('timeSlider').value);
@@ -3213,6 +3256,9 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
                 }
             }
             ctxL.setLineDash([]);
+
+            // Terrain is fixed to scenario origin; render under route and replay ships.
+            drawReplayScenarioLand(ctxL, replay);
 
             massList.forEach((mass) => {
                 if (mass && mass.osData && mass.osData.waypoints.length > 0) {
