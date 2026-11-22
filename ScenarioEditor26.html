@@ -225,194 +225,95 @@
         #driveFileSelect option, #scenarioDriveSelect option { padding: 4px; }
         #driveFileSelect option:checked, #scenarioDriveSelect option:checked { background: var(--accent-cyan); color: #000; }
 
-/* Only the new HTMS Data Analysis workspace; legacy editor and replay CSS stay untouched. */
-#analysis-workspace { display:none; flex:1; min-height:0; min-width:0; flex-direction:column; overflow:hidden; background:#0b0f19; }
-#analysis-workspace * {box-sizing:border-box;}
-#analysis-top {height:48%;min-height:0; flex:none;display:flex;flex-direction:column;border-bottom:3px solid #334155;}
-#analysis-topbar {display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 12px;background:#121b2d;border-bottom:1px solid #29374f;min-height:35px;}
-.analysis-smallhead {font-size:12px;font-weight:800;color:#38bdf8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.analysis-mini-note{font-size:10px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#analysis-track-grid {flex:1;min-height:0;display:grid;gap:3px;background:#182235;overflow:hidden;}
-.analysis-track-card {position:relative;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(circle at center,#172239,#0d1423);border:2px solid transparent;cursor:pointer;}
-.analysis-track-card.selected {border-color:#eab308;}
-.analysis-track-card canvas{width:100%;height:100%;display:block;touch-action:none;}
-.analysis-track-label{position:absolute;z-index:2;right:5px;top:5px;max-width:85%;padding:3px 6px;background:#060d1ecc;color:#e2e8f0;border-radius:3px;font:700 11px Pretendard,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;}
-.analysis-track-card.selected .analysis-track-label{color:#fde047;}
-.analysis-track-score{position:absolute;z-index:2;left:5px;bottom:5px;max-width:90%;background:#0b1225db;color:#e2e8f0;font-size:10px;padding:3px 5px;border-radius:3px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#analysis-bottom{flex:1;display:flex;min-height:0;min-width:0;overflow:hidden;gap:4px;background:#0b0f19;padding:5px;}
-.analysis-section {background:#111827;border:1px solid #2a374d;border-radius:7px;min-width:0;min-height:0;flex:1 1 50%;display:flex;flex-direction:column;overflow:hidden;transition:flex-basis .19s ease;}
-#analysis-bottom.steering .analysis-section.steering{flex:1 1 auto;}
-#analysis-bottom.steering .analysis-section.risk{flex:0 0 165px;}
-#analysis-bottom.risk .analysis-section.risk{flex:1 1 auto;}
-#analysis-bottom.risk .analysis-section.steering{flex:0 0 165px;}
-.analysis-section-header{width:100%;padding:10px;border:0;border-bottom:1px solid #34425b;background:#1a2639;color:#e2e8f0;cursor:pointer;text-align:left;display:block;flex:none;}
-.analysis-section-header:hover {background:#243550;}
-.analysis-title-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
-.analysis-section-title{font-size:13px;font-weight:800;color:#38bdf8;word-wrap:break-word;}
-.analysis-hero-score{font-size:17px;font-weight:800;color:#f8fafc;white-space:nowrap;}
-.analysis-subscore{color:#9ca3af;font-size:11px;margin-top:4px;line-height:1.35;word-wrap:break-word;}
-.analysis-expanded-content {display:none;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:10px;scrollbar-width:thin;}
-#analysis-bottom.steering .steering .analysis-expanded-content,#analysis-bottom.risk .risk .analysis-expanded-content{display:block;}
-.analysis-plot-card{border:1px solid #293b51;border-radius:5px;padding:8px;background:#0b1220;margin:6px 0 10px;min-width:0;}
-.analysis-plot-title {font-size:11px;font-weight:bold;color:#bae6fd;margin:0 0 7px;}
-.analysis-plot-card canvas{display:block;width:100%;height:142px;}
-#analysis-heading-canvas{height:174px;cursor:crosshair;}
-#analysis-command-canvas{height:160px;}
-.analysis-chart-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
-.analysis-chart-pair canvas{height:210px;}
-.analysis-chip-list {display:flex;gap:5px;flex-wrap:wrap;padding:4px 0 5px;max-height:98px;overflow-y:auto;}
-.analysis-chip{font:700 11px sans-serif;border:1px solid #394863;background:#1c2d43;color:#e2e8f0;border-radius:5px;padding:6px 9px;cursor:pointer;}
-.analysis-chip.active{border-color:#facc15;color:#fef08a;background:#28394c;}
-.analysis-key-row{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:#cbd5e1;line-height:1.6;}
-.analysis-kv{display:flex;flex-wrap:wrap;gap:5px 13px;color:#cbd5e1;font-size:11px;margin:8px 0;}
-.analysis-kv strong {color:#f8fafc;}
-.analysis-msg{font-size:11px;line-height:1.55;white-space:normal;color:#d1d5db;background:#182236;border-left:2px solid #0ea5e9;border-radius:3px;padding:7px 9px;margin:7px 0;}
-.analysis-msg.warning{border-left-color:#f59e0b;color:#fbbf24;}
-.analysis-matrix{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px;font-size:11px;text-align:center;}
-.analysis-matrix th,.analysis-matrix td{border:1px solid #29374b;padding:7px 2px;overflow-wrap:break-word;}
-.analysis-matrix th{font-size:10px;color:#cbd5e1;background:#172338;}
-.analysis-matrix td{font-weight:800;color:#fff;}
-.analysis-table{width:100%;border-collapse:collapse;font-size:11px;}
-.analysis-table th,.analysis-table td{border-bottom:1px solid #29374b;padding:5px;text-align:left;}
-.analysis-table th{color:#8ecae6;}
-.analysis-risk-history{max-height:240px;overflow-y:auto;border:1px solid #29374b;border-radius:4px;}
-.analysis-risk-event{width:100%;text-align:left;padding:6px;border:0;border-bottom:1px solid #203045;background:#121e2e;color:#cbd5e1;font:11px sans-serif;cursor:pointer;}
-.analysis-risk-event:hover{background:#20314a;}
-.analysis-count-dot{width:9px;height:9px;display:inline-block;border-radius:50%;margin-right:4px;vertical-align:middle;}
-#analysis-risk-track-canvas{height:240px;cursor:crosshair;}
-#analysis-risk-time-canvas{height:100px;cursor:crosshair;}
-#analysis-trend-canvas{width:100%;height:140px;background:#0d1525;border:1px solid #253349;border-radius:4px;display:block;}
-#panel-analysis .analysis-side-stat{color:#e2e8f0;font-size:11px;line-height:1.55;padding:9px;background:#182235;border-radius:5px;margin-top:8px;white-space:pre-line;}
-#panel-analysis select{width:100%;font-size:12px;color:#f8fafc;background:#0b1222;border:1px solid #334155;border-radius:4px;padding:7px;}
-#panel-analysis .analysis-info-label{color:#67e8f9;font-size:11px;font-weight:700;display:block;margin:3px 0 6px;}
-#panel-analysis #analysis-side-progress{flex:1;min-height:0;overflow-y:auto;}
-.analysis-time-range{width:100%;accent-color:#06b6d4;}
-.analysis-nodata{display:flex;align-items:center;justify-content:center;height:100%;min-height:0;text-align:center;padding:15px;color:#94a3b8;font-size:12px;line-height:1.6;}
-#analysis-bottom.steering .analysis-section.risk .analysis-subscore,#analysis-bottom.risk .analysis-section.steering .analysis-subscore{font-size:10px;}
-@media(max-width:900px){#analysis-bottom.steering .analysis-section.risk,#analysis-bottom.risk .analysis-section.steering{flex-basis:118px;}.analysis-chart-pair{grid-template-columns:1fr;}.analysis-section-header{padding:6px;}.analysis-section-title{font-size:11px;}.analysis-hero-score{font-size:13px;}}
-@media(max-width:768px),(max-aspect-ratio:4/5){#analysis-top{height:41%;}.analysis-plot-card canvas{height:115px;}#analysis-risk-track-canvas{height:155px;}#analysis-heading-canvas{height:138px;}.analysis-chart-pair canvas{height:165px;}}
+/* Student grading (only analysis-workspace and panel-analysis; existing editor/replay styles unchanged). */
+#analysis-workspace{display:none;flex:1;min-width:0;min-height:0;flex-direction:column;overflow:hidden;background:#0b0f19;color:#e2e8f0;font:12px 'Pretendard',Arial,sans-serif;}
+#analysis-workspace *,#panel-analysis.grade-sidebar *{box-sizing:border-box;}
+.grade-workspace button,.grade-sidebar button{cursor:pointer;font:inherit;}
+.grade-head{padding:13px 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #283449;background:#111827;flex:none;}
+.grade-head strong{font-size:17px;letter-spacing:.1px;}.grade-head small{display:block;font-size:11px;color:#94a3b8;margin-top:4px;}
+.grade-head-actions,.grade-side-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.grade-btn{border:1px solid #3b4b63;background:#1b293d;color:#e2e8f0;border-radius:4px;padding:7px 10px;font-weight:600!important;white-space:nowrap;}
+.grade-btn:hover{background:#293d59;}.grade-btn:disabled{opacity:.45;cursor:default;}.grade-btn.grade-primary{background:#155e75;border-color:#0e7490;color:#ecfeff;}.grade-btn.grade-full{width:100%;}
+.grade-filterbar{display:flex;flex-wrap:wrap;gap:9px;padding:9px 14px;align-items:center;border-bottom:1px solid #223045;flex:none;}
+.grade-filterbar label{display:flex;align-items:center;gap:6px;color:#a8b7cb;font-size:11px;}
+.grade-filterbar select,.grade-filterbar input,.grade-dialog select,.grade-dialog input,.grade-sidebar select{background:#0b1220;color:#f8fafc;border:1px solid #34445c;border-radius:4px;padding:6px 7px;font:12px inherit;min-width:0;}
+.grade-filterbar input{width:140px;}.grade-filterbar select{max-width:175px;}
+.grade-stats{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:8px 16px;flex:none;color:#becad7;border-bottom:1px solid #203048;}
+.grade-stats b{color:#f8fafc;font-size:14px;font-variant-numeric:tabular-nums;}
+.grade-table-shell{flex:1;min-height:115px;overflow:auto;scrollbar-width:thin;}
+.grade-table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:12px;font-variant-numeric:tabular-nums;}
+.grade-table th,.grade-table td{padding:10px 12px;border-bottom:1px solid #273348;border-right:1px solid #1a2738;text-align:right;white-space:nowrap;}
+.grade-table thead th{position:sticky;top:0;z-index:4;background:#192538;color:#b9cee2;font-size:11px;font-weight:800;}
+.grade-table tr:nth-child(even) td{background:#111b2b;}.grade-table tr:hover td{background:#233147!important;}
+.grade-table td:first-child,.grade-table th:first-child{position:sticky;left:0;z-index:2;background:#101a2b;text-align:center;min-width:94px;}
+.grade-table td:nth-child(2),.grade-table th:nth-child(2){position:sticky;left:94px;z-index:2;background:#101a2b;text-align:left;min-width:104px;}
+.grade-table td:nth-child(3),.grade-table th:nth-child(3){position:sticky;left:198px;z-index:2;background:#101a2b;text-align:left;min-width:85px;}
+.grade-table thead th:nth-child(-n+3){z-index:6;background:#192538;}
+.grade-table tbody tr{cursor:default;}.grade-table tbody tr.grade-selected td{outline:1px solid #406380;outline-offset:-1px;}
+.grade-table .grade-low{color:#f1b6b6;}.grade-table .grade-strong{font-weight:800;color:#f8fafc;}
+.grade-table .grade-excluded{color:#f87171;font-weight:bold;}.grade-table .grade-neutral{color:#7d90a7;}
+.grade-attempt{color:#9eb7ca;font-size:10px;display:block;line-height:1.3;margin-top:3px;}
+.grade-detail{max-height:38%;min-height:108px;flex:none;overflow:auto;background:#0e1726;border-top:2px solid #344760;padding:12px 14px;}
+.grade-detail h3{font-size:14px;margin:0 0 9px;}.grade-detail .grade-mini-head{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;}
+.grade-detail .grade-run-grid{display:flex;gap:8px;flex-direction:column;}.grade-detail .grade-run{background:#121f32;border:1px solid #2b394e;border-radius:5px;padding:9px;}
+.grade-detail .grade-metric-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 12px;margin-top:8px;}
+.grade-detail .grade-metric{display:flex;justify-content:space-between;gap:8px;font-size:11px;border-bottom:1px dotted #34415a;padding:4px 0;}
+.grade-muted{color:#8294a9;}.grade-error{color:#f87171;}.grade-good{color:#a7f3d0;}.grade-note{color:#9bb4cb;font-size:11px;line-height:1.5;}
+.grade-side-title{font-weight:800;font-size:12px;color:#bde7f2;margin-top:13px;margin-bottom:9px;border-bottom:1px solid #293b55;padding-bottom:7px;}
+.grade-side-label{font-size:11px;color:#c7d2e2;margin:10px 0 8px;}.grade-sidebar{gap:0;overflow-y:auto;}.grade-sidebar .grade-side-actions{margin-bottom:6px;}
+.grade-sidebar .grade-side-actions .grade-btn{flex:1;padding:8px 6px;}.grade-side-status{margin:6px 0;font-size:11px;color:#9fb2c8;line-height:1.5;word-break:break-word;}
+.grade-sidebar progress{width:100%;height:8px;accent-color:#0891b2;}.grade-side-note{font-size:11px;color:#9baec5;line-height:1.65;border-left:2px solid #475569;padding:8px;background:#132035;margin:8px 0;}
+.grade-drive-area{background:#101c30;border:1px solid #293b55;padding:7px;margin:6px 0;}.grade-drive-area[hidden]{display:none!important;}.grade-drive-area select{width:100%;font-family:inherit;}
+.grade-audit{font-size:11px;color:#c4d1df;line-height:1.7;}.grade-audit .grade-error{display:block;}
+.grade-modal{position:fixed;inset:0;z-index:30000;background:#010712d9;display:flex;align-items:center;justify-content:center;padding:16px;}
+.grade-modal[hidden]{display:none!important;}.grade-dialog{display:flex;flex-direction:column;min-width:0;width:min(1080px,96vw);height:min(84vh,840px);background:#111c2c;border:1px solid #4b5e77;border-radius:8px;box-shadow:0 15px 55px #000b;}
+.grade-dialog-head,.grade-dialog-foot{padding:13px 16px;border-bottom:1px solid #34445a;display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none;}
+.grade-dialog-head strong{font-size:15px;}.grade-dialog-foot{border-top:1px solid #34445a;border-bottom:none;color:#94a3b8;font-size:11px;}
+.grade-tabs{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid #304056;overflow-x:auto;flex:none;}
+.grade-tabs button{font:700 11px inherit;background:#172437;border:1px solid #304057;padding:8px 10px;border-radius:4px;color:#b6c9dc;white-space:nowrap;}
+.grade-tabs button.active{background:#155e75;color:white;border-color:#0e7490;}
+.grade-settings-body{flex:1;min-height:0;overflow:auto;padding:14px 16px;}.grade-settings-body h4{font-size:13px;color:#c6e8f1;margin:10px 0 8px;}
+.grade-settings-table{width:100%;border-collapse:collapse;font-size:11px;}.grade-settings-table th,.grade-settings-table td{padding:7px 8px;border-bottom:1px solid #2c3d51;white-space:nowrap;text-align:left;}.grade-settings-table th{background:#192b40;position:sticky;top:0;z-index:1;}.grade-settings-table input[type='number']{width:88px;}.grade-settings-table select{width:110px;}
+.grade-settings-body input[type=checkbox]{accent-color:#0891b2;}.grade-settings-body .grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:9px;margin-bottom:12px;}.grade-settings-body .grade-field{display:flex;flex-direction:column;gap:5px;}
+.grade-settings-body .grade-field label{color:#afc3d9;}.grade-settings-body .grade-field input,.grade-settings-body .grade-field select{width:100%;}
+.grade-settings-body .grade-help{color:#93a7bd;font-size:11px;line-height:1.65;margin:10px 0;}.grade-settings-body .grade-feature-check{display:flex;align-items:center;gap:6px;}
+@media(max-width:850px){.grade-head{padding:8px;}.grade-head strong{font-size:14px;}.grade-detail{max-height:45%;}.grade-filterbar{padding:6px;gap:5px;}.grade-table td,.grade-table th{padding:7px 8px;}.grade-dialog-foot{flex-wrap:wrap;}}
 
-.analysis-risk-overview{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(205px,1fr);gap:8px;align-items:stretch;}
-.analysis-risk-overview .analysis-plot-card{margin-top:5px;}
-@media(max-width:950px){.analysis-risk-overview{grid-template-columns:1fr;}}
-
-/* V2: scoped to DATA ANALYSIS. All original editor/replay layout is unchanged. */
-body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
-#analysis-workspace{width:100%;max-width:100%;}
-#analysis-top{height:25%;flex:0 0 25%;min-height:0;}
-#analysis-topbar{min-height:30px;padding:5px 10px;}
-#analysis-track-grid{width:100%;max-width:100%;flex:1;min-height:0;min-width:0;display:flex;flex-wrap:nowrap;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 6px;background:#182235;scrollbar-width:thin;scrollbar-color:#64748b #172239;}
-.analysis-track-card{flex:0 0 245px;width:245px;min-width:245px;min-height:0;border:2px solid #26354e;border-radius:4px;}
-.analysis-track-head{position:absolute;z-index:3;left:4px;right:4px;top:4px;display:flex;align-items:center;gap:4px;background:#060d1eea;border-radius:4px;padding:3px 4px;cursor:grab;user-select:none;max-height:25px;}
-.analysis-track-head:active{cursor:grabbing;}
-.analysis-drag-handle{flex:none;font-size:15px;color:#67e8f9;line-height:1;letter-spacing:-2px;}
-.analysis-track-label{position:static;flex:1;min-width:0;max-width:none;padding:0;background:none;font:700 10px Pretendard,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.analysis-track-card.dragging{opacity:.42;}
-.analysis-track-card.drop-before{box-shadow:inset 5px 0 #22d3ee;}
-.analysis-track-card.drop-after{box-shadow:inset -5px 0 #22d3ee;}
-#analysis-bottom{display:flex;flex:1;flex-direction:column;min-height:0;gap:5px;padding:5px;}
-.analysis-section{flex:1 1 0%;min-width:0;min-height:0;transition:flex-basis .16s ease;}
-#analysis-bottom.steering .analysis-section.steering,#analysis-bottom.risk .analysis-section.risk{flex:1 1 0%;}
-#analysis-bottom.steering .analysis-section.risk,#analysis-bottom.risk .analysis-section.steering{flex:0 0 63px;}
-.analysis-section-header{padding:7px 11px;cursor:zoom-in;user-select:none;}
-.analysis-expanded-content{display:block;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 10px;scrollbar-width:thin;}
-#analysis-bottom.steering .risk .analysis-expanded-content,#analysis-bottom.risk .steering .analysis-expanded-content{display:none;}
-#analysis-risk-track-canvas{height:192px;}
-#analysis-risk-time-canvas{height:85px;}
-.analysis-risk-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,1fr);gap:8px;align-items:stretch;}
-.analysis-risk-overview .analysis-plot-card{margin-top:4px;}
-.analysis-score-tiles{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 8px;}
-.analysis-score-tile{min-width:88px;flex:1 1 105px;background:#172338;border:1px solid #29374b;border-radius:5px;padding:6px 8px;}
-.analysis-score-tile strong{font-size:16px;color:#f8fafc;display:block;font-variant-numeric:tabular-nums;line-height:1.15;}
-.analysis-score-tile span{font-size:10px;color:#94a3b8;line-height:1.35;display:block;margin-top:3px;}
-.analysis-matrix.occupancy{margin-top:3px;table-layout:fixed;font-size:11px;}
-.analysis-matrix.occupancy th,.analysis-matrix.occupancy td{padding:2px;}
-.analysis-matrix.occupancy th{font-size:10px;line-height:1.35;}
-.analysis-matrix.occupancy th:first-child{width:91px;}
-.analysis-matrix.occupancy td{background:#142035;color:#fff;}
-.analysis-matrix.occupancy td button{color:#f8fafc;border:1px solid transparent;background:linear-gradient(0deg,color-mix(in srgb,var(--severity),transparent 77%),#132039);padding:5px 1px 4px;width:100%;min-height:49px;border-radius:3px;position:relative;cursor:pointer;}
-.analysis-matrix.occupancy td.is-empty button{background:#182438;color:#718096;}
-.analysis-matrix.occupancy td button:hover,.analysis-matrix.occupancy td button:focus-visible{border-color:#f8fafc;}
-.analysis-matrix.occupancy td.active button{border-color:#fef08a;box-shadow:inset 0 0 0 1px #fef08a;}
-.analysis-cell-level{font-size:9px;display:block;position:absolute;left:4px;top:3px;color:var(--severity);font-weight:700;}
-.analysis-matrix.occupancy td.is-empty .analysis-cell-level{opacity:.75;}
-.analysis-cell-qty{font-size:17px;line-height:1.1;display:inline-block;position:relative;z-index:1;font-variant-numeric:tabular-nums;}
-.analysis-cell-units{font-size:9px;margin-left:2px;opacity:.75;position:relative;z-index:1;}
-.analysis-cell-fill{position:absolute;bottom:0;left:0;display:block;height:4px;background:var(--severity);transition:width .15s;}
-.analysis-matrix-foot{font-size:10px;color:#94a3b8;line-height:1.5;margin:5px 0;}
-.analysis-matrix-detail{font-size:11px;margin-top:5px;padding:5px 7px;border:1px solid #334155;border-radius:4px;background:#172239;color:#cbd5e1;line-height:1.45;max-height:115px;overflow:auto;}
-.analysis-matrix-detail[hidden]{display:none;}
-.analysis-moment-levels{display:flex;gap:5px;flex-wrap:wrap;font-size:11px;color:#cbd5e1;margin-top:6px;}
-.analysis-moment-level{padding:3px 7px;background:#1e293b;border:1px solid #334155;border-radius:5px;font-weight:700;white-space:nowrap;}
-.analysis-moment-level b{font-size:13px;color:#fff;}
-.analysis-fold{border:1px solid #2a374d;border-radius:5px;background:#0b1220;margin:7px 0;}
-.analysis-fold summary{cursor:pointer;padding:9px 10px;font-weight:700;font-size:11px;color:#bae6fd;user-select:none;}
-.analysis-fold > div{padding:0 9px 9px;}
-.analysis-fold .analysis-risk-history{max-height:220px;}
-#analysis-risk-moment{padding:6px 9px;margin:5px 0;}
-/* The 25% track strip and horizontal arrangement remain fixed on all viewports. */
-@media(max-width:900px){#analysis-top{height:25%;flex:0 0 25%;}.analysis-track-card{flex-basis:225px;min-width:225px;width:225px;}}
-@media(max-width:700px){.analysis-risk-overview{grid-template-columns:1fr;}}
-
-
-/* V3: Only the two Collision Risk graphs receive mouse panning and zoom cursors. */
-#analysis-risk-track-canvas,#analysis-risk-time-canvas{cursor:grab;touch-action:none;user-select:none;}
-#analysis-risk-track-canvas:active,#analysis-risk-time-canvas:active{cursor:grabbing;}
     </style>
 </head>
 <body>
 
 <div id="canvas-wrapper">
     <div id="grid-container"></div>
-<!-- HTMS 평가 탭; 불러온 시나리오와 리플레이를 재사용 -->
-<div id="analysis-workspace">
-    <div id="analysis-top">
-        <div id="analysis-topbar"><span id="analysis-group-header" class="analysis-smallhead">실습 결과 항적</span><span class="analysis-mini-note">항적 클릭: 평가 선택 · 상단 손잡이 끌기: 순서 변경 · 휠: 확대/축소</span></div>
-        <div id="analysis-track-grid"><div class="analysis-nodata">REPLAY VIEWER에서 결과 파일을 불러오세요.</div></div>
+<!-- Independent student evaluation workspace: no reliance on replayList -->
+<div id="analysis-workspace" class="grade-workspace">
+  <div class="grade-head">
+    <div><strong>학생별 실습 성적표</strong><small>학번으로 학생 통합 · 시나리오별 시행 보존 · 100점 평가</small></div>
+    <div class="grade-head-actions">
+      <button id="grade-settings-open" class="grade-btn">평가기준·설정</button>
+      <button id="grade-export-xlsx" class="grade-btn grade-primary">Excel 내보내기</button>
     </div>
-    <div id="analysis-bottom">
-        <section id="analysis-steering-section" class="analysis-section steering">
-            <button id="analysis-steering-toggle" class="analysis-section-header" type="button" title="더블클릭하여 평가창 확대/복원">
-                <span class="analysis-title-row"><span class="analysis-section-title">STEERING 평가</span><span id="analysis-steering-score" class="analysis-hero-score">—</span></span>
-                <span id="analysis-steering-caption" class="analysis-subscore">실습 결과를 선택하세요.</span>
-            </button>
-            <div class="analysis-expanded-content" id="analysis-steering-expanded">
-                <div class="analysis-msg" id="analysis-steering-notice"></div>
-                <div class="analysis-plot-card"><div class="analysis-plot-title">HEADING · 정침 / 변침 구간 (선회 클릭 가능)</div><canvas id="analysis-heading-canvas"></canvas></div>
-                <div id="analysis-turn-kv" class="analysis-kv"></div>
-                <div class="analysis-chip-list" id="analysis-turn-chips"></div>
-                <div class="analysis-plot-card"><div class="analysis-plot-title">RUDDER ORDER · 명령타각 및 실제타각 (°)</div><canvas id="analysis-command-canvas"></canvas></div>
-                <div class="analysis-msg" id="analysis-rudder-sequence"></div>
-                <div class="analysis-chart-pair">
-                    <div class="analysis-plot-card"><div class="analysis-plot-title">원래 값 · X: Rudder (°) · Y: ROT (°/min)</div><canvas id="analysis-rot-raw-canvas"></canvas></div>
-                    <div class="analysis-plot-card"><div class="analysis-plot-title">정규화 · X: Rudder/35 · Y: ROT/70</div><canvas id="analysis-rot-norm-canvas"></canvas></div>
-                </div>
-                <div id="analysis-ellipse-note" class="analysis-msg"></div>
-            </div>
-        </section>
-        <section id="analysis-risk-section" class="analysis-section risk">
-            <button id="analysis-risk-toggle" class="analysis-section-header" type="button" title="더블클릭하여 평가창 확대/복원">
-                <span class="analysis-title-row"><span class="analysis-section-title">COLLISION RISK 평가</span><span id="analysis-risk-score" class="analysis-hero-score">—</span></span>
-                <span id="analysis-risk-caption" class="analysis-subscore">실습 결과를 선택하세요.</span>
-            </button>
-            <div class="analysis-expanded-content" id="analysis-risk-expanded">
-                <div class="analysis-msg" id="analysis-risk-notice"></div>
-                <div id="analysis-risk-kv" class="analysis-kv"></div>
-                <div id="analysis-risk-quick-stats" class="analysis-score-tiles"></div>
-                <div class="analysis-risk-overview">
-                    <div class="analysis-plot-card"><div class="analysis-plot-title">본선 항적 · 시점별 최대 위험도 색상</div><canvas id="analysis-risk-track-canvas"></canvas></div>
-                    <div class="analysis-plot-card"><div class="analysis-plot-title">DCPA × TCPA · 각 구역의 타선 수 (2D)</div><div id="analysis-risk-matrix"></div><div id="analysis-risk-cell-detail" class="analysis-matrix-detail" hidden></div></div>
-                </div>
-                <div id="analysis-risk-moment" class="analysis-msg"></div>
-                <div id="analysis-risk-moment-levels" class="analysis-moment-levels"></div>
-                <div class="analysis-plot-card"><div class="analysis-plot-title">시점별 위험도 · 그래프 / 슬라이더에서 시점 선택</div><canvas id="analysis-risk-time-canvas"></canvas><input class="analysis-time-range" type="range" id="analysis-risk-time-slider" min="0" max="100" value="0" step="1"></div>
-                <details class="analysis-fold"><summary>위험도별 구간 수·지속 시간 상세 보기</summary><div id="analysis-risk-counts"></div></details>
-                <details class="analysis-fold"><summary>위험도 단계 변화 상세 기록 보기</summary><div class="analysis-risk-history" id="analysis-risk-events"></div></details>
-            </div>
-        </section>
+  </div>
+  <div class="grade-filterbar">
+    <label>반 <select id="grade-class-filter"><option value="ALL">전체</option><option value="A">A반</option><option value="B">B반</option><option value="C">C반</option><option value="D">D반</option><option value="NONE">미배정</option></select></label>
+    <label>시험 <select id="grade-exam-filter"><option value="ALL">모든 시나리오</option><option value="MID">중간고사 (001)</option><option value="FINAL">기말고사</option></select></label>
+    <label>검색 <input id="grade-search" placeholder="학번 / 이름" autocomplete="off"></label>
+    <label>정렬 <select id="grade-sort"><option value="rank">종합점수 순</option><option value="sid">학번 순</option><option value="name">이름 순</option></select></label>
+  </div>
+  <div id="grade-stats" class="grade-stats"></div>
+  <div class="grade-table-shell">
+    <table id="grade-main-table" class="grade-table"><thead id="grade-main-head"></thead><tbody id="grade-main-body"><tr><td>시나리오와 결과 파일을 독립적으로 불러오면 성적이 표시됩니다.</td></tr></tbody></table>
+  </div>
+  <div id="grade-student-detail" class="grade-detail"><div class="grade-muted">학생을 더블클릭하면 시행별 원시값·특성점수·평가 반영 기록이 아래에 표시됩니다.</div></div>
+  <div id="grade-modal" class="grade-modal" hidden>
+    <div class="grade-dialog" role="dialog" aria-modal="true" aria-label="평가기준·설정">
+      <div class="grade-dialog-head"><strong>평가기준 및 일괄설정</strong><button id="grade-settings-close" class="grade-btn">닫기</button></div>
+      <div class="grade-tabs"><button data-grade-tab="features" class="active">평가특성·가중치</button><button data-grade-tab="scenarios">시나리오별 항목</button><button data-grade-tab="training">반복훈련·시행 선택</button><button data-grade-tab="rules">분석·시험 규칙</button><button data-grade-tab="classes">수강반 배정</button></div>
+      <div id="grade-settings-body" class="grade-settings-body"></div>
+      <div class="grade-dialog-foot"><span>변경 즉시 모든 학생 성적에 재계산되어 반영됩니다.</span><button id="grade-config-export" class="grade-btn">설정 백업</button><button id="grade-config-import" class="grade-btn">설정 복원</button><input id="grade-config-input" type="file" accept=".json" hidden></div>
     </div>
+  </div>
 </div>
-
 
         <div id="ecdisModal">
         <h3 style="color:#06b6d4; margin-top:0; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">ECDIS Route Viewer (Degree-Min)</h3>
@@ -604,18 +505,30 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
         </div>
     </div>
 
-<!-- 추가되는 HTMS 결과 평가용 사이드바 (기존 기능 유지) -->
-<div id="panel-analysis" class="panel">
-    <div class="instruction">• 시나리오·학번·이름이 동일한 반복 실습을 함께 비교합니다.<br>• 항적을 클릭해 결과를 선택하고, 항적 상단 손잡이를 끌어 순서를 바꿉니다.<br>• STEERING / COLLISION RISK 제목을 더블클릭하면 해당 평가창이 확대되며, 다시 더블클릭하면 반반 배치로 돌아옵니다.</div>
-    <label for="analysis-group-select" class="analysis-info-label">시나리오 / 학번 / 이름</label>
-    <select id="analysis-group-select"><option value="">불러온 결과가 없습니다</option></select>
-    <div class="analysis-side-stat" id="analysis-selected-summary">SCENARIO EDITOR에서 시나리오를 읽고 REPLAY VIEWER에서 결과 파일을 불러오세요.</div>
-    <div style="padding:9px 0 4px;color:#67e8f9;font-size:11px;font-weight:700;">반복 실습 · 점수 변화</div>
-    <canvas id="analysis-trend-canvas"></canvas>
-    <div class="analysis-mini-note" style="margin:6px 0 12px;white-space:normal;">Steering 점수는 높을수록 우수(0–100), 위험도 점수는 낮을수록 안전(0–4)합니다. 점수는 교육용 임시 지표입니다.</div>
-    <div class="analysis-side-stat" id="analysis-group-table" style="overflow-y:auto;max-height:35%;">—</div>
-    <div id="analysis-side-progress"></div>
+<!-- DATA ANALYSIS: independent loading and audit; editor/replay controls unchanged -->
+<div id="panel-analysis" class="panel grade-sidebar">
+  <div class="grade-side-title">분석 자료 불러오기</div>
+  <div class="grade-side-label">① 시나리오 정의 JSON (타선·항로·육지)</div>
+  <div class="grade-side-actions"><button class="grade-btn" id="grade-load-scenarios">로컬 시나리오</button><button class="grade-btn" id="grade-scenarios-drive-list">Drive 목록</button></div>
+  <input hidden type="file" id="grade-scenario-files" accept=".json" multiple>
+  <div class="grade-drive-area" id="grade-scenario-drive-area" hidden><select id="grade-scenario-drive-select" multiple size="4"></select><button class="grade-btn" id="grade-scenarios-drive-load">선택 시나리오 불러오기</button></div>
+  <div id="grade-scenario-status" class="grade-side-status">시나리오 0개</div>
+  <div class="grade-side-label">② 학생 결과 JSON (본선 기록만 사용)</div>
+  <div class="grade-side-actions"><button class="grade-btn grade-primary" id="grade-load-results">로컬 파일 선택</button><button class="grade-btn" id="grade-load-folder">폴더 선택</button></div>
+  <div class="grade-side-actions"><button class="grade-btn" id="grade-results-drive-list">Drive 결과 목록</button></div>
+  <input hidden type="file" id="grade-result-files" accept=".json" multiple>
+  <input hidden type="file" id="grade-folder-files" webkitdirectory multiple>
+  <div class="grade-drive-area" id="grade-result-drive-area" hidden><select id="grade-result-drive-select" multiple size="7"></select><div class="grade-side-actions"><button class="grade-btn" id="grade-results-drive-load">선택 파일 분석</button><button class="grade-btn" id="grade-results-drive-all">목록 전체 분석</button></div></div>
+  <div class="grade-side-actions"><button id="grade-stop" class="grade-btn" disabled>분석 중단</button><button class="grade-btn" id="grade-backup-export">성적 데이터 백업</button></div>
+  <input hidden type="file" id="grade-backup-input" accept=".json,.gz">
+  <button class="grade-btn grade-full" id="grade-backup-import">성적 데이터 복원</button>
+  <div id="grade-progress" class="grade-side-status">대기 중</div>
+  <progress id="grade-progressbar" max="100" value="0"></progress>
+  <div class="grade-side-note">증속 위반: 초기 기준속력 +10kn 이상(잔여 WP 2개 이하면 허용). 시간 공백만으로는 제외하지 않습니다. 결과 리플레이에는 영향을 주지 않습니다. 분석에서는 결과 파일의 타선행을 모두 무시합니다. 타선의 위치는 시나리오의 속력·방위·웨이포인트에서 재구성하며, 변침구간은 추정값입니다.</div>
+  <div class="grade-side-title">자료 품질 및 제외 현황</div>
+  <div id="grade-audit" class="grade-audit"></div>
 </div>
+
 </div>
 
 <script>
@@ -3386,800 +3299,1020 @@ body:has(#analysis-workspace[style*="flex"]) #canvas-wrapper{min-width:0;}
     window.addEventListener('mouseup', stopResizer);
     window.addEventListener('touchend', stopResizer);
 
-// ================================================================
-// HTMS DATA ANALYSIS EXTENSION (does not change editor algorithms)
-// All thresholds and score weights are kept in one object so the
-// teaching rubric can be changed without modifying the views.
-// ================================================================
+// =============================================================
+// =============================================================
+// HTMS STUDENT GRADING V5 — completely independent of replayList
+// Results: ownship-only. Targets, reference route and Land: scenario JSON.
+// No changes to editor or replay algorithms.
+// =============================================================
 const Analysis = (() => {
-    const SETTINGS = {
-        rudderLimit:35, rotLimit:70, straightThreshold:0.1, minStraightSeconds:10,
-        stableOrderSeconds:3, minAssessableTurnSeconds:3,
-        turnAngleBands:[15,45,90],
-        steeringWeights:{command:0.55, shape:0.45},
-        commandWeights:{hold:0.50, simplicity:0.25, settle:0.15, counter:0.10},
-        // DCPA rows from nearest to farthest; TCPA columns from soonest to latest.
-        cpaEdges:[0.3,0.5,1], tcpaEdges:[3,10,20],
-        riskMatrix:[[4,3,2,1],[3,2,1,0],[2,1,1,0],[0,0,0,0]],
-        riskColors:['#10b981','#eab308','#f97316','#ef4444','#b91c1c'],
-        riskNamesEN:['Clear','Watch','Caution','High','Critical'],
-        riskNamesKO:['안전','관심','주의','위험','심각']
-    };
-    const ko = (document.documentElement.dataset.analysisLanguage === 'ko');
-    const tr = (en,kr) => ko?kr:en;
-    const $ = (id) => document.getElementById(id);
-    const esc = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const n = (a) => {if(a === undefined || a === null || a === '') return null;const x=Number(a);return Number.isFinite(x)?x:null;};
-    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-    const fmt=(v,d=1)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
-    const avoidanceScore=(severity)=>Number.isFinite(severity)?clamp(100-25*severity,0,100):null;
-    const tstr=(sec)=>!Number.isFinite(sec)?'—':`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(Math.floor(sec%60)).padStart(2,'0')}`;
-    const osShip = (frame) => (frame?.ships || []).find(s=>s.name === 'OS' || /^MASS(?:_\d+)?$/i.test(s.name));
-    const side=(v)=>Math.abs(v)<0.5?'MIDSHIP':(v>0?'STBD':'PORT');
-    const degDiff=(a,b)=>((b-a+540)%360)-180;
-    const mod=(v)=>((v%360)+360)%360;
-    let groupKey='', selectedReplay=null, selectedTurn=0, activeSection='', selectedRiskIndex=0;
-    let activeList=[], renderedCache=new WeakMap(), sceneVersion=0;
-    let upperPan=new WeakMap();
-    const riskTrackPan=new WeakMap();
-    const riskTimePan=new WeakMap();
-    const groupOrders=new Map();
-    let draggedTrack=null, focusedRiskCell=null;
+'use strict';
+const $ = id => document.getElementById(id);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const valid=n=>Number.isFinite(n);
+const num=v=>(v===null||v===undefined||v==='')?NaN:Number(v);
+const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const format=(v,d=1)=>valid(v)?v.toFixed(d):'—';
+const bySid=(a,b)=>String(a.sid).localeCompare(String(b.sid),'ko',{numeric:true});
+const formatTime=t=>valid(t)?`${Math.floor(t/60)}분 ${Math.round(t%60)}초`:'—';
+const MAX_NM=400;
+const DEFAULT_SCENARIOS=['001','001S','001L','002','003','004'];
+const FEATURES=[
+ {id:'collision',name:'충돌 선박 수',unit:'척',area:'통과 안전성',formula:'0.05 NM 미만으로 접근한 서로 다른 타선의 수',direction:'lower',mode:'natural',bad:15,good:0},
+ {id:'underSafe',name:'안전거리 미달 척수',unit:'척',area:'통과 안전성',formula:'실제 최소 통과거리가 시나리오별 안전거리 미만인 타선 수',direction:'lower',mode:'natural',bad:15,good:0},
+ {id:'deficit',name:'안전거리 부족 총량',unit:'NM',area:'통과 안전성',formula:'모든 타선에 대해 max(0, 안전거리−최소 실제거리) 합산',direction:'lower',mode:'natural',bad:3,good:0},
+ {id:'minCPA',name:'최소 통과거리',unit:'NM',area:'통과 안전성',formula:'각 타선과의 관측 최소거리 중 최솟값',direction:'higher',mode:'manual',bad:0,good:0.6},
+ {id:'meanCPA',name:'평균 통과거리',unit:'NM',area:'통과 안전성',formula:'각 타선의 관측 최소거리 평균 (타선별 동일 가중)',direction:'higher',mode:'manual',bad:0,good:1},
+ {id:'closeSeconds',name:'실제 근접 노출시간',unit:'초',area:'통과 안전성',formula:'한 척 이상이 안전거리 미만인 시간의 합 (동시 중복 제외)',direction:'lower',mode:'natural',bad:100,good:0},
+ {id:'riskSeconds',name:'예측위험 노출시간',unit:'초',area:'예측 위험',formula:'DCPA≤안전거리, 0≤TCPA≤기준시간 조건의 노출시간',direction:'lower',mode:'natural',bad:100,good:0},
+ {id:'reentries',name:'위험 재진입횟수',unit:'회',area:'예측 위험',formula:'위험 해소가 10초 유지된 후 재진입한 타선별 횟수 합계',direction:'lower',mode:'manual',bad:12,good:0},
+ {id:'meanXTD',name:'평균 XTD',unit:'NM',area:'항로 추종',formula:'전체 본선 위치의 항로 구간별 절대 횡방향 이탈거리 평균',direction:'lower',mode:'manual',bad:0.5,good:0},
+ {id:'maxXTD',name:'최대 XTD',unit:'NM',area:'항로 추종',formula:'전체 본선 위치의 최대 절대 횡방향 이탈거리',direction:'lower',mode:'manual',bad:1.0,good:0},
+ {id:'rudderOrders',name:'조타 오더횟수',unit:'회',area:'조타 명령',formula:'본선 rud_cmd 값이 직전 오더에서 변경된 횟수 (초기값 제외)',direction:'lower',mode:'manual',bad:70,good:0},
+ {id:'shallowSeconds',name:'저수심 점유시간',unit:'초',area:'육지·저수심',formula:'본선 위치가 SHALLOW 다각형 내부에 있었던 시간',direction:'lower',mode:'natural',bad:100,good:0},
+ {id:'landSeconds',name:'육지 침범시간',unit:'초',area:'육지·저수심',formula:'본선 위치가 LAND 다각형 내부에 있었던 시간',direction:'lower',mode:'natural',bad:100,good:0}
+];
+const FEAT=Object.fromEntries(FEATURES.map(f=>[f.id,f]));
+const createDefault=()=>({
+ version:5,weights:Object.fromEntries(FEATURES.map(f=>[f.id,1])),
+ ranges:Object.fromEntries(FEATURES.map(f=>[f.id,{mode:f.mode,good:f.good,bad:f.bad}])),
+ scenarios:Object.fromEntries(DEFAULT_SCENARIOS.map(s=>[s,{safe:s==='004'?0.1:0.3,enabled:FEATURES.filter(f=>!((f.id==='shallowSeconds'||f.id==='landSeconds')&&!['001L','004'].includes(s))).map(f=>f.id)}])),
+ training:{min:0.9,max:1.1,fullAt:10,selected:'best',override:{}},
+ rules:{speedMargin:10,maxGap:10,positionJumpRatio:1.5,positionJumpExtraKn:8,rudderEpsilon:0.05,tcpaSeconds:180,clearSeconds:10,goalRadiusNM:0.3,waypointToleranceNM:0.3,requireGoal:false},
+ exams:{midWeight:50,finalWeight:50,requireMidAndFinal:true},
+ classMaps:{},selectedRuns:{},studentNames:{}
+});
+const STORAGE_KEY='htms_student_grading_v4'; // Keep v4 key to migrate saved classes, attempts and grades.
+let config=createDefault(),records=[],scenarioMap=new Map(),pending=[],busy=false,cancel=false,expandedSid='',currentTab='features',storageWarning=false,sourceStorageWarning=false;
+const sourceMemory=new Map();let sourceDbPromise=null;
+const resultsById=new Map();
+// Cache only OS states (not recorded target states) in IndexedDB for real re-analysis.
+// If IndexedDB is unavailable, the loaded OS data remain in memory for this session.
+function sourceDb(){
+ if(sourceDbPromise)return sourceDbPromise;
+ sourceDbPromise=new Promise(resolve=>{
+  try{
+   if(!window.indexedDB){resolve(null);return;}
+   const req=indexedDB.open('HTMSGradeSourceV5',1);
+   req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('ownship'))req.result.createObjectStore('ownship');};
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>resolve(null);
+   req.onblocked=()=>resolve(null);
+  }catch(e){resolve(null);}
+ });return sourceDbPromise;
+}
+async function storeOS(id,os){
+ sourceMemory.set(id,os);
+ const db=await sourceDb();if(!db){sourceStorageWarning=true;return;}
+ try{await new Promise((ok,fail)=>{
+  const t=db.transaction('ownship','readwrite');t.objectStore('ownship').put(os,id);
+  t.oncomplete=ok;t.onerror=()=>fail(t.error||Error('IndexedDB save failed'));t.onabort=()=>fail(t.error||Error('IndexedDB aborted'));
+ });
+  // Avoid holding thousands of full-resolution tracks in memory.
+  while(sourceMemory.size>8)sourceMemory.delete(sourceMemory.keys().next().value);
+ }catch(e){sourceStorageWarning=true;console.warn('OS source cache failed',e);}
+}
+async function loadOS(id){
+ if(sourceMemory.has(id))return sourceMemory.get(id);
+ const db=await sourceDb();if(!db)return null;
+ try{return await new Promise(resolve=>{
+  const req=db.transaction('ownship','readonly').objectStore('ownship').get(id);
+  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>resolve(null);
+ });}catch(e){return null;}
+}
+async function deleteOS(id){
+ sourceMemory.delete(id);const db=await sourceDb();if(!db)return;
+ try{db.transaction('ownship','readwrite').objectStore('ownship').delete(id);}catch(e){}
+}
+function persist(){
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify({config,records,scenarios:[...scenarioMap]}));}
+ catch(err){storageWarning=true;console.warn('Grade autosave unavailable: export backup to retain grades.',err.message);}
+}
+// v4 stored derived scores and exclusion reasons, but did not store the source OS track.
+// Reclassify only false positives proven from available diagnostics; otherwise request source reimport.
+function migrateLegacyRun(r){
+ if(Number(r.ruleVersion)>=5)return r;
+ const old=Array.isArray(r.invalid)?r.invalid:[],kept=[],review=[];
+ const speedBase=Math.max(num(r.scenarioSpeed)||0,num(r.firstSpeed)||0);
+ for(const reason of old){
+  if(/최종 WP|최종WP/.test(reason))continue; // Final WP is not a fail condition.
+  if(/기록 공백/.test(reason))continue; // A gap alone is not a fail condition.
+  if(/증속/.test(reason)){
+   if(valid(r.maxSpeed)&&r.maxSpeed<speedBase+10-1e-7)continue;
+   review.push('기존 증속 판정 확인을 위한 원본 기록 재분석 필요');continue;
+  }
+  kept.push(reason);
+ }
+ if(num(r.longGap)>10)review.push('기록 공백 전후 위치연속성 확인을 위한 원본 기록 재분석 필요');
+ r.invalid=kept;r.review=review;r.ruleVersion=5;r.legacy=true;
+ r.limit=speedBase+10;
+ r.warning=[...(r.warning||[]),'기존 분석 결과: 원본 JSON을 다시 불러오면 모든 특성을 새 기준으로 재계산합니다.'];
+ return r;
+}
+function restore(){
+ try{
+  const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!s)return;
+  const defaults=createDefault(),oldVersion=Number(s.config?.version)||4;
+  config={...defaults,...s.config,
+   training:{...defaults.training,...s.config?.training},rules:{...defaults.rules,...s.config?.rules},
+   exams:{...defaults.exams,...s.config?.exams},classMaps:s.config?.classMaps||{},
+   selectedRuns:s.config?.selectedRuns||{},studentNames:s.config?.studentNames||{},
+   weights:{...defaults.weights,...s.config?.weights},ranges:{...defaults.ranges,...s.config?.ranges},
+   scenarios:{...defaults.scenarios,...s.config?.scenarios}};
+  if(oldVersion<5){
+   config.rules.speedMargin=10;config.rules.maxGap=10;
+   config.rules.goalRadiusNM=.3;config.rules.waypointToleranceNM=.3;
+   config.rules.requireGoal=false;
+  }
+  config.version=5;
+  records=(Array.isArray(s.records)?s.records:[]).filter(r=>r&&r.id&&r.sid&&r.scenario).map(migrateLegacyRun);
+  resultsById.clear();records.forEach(r=>resultsById.set(r.id,r));
+  scenarioMap=new Map((s.scenarios||[]).filter(x=>Array.isArray(x)&&x.length===2));
+ }catch(e){console.warn('Grade state restore failed',e);}
+}
+function cfgScenario(k){if(!config.scenarios[k])config.scenarios[k]={safe:k==='004'?0.1:0.3,enabled:FEATURES.map(f=>f.id)};return config.scenarios[k];}
+function scenarioId(name){const m=String(name||'').match(/HTMS_Scenario_([0-9]+[A-Z]*)/i);return m?m[1].toUpperCase():null;}
+function parseIdentity(name){
+ const base=String(name||'').replace(/^.*[\\/]/,'').replace(/\.json$/i,'').replace(/\s*\(\d+\)$/,'');
+ const m=base.match(/^HTMS_Scenario_([0-9]+[A-Z]*)_([RS])_(\d{8})_(\d{6})_([^_]+)_(.+)$/i);
+ if(!m)return {valid:false,file:base};
+ const [,scenario,,date,clock,sid,student]=m;
+ return {valid:true,scenario:scenario.toUpperCase(),date,clock,sid:String(sid).trim(),student:student.trim(),stamp:date+clock,file:base};
+}
+const calcId=meta=>`${meta.scenario}|${meta.date}|${meta.clock}|${meta.sid}|${meta.student}|${meta.file}`;
+function isScenarioJSON(data){return data && !Array.isArray(data) && data.os && Array.isArray(data.targets) && Array.isArray(data.os.waypoints);}
+function registerScenario(filename,scenario){
+ if(!isScenarioJSON(scenario))throw new Error('올바른 HTMS 시나리오가 아닙니다.');
+ const key=scenarioId(filename);
+ if(!key)throw new Error('파일명에서 HTMS_Scenario_번호를 확인할 수 없습니다.');
+ const feats=(scenario.Land||[]).map(f=>String(f.type||'LAND').toUpperCase());
+ let cfg=cfgScenario(key);
+ if(!scenarioMap.has(key)){
+  if(!feats.includes('SHALLOW'))cfg.enabled=cfg.enabled.filter(id=>id!=='shallowSeconds');
+  if(!feats.includes('LAND'))cfg.enabled=cfg.enabled.filter(id=>id!=='landSeconds');
+ }
+ scenarioMap.set(key,{...scenario,filename,key});
+ return key;
+}
+function projectSegment(p,a,b){
+ const dx=b.x-a.x,dz=b.z-a.z,den=dx*dx+dz*dz;
+ const u=den<1e-10?0:clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/den,0,1);
+ return {x:a.x+u*dx,z:a.z+u*dz,u,dist:Math.hypot(p.x-a.x-u*dx,p.z-a.z-u*dz)};
+}
+function makeRoute(origin,waypoints){
+ const pts=[origin,...(waypoints||[]).map(w=>({x:Number(w.x),z:Number(w.z)}))].filter(p=>valid(p.x)&&valid(p.z));
+ const segments=[];let total=0;
+ for(let i=1;i<pts.length;i++){
+  const a=pts[i-1],b=pts[i],length=Math.hypot(b.x-a.x,b.z-a.z);
+  if(length<0.0001)continue;
+  segments.push({a,b,start:total,length,end:total+length,index:i-1,heading:((Math.atan2(b.x-a.x,-(b.z-a.z))*180/Math.PI)%360+360)%360});total+=length;
+ }
+ return {pts,segments,total};
+}
+// Match to the ordered polyline, retaining plausible forward progression.
+// This guards against shortcuts falsely unlocking the final-waypoint speed exception.
+function matchRoute(p,route,progress=0,previousPoint=null,dt=0){
+ if(!route.segments.length)return {xtd:NaN,progress:0,remaining:0,segment:-1};
+ let best=null;
+ const maxAdvance=previousPoint?Math.max(85,Math.hypot(p.x-previousPoint.x,p.z-previousPoint.z)*1.6+85):200;
+ for(const seg of route.segments){
+  if(seg.end<progress-180||seg.start>progress+maxAdvance+180)continue;
+  const q=projectSegment(p,seg.a,seg.b);const at=seg.start+q.u*seg.length;
+  const backwards=Math.max(0,progress-at),jump=Math.max(0,at-progress-maxAdvance);
+  const cost=q.dist + backwards*0.25 + jump*1.1;
+  if(!best||cost<best.cost)best={...q,at,cost,seg};
+ }
+ if(!best){const seg=route.segments[route.segments.length-1];const q=projectSegment(p,seg.a,seg.b);best={...q,at:progress,cost:q.dist,seg};}
+ const newProgress=Math.max(progress,Math.min(progress+maxAdvance, best.at));
+ let reached=0;
+ for(const seg of route.segments)if(newProgress>=seg.end-2)reached++;
+ return {xtd:best.dist/MAX_NM,progress:newProgress,remaining:Math.max(0,route.pts.length-1-reached),segment:best.seg.index};
+}
+// Scenario motion model, deliberately never reading any logged target state.
+// Constant speed, piecewise straight waypoint legs. A waypoint turn is approximate.
+function targetAt(prepared,seconds){
+ const {seed,route}=prepared;let distance=Math.max(0,seconds)*Math.max(0,num(seed.spd)||0)*MAX_NM/3600;
+ let x=Number(seed.x)||0,z=Number(seed.z)||0,heading=Number(seed.hdg)||0;
+ if(!route.segments.length){const r=heading*Math.PI/180;x+=Math.sin(r)*distance;z-=Math.cos(r)*distance;}
+ else {
+  for(const seg of route.segments){
+   heading=seg.heading;
+   const m=Math.min(distance,seg.length);x+=m*(seg.b.x-seg.a.x)/seg.length;z+=m*(seg.b.z-seg.a.z)/seg.length;distance-=m;
+   if(distance<=1e-9)break;
+  }
+  if(distance>0){const seg=route.segments.at(-1),r=seg.heading*Math.PI/180;
+   x+=Math.sin(r)*distance;z-=Math.cos(r)*distance;
+  }
+ }
+ return {x,z,hdg:heading,cog:heading,sog:Math.max(0,num(seed.spd)||0)};
+}
+function pointInside(p,pts){
+ let yes=false;
+ for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+  const a=pts[i],b=pts[j];
+  if(((a.z>p.z)!==(b.z>p.z)) && p.x < (b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x)yes=!yes;
+ }
+ return yes;
+}
+function predictCPA(os,t){
+ const rx=(t.x-os.x)/MAX_NM,ry=-(t.z-os.z)/MAX_NM;
+ const ownCog=(valid(os.cog)?os.cog:os.hdg)*Math.PI/180,trgCog=(t.cog||t.hdg||0)*Math.PI/180;
+ const vx=(t.sog||0)*Math.sin(trgCog)-(os.sog||0)*Math.sin(ownCog);
+ const vy=(t.sog||0)*Math.cos(trgCog)-(os.sog||0)*Math.cos(ownCog);
+ const vv=vx*vx+vy*vy;
+ if(vv<1e-12)return {dcpa:Math.hypot(rx,ry),tcpa:Infinity};
+ const tcpa=-(rx*vx+ry*vy)/vv*3600;
+ return {dcpa:Math.hypot(rx+vx*tcpa/3600,ry+vy*tcpa/3600),tcpa};
+}
+function readOwnship(data,scenario){
+ if(Array.isArray(data?._cachedOS))return data._cachedOS;
+ const rows=Array.isArray(data)?data:(Array.isArray(data?.logData)?data.logData:null);
+ if(!rows)throw new Error('결과 JSON 배열 또는 logData 형식이 아닙니다.');
+ const own=[];const base=scenario.origin||{lat:34.8,lon:126.4};
+ for(const r of rows){
+  if(String(r.name||'').toUpperCase()!=='OS')continue; // Never read target states.
+  const t=num(r.time);if(!valid(t)||t<0)continue;
+  let x=num(r.x),z=num(r.y);
+  if(!valid(x)||!valid(z)){
+   const lat=num(r.lat),lon=num(r.lon);
+   if(valid(lat)&&valid(lon)&&valid(num(base.lat))&&valid(num(base.lon))){
+    x=(lon-num(base.lon))*111111*Math.cos(num(base.lat)*Math.PI/180)*(400/1852);
+    z=-(lat-num(base.lat))*111111*(400/1852);
+   }
+  }
+  if(!valid(x)||!valid(z))continue;
+  own.push({t,x,z,sog:num(r.sog),cog:num(r.cog),hdg:num(r.hdg),rud:num(r.rud_cmd)});
+ }
+ own.sort((a,b)=>a.t-b.t);
+ const dedup=[];
+ for(const r of own){if(dedup.length&&Math.abs(dedup.at(-1).t-r.t)<0.00001)dedup[dedup.length-1]=r;else dedup.push(r);}
+ return dedup;
+}
+function analyzeRun(meta,data,scenario){
+ const os=readOwnship(data,scenario);const rule=config.rules;
+ if(!os.length)throw new Error('본선 OS 기록이 없습니다.');
+ const route=makeRoute({x:0,z:0},scenario.os?.waypoints);
+ const tgts=scenario.targets.map((s,i)=>({seed:s,index:i,route:makeRoute({x:Number(s.x)||0,z:Number(s.z)||0},s.waypoints)}));
+ const geo=(scenario.Land||[]).filter(f=>Array.isArray(f.points)&&f.points.length>=3).map(f=>({...f,points:f.points.map(p=>({x:Number(p.x),z:Number(p.z)}))}));
+ const land=geo.filter(f=>String(f.type||'LAND').toUpperCase()==='LAND');
+ const shallow=geo.filter(f=>String(f.type||'LAND').toUpperCase()==='SHALLOW');
+ const cfg=cfgScenario(meta.scenario),safe=num(cfg.safe);
+ const baseSpeed=Math.max(num(scenario.os?.spd)||0,valid(os[0].sog)?os[0].sog:0);
+ const limit=baseSpeed+num(rule.speedMargin);
+ const invalid=[],warning=[];let longGap=0,speedEvent=null,maxSpeed=-Infinity,unobservedSeconds=0,observedSeconds=0,jumpEvent=null,gapCount=0;
+ let reachedWP=0,goalReached=false;
+ const start=os[0].t,end=os.at(-1).t,duration=end-start;
+ const minRanges=Array(tgts.length).fill(Infinity);
+ const riskHistory=Array(tgts.length).fill(null).map(()=>({seen:false,unsafe:false,safeElapsed:0}));
+ let closeSeconds=0,riskSeconds=0,shallowSeconds=0,landSeconds=0,reentries=0;
+ let xtdWeighted=0,xtdMax=0,xtdDuration=0,orders=0,latestRudder=NaN,prog=0,prev=null;
+ const outsideSpeedSamples=[];
+ for(let i=0;i<os.length;i++){
+  const o=os[i],following=os[i+1];
+  const dt=following?following.t-o.t:0;
+  if(dt>longGap)longGap=dt;
+  if(dt>num(rule.maxGap)){gapCount++;unobservedSeconds+=dt;}
+  else if(dt>0)observedSeconds+=dt;
+  // A time jump is NOT a failure. Only a displacement that contradicts the
+  // adjacent measured SOG is treated as a physical position discontinuity.
+  if(prev){
+   const elapsed=o.t-prev.t;
+   if(elapsed>.001){
+    const impliedKn=Math.hypot(o.x-prev.x,o.z-prev.z)/MAX_NM*3600/elapsed;
+    const observedKn=Math.max(baseSpeed,valid(prev.sog)?prev.sog:0,valid(o.sog)?o.sog:0);
+    const permittedKn=observedKn*Math.max(1,rule.positionJumpRatio)+Math.max(0,rule.positionJumpExtraKn);
+    if(impliedKn>permittedKn+1e-7&&!jumpEvent)jumpEvent={t0:prev.t,t1:o.t,impliedKn,permittedKn,elapsed};
+   }
+  }
+  const step=matchRoute(o,route,prog,prev,dt);prog=step.progress;
+  // Simulator WP arrival radius is 0.3 NM; do not require hitting the WP centre.
+  while(reachedWP<route.pts.length-1){
+   const wp=route.pts[reachedWP+1],radius=MAX_NM*clamp(num(rule.waypointToleranceNM)||.3,.01,2);
+   const near=Math.hypot(o.x-wp.x,o.z-wp.z)<=radius;
+   const crossed=prev?projectSegment(wp,prev,o).dist<=radius:false;
+   if(!(near||crossed))break;
+   reachedWP++;
+  }
+  const remainingWP=Math.max(0,route.pts.length-1-reachedWP);
+  if(!remainingWP)goalReached=true;
+  const speed=Number(o.sog);
+  if(valid(speed)){
+   maxSpeed=Math.max(maxSpeed,speed);
+   if(speed>=limit-1e-7&&remainingWP>2){
+    if(!speedEvent)speedEvent={t:o.t,speed,remaining:remainingWP};
+    if(outsideSpeedSamples.length<6)outsideSpeedSamples.push(o.t);
+   }
+  }
+  if(valid(step.xtd)){
+   const w=dt>0&&dt<=rule.maxGap?dt:0;
+   xtdWeighted+=step.xtd*w;xtdDuration+=w;xtdMax=Math.max(xtdMax,step.xtd);
+  }
+  if(valid(o.rud)){
+   if(valid(latestRudder) && Math.abs(o.rud-latestRudder)>rule.rudderEpsilon)orders++;
+   latestRudder=o.rud;
+  }
+  if(dt>0&&dt<=rule.maxGap){
+   if(land.some(poly=>pointInside(o,poly.points)))landSeconds+=dt;
+   if(shallow.some(poly=>pointInside(o,poly.points)))shallowSeconds+=dt;
+  }
+  let close=false,risk=false;
+  for(let j=0;j<tgts.length;j++){
+   const target=targetAt(tgts[j],o.t);const range=Math.hypot(target.x-o.x,target.z-o.z)/MAX_NM;
+   if(range<minRanges[j])minRanges[j]=range;
+   if(range<=safe)close=true;
+   const predicted=predictCPA(o,target);
+   const atRisk=valid(predicted.tcpa)&&predicted.tcpa>=0&&predicted.tcpa<=rule.tcpaSeconds&&predicted.dcpa<=safe;
+   if(atRisk)risk=true;
+   const st=riskHistory[j];
+   if(atRisk){
+    if(st.seen&&!st.unsafe&&st.safeElapsed>=rule.clearSeconds)reentries++;
+    st.seen=true;st.unsafe=true;st.safeElapsed=0;
+   }else if(st.seen){
+    if(st.unsafe){st.unsafe=false;st.safeElapsed=0;}
+    if(dt>0&&dt<=rule.maxGap)st.safeElapsed+=dt;
+   }
+  }
+  if(dt>0&&dt<=rule.maxGap){
+   if(close)closeSeconds+=dt;
+   if(risk)riskSeconds+=dt;
+  }
+  prev=o;
+ }
+ if(gapCount)warning.push(`시간 간격 ${format(longGap,1)}초, 공백 ${gapCount}구간 (이동 불연속 없으면 허용, 미관측 구간 ${format(unobservedSeconds,1)}초는 시간기반 특성 산정에서 제외)`);
+ if(jumpEvent)invalid.push(`본선 위치 불연속: ${format(jumpEvent.t0,1)}–${format(jumpEvent.t1,1)}초 이동속력 ${format(jumpEvent.impliedKn,1)}kn, 인접 SOG 기준 ${format(jumpEvent.permittedKn,1)}kn 초과`);
+ if(speedEvent)invalid.push(`허용구간 밖 증속 ${format(speedEvent.speed,1)}kn / 기준 ${format(limit,1)}kn 이상 (t=${format(speedEvent.t,1)}초, 잔여 WP ${speedEvent.remaining}개)`);
+ if(os.length<2||duration<1)invalid.push('본선 유효 기록 부족');
+ const final=route.pts.at(-1),endShip=os.at(-1),goalDist=Math.hypot(endShip.x-final.x,endShip.z-final.z)/MAX_NM;
+ // Simulator ends on entering a 0.3 NM WP zone; snapshot may end slightly outside.
+ // Even a larger discrepancy is a scenario-version review, NOT an automatic failure.
+ const wpReview=route.segments.length&&goalDist>Math.max(.35,rule.goalRadiusNM+.05)&&!goalReached;
+ if(wpReview)warning.push(`종료 시점 최종 WP ${format(goalDist,2)}NM 이격 — 사용 시나리오의 WP 버전 확인 (점수 자동 제외 아님)`);
+ if(tgts.some(t=>t.route.segments.length))warning.push('타선 변침은 시나리오 WP를 따른 정속 직선구간 모델로 추정');
+ if(!land.length&&!shallow.length)warning.push('지형 데이터 없음 — LAND/SHALLOW 특성 평가 불가');
+ if(maxSpeed>80)warning.push(`현실적으로 불가능한 SOG ${format(maxSpeed,1)}kn 관측 — 데이터 점검 권장`);
+ if(tgts.length===0)warning.push('타선 0척 — 충돌·접근 특성 평가 불가');
+ const minCPA=tgts.length?Math.min(...minRanges):NaN;
+ const meanCPA=tgts.length?minRanges.reduce((a,b)=>a+b,0)/tgts.length:NaN;
+ const raw={collision:minRanges.filter(d=>d<0.05).length, underSafe:minRanges.filter(d=>d<=safe).length,
+  deficit:minRanges.reduce((a,b)=>a+Math.max(0,safe-b),0),minCPA,meanCPA,closeSeconds,
+  riskSeconds,reentries,meanXTD:xtdDuration>0?xtdWeighted/xtdDuration:NaN,maxXTD:xtdMax,
+  rudderOrders:orders,shallowSeconds:shallow.length?shallowSeconds:NaN,landSeconds:land.length?landSeconds:NaN};
+ return {id:calcId(meta),file:meta.file,scenario:meta.scenario,sid:meta.sid,student:meta.student,stamp:meta.stamp,
+  date:meta.date,clock:meta.clock,duration,start,end,osCount:os.length,targetCount:tgts.length,safe,
+  raw,invalid,warning,review:[],ruleVersion:5,legacy:false,maxSpeed,limit,goalDist,longGap,gapCount,unobservedSeconds,observedSeconds,goalReached,reachedWP,wpReview,
+  firstSpeed:os[0].sog,scenarioSpeed:num(scenario.os?.spd),
+  estimatedTargets:tgts.some(t=>t.route.segments.length),sourceScenario:scenario.filename};
+}
+function naturalBounds(run,feat){
+ const total=run.targetCount;
+ switch(feat.id){
+  case 'collision':case 'underSafe':return {good:0,bad:total};
+  case 'deficit':return {good:0,bad:Math.max(0,run.safe)*total};
+  case 'closeSeconds':case 'riskSeconds':case 'landSeconds':case 'shallowSeconds':return {good:0,bad:valid(run.observedSeconds)?run.observedSeconds:run.duration};
+  default:return {good:feat.good,bad:feat.bad};
+ }
+}
+function populationBounds(fid){
+ const values=records.filter(r=>!r.invalid.length&&!r.review?.length).map(r=>r.raw?.[fid]).filter(valid);
+ if(values.length<2)return null;
+ const low=Math.min(...values),high=Math.max(...values);
+ if(high-low<1e-10)return null;
+ const f=FEAT[fid];return f.direction==='higher'?{bad:low,good:high}:{bad:high,good:low};
+}
+function featureScore(run,fid){
+ const raw=run.raw?.[fid];if(!valid(raw))return null;
+ if(run.targetCount===0&&['collision','underSafe','deficit','minCPA','meanCPA','closeSeconds','riskSeconds','reentries'].includes(fid))return null;
+ const setting=config.ranges[fid]||{},mode=setting.mode||FEAT[fid].mode;
+ let bounds=mode==='natural'?naturalBounds(run,FEAT[fid]):mode==='observed'?populationBounds(fid):{good:num(setting.good),bad:num(setting.bad)};
+ if(!bounds||!valid(bounds.good)||!valid(bounds.bad)||Math.abs(bounds.good-bounds.bad)<1e-12)return null;
+ return clamp(100*(raw-bounds.bad)/(bounds.good-bounds.bad),0,100);
+}
+function runScore(r){
+ if(r.invalid.length||r.review?.length)return null;
+ const allowed=cfgScenario(r.scenario).enabled;
+ let w=0,sum=0;
+ for(const id of allowed){const s=featureScore(r,id),v=num(config.weights[id]);
+  if(s!==null&&valid(v)&&v>0){sum+=v*s;w+=v;}
+ }
+ return w>0?sum/w:null;
+}
+function runStatus(r){
+ if(r.invalid?.length)return '평가 제외';
+ if(r.review?.length)return '원본 재분석 필요';
+ if(runScore(r)===null)return '평가항목 미선택·계산 불가';
+ if(r.wpReview)return '시나리오 WP 검토 (점수 산출)';
+ return '정상 평가';
+}
+// Recompute ALL 13 raw metrics from the source, without reusing stale exclusions.
+// The source is stored locally as ownship-only states, not 3D/Radar target logs.
+async function reanalyzeAll(keys=null){
+ if(busy){notify('이미 분석 작업이 진행 중입니다.',true);return;}
+ busy=true;cancel=false;$('grade-stop').disabled=false;
+ const list=records.filter(r=>!keys||keys.has(r.scenario));
+ let done=0,missing=0,failed=0;
+ $('grade-progressbar').max=Math.max(1,list.length);
+ for(let i=0;i<list.length;i++){
+  if(cancel)break;
+  const old=list[i],scene=scenarioMap.get(old.scenario),os=await loadOS(old.id);
+  if(!scene||!os){
+   if(!old.review?.length)old.review=[];
+   if(!old.review.some(w=>w.includes('원본')))old.review.push(!scene?'시나리오 JSON을 다시 불러와야 재분석 가능':'원본 결과 JSON을 다시 불러와야 재분석 가능');
+   missing++;
+  }else{
+   try{
+    const meta={...old};const updated=analyzeRun(meta,{_cachedOS:os},scene);
+    Object.assign(old,updated);resultsById.set(old.id,old);done++;
+   }catch(e){failed++;old.review=[`재분석 실패: ${e.message}`];console.warn('Reanalysis',old.file,e);}
+  }
+  if(i%12===0||i===list.length-1){$('grade-progressbar').value=i+1;
+   notify(`전체 재분석 ${i+1}/${list.length} · 갱신 ${done} · 원본 재업로드 필요 ${missing} · 오류 ${failed}`);
+   if(i%60===0){persist();render();}if(i%12===0)await pauseUI();
+  }
+ }
+ busy=false;$('grade-stop').disabled=true;$('grade-progressbar').value=0;
+ persist();render();notify(`재분석 완료: 재계산 ${done} · 원본/시나리오 재업로드 필요 ${missing} · 오류 ${failed}`);
+}
+function runsOf(sid,scenario){return records.filter(r=>r.sid===sid&&r.scenario===scenario);}
+function practiceCount(sid,key){
+ const runs=runsOf(sid,key).filter(r=>runScore(r)!==null);
+ const over=config.training.override?.[`${sid}|${key}`];
+ return {real:runs.length,count:over===undefined?runs.length:clamp(Math.floor(Number(over)||0),0,runs.length)};
+}
+function practiceFactor(n){
+ const t=config.training,stop=Math.max(2,Math.floor(num(t.fullAt)||10));
+ return n<=0?0:num(t.min)+(num(t.max)-num(t.min))*clamp((n-1)/(stop-1),0,1);
+}
+function scenarioGrade(sid,key){
+ const list=runsOf(sid,key).filter(r=>runScore(r)!==null);
+ const {count,real}=practiceCount(sid,key);
+ if(!list.length)return {score:null,base:null,count:0,real:0,factor:0,representative:null};
+ const mode=config.training.selected;
+ const selected=config.selectedRuns[`${sid}|${key}`];
+ let chosen=null,base;
+ if(mode==='average'){base=list.reduce((v,r)=>v+runScore(r),0)/list.length;chosen=list.at(-1);}
+ else if(mode==='manual'&&selected&&list.some(r=>r.id===selected)){
+  chosen=list.find(r=>r.id===selected);base=runScore(chosen);
+ }else if(mode==='latest'){
+  chosen=[...list].sort((a,b)=>a.stamp.localeCompare(b.stamp)).at(-1);base=runScore(chosen);
+ }else{chosen=[...list].sort((a,b)=>runScore(b)-runScore(a)||b.stamp.localeCompare(a.stamp))[0];base=runScore(chosen);}
+ const factor=practiceFactor(count);
+ return {score:clamp(base*factor,0,100),base,count,real,factor,representative:chosen};
+}
+const isFinalForABC=k=>/^001[A-Z]+$/.test(k);
+const isFinalForD=k=>/^\d+$/.test(k)&&k!=='001';
+function allScenarioKeys(){return [...new Set([...DEFAULT_SCENARIOS,...scenarioMap.keys(),...records.map(r=>r.scenario)])].sort((a,b)=>{
+ const ai=DEFAULT_SCENARIOS.indexOf(a),bi=DEFAULT_SCENARIOS.indexOf(b);if(ai>=0&&bi>=0)return ai-bi;if(ai>=0)return -1;if(bi>=0)return 1;
+ const pa=a.match(/^(\d+)(.*)$/),pb=b.match(/^(\d+)(.*)$/);
+ if(!pa||!pb)return a.localeCompare(b);return Number(pa[1])-Number(pb[1])||pa[2].localeCompare(pb[2]);
+ });}
+function keyForClass(classLetter){return allScenarioKeys().filter(k=>classLetter==='D'?isFinalForD(k):isFinalForABC(k));}
+function classesForStudent(sid){return (config.classMaps[sid]||[]).filter(c=>['A','B','C','D'].includes(c));}
+function courseForStudent(sid,filter='ALL'){
+ const mid=scenarioGrade(sid,'001').score;
+ const classes=filter!=='ALL'&&filter!=='NONE'?[filter]:classesForStudent(sid);
+ let keys=[];
+ if(classes.length)keys=[...new Set(classes.flatMap(k=>keyForClass(k)))];
+ else keys=allScenarioKeys().filter(k=>k!=='001');
+ const grades=keys.map(k=>scenarioGrade(sid,k).score).filter(valid);
+ const final=grades.length?grades.reduce((a,b)=>a+b,0)/grades.length:null;
+ const missing=keys.filter(k=>!valid(scenarioGrade(sid,k).score));
+ const mw=clamp(Number(config.exams.midWeight)||0,0,100),fw=clamp(Number(config.exams.finalWeight)||0,0,100);
+ let total=null;
+ if((!config.exams.requireMidAndFinal||(valid(mid)&&valid(final)))&&(mw*Number(valid(mid))+fw*Number(valid(final))>0)){
+  let sum=0,w=0;if(valid(mid)&&mw>0){sum+=mid*mw;w+=mw;}if(valid(final)&&fw>0){sum+=final*fw;w+=fw;}
+  if(w)total=sum/w;
+ }
+ return {mid,final,total,missing,keys};
+}
+function students(){
+ const map=new Map();
+ records.forEach(r=>{
+  if(!map.has(r.sid))map.set(r.sid,{sid:r.sid,name:r.student,runs:0,valid:0});
+  const item=map.get(r.sid);item.runs++;if(r.stamp>= (item.stamp||'')){item.stamp=r.stamp;item.name=r.student;}if(runScore(r)!==null)item.valid++;
+ });
+ for(const [sid,name] of Object.entries(config.studentNames||{}))if(map.has(sid))map.get(sid).name=name;
+ return [...map.values()];
+}
+function visibleStudents(){
+ const search=$('grade-search').value.trim().toLowerCase(),classFilter=$('grade-class-filter').value,sort=$('grade-sort').value;
+ let arr=students().filter(s=>(s.sid+' '+s.name).toLowerCase().includes(search));
+ arr=arr.filter(s=>classFilter==='ALL'||(classFilter==='NONE'?!classesForStudent(s.sid).length:classesForStudent(s.sid).includes(classFilter)));
+ const current=arr.map(s=>({...s,course:courseForStudent(s.sid,classFilter==='NONE'?'ALL':classFilter)}));
+ current.sort((a,b)=>{
+  if(sort==='sid')return bySid(a,b);
+  if(sort==='name')return a.name.localeCompare(b.name,'ko')||bySid(a,b);
+  return (valid(b.course.total)?b.course.total:-1)-(valid(a.course.total)?a.course.total:-1)||bySid(a,b);
+ });
+ let last=null,rank=0;
+ current.forEach((s,i)=>{const score=s.course.total;
+  if(!valid(score))s.rank=null;
+  else {if(last===null||Math.abs(score-last)>1e-8)rank=i+1;s.rank=rank;last=score;}
+ });
+ return current;
+}
+function scoreHTML(value){return valid(value)?`<span class="grade-strong">${format(value,1)}</span>`:'<span class="grade-neutral">—</span>';}
+function scenarioCell(sid,key){
+ const g=scenarioGrade(sid,key),list=runsOf(sid,key);
+ if(!list.length)return '<span class="grade-neutral">—</span>';
+ const excluded=list.filter(r=>r.invalid?.length).length;
+ if(g.score===null){
+  const excluded=list.filter(r=>r.invalid?.length).length,review=list.filter(r=>r.review?.length).length;
+  const none=list.length-excluded-review;
+  const label=review?'재분석 필요':excluded&&!none?'평가 제외':'점수 미산출';
+  return `<span class="${label==='평가 제외'?'grade-excluded':'grade-neutral'}">${label}</span><span class="grade-attempt">${list.length}회 중 유효 0회${review?` · 재분석 ${review}`:''}</span>`;
+ }
+ return `${scoreHTML(g.score)}<span class="grade-attempt">${g.real}회${excluded?` · 제외 ${excluded}`:''}</span>`;
+}
+function renderTable(){
+ const allKeys=allScenarioKeys(),filter=$('grade-exam-filter').value;
+ const displayed=allKeys.filter(key=>filter==='ALL'||(filter==='MID'?key==='001':key!=='001'));
+ const arr=visibleStudents();
+ const stats=$('grade-stats'),validStudents=arr.filter(s=>valid(s.course.total)).length;
+ stats.innerHTML=`<span>학생 <b>${students().length}</b>명</span><span>현재 보기 <b>${arr.length}</b>명</span><span>시행 <b>${records.length}</b>회</span><span>평가 유효 <b>${records.filter(r=>runScore(r)!==null).length}</b>회</span><span>종합점수 산출 <b>${validStudents}</b>명</span>`;
+ const head=$('grade-main-head'),body=$('grade-main-body');
+ head.innerHTML=`<tr><th>학번</th><th>이름</th><th>반</th><th>순위</th><th>중간(001)</th>${displayed.map(k=>`<th>${esc(k)}<span class="grade-attempt">점수 / 시행</span></th>`).join('')}<th>기말</th><th>종합</th></tr>`;
+ const fragment=document.createDocumentFragment();
+ if(!arr.length){body.innerHTML=`<tr><td colspan="${displayed.length+7}" style="text-align:left;padding:22px;">불러온 성적이 없습니다. 좌측에서 시나리오 JSON을 먼저 불러온 뒤 학생 결과를 분석하세요.</td></tr>`;return;}
+ for(const s of arr){
+  const tr=document.createElement('tr');tr.dataset.sid=s.sid;
+  if(expandedSid===s.sid)tr.className='grade-selected';
+  const assigned=classesForStudent(s.sid),courses=s.course;
+  tr.innerHTML=`<td>${esc(s.sid)}</td><td>${esc(s.name)}</td><td>${assigned.length?assigned.join(', '):'<span class="grade-muted">미배정</span>'}</td><td>${s.rank||'—'}</td><td>${scoreHTML(courses.mid)}</td>${displayed.map(k=>`<td>${scenarioCell(s.sid,k)}</td>`).join('')}<td>${scoreHTML(courses.final)}${courses.missing.length?`<span class="grade-attempt">미응시 ${courses.missing.length}개</span>`:''}</td><td>${scoreHTML(courses.total)}</td>`;
+  tr.addEventListener('dblclick',()=>{expandedSid=s.sid;render();$('grade-student-detail').scrollTop=0;});
+  fragment.appendChild(tr);
+ }
+ body.replaceChildren(fragment);
+}
+function gradeMetricDetail(r){
+ const enabled=cfgScenario(r.scenario).enabled;
+ return FEATURES.filter(f=>enabled.includes(f.id)).map(f=>{
+  const raw=r.raw?.[f.id],score=featureScore(r,f.id);
+  return `<div class="grade-metric"><span>${esc(f.name)}</span><span>${valid(raw)?format(raw,2)+' '+f.unit:'평가 불가'} &nbsp; <b>${score===null?'—':format(score,1)+'점'}</b></span></div>`;
+ }).join('')||'<div class="grade-muted">활성화된 평가특성이 없습니다.</div>';
+}
+function renderDetail(){
+ const holder=$('grade-student-detail');
+ if(!expandedSid||!students().some(s=>s.sid===expandedSid)){
+  holder.innerHTML='<div class="grade-muted">학생 행을 더블클릭하면 해당 학생의 모든 시나리오 시행, 평가항목, 원시값과 점수를 확인할 수 있습니다.</div>';return;
+ }
+ const s=students().find(s=>s.sid===expandedSid),classes=classesForStudent(s.sid),arr=records.filter(r=>r.sid===expandedSid).sort((a,b)=>a.scenario.localeCompare(b.scenario)||b.stamp.localeCompare(a.stamp));
+ holder.innerHTML=`<div class="grade-mini-head"><h3>${esc(s.sid)} · ${esc(s.name)} — 총 ${arr.length}회</h3><div class="grade-muted">수강반 ${classes.length?classes.join(', '):'미배정'} · 반/가중치/점수환산은 상단 [평가기준·설정]에서 변경</div><button class="grade-btn" id="grade-close-detail">상세 접기</button></div>
+ <div class="grade-run-grid">${arr.map(r=>{
+  const rawScore=runScore(r),g=scenarioGrade(s.sid,r.scenario),checked=r.id===g.representative?.id,status=runStatus(r);
+  const meta=`${r.date?.slice(0,4)||''}-${r.date?.slice(4,6)||''}-${r.date?.slice(6)||''} ${r.clock?.slice(0,2)||''}:${r.clock?.slice(2,4)||''}`;
+  return `<details class="grade-run" ${r.id===g.representative?.id?'open':''}>
+  <summary><strong>${esc(r.scenario)}</strong> · ${esc(meta)} · <b>${rawScore===null?esc(status):format(rawScore,1)+'점'}</b>${checked&&rawScore!==null?' · <span class="grade-good">대표 시행</span>':''}
+   ${r.invalid.length?`<span class="grade-error"> · ${esc(r.invalid.join(' / '))}</span>`:''}${r.review?.length?`<span class="grade-neutral"> · ${esc(r.review.join(' / '))}</span>`:''}
+  </summary><div class="grade-note" style="margin-top:8px">기록시간 ${formatTime(r.duration)} · 관측시간 ${formatTime(r.observedSeconds)} · 최대 기록간격 ${format(r.longGap,1)}초 · 안전거리 ${format(r.safe,2)} NM · 타선 ${r.targetCount}척 · 최종 WP 거리 ${format(r.goalDist,2)} NM · 시나리오 ${esc(r.sourceScenario||'')}</div>
+  ${r.warning?.length?`<div class="grade-note">${r.warning.map(esc).join(' · ')}</div>`:''}
+  ${rawScore!==null?`<label class="grade-feature-check" style="margin:9px 0;display:inline-flex;gap:6px;align-items:center;"><input type="radio" name="grade-selected-${esc(r.scenario)}" data-selected-run="${esc(r.id)}" ${checked?'checked':''}> 이 시행을 대표점수로 지정 (선택방식은 [설정 → 수동]에서 적용)</label>`:''}
+  <div class="grade-metric-list">${gradeMetricDetail(r)}</div><div style="text-align:right;margin-top:8px"><button class="grade-btn" data-delete-run="${esc(r.id)}" type="button">이 시행 삭제</button></div></details>`;
+ }).join('')}</div>`;
+ $('grade-close-detail').addEventListener('click',()=>{expandedSid='';renderDetail();});
+ holder.querySelectorAll('[data-delete-run]').forEach(el=>el.addEventListener('click',()=>{
+  const id=el.dataset.deleteRun,record=resultsById.get(id);if(!record)return;
+  if(!confirm(`${record.sid} / ${record.scenario} 시행을 삭제할까요? 이후 같은 원본 파일을 다시 불러올 수 있습니다.`))return;
+  resultsById.delete(id);records=records.filter(r=>r.id!==id);void deleteOS(id);
+  if(config.selectedRuns[`${record.sid}|${record.scenario}`]===id)delete config.selectedRuns[`${record.sid}|${record.scenario}`];
+  persist();render();
+ }));
+ holder.querySelectorAll('[data-selected-run]').forEach(el=>el.addEventListener('change',()=>{
+  const id=el.dataset.selectedRun,rec=resultsById.get(id);if(!rec)return;
+  config.selectedRuns[`${rec.sid}|${rec.scenario}`]=id;
+  config.training.selected='manual';persist();render();
+ }));
+}
+function renderAudit(){
+ $('grade-scenario-status').textContent=`시나리오 ${scenarioMap.size}개 로드: ${[...scenarioMap.keys()].join(', ')||'없음'} · OS 기록은 브라우저에 별도 캐시`;
+ const excluded=records.filter(r=>r.invalid?.length),review=records.filter(r=>r.review?.length),without=records.filter(r=>!r.invalid?.length&&!r.review?.length&&runScore(r)===null),wp=records.filter(r=>r.wpReview&&!r.invalid?.length);
+ $('grade-audit').innerHTML=`총 ${records.length}회 · 평가 제외 ${excluded.length}회 · 재분석 필요 ${review.length}회 · 점수 미산출 ${without.length}회 · WP검토 ${wp.length}회
+ ${excluded.slice(-10).reverse().map(r=>`<span class="grade-error">${esc(r.sid)} / ${esc(r.scenario)}: ${esc(r.invalid.join('; '))}</span>`).join('')}
+ ${review.slice(-8).reverse().map(r=>`<span class="grade-muted">${esc(r.sid)} / ${esc(r.scenario)}: ${esc(r.review.join('; '))}</span>`).join('')}
+ ${pending.length?`<span class="grade-error">시나리오 대기 중 ${pending.length}개</span>`:''}
+ ${storageWarning?'<span class="grade-error">현재 실행 환경에서는 성적 자동저장이 제한됩니다. [성적 데이터 백업]을 이용하세요.</span>':''}
+ ${sourceStorageWarning?'<span class="grade-muted">원본 OS 캐시의 영구저장이 제한됩니다. 재분석 시 원본 파일 재선택이 필요할 수 있습니다.</span>':''}`;
+}
+function render(){if(currentMode!=='analysis')return;renderTable();renderDetail();renderAudit();}
+function resize(){if(currentMode==='analysis')render();}
+function scenarioChanged(){if(currentMode==='analysis')render();}
+function notify(text,error=false){$('grade-progress').textContent=text;$('grade-progress').style.color=error?'#fca5a5':'#9fb2c8';}
+function pauseUI(){return new Promise(resolve=>setTimeout(resolve,0));}
+async function addRecord(meta,data,scene){
+ const id=calcId(meta),previous=resultsById.get(id);
+ if(previous&&Number(previous.ruleVersion)>=5&&!previous.review?.length&&!previous.wpReview&&!previous.legacy)return 'duplicate';
+ const own=readOwnship(data,scene);const record=analyzeRun(meta,{_cachedOS:own},scene);
+ await storeOS(id,own);
+ if(previous){Object.assign(previous,record);return previous.invalid.length?'excluded':'updated';}
+ resultsById.set(id,record);records.push(record);
+ return record.invalid.length?'excluded':'ok';
+}
+function parseString(text){return JSON.parse(String(text).replace(/^\uFEFF/,''));}
+async function importScenarios(files){
+ if(busy){notify('먼저 진행 중인 분석을 완료하세요.',true);return;}
+ let added=0,failed=0;
+ for(const file of files){
+  try{registerScenario(file.name,parseString(await file.text()));added++;}
+  catch(e){failed++;console.warn('Scenario load error',file.name,e);}
+ }
+ persist();renderAudit();render();notify(`시나리오 ${added}개 불러옴${failed?` · 실패 ${failed}개`:''}.`);
+ if(pending.length){const p=pending.slice();pending=[];await importResults(p);}
+ if(added&&records.length)await reanalyzeAll(new Set(files.map(f=>scenarioId(f.name)).filter(Boolean)));
 
-    function parseIdentity(fileName) {
-        const base=String(fileName).replace(/\.json$/i,'').replace(/\s*\(\d+\)$/,'').trim();
-        const m=base.match(/^(HTMS_Scenario_\d+)_R_(\d{8})_(\d{6})_(\d+)_([^]+)$/i);
-        if(m) return {scenario:m[1], date:m[2], clock:m[3], sid:m[4], person:m[5], key:`${m[1].toLowerCase()}|${m[4]}|${m[5]}`, dateText:`${m[2].slice(0,4)}-${m[2].slice(4,6)}-${m[2].slice(6)} ${m[3].slice(0,2)}:${m[3].slice(2,4)}:${m[3].slice(4)}`,sort:m[2]+m[3]};
-        const m2=base.match(/^(.*)_R_(\d{8})_(\d{6})_(\d+)_([^]+)$/i);
-        if(m2) return {scenario:m2[1],date:m2[2],clock:m2[3],sid:m2[4],person:m2[5],key:`${m2[1].toLowerCase()}|${m2[4]}|${m2[5]}`,dateText:m2[2]+' '+m2[3],sort:m2[2]+m2[3]};
-        return {scenario:base,sid:'?',person:tr('Unidentified','미확인'),key:`file:${base}`,dateText:base,sort:base};
+}
+async function importResults(files){
+ if(busy){notify('이미 분석 작업이 진행 중입니다.',true);return;}
+ busy=true;cancel=false;$('grade-stop').disabled=false;
+ const cleanFiles=files.filter(f=>/\.json$/i.test(f.name));
+ let ok=0,excluded=0,fail=0,duplicate=0,missing=0;
+ $('grade-progressbar').max=Math.max(1,cleanFiles.length);
+ for(let i=0;i<cleanFiles.length;i++){
+  if(cancel)break;
+  const file=cleanFiles[i],meta=parseIdentity(file.name);
+  try{
+   if(!meta.valid){fail++;continue;}
+   const id=calcId(meta);
+   if(resultsById.has(id) && Number(resultsById.get(id).ruleVersion)>=5&&!resultsById.get(id).review?.length&&!resultsById.get(id).wpReview&&!resultsById.get(id).legacy){duplicate++;continue;}
+   const scene=scenarioMap.get(meta.scenario);
+   if(!scene){pending.push(file);missing++;continue;}
+   const data=parseString(await file.text());
+   const result=await addRecord(meta,data,scene);
+   if(result==='ok'||result==='updated')ok++;else if(result==='excluded')excluded++;else duplicate++;
+  }catch(err){console.warn('Grade result error:',file.name,err);fail++;}
+  if(i%3===0||i===cleanFiles.length-1){
+   $('grade-progressbar').value=i+1;
+   notify(`처리 ${i+1}/${cleanFiles.length} · 유효 ${ok} · 제외 ${excluded} · 보류 ${missing} · 중복 ${duplicate} · 오류 ${fail}`);
+   if(i%50===0) {persist();render();}
+   if(i%5===0) await pauseUI();
+  }
+ }
+ persist();render();busy=false;$('grade-stop').disabled=true;
+ notify(`분석 ${cancel?'중단':'완료'}: 유효 ${ok} · 제외 ${excluded} · 시나리오 대기 ${missing} · 중복 ${duplicate} · 오류 ${fail}`);
+ $('grade-progressbar').value=0;
+}
+async function loadDriveList(url,selectId,areaId,type){
+ if(busy)return;
+ const sel=$(selectId),area=$(areaId);area.hidden=false;sel.innerHTML='<option>목록 불러오는 중...</option>';notify(`${type} Drive 목록 요청 중`);
+ try{
+  const response=await fetch(url+'?action=list');if(!response.ok)throw new Error('HTTP '+response.status);
+  const files=await response.json();if(!Array.isArray(files))throw new Error(files?.error||'목록 형식이 올바르지 않음');
+  const filtered=files.filter(f=>/\.json$/i.test(f.name||'')&&(type==='시나리오'?/^HTMS_Scenario_\d+[A-Z]*(\.json)?$/i.test(f.name.replace(/\.json$/i,'')):Boolean(parseIdentity(f.name).valid)));
+  sel.innerHTML=filtered.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+  notify(`${type} 목록 ${filtered.length}개. Ctrl/Shift로 여러 개를 선택할 수 있습니다.`);
+ }catch(err){notify(`${type} Drive 목록 불러오기 실패: ${err.message}`,true);sel.innerHTML='';}
+}
+async function driveData(url,id){
+ const response=await fetch(`${url}?action=load&fileId=${encodeURIComponent(id)}`);
+ if(!response.ok)throw new Error('HTTP '+response.status);
+ let obj=parseString(await response.text());
+ if(obj?.error)throw new Error(obj.error);
+ if(typeof obj==='string')obj=parseString(obj);
+ if(typeof obj?.fileContent==='string')obj=parseString(obj.fileContent);
+ if(typeof obj?.content==='string')obj=parseString(obj.content);
+ return obj;
+}
+async function importDriveScenarios(all=false){
+ if(busy)return;
+ const sel=$('grade-scenario-drive-select');const opts=all?[...sel.options]:[...sel.selectedOptions];
+ if(!opts.length){notify('시나리오를 선택하세요',true);return;}
+ let n=0,e=0;
+ for(const opt of opts){
+  try{registerScenario(opt.text,await driveData(SCENARIO_SCRIPT_URL,opt.value));n++;}
+  catch(err){e++;console.warn(err);}
+ }
+ persist();renderAudit();render();notify(`Drive 시나리오 ${n}개 로드, 오류 ${e}개`);
+ if(pending.length){const p=pending.slice();pending=[];await importResults(p);}
+ if(n&&records.length)await reanalyzeAll(new Set(opts.map(opt=>scenarioId(opt.text)).filter(Boolean)));
+
+}
+async function importDriveResults(all=false){
+ if(busy)return;
+ const opts=all?[...$('grade-result-drive-select').options]:[...$('grade-result-drive-select').selectedOptions];
+ if(!opts.length){notify('분석할 Drive 결과를 선택하세요.',true);return;}
+ busy=true;cancel=false;$('grade-stop').disabled=false;$('grade-progressbar').max=opts.length;
+ let ok=0,invalid=0,dups=0,missing=0,errors=0;
+ for(let i=0;i<opts.length;i++){
+  if(cancel)break;
+  const opt=opts[i],meta=parseIdentity(opt.text);
+  try{
+   if(!meta.valid){errors++;continue;}
+   if(resultsById.has(calcId(meta))&&Number(resultsById.get(calcId(meta)).ruleVersion)>=5&&!resultsById.get(calcId(meta)).review?.length&&!resultsById.get(calcId(meta)).wpReview&&!resultsById.get(calcId(meta)).legacy){dups++;continue;}
+   const scene=scenarioMap.get(meta.scenario);
+   if(!scene){missing++;continue;}
+   const result=await addRecord(meta,await driveData(REPLAY_SCRIPT_URL,opt.value),scene);
+   if(result==='ok'||result==='updated')ok++;else if(result==='excluded')invalid++;else dups++;
+  }catch(err){errors++;console.warn('Drive result',opt.text,err);}
+  if(i%2===0||i===opts.length-1){$('grade-progressbar').value=i+1;
+   notify(`Drive 분석 ${i+1}/${opts.length} · 유효 ${ok} · 제외 ${invalid} · 미시나리오 ${missing} · 중복 ${dups} · 오류 ${errors}`);
+   if(i%50===0) {persist();render();}
+   if(i%5===0) await pauseUI();
+  }
+ }
+ busy=false;$('grade-stop').disabled=true;$('grade-progressbar').value=0;persist();render();
+ notify(`Drive 결과 ${cancel?'중단':'완료'}: 유효 ${ok} · 제외 ${invalid} · 미시나리오 ${missing} · 중복 ${dups} · 오류 ${errors}`);
+}
+function settingRow(f){
+ const c=config.ranges[f.id]||{},vals=records.filter(r=>!r.invalid.length).map(r=>r.raw?.[f.id]).filter(valid);
+ return `<tr><td title="${esc(f.formula)}">${esc(f.name)}</td><td>${esc(f.unit)}</td>
+  <td><input type="number" min="0" max="100" step="0.25" data-setting="weight" data-feature="${f.id}" value="${esc(config.weights[f.id])}"></td>
+  <td><select data-setting="mode" data-feature="${f.id}"><option value="natural" ${c.mode==='natural'?'selected':''}>자연범위</option><option value="manual" ${c.mode==='manual'?'selected':''}>직접입력</option><option value="observed" ${c.mode==='observed'?'selected':''}>학생 분포</option></select></td>
+  <td><input type="number" step="any" data-setting="good" data-feature="${f.id}" value="${esc(c.good)}"></td>
+  <td><input type="number" step="any" data-setting="bad" data-feature="${f.id}" value="${esc(c.bad)}"></td>
+  <td>${vals.length?`${format(Math.min(...vals),3)} ~ ${format(Math.max(...vals),3)}`:'—'}</td>
+  <td><button class="grade-btn" data-fill-range="${f.id}" ${vals.length<2?'disabled':''}>분포 반영</button></td></tr>`;
+}
+function settingsFeatures(){return `<p class="grade-help">각 평가특성의 원시값을 0~100점으로 환산합니다. 자연범위: 0척~전체 타선 수 또는 0초~총 소요시간. 직접입력: 100점/0점에 해당하는 원시값을 직접 입력. 학생 분포: 유효 시행의 최솟값·최댓값을 기준으로 자동 설정. 가중치 0이면 종합 계산에서 제외합니다. 관측값이 모두 같으면 분포 모드에서는 평가 불가입니다.</p>
+ <table class="grade-settings-table"><thead><tr><th>평가특성 (마우스를 올리면 설명)</th><th>단위</th><th>가중치</th><th>환산</th><th>100점 원시값</th><th>0점 원시값</th><th>현재 자료의 최소~최대</th><th>기준 복사</th></tr></thead><tbody>${FEATURES.map(settingRow).join('')}</tbody></table>`;}
+function settingsScenarios(){
+ const keys=allScenarioKeys();
+ return `<p class="grade-help">시나리오별 안전거리와 평가할 특성을 선택합니다. 체크하지 않은 특성은 종합점수 분모에서도 제외됩니다. SHALLOW/LAND는 시나리오에 해당 다각형이 실제로 있을 때만 계산됩니다.</p>
+ ${keys.map(k=>{
+  const cfg=cfgScenario(k),scene=scenarioMap.get(k);const areas=(scene?.Land||[]).map(x=>x.type);
+  return `<div class="grade-run" style="margin:9px 0"><div class="grade-mini-head"><strong>${esc(k)} · ${k==='001'?'중간고사':isFinalForABC(k)?'기말(A·B·C)':isFinalForD(k)?'기말(D)':'기타'}</strong>
+  <label>안전거리 (NM) <input type="number" step="0.01" min="0.01" max="5" data-safe="${esc(k)}" value="${cfg.safe}" style="width:80px"></label>
+  <div><button class="grade-btn" data-all="${esc(k)}">모두 선택</button> <button class="grade-btn" data-none="${esc(k)}">모두 해제</button></div></div>
+  <div class="grade-metric-list" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">${FEATURES.map((f,i)=>{
+   const unavailable=(f.id==='shallowSeconds'&&!areas.includes('SHALLOW'))||(f.id==='landSeconds'&&!areas.includes('LAND'));
+   return `<label class="grade-feature-check"><input type="checkbox" data-toggle="${esc(k)}" data-feature="${f.id}" ${cfg.enabled.includes(f.id)?'checked':''} ${unavailable?'disabled':''}> ${i+1}. ${esc(f.name)} ${unavailable?'<span class="grade-muted">(없음)</span>':''}</label>`;
+  }).join('')}</div></div>`;
+ }).join('')}
+ <div class="grade-help">안전거리 또는 분석 규칙을 바꾼 뒤 이미 분석된 결과의 원시 특성값까지 변경하려면 동일 파일을 재분석해야 합니다. 점수환산·가중치·체크·반복배율 변경은 즉시 기존 기록에도 적용됩니다.</div>`;
+}
+function settingsTraining(){
+ let html=`<p class="grade-help">동일 학생·시나리오의 유효 시행만 반복횟수에 포함합니다. 1회차 기본 배율 0.90, 10회차 이상 1.10이며 총점은 100점을 넘지 않습니다. 임의로 100회 이상 수행해도 기본적으로 최대배율만 적용합니다. 필요한 경우 아래 학생·시나리오별 인정 횟수를 수동 지정할 수 있습니다.</p>
+ <div class="grade-grid"><div class="grade-field"><label>1회차 배율</label><input data-train="min" type="number" min="0" max="2" step="0.01" value="${config.training.min}"></div>
+ <div class="grade-field"><label>최대 배율</label><input data-train="max" type="number" min="0" max="2" step="0.01" value="${config.training.max}"></div>
+ <div class="grade-field"><label>최대 배율에 도달하는 유효 시행횟수</label><input data-train="fullAt" type="number" min="2" max="10000" step="1" value="${config.training.fullAt}"></div>
+ <div class="grade-field"><label>시나리오별 대표 시행 선택</label><select data-train="selected"><option value="best" ${config.training.selected==='best'?'selected':''}>최고점</option><option value="latest" ${config.training.selected==='latest'?'selected':''}>가장 최근</option><option value="average" ${config.training.selected==='average'?'selected':''}>모든 유효점수 평균</option><option value="manual" ${config.training.selected==='manual'?'selected':''}>학생 상세에서 수동 선택</option></select></div></div>
+ <h4>학생별 반복훈련 인정 횟수 — 빈 칸은 유효 횟수 전체 적용</h4>
+ <div class="grade-help">원본의 시행횟수와 인정 횟수는 별도로 보존합니다. 실제 유효 횟수보다 큰 값을 입력할 수 없습니다.</div>
+ <table class="grade-settings-table"><thead><tr><th>학번</th><th>이름</th><th>시나리오</th><th>유효 시행</th><th>인정 횟수</th></tr></thead><tbody>`;
+ for(const s of students().sort(bySid))for(const k of allScenarioKeys()){
+  const p=practiceCount(s.sid,k);if(!p.real)continue;
+  const id=`${s.sid}|${k}`,over=config.training.override?.[id];
+  html+=`<tr><td>${esc(s.sid)}</td><td>${esc(s.name)}</td><td>${esc(k)}</td><td>${p.real}</td><td><input type="number" step="1" min="0" max="${p.real}" placeholder="${p.real}회" data-override="${esc(id)}" value="${over===undefined?'':over}"></td></tr>`;
+ }
+ return html+'</tbody></table>';
+}
+function settingsRules(){const r=config.rules,e=config.exams;
+ return `<p class="grade-help">위반 기준: <b>max(시나리오 초기속력, 결과의 첫 OS SOG) + 10 kn 이상</b>. 마지막 잔여 Waypoint 2개 구간은 증속 허용. 기록 시간 공백 자체는 허용하고, 위치 이동이 인접 SOG와 모순되는 경우만 제외합니다. 0.3 NM WP 진입은 도착 인정하며, 최종 WP 거리는 검토 정보로만 표시합니다.</p>
+ <div class="grade-grid">${[
+  ['speedMargin','기준속력보다 높은 증속 위반폭 (kn) — 이상',1,100,.5],
+  ['maxGap','미관측 시간구간 판단 기준 (초) — 자동제외 아님',1,300,1],
+  ['positionJumpRatio','위치도약 검사: 인접 SOG의 배율',1,10,.1],
+  ['positionJumpExtraKn','위치도약 검사: 추가 속력 여유 (kn)',0,100,1],
+  ['rudderEpsilon','조타 오더값 변경 허용오차 (°)',0,5,.01],
+  ['tcpaSeconds','예측위험 TCPA 상한 (초)',1,1200,1],
+  ['clearSeconds','재진입 전 안전상태 최소 지속 (초)',1,300,1],
+  ['goalRadiusNM','최종 WP 도착 인식·검토 기준 (NM)',.05,3,.05],
+  ['waypointToleranceNM','WP 잔여개수 갱신 도착반경 (NM)',.05,3,.05]
+ ].map(([key,label,min,max,step])=>`<div class="grade-field"><label>${label}</label><input type="number" data-rule="${key}" min="${min}" max="${max}" step="${step}" value="${r[key]}"></div>`).join('')}</div>
+ <h4>중간·기말 종합점수</h4><div class="grade-grid"><div class="grade-field"><label>중간고사 비중 (%) — 모든 반 001</label><input data-exam="midWeight" type="number" min="0" max="100" value="${e.midWeight}"></div><div class="grade-field"><label>기말고사 비중 (%) — A/B/C는 001계열, D는 002·003·004 계열</label><input data-exam="finalWeight" type="number" min="0" max="100" value="${e.finalWeight}"></div></div>
+ <label class="grade-feature-check"><input type="checkbox" id="grade-require-both" ${e.requireMidAndFinal?'checked':''}> 중간/기말 점수가 모두 있는 학생만 종합 순위 산출</label>
+ <h4>기존 기록 전체 재분석</h4><p class="grade-help">속력·위치도약·시간구간·WP 기준 및 시나리오 정의를 변경하면, 보관된 본선 OS 기록을 사용하여 13개 특성·제외사유를 다시 계산합니다. 구버전에서 읽은 파일은 원본 OS 기록이 저장되지 않았으므로 필요한 경우 동일 JSON을 다시 선택하면 갱신됩니다. <b>시간 공백만으로는 평가 제외하지 않습니다.</b></p>
+ <div class="grade-side-actions"><button class="grade-btn grade-primary" id="grade-reanalyze-all" ${busy?'disabled':''}>보관된 결과 전체 재분석</button><button class="grade-btn" id="grade-backup-full" ${busy?'disabled':''}>OS 원본 포함 백업 (.gz)</button></div>
+ <p class="grade-help">비현실적인 고속 이동도 기록된 SOG와 실제 위치 변화가 일치하면 위치 점프로 오인하지 않습니다. 단, 잔여 WP가 3개 이상인 구간에서 +10 kn 이상 증속하면 별도로 평가 제외합니다.</p>
+ <div><button class="grade-btn" id="grade-clear-all">성적 데이터 전체 삭제 (확인 필요)</button></div>`;
+}
+function settingsClasses(){return `<p class="grade-help">학생은 A·B·C·D 여러 반을 동시에 수강할 수 있습니다. 중간고사는 모든 반에서 001을 사용하며, A·B·C는 001 뒤 알파벳이 붙는 시나리오, D는 001 이외 번호 시나리오를 기말고사로 평가합니다.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="grade-btn" data-bulk-class="A">전체 학생에 A반 추가</button><button class="grade-btn" data-bulk-class="B">B반 추가</button><button class="grade-btn" data-bulk-class="C">C반 추가</button><button class="grade-btn" data-bulk-class="D">D반 추가</button><button class="grade-btn" id="grade-clear-classes">모든 반 배정 해제</button></div>
+ <table class="grade-settings-table"><thead><tr><th>학번</th><th>이름</th><th>A반</th><th>B반</th><th>C반</th><th>D반</th></tr></thead><tbody>${students().sort(bySid).map(s=>`<tr><td>${esc(s.sid)}</td><td><input type="text" data-name="${esc(s.sid)}" value="${esc(s.name)}" style="width:135px"></td>${['A','B','C','D'].map(c=>`<td><input type="checkbox" data-class-sid="${esc(s.sid)}" data-class="${c}" ${classesForStudent(s.sid).includes(c)?'checked':''}></td>`).join('')}</tr>`).join('')}</tbody></table>`;}
+function renderSettings(){
+ const body=$('grade-settings-body');
+ body.innerHTML=({features:settingsFeatures,scenarios:settingsScenarios,training:settingsTraining,rules:settingsRules,classes:settingsClasses})[currentTab]();
+ $('grade-modal').querySelectorAll('[data-grade-tab]').forEach(b=>b.classList.toggle('active',b.dataset.gradeTab===currentTab));
+ body.querySelectorAll('[data-setting]').forEach(el=>el.addEventListener('change',()=>{
+  const f=el.dataset.feature,type=el.dataset.setting;
+  if(type==='weight')config.weights[f]=clamp(Number(el.value)||0,0,100);
+  else if(type==='mode')config.ranges[f].mode=el.value;
+  else if(type==='good'||type==='bad')config.ranges[f][type]=Number(el.value);
+  persist();render();
+ }));
+ body.querySelectorAll('[data-fill-range]').forEach(el=>el.addEventListener('click',()=>{
+  const id=el.dataset.fillRange,b=populationBounds(id);if(!b)return;
+  config.ranges[id]={mode:'manual',...b};persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-safe]').forEach(el=>el.addEventListener('change',()=>{
+  cfgScenario(el.dataset.safe).safe=clamp(Number(el.value)||0.3,0.01,5);persist();render();void reanalyzeAll(new Set([el.dataset.safe]));
+ }));
+ body.querySelectorAll('[data-toggle]').forEach(el=>el.addEventListener('change',()=>{
+  const c=cfgScenario(el.dataset.toggle),f=el.dataset.feature;
+  c.enabled=el.checked?[...new Set([...c.enabled,f])]:c.enabled.filter(x=>x!==f);
+  persist();render();
+ }));
+ body.querySelectorAll('[data-all]').forEach(el=>el.addEventListener('click',()=>{
+  const c=cfgScenario(el.dataset.all),scene=scenarioMap.get(el.dataset.all),types=(scene?.Land||[]).map(x=>x.type);
+  c.enabled=FEATURES.filter(f=>f.id!=='shallowSeconds'||types.includes('SHALLOW')).filter(f=>f.id!=='landSeconds'||types.includes('LAND')).map(f=>f.id);
+  persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-none]').forEach(el=>el.addEventListener('click',()=>{
+  cfgScenario(el.dataset.none).enabled=[];persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-train]').forEach(el=>el.addEventListener('change',()=>{
+  const k=el.dataset.train;config.training[k]=k==='selected'?el.value:Number(el.value);
+  persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-override]').forEach(el=>el.addEventListener('change',()=>{
+  const id=el.dataset.override;if(!el.value.trim())delete config.training.override[id];
+  else{const [sid,k]=id.split('|'),max=practiceCount(sid,k).real;
+   config.training.override[id]=clamp(Math.floor(Number(el.value)||0),0,max);}
+  persist();render();
+ }));
+ body.querySelectorAll('[data-rule]').forEach(el=>el.addEventListener('change',()=>{
+  config.rules[el.dataset.rule]=Number(el.value);persist();void reanalyzeAll();
+ }));
+ const allRecalc=$('grade-reanalyze-all');if(allRecalc)allRecalc.addEventListener('click',()=>{closeSettings();void reanalyzeAll();});
+ const fullBackup=$('grade-backup-full');if(fullBackup)fullBackup.addEventListener('click',()=>{closeSettings();void exportFullBackup();});
+ body.querySelectorAll('[data-exam]').forEach(el=>el.addEventListener('change',()=>{
+  config.exams[el.dataset.exam]=Number(el.value);persist();render();
+ }));
+ const requireBoth=$('grade-require-both');if(requireBoth)requireBoth.addEventListener('change',()=>{config.exams.requireMidAndFinal=requireBoth.checked;persist();render();});
+ body.querySelectorAll('[data-class-sid]').forEach(el=>el.addEventListener('change',()=>{
+  const sid=el.dataset.classSid,c=el.dataset.class,v=new Set(classesForStudent(sid));
+  if(el.checked)v.add(c);else v.delete(c);config.classMaps[sid]=[...v].sort();persist();render();
+ }));
+ body.querySelectorAll('[data-name]').forEach(el=>el.addEventListener('change',()=>{
+  config.studentNames[el.dataset.name]=el.value.trim();persist();render();
+ }));
+ body.querySelectorAll('[data-bulk-class]').forEach(el=>el.addEventListener('click',()=>{
+  for(const s of students())config.classMaps[s.sid]=[...new Set([...classesForStudent(s.sid),el.dataset.bulkClass])].sort();
+  persist();renderSettings();render();
+ }));
+ const noClasses=$('grade-clear-classes');if(noClasses)noClasses.addEventListener('click',()=>{
+  if(!confirm('모든 학생의 A/B/C/D 수강반 배정을 해제할까요?'))return;
+  config.classMaps={};persist();renderSettings();render();
+ });
+ const clearAll=$('grade-clear-all');if(clearAll)clearAll.addEventListener('click',()=>{
+  if(!confirm('이 브라우저에 저장된 모든 학생 시행·성적 데이터를 삭제합니다. 먼저 백업했나요?'))return;
+  if(!confirm('정말 모든 성적 데이터를 삭제하시겠습니까?'))return;
+  for(const r of records)void deleteOS(r.id);records=[];resultsById.clear();pending=[];config.selectedRuns={};config.training.override={};expandedSid='';persist();renderSettings();render();
+ });
+}
+function showSettings(tab){currentTab=tab||currentTab;$('grade-modal').hidden=false;renderSettings();}
+function closeSettings(){$('grade-modal').hidden=true;render();}
+function saveDownload(name,data,mime='application/json;charset=utf-8'){
+ const blob=data instanceof Blob?data:new Blob([data],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+// Optional portable gzip backup: gradebook + scenario definitions + OS-only source
+// tracks, so the same assessments can be reanalyzed after moving computers.
+async function exportFullBackup(){
+ if(busy)return;busy=true;
+ try{
+  if(typeof CompressionStream!=='function')throw new Error('이 브라우저에는 gzip 압축이 지원되지 않습니다. 기본 JSON 백업을 사용하세요.');
+  const tracks=[];let missing=0;
+  for(let i=0;i<records.length;i++){
+   const r=records[i],own=await loadOS(r.id);
+   if(own)tracks.push([r.id,own.map(o=>[o.t,o.x,o.z,o.sog,o.cog,o.hdg,o.rud])]);else missing++;
+   if(i%15===0){notify(`OS 원본 포함 백업 ${i+1}/${records.length} · 기록 없는 이전 버전 ${missing}`);await pauseUI();}
+  }
+  const body=JSON.stringify({config,records,scenarios:[...scenarioMap],sourceOS:tracks,sourceCountMissing:missing});
+  const blob=await new Response(new Blob([body]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+  saveDownload('HTMS_학생성적_OS원본포함.json.gz',blob,'application/gzip');
+  notify(`원본 포함 백업 저장: 시행 ${records.length}회, 원본 포함 ${tracks.length}회${missing?`, 원본 누락 ${missing}회 — 해당 결과 JSON을 다시 불러와 보완 필요`:''}`);
+ }catch(e){notify('원본 포함 백업 실패: '+e.message,true);}finally{busy=false;}
+}
+async function readBackup(file,kind){
+ try{
+  let payload;
+  if(/\.gz$/i.test(file.name)){
+   if(typeof DecompressionStream!=='function')throw new Error('이 브라우저는 gzip 압축 해제를 지원하지 않습니다.');
+   payload=await new Response(file.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }else payload=await file.text();
+  const data=parseString(payload);
+  if(kind==='config'){
+   if(!data?.features&&!data?.training&&!data?.weights)throw new Error('평가 설정 파일이 아닙니다.');
+   const defaults=createDefault();config={...defaults,...data,weights:{...defaults.weights,...data.weights},
+    ranges:{...defaults.ranges,...data.ranges},scenarios:{...defaults.scenarios,...data.scenarios},
+    training:{...defaults.training,...data.training},rules:{...defaults.rules,...data.rules},exams:{...defaults.exams,...data.exams}};
+   if(Number(data.version||4)<5){config.rules.speedMargin=10;config.rules.requireGoal=false;config.rules.goalRadiusNM=.3;}
+   config.version=5;
+  }else{
+   if(!Array.isArray(data?.records)||!data?.config)throw new Error('성적 데이터 백업이 아닙니다.');
+   if(!confirm(`기존 시행 ${records.length}회를 백업의 ${data.records.length}회로 대체하시겠습니까?`))return;
+   config={...createDefault(),...data.config};
+   if(Number(data.config.version||4)<5){config.rules={...config.rules,speedMargin:10,requireGoal:false,goalRadiusNM:.3};}
+   config.version=5;records=data.records.filter(r=>r.sid&&r.scenario&&r.id).map(migrateLegacyRun);
+   scenarioMap=new Map((data.scenarios||[]).filter(x=>Array.isArray(x)&&x.length===2));
+   resultsById.clear();records.forEach(r=>resultsById.set(r.id,r));
+   if(Array.isArray(data.sourceOS)&&data.sourceOS.length){
+    let i=0;
+    for(const [id,rows] of data.sourceOS){
+     const own=rows.map(q=>({t:q[0],x:q[1],z:q[2],sog:q[3],cog:q[4],hdg:q[5],rud:q[6]}));
+     await storeOS(id,own);if(++i%10===0)await pauseUI();
     }
-    function availableGroups(){
-        const map=new Map();
-        replayList.forEach((r,i)=>{
-            const info=parseIdentity(r.name);
-            if(!map.has(info.key))map.set(info.key,{...info,replays:[]});
-            map.get(info.key).replays.push({r,index:i,meta:info});
-        });
-        for(const g of map.values()){
-            g.replays.sort((a,b)=>a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index);
-            const order=groupOrders.get(g.key);
-            if(order){
-                const rank=new Map(order.map((r,i)=>[r,i]));
-                g.replays.sort((a,b)=>{
-                    const x=rank.get(a.r),y=rank.get(b.r);
-                    return x!==undefined&&y!==undefined?x-y:x!==undefined?-1:y!==undefined?1:a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index;
-                });
-            }
-        }
-        return [...map.values()].sort((a,b)=>a.scenario.localeCompare(b.scenario)||a.sid.localeCompare(b.sid)||a.person.localeCompare(b.person));
-    }
-    function sceneStatus(r){
-        const curr=massList[0];
-        const targets=curr && Array.isArray(curr.targets)?curr.targets:[];
-        const sourceScenario=$('scenarioNameInput').value.trim().replace(/\.json$/i,'');
-        const identity=parseIdentity(r.name);
-        const scenarioToken=(sourceScenario.match(/HTMS_Scenario_\d+/i)||[])[0];
-        const sameName=!sourceScenario||!scenarioToken||scenarioToken.toLowerCase()===identity.scenario.toLowerCase();
-        const os=r.frames.map(osShip).find(Boolean);
-        let sameStart=true;
-        if(os && curr){
-            if(n(os.sog)!==null&&Math.abs(os.sog-curr.osData.spd)>1.5)sameStart=false;
-            if(n(os.hdg)!==null&&Math.abs(degDiff(curr.osData.hdg,os.hdg))>20)sameStart=false;
-            if(Number.isFinite(os.x)&&Number.isFinite(os.z)&&Math.hypot(os.x,os.z)>160)sameStart=false;
-        }
-        let matchCnt=0;
-        const first=r.frames.find(f=>(f.ships||[]).some(s=>s.name!=='OS'));
-        if(first && targets.length){
-            const logTargets=first.ships.filter(s=>s.name!=='OS' && !s.name.startsWith('MASS'));
-            for(const obj of logTargets){
-                const ix=Number((obj.name||'').match(/_S(\d+)$/)?.[1]);
-                if(Number.isInteger(ix)&&targets[ix]){
-                    const a=targets[ix];
-                    if(Math.hypot(obj.x-a.x,obj.z-a.z)<60)matchCnt++;
-                }
-            }
-            if(logTargets.length && matchCnt<Math.min(3,logTargets.length))sameStart=false;
-        }
-        const ok=sameName&&sameStart;
-        const exists=targets.length>0;
-        let warning='';
-        if(!exists && !r.frames.some(f=>f.ships.length>1)) warning=tr('No target ships in the loaded scenario. Steering analysis still works.','불러온 시나리오에 타선이 없습니다. Steering 평가는 계속 가능합니다.');
-        else if(!sameName) warning=tr('Scenario names do not match. Verify that these files belong together.','시나리오 번호가 서로 다릅니다. 같은 실습 자료인지 확인하세요.');
-        else if(!sameStart) warning=tr('Scenario target/OS initial conditions differ from the result log. Risk estimates based on this scenario are disabled.','시나리오의 본선·타선 초기 조건과 결과가 일치하지 않습니다. 이 시나리오를 이용한 추정 위험도는 계산하지 않습니다.');
-        return {exists,ok,warning,targets,sourceScenario,logTargetsPresent:r.frames.some(f=>f.ships.length>1)};
-    }
-    function getSampleShips(r,f,scene){
-        const recorded=f.ships.filter(s=>s.name !== 'OS' && !/^MASS(?:_\d+)?$/i.test(s.name));
-        if(recorded.length){ // Exact recorded target states override route approximation.
-            return {ships:recorded,source:'recorded'};
-        }
-        if(!scene.ok || !scene.exists)return {ships:[],source:'none'};
-        return {ships:scene.targets.map((t,i)=>predictedTarget(t,f.time,i)),source:'scenario'};
-    }
-    function predictedTarget(t,sec,index){
-        // HTMS scenario units: 400 world units per nautical mile; y/z grows SOUTH.
-        const distance=Number(t.spd||0)*Math.max(0,sec)*400/3600;
-        const p0={x:Number(t.x||0),z:Number(t.z||0)};
-        const points=[p0,...(t.waypoints||[]).map(p=>({x:Number(p.x),z:Number(p.z)}))];
-        let dist=distance;let x=p0.x,z=p0.z, heading=Number(t.hdg||0);
-        if(points.length===1){const rd=heading*Math.PI/180;x+=Math.sin(rd)*dist;z-=Math.cos(rd)*dist;}
-        else {
-            for(let i=1;i<points.length;i++){
-                const from=points[i-1],to=points[i],len=Math.hypot(to.x-from.x,to.z-from.z);
-                if(len<1e-8)continue;
-                const ux=(to.x-from.x)/len,uz=(to.z-from.z)/len;
-                heading=mod(Math.atan2(ux,-uz)*180/Math.PI);
-                const step=Math.min(dist,len);x+=ux*step;z+=uz*step;dist-=step;
-                if(dist<=0)break;
-                if(i===points.length-1){x+=ux*dist;z+=uz*dist;dist=0;}
-            }
-        }
-        return {name:`T${index+1}`,x,z,hdg:heading,cog:heading,sog:Number(t.spd||0)};
-    }
-    function calcCPA(os,target){
-        const px=(target.x-os.x)/400,py=-(target.z-os.z)/400;
-        const rb=(Number(os.cog??os.hdg)||0)*Math.PI/180;
-        const tb=(Number(target.cog??target.hdg)||0)*Math.PI/180;
-        const sv=Number(os.sog||0),tv=Number(target.sog||0);
-        const vx=tv*Math.sin(tb)-sv*Math.sin(rb),vy=tv*Math.cos(tb)-sv*Math.cos(rb);
-        const vv=vx*vx+vy*vy;
-        const range=Math.hypot(px,py);
-        if(vv<1e-10)return {cpa:range,tcpa:range<0.3?0:Infinity,range};
-        const th=-(px*vx+py*vy)/vv;
-        const cpa=Math.hypot(px+th*vx,py+th*vy);
-        return {cpa,tcpa:th*60,range};
-    }
-    function riskCell(cpa,tcpa){
-        // Counts include only future, finite TCPA. Passed and unprojectable ships are shown separately.
-        if(!Number.isFinite(cpa)||!Number.isFinite(tcpa)||tcpa<0)return null;
-        return {row:cpa<SETTINGS.cpaEdges[0]?0:cpa<SETTINGS.cpaEdges[1]?1:cpa<SETTINGS.cpaEdges[2]?2:3,
-                col:tcpa<SETTINGS.tcpaEdges[0]?0:tcpa<SETTINGS.tcpaEdges[1]?1:tcpa<SETTINGS.tcpaEdges[2]?2:3};
-    }
-    function riskLevel(cpa,tcpa){
-        const cell=riskCell(cpa,tcpa);
-        return cell?SETTINGS.riskMatrix[cell.row][cell.col]:0;
-    }
-    function analyzeRisk(r,scene){
-        const instants=[];const frames=r.frames;
-        let valid=0, observed=0, scenarioRows=0;
-        for(const f of frames){
-            const os=osShip(f);if(!os)continue;
-            const source=getSampleShips(r,f,scene);
-            if(source.source==='recorded')observed++;
-            if(source.source==='scenario')scenarioRows++;
-            let winner=null,worst=0;
-            const levels=[],levelShipCounts=Array(5).fill(0);
-            const cellCounts=Array.from({length:4},()=>Array(4).fill(0));
-            const cellShips=Array.from({length:4},()=>Array.from({length:4},()=>[]));
-            let passed=0,unprojected=0;
-            for(const target of source.ships){
-                if(!Number.isFinite(target.x)||!Number.isFinite(target.z))continue;
-                const info=calcCPA(os,target),lvl=riskLevel(info.cpa,info.tcpa);
-                levels.push(lvl);levelShipCounts[lvl]++;
-                const cell=riskCell(info.cpa,info.tcpa);
-                if(cell){
-                    cellCounts[cell.row][cell.col]++;
-                    cellShips[cell.row][cell.col].push({name:target.name,cpa:info.cpa,tcpa:info.tcpa,level:lvl});
-                }else if(Number.isFinite(info.tcpa)&&info.tcpa<0)passed++;
-                else unprojected++;
-                if(winner===null||lvl>worst||(lvl===worst&&info.cpa<winner.cpa)){
-                    winner={...info,level:lvl,name:target.name};worst=lvl;
-                }
-            }
-            const has=levels.length>0;if(has)valid++;
-            instants.push({t:f.time,os,level:worst,winner,valid:has,shipCount:levels.length,
-                source:source.source,levels,levelShipCounts,cellCounts,cellShips,passed,unprojected});
-        }
-        if(!valid)return {valid:false,instants,mean:null,counts:[],episodes:[],events:[],source:'none',warning:scene.warning||tr('No valid target states. Load the matching scenario first.','유효한 타선 정보가 없습니다. 해당 시나리오를 먼저 읽어오세요.')};
-        let total=0,weighted=0,highSeconds=0,highSamples=0,weightedHigh=0,maxHigh=0;
-        const levelShipSamples=Array(5).fill(0);
-        const counts=Array.from({length:5},(_,lv)=>({level:lv,seconds:0,samples:0,episodes:0}));
-        const medianDt=instants.length>1?Math.max(0.1,Math.min(3,instants[1].t-instants[0].t)):1;
-        instants.forEach((r,i)=>{
-            if(!r.valid)return;
-            const dt=clamp((instants[i+1]?.t ?? (r.t+medianDt))-r.t,0.01,5);
-            counts[r.level].seconds+=dt;counts[r.level].samples++;total+=dt;weighted+=dt*r.level;
-            const high=(r.levelShipCounts[3]||0)+(r.levelShipCounts[4]||0);
-            weightedHigh+=high*dt;maxHigh=Math.max(maxHigh,high);
-            if(high){highSeconds+=dt;highSamples++;}
-            for(let k=0;k<5;k++)levelShipSamples[k]+=r.levelShipCounts[k]||0;
-        });
-        const episodes=[],events=[];
-        let current=null;
-        for(let i=0;i<instants.length;i++){
-            const item=instants[i];
-            if(!item.valid){if(current){episodes.push(current);current=null;}continue;}
-            const discontinuity=current&&(item.t-current.lastT)>6;
-            if(!current||current.level!==item.level||discontinuity){
-                if(current){
-                    episodes.push(current);
-                    if(!discontinuity)events.push({index:i,from:current.level,to:item.level,t:item.t,ship:item.winner?.name || ''});
-                }
-                current={level:item.level,start:item.t,end:item.t,lastT:item.t,startIndex:i,endIndex:i,ship:item.winner?.name||''};
-                counts[item.level].episodes++;
-            } else {current.lastT=item.t;current.end=item.t;current.endIndex=i;}
-        }
-        if(current)episodes.push(current);
-        return {valid:true,instants,counts,episodes,events,mean:weighted/Math.max(total,1),seconds:total,highSeconds,highSamples,highMean:weightedHigh/Math.max(total,1),maxHigh,levelShipSamples,source:observed>0?(scenarioRows>0?'mixed':'recorded'):'scenario',warning:scene.warning||''};
-    }
-    function makeSegments(samples){
-        if(samples.length<2)return {segments:[],turns:[],steadySeconds:0};
-        const candidate=samples.map(s => Number.isFinite(s.rudAct)&&Number.isFinite(s.rot)&&Math.sqrt(((s.rudAct/35)**2+(s.rot/70)**2)/2)<SETTINGS.straightThreshold);
-        // Require a *continuous* ten-second low-energy interval to be a straight segment.
-        const stable=Array(samples.length).fill(false);
-        for(let start=0;start<samples.length;){
-            let end=start+1;
-            while(end<samples.length&&candidate[end]===candidate[start]&&samples[end].t-samples[end-1].t<=5)end++;
-            if(candidate[start]&&samples[end-1].t-samples[start].t>=SETTINGS.minStraightSeconds){
-                for(let j=start;j<end;j++)stable[j]=true;
-            }
-            start=end;
-        }
-        const segments=[];
-        for(let a=0;a<samples.length;){
-            let b=a+1;
-            while(b<samples.length&&stable[b]===stable[a]&&samples[b].t-samples[b-1].t<=5)b++;
-            segments.push({type:stable[a]?'steady':'turn',a,b:b-1,start:samples[a].t,end:samples[b-1].t});
-            a=b;
-        }
-        let turnNo=0;const turns=[];
-        for(let s of segments){
-            if(s.type==='turn'){
-                const item={...s,number:++turnNo};
-                turns.push(item);Object.assign(s,{number:item.number});
-            }
-        }
-        const steadySeconds=segments.filter(s=>s.type==='steady').reduce((tot,s)=>tot+s.end-s.start,0);
-        return {segments,turns,steadySeconds};
-    }
-    function ellipseMetrics(rows){
-        if(rows.length<8)return null;
-        const pairs=rows.filter(s=>Number.isFinite(s.rudAct)&&Number.isFinite(s.rot)).map(s=>[clamp(s.rudAct/35,-1,1),clamp(s.rot/70,-1,1)]);
-        if(pairs.length<8)return null;
-        const mx=pairs.reduce((a,p)=>a+p[0],0)/pairs.length,my=pairs.reduce((a,p)=>a+p[1],0)/pairs.length;
-        let xx=0,xy=0,yy=0;
-        for(const [x,y] of pairs){xx+=(x-mx)**2;xy+=(x-mx)*(y-my);yy+=(y-my)**2;}
-        xx/=pairs.length;xy/=pairs.length;yy/=pairs.length;
-        const theta=0.5*Math.atan2(2*xy,xx-yy),ct=Math.cos(theta),st=Math.sin(theta);
-        const d=Math.sqrt((xx-yy)**2+4*xy*xy);const major=Math.sqrt(Math.max(0.0000001,xx+yy+d)),minor=Math.sqrt(Math.max(0.0000001,xx+yy-d));
-        const radii=[],angles=new Set();
-        for(const [x,y] of pairs){
-            const u=(x-mx)*ct+(y-my)*st,v=-(x-mx)*st+(y-my)*ct;
-            const radius=Math.hypot(u/major,v/minor);radii.push(radius);
-            const ang=Math.atan2(v/minor,u/major);angles.add(Math.floor((ang+Math.PI)/(2*Math.PI)*12)%12);
-        }
-        const radialError=Math.sqrt(radii.reduce((a,v)=>a+Math.min(2,Math.abs(v-1))**2,0)/radii.length);
-        const elongation=major/minor;
-        const coverage=angles.size/12;
-        const regularity=clamp(1-radialError/0.65,0,1);
-        const degenerate=clamp((elongation-4)/12,0,0.85);
-        const shape=100*clamp((regularity*0.60+coverage*0.40)*(1-degenerate),0,1);
-        return {mx,my,theta,major,minor,radialError,elongation,coverage,score:shape};
-    }
-    function turnDetail(samples,turn){
-        const rows=samples.slice(turn.a,turn.b+1);
-        const d=rows.length?rows[rows.length-1].hdgUnwrapped-rows[0].hdgUnwrapped:0;
-        const duration=turn.end-turn.start;
-        const bands=SETTINGS.turnAngleBands;
-        const band=Math.abs(d)<bands[0]?`<${bands[0]}°`:Math.abs(d)<bands[1]?`${bands[0]}–${bands[1]}°`:Math.abs(d)<bands[2]?`${bands[1]}–${bands[2]}°`:`≥${bands[2]}°`;
-        let orderRuns=[];
-        rows.forEach((r,i)=>{
-            const val=Number.isFinite(r.rudCmd)?r.rudCmd:null;
-            const last=orderRuns[orderRuns.length-1];
-            if(last&&last.val===val){last.end=r.t;last.count++;}
-            else orderRuns.push({val,start:r.t,end:r.t,count:1});
-        });
-        const dts=rows.length>1?Math.max(.1,rows[1].t-rows[0].t):1;
-        const stableRuns=orderRuns.filter(run=>run.val!==null&&(run.end-run.start+dts)>=SETTINGS.stableOrderSeconds);
-        const held=orderRuns.reduce((sum,run)=>(run.end-run.start+dts>=SETTINGS.stableOrderSeconds?sum+run.end-run.start+dts:sum),0);
-        const hold=clamp(held/Math.max(duration,dts),0,1);
-        const meaningful=orderRuns.filter(run=>run.val!==null&&(run.end-run.start+dts)>=2);
-        const effectiveChanges=Math.max(0,meaningful.length-1);
-        const rapidChanges=orderRuns.slice(1).filter(run=>run.end-run.start+dts<SETTINGS.stableOrderSeconds).length;
-        const simplicity=clamp(1/(1+0.20*Math.max(0,effectiveChanges-2)+0.24*rapidChanges),0,1);
-        const nonzero=stableRuns.filter(run=>Math.abs(run.val)>=2);
-        const initDir=Math.sign(nonzero[0]?.val||0);
-        const midship=stableRuns.some(run=>Math.abs(run.val)<=0.5);
-        const hasCounter=!!(initDir&&nonzero.some(run=>Math.sign(run.val)===-initDir&&run.start>nonzero[0].start));
-        // Neutral or counter-steer can settle ROT; they are optional for small turns.
-        const settle=midship?1:rows.some(s=>Math.abs(s.rudCmd||0)<0.5)?0.55:0.25;
-        const counter=hasCounter?1:Math.abs(d)<15?0.85:0.3;
-        const w=SETTINGS.commandWeights;
-        const command=100*(w.hold*hold+w.simplicity*simplicity+w.settle*settle+w.counter*counter);
-        const shape=ellipseMetrics(rows);
-        const enough=duration>=SETTINGS.minAssessableTurnSeconds&&rows.some(s=>Number.isFinite(s.rudCmd))&&rows.some(s=>Number.isFinite(s.rot));
-        const score=enough&&shape?clamp(SETTINGS.steeringWeights.command*command+SETTINGS.steeringWeights.shape*shape.score,0,100):null;
-        const sequence=orderRuns.filter(run=>run.val!==null).map(run=>`${side(run.val)} ${Math.abs(run.val).toFixed(0)}° (${fmt(run.end-run.start+dts,0)}s)`);
-        return {...turn,angle:d,angleBand:band,duration,rows,shape,score,command,sequence,hold,simplicity,settle,counter,hasCounter,midship,orderRuns,effectiveChanges,rapidChanges};
-    }
-    function analyzeSteering(r){
-        const osRecords=r.frames.map(f=>{const s=osShip(f);return s?{t:f.time,hdg:Number(s.hdg),rudCmd:n(s.rudCmd),rudAct:n(s.rudAct),rot:n(s.rot),x:s.x,z:s.z}:null;}).filter(Boolean);
-        if(!osRecords.length)return {valid:false,samples:[],turns:[],mean:null};
-        let cum=osRecords[0].hdg;
-        osRecords.forEach((s,i)=>{if(i)cum+=degDiff(osRecords[i-1].hdg,s.hdg);s.hdgUnwrapped=cum;});
-        const hasRudder=osRecords.some(r=>r.rudAct!==null),hasRot=osRecords.some(r=>r.rot!==null);
-        if(!hasRudder||!hasRot)return {valid:false,samples:osRecords,turns:[],mean:null};
-        const samples=osRecords.map(s=>({...s,rudAct:s.rudAct??s.rudCmd,energy:Math.hypot((s.rudAct??s.rudCmd??0)/35,(s.rot??0)/70)/Math.SQRT2}));
-        const groups=makeSegments(samples);
-        const turns=groups.turns.map(t=>turnDetail(samples,t));
-        const scored=turns.filter(t=>t.score!==null);
-        const mean=scored.length?scored.reduce((a,t)=>a+t.score,0)/scored.length:null;
-        return {valid:true,samples,segments:groups.segments,turns,mean,steadySeconds:groups.steadySeconds,assessed:scored.length};
-    }
-    function getAnalysis(r){
-        const cache=renderedCache.get(r);
-        if(cache?.version===sceneVersion)return cache.data;
-        const scene=sceneStatus(r);
-        const data={scene,steering:analyzeSteering(r),risk:analyzeRisk(r,scene),meta:parseIdentity(r.name)};
-        renderedCache.set(r,{version:sceneVersion,data});return data;
-    }
-    function resized(canvas){
-        if(!canvas)return null;
-        const rect=canvas.getBoundingClientRect();if(rect.width<3||rect.height<3)return null;
-        const dpr=Math.min(2,window.devicePixelRatio||1);
-        const cw=Math.max(1,Math.round(rect.width*dpr)),ch=Math.max(1,Math.round(rect.height*dpr));
-        if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;}
-        const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
-        ctx.clearRect(0,0,rect.width,rect.height);
-        return {ctx,w:rect.width,h:rect.height};
-    }
-    function plotBase(p,margin={l:41,r:13,t:12,b:27}){
-        const {ctx,w,h}=p;const L=margin.l,R=w-margin.r,T=margin.t,B=h-margin.b;
-        ctx.save();ctx.strokeStyle='#29394c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(R,B);ctx.stroke();ctx.restore();return {L,R,T,B,W:R-L,H:B-T};
-    }
-    function textAt(ctx,txt,x,y,color='#94a3b8',align='left',size=10){ctx.fillStyle=color;ctx.font=`${size}px Arial,sans-serif`;ctx.textAlign=align;ctx.fillText(txt,x,y);}
-    function lineSeries(ctx,arr,X,Y,color,lineWidth=1.7,dash=[],filter=()=>true){
-        ctx.save();ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.setLineDash(dash);ctx.beginPath();let started=false;
-        arr.forEach((v,i)=>{if(!filter(v,i))return;const x=X(v,i),y=Y(v,i);if(!Number.isFinite(x)||!Number.isFinite(y)){started=false;return;}if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);});ctx.stroke();ctx.restore();
-    }
-    function drawTrack(canvas,r,mini=false){
-        const p=resized(canvas);if(!p)return;
-        const {ctx,w,h}=p,data=getAnalysis(r),risk=data.risk;
-        const points=data.steering.samples.length?data.steering.samples:r.frames.map(f=>osShip(f)).filter(Boolean).map(s=>({x:s.x,z:s.z,t:0}));
-        if(!points.length){textAt(ctx,tr('No own-ship trajectory','본선 항적 없음'),w/2,h/2,'#94a3b8','center');return;}
-        const minX=Math.min(...points.map(s=>s.x)),maxX=Math.max(...points.map(s=>s.x));
-        const minY=Math.min(...points.map(s=>s.z)),maxY=Math.max(...points.map(s=>s.z));
-        const pad=mini?12:26;
-        const bbW=Math.max(240,maxX-minX),bbH=Math.max(240,maxY-minY);
-        const state=(mini?upperPan:riskTrackPan).get(r)||{zoom:1,dx:0,dy:0};
-        const scale=Math.min((w-2*pad)/bbW,(h-2*pad)/bbH)*state.zoom;
-        const X=(s)=>w/2+(s.x-(minX+maxX)/2)*scale+state.dx;
-        const Y=(s)=>h/2+(s.z-(minY+maxY)/2)*scale+state.dy;
-        ctx.strokeStyle='#203249';ctx.lineWidth=1;ctx.setLineDash([3,7]);for(let x=30;x<w;x+=55){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}for(let y=20;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}ctx.setLineDash([]);
-        if(!mini&&data.scene.ok&&massList[0]?.osData.waypoints.length){
-            ctx.strokeStyle='#22d3ee';ctx.globalAlpha=.65;ctx.setLineDash([5,4]);ctx.lineWidth=1.3;ctx.beginPath();
-            ctx.moveTo(X({x:0}),Y({z:0}));massList[0].osData.waypoints.forEach(a=>ctx.lineTo(X(a),Y(a)));ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
-        }
-        ctx.lineCap='round';
-        // Color each own-ship leg by the time-indexed, worst target risk.
-        for(let i=1;i<points.length;i++){
-            const a=points[i-1],b=points[i];
-            const severity=risk.valid?(risk.instants[Math.min(i,risk.instants.length-1)]?.level||0):0;
-            ctx.strokeStyle=risk.valid?SETTINGS.riskColors[severity]:'#94a3b8';ctx.globalAlpha=.92;
-            ctx.lineWidth=mini?Math.max(1.2,Math.min(2.3,w/210)):2.7;
-            ctx.beginPath();ctx.moveTo(X(a),Y(a));ctx.lineTo(X(b),Y(b));ctx.stroke();
-        }ctx.globalAlpha=1;
-        if(!mini){
-            risk.events?.forEach(e=>{
-                const os=points[Math.min(e.index,points.length-1)];if(!os)return;
-                ctx.fillStyle=SETTINGS.riskColors[e.to];ctx.strokeStyle='#f8fafc';ctx.lineWidth=.75;ctx.beginPath();ctx.arc(X(os),Y(os),3,0,2*Math.PI);ctx.fill();ctx.stroke();
-            });
-            if(risk.valid){
-                const cur=risk.instants[Math.min(selectedRiskIndex,risk.instants.length-1)];if(cur){ctx.strokeStyle='#fef08a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(cur.os),Y(cur.os),6,0,2*Math.PI);ctx.stroke();}
-            }
-        }
-        ctx.fillStyle='#67e8f9';ctx.beginPath();ctx.arc(X(points[0]),Y(points[0]),Math.min(4,w/70),0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#f1f5f9';ctx.beginPath();ctx.arc(X(points[points.length-1]),Y(points[points.length-1]),Math.min(4,w/70),0,Math.PI*2);ctx.fill();
-        if(!mini){canvas._analysisPoints=points.map((a,i)=>({x:X(a),y:Y(a),index:i}));}
-        if(!mini){textAt(ctx,tr('START','시작'),X(points[0])+6,Y(points[0])-5,'#93c5fd');textAt(ctx,tr('END','종료'),X(points[points.length-1])+6,Y(points[points.length-1])-5,'#e2e8f0');}
-    }
-    function drawTrend(){
-        const p=resized($('analysis-trend-canvas'));if(!p)return;const {ctx,w,h}=p;
-        const box=plotBase(p,{l:27,r:11,t:15,b:29});
-        if(!activeList.length){textAt(ctx,tr('No results','결과 없음'),w/2,h/2,'#64748b','center',12);return;}
-        const chronological=[...activeList].sort((a,b)=>a.meta.sort.localeCompare(b.meta.sort)||a.index-b.index);
-        const x=i=>box.L+(chronological.length===1?box.W/2:i*box.W/(chronological.length-1));
-        const y=v=>box.B-clamp(v,0,100)/100*box.H;
-        for(let v=0;v<=100;v+=25){ctx.strokeStyle='#273347';ctx.beginPath();ctx.moveTo(box.L,y(v));ctx.lineTo(box.R,y(v));ctx.stroke();if(v%50===0)textAt(ctx,String(v),box.L-3,y(v)+3,'#7890a4','right',9);}
-        const st=chronological.map(a=>getAnalysis(a.r).steering.mean),ri=chronological.map(a=>avoidanceScore(getAnalysis(a.r).risk.mean));
-        for(const [vals,color] of [[st,'#22d3ee'],[ri,'#f59e0b']]){
-            lineSeries(ctx,vals,(v,i)=>x(i),(v)=>v===null?null:y(v),color,1.7);
-            vals.forEach((v,i)=>{if(v===null)return;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(i),y(v),3.3,0,Math.PI*2);ctx.fill();});
-        }
-        textAt(ctx,tr('Steer','조종'),box.L+2,10,'#22d3ee');textAt(ctx,tr('Avoidance','충돌회피'),box.L+70,10,'#f59e0b');
-        chronological.forEach((a,i)=>textAt(ctx,String(i+1),x(i),h-9,'#cbd5e1','center'));
-    }
-    function drawHeading(){
-        const r=replayList[selectedReplay],p=resized($('analysis-heading-canvas'));if(!p||!r)return;
-        const {ctx,h}=p,st=getAnalysis(r).steering,samples=st.samples;if(!samples.length)return;
-        const box=plotBase(p);const start=samples[0].t,end=samples[samples.length-1].t;
-        const ymin=Math.min(...samples.map(s=>s.hdgUnwrapped)),ymax=Math.max(...samples.map(s=>s.hdgUnwrapped));
-        const lo=ymin-Math.max(5,(ymax-ymin)*.09),hi=ymax+Math.max(5,(ymax-ymin)*.09);
-        const X=t=>box.L+(t-start)/Math.max(1,end-start)*box.W;
-        const Y=deg=>box.B-(deg-lo)/Math.max(1,hi-lo)*box.H;
-        st.segments.forEach(seg=>{ctx.fillStyle=seg.type==='steady'?'#07544a4a':(seg.number%2?'#2563eb29':'#9d4edd24');ctx.fillRect(X(seg.start),box.T,Math.max(1,X(seg.end)-X(seg.start)),box.H);});
-        for(let j=0;j<=4;j++){const v=lo+(hi-lo)*j/4;ctx.strokeStyle='#263449';ctx.beginPath();ctx.moveTo(box.L,Y(v));ctx.lineTo(box.R,Y(v));ctx.stroke();textAt(ctx,`${v.toFixed(0)}°`,box.L-4,Y(v)+3,'#94a3b8','right',9);}
-        lineSeries(ctx,samples,s=>X(s.t),s=>Y(s.hdgUnwrapped),'#e2e8f0',1.6);
-        st.turns.forEach(turn=>{
-            const middle=X((turn.start+turn.end)/2);textAt(ctx,String(turn.number),middle,box.T+11,'#fef08a','center',10);
-        });
-        textAt(ctx,tstr(start),box.L,h-8,'#a5b4c3');textAt(ctx,tstr(end),box.R,h-8,'#a5b4c3','right');
-        $('analysis-heading-canvas')._scale={left:box.L,right:box.R,start,end};
-    }
-    function drawCommands(turn){
-        const p=resized($('analysis-command-canvas'));if(!p||!turn)return;
-        const {ctx,h}=p,box=plotBase(p),samples=turn.rows;
-        const start=turn.start,end=turn.end;
-        const X=t=>box.L+(t-start)/Math.max(1,end-start)*box.W;
-        const Y=val=>box.B-(val+35)/70*box.H;
-        for(let v=-35;v<=35;v+=17.5){ctx.strokeStyle='#263449';ctx.beginPath();ctx.moveTo(box.L,Y(v));ctx.lineTo(box.R,Y(v));ctx.stroke();textAt(ctx,String(v),box.L-4,Y(v)+3,'#94a3b8','right',9);}
-        ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.9;ctx.beginPath();samples.forEach((s,i)=>{const x=X(s.t),y=Y(s.rudCmd??0);if(!i)ctx.moveTo(x,y);else{ctx.lineTo(x,Y(samples[i-1].rudCmd??0));ctx.lineTo(x,y);}});ctx.stroke();
-        lineSeries(ctx,samples,s=>X(s.t),s=>Y(s.rudAct??0),'#fde68a',1.5);
-        textAt(ctx,'CMD',box.L+5,box.T+10,'#38bdf8');textAt(ctx,'ACT',box.L+52,box.T+10,'#fde68a');
-        textAt(ctx,tstr(start),box.L,h-8);textAt(ctx,tstr(end),box.R,h-8,'#94a3b8','right');
-    }
-    function drawEllipse(canvas,turn,normalized){
-        const p=resized(canvas);if(!p||!turn)return;const {ctx}=p;
-        const box=plotBase(p,{l:37,r:12,t:11,b:23});
-        const xlim=normalized?1.03:35,ylim=normalized?1.03:70;
-        const X=x=>box.L+(x+xlim)/(2*xlim)*box.W;
-        const Y=y=>box.B-(y+ylim)/(2*ylim)*box.H;
-        ctx.strokeStyle='#36475f';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(0),box.T);ctx.lineTo(X(0),box.B);ctx.moveTo(box.L,Y(0));ctx.lineTo(box.R,Y(0));ctx.stroke();
-        for(const x of [-xlim,0,xlim])textAt(ctx,normalized?x.toFixed(1):x.toFixed(0),X(x),box.B+13,'#8ba4bb','center',9);
-        for(const y of [-ylim,0,ylim])textAt(ctx,normalized?y.toFixed(1):y.toFixed(0),box.L-4,Y(y)+3,'#8ba4bb','right',9);
-        const px=r=>normalized?clamp((r.rudAct??0)/35,-1,1):r.rudAct??0;
-        const py=r=>normalized?clamp((r.rot??0)/70,-1,1):r.rot??0;
-        lineSeries(ctx,turn.rows,r=>X(px(r)),r=>Y(py(r)),'#22d3ee',1.5);
-        // Mark start and end of the observed rudder/ROT trajectory.
-        for(const [p0,color] of [[turn.rows[0],'#10b981'],[turn.rows[turn.rows.length-1],'#f59e0b']]){
-            ctx.fillStyle=color;ctx.beginPath();ctx.arc(X(px(p0)),Y(py(p0)),3.2,0,Math.PI*2);ctx.fill();
-        }
-        const e=turn.shape;
-        if(e){
-            ctx.save();ctx.strokeStyle='#facc15';ctx.setLineDash([5,4]);ctx.lineWidth=1.8;ctx.beginPath();
-            for(let i=0;i<=90;i++){
-                const a=2*Math.PI*i/90;
-                const u=e.major*Math.cos(a),v=e.minor*Math.sin(a);
-                const ex=(e.mx+u*Math.cos(e.theta)-v*Math.sin(e.theta))*(normalized?1:35);
-                const ey=(e.my+u*Math.sin(e.theta)+v*Math.cos(e.theta))*(normalized?1:70);
-                if(i===0)ctx.moveTo(X(ex),Y(ey));else ctx.lineTo(X(ex),Y(ey));
-            }ctx.stroke();ctx.restore();
-        }
-    }
-    function renderSteering(){
-        if(selectedReplay===null)return;
-        const st=getAnalysis(replayList[selectedReplay]).steering;
-        if(!st.valid){$('analysis-steering-notice').textContent=tr('No Rudder/ROT measurement: steering score unavailable.','Rudder/ROT 기록이 없어 조종 점수를 산출할 수 없습니다.');return;}
-        $('analysis-steering-notice').textContent=tr(`Steady = RMS(actual Rudder/35, ROT/70) < 0.1 continuously for at least 10s. Other intervals are turns. ${st.turns.length} turning intervals found.`,`정침 = RMS(실제 Rudder/35, ROT/70) < 0.1 상태가 10초 이상 연속 유지. 나머지는 변침 구간입니다. 변침 ${st.turns.length}회 탐지.`);
-        $('analysis-turn-chips').innerHTML=st.turns.map((t,i)=>`<button type="button" class="analysis-chip ${i===selectedTurn?'active':''}" data-turn="${i}">#${t.number} · ${fmt(t.angle,0)}° · ${t.score===null?'N/A':fmt(t.score,0)}</button>`).join('');
-        $('analysis-turn-chips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setTurn(Number(b.dataset.turn))));
-        selectedTurn=clamp(selectedTurn,0,Math.max(0,st.turns.length-1));
-        const turn=st.turns[selectedTurn];
-        if(turn){
-            $('analysis-turn-kv').innerHTML=`<span><strong>#${turn.number}</strong> ${tr('Turn','변침')}</span><span>${tstr(turn.start)}–${tstr(turn.end)}</span><span><strong>ΔHDG ${fmt(turn.angle,1)}°</strong></span><span>${esc(turn.angleBand)}</span><span>${tr('Duration','지속시간')} ${fmt(turn.duration,0)}s</span><span>${tr('Order changes','타각 변경')} ${turn.effectiveChanges}</span><span>${tr('Rapid changes','빈번한 변경')} ${turn.rapidChanges}</span><span>${tr('Order clarity','명령 명확성')} <strong>${fmt(turn.command,1)}</strong></span><span>${tr('Ellipse shape','타원 형태')} <strong>${fmt(turn.shape?.score,1)}</strong></span><span>${tr('Turn score','변침 점수')} <strong>${fmt(turn.score,1)}/100</strong></span>`;
-            const seq=turn.sequence.length?turn.sequence.join(' → '):tr('No rudder orders','조타 명령 없음');
-            $('analysis-rudder-sequence').textContent=tr('Order sequence: ','러더 오더 순서: ')+seq;
-            $('analysis-ellipse-note').textContent=turn.shape?
-                tr(`Dashed ellipse = covariance reference, not a universal ideal. Shape ${fmt(turn.shape.score,1)}/100; radial deviation ${fmt(turn.shape.radialError,2)}; angular coverage ${fmt(turn.shape.coverage*100,0)}%; axis ratio ${fmt(turn.shape.elongation,1)}. Combined score = 55% command clarity + 45% shape; reference values are provisional.`,`점선은 관측 궤적의 공분산 타원으로 절대적인 이상 선회형은 아닙니다. 형태 ${fmt(turn.shape.score,1)}/100 · 타원 반경 오차 ${fmt(turn.shape.radialError,2)} · 각방향 점유 ${fmt(turn.shape.coverage*100,0)}% · 축비 ${fmt(turn.shape.elongation,1)}. 선회 점수는 명령 명확성 55% + 형태 45%의 교육용 임시 기준입니다.`):tr('Not enough samples for ellipse fitting.','타원 평가에 필요한 데이터가 부족합니다.');
-        }else{
-            $('analysis-turn-kv').textContent=tr('No turning interval detected','변침 구간이 없습니다.');
-            $('analysis-rudder-sequence').textContent='—';$('analysis-ellipse-note').textContent='—';
-        }
-        requestAnimationFrame(()=>{if(!canShow('steering'))return;drawHeading();if(turn){drawCommands(turn);drawEllipse($('analysis-rot-raw-canvas'),turn,false);drawEllipse($('analysis-rot-norm-canvas'),turn,true);}});
-    }
-    function setTurn(i){selectedTurn=i;renderSteering();}
-    function riskMatrixHTML(instant){
-        const cols=['<3','3–10','10–20','≥20'],rows=['<0.3','0.3–0.5','0.5–1','≥1'];
-        const maxCount=Math.max(1,...instant.cellCounts.flat());
-        const header=`<tr><th>DCPA (NM) ↓<br>TCPA (min) →</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
-        const body=rows.map((r,i)=>`<tr><th>${r}</th>${SETTINGS.riskMatrix[i].map((level,j)=>{
-            const count=instant.cellCounts[i][j],key=`${i},${j}`,color=SETTINGS.riskColors[level];
-            return `<td class="${count?'is-populated':'is-empty'}${focusedRiskCell===key?' active':''}" style="--severity:${color}"><button type="button" data-cell="${key}" title="${tr(`${count} ship(s) · severity ${level} · click for names`,`${count}척 · 위험도 ${level} · 클릭하여 선박 확인`)}"><span class="analysis-cell-level">L${level}</span><b class="analysis-cell-qty">${count}</b><span class="analysis-cell-units">${tr('ships','척')}</span><span class="analysis-cell-fill" style="width:${count/maxCount*100}%"></span></button></td>`;
-        }).join('')}</tr>`).join('');
-        const included=instant.cellCounts.flat().reduce((a,v)=>a+v,0);
-        return `<table class="analysis-matrix occupancy">${header}${body}</table>
-            <div class="analysis-matrix-foot">${tr(`At ${tstr(instant.t)} · cells contain ${included} ships · past TCPA ${instant.passed} · indeterminate ${instant.unprojected}. Color = risk level, number/bar = simultaneous ship count. Click a cell for details.`,`시각 ${tstr(instant.t)} · 매트릭스 내 ${included}척 · TCPA 경과 ${instant.passed}척 · 계산 불가 ${instant.unprojected}척. 색상은 위험도, 숫자·막대는 동시 타선 수입니다. 셀을 클릭하면 상세 정보가 표시됩니다.`)}</div>`;
-    }
-    function updateRiskMatrix(instant){
-        if(!instant)return;
-        const wrap=$('analysis-risk-matrix');wrap.innerHTML=riskMatrixHTML(instant);
-        wrap.querySelectorAll('button[data-cell]').forEach(el=>el.addEventListener('click',()=>{
-            focusedRiskCell=(focusedRiskCell===el.dataset.cell)?null:el.dataset.cell;
-            updateRiskMatrix(instant);
-        }));
-        const detail=$('analysis-risk-cell-detail');
-        if(!focusedRiskCell){detail.hidden=true;detail.textContent='';return;}
-        const [row,col]=focusedRiskCell.split(',').map(Number);
-        const ships=instant.cellShips[row][col],level=SETTINGS.riskMatrix[row][col];
-        detail.hidden=false;
-        detail.innerHTML=`<strong>${tr('Selected cell','선택한 구역')} · L${level} · ${ships.length}${tr(' ships','척')}</strong>`+
-            (ships.length?ships.map(o=>`<div>${esc(o.name)} · DCPA ${fmt(o.cpa,2)} NM · TCPA ${fmt(o.tcpa,1)} min</div>`).join(''):
-            `<div>${tr('No target ships in this cell at the selected instant.','해당 시점에 이 구역에 해당하는 타선이 없습니다.')}</div>`);
-    }
-    function drawRiskHistory(){
-        const r=replayList[selectedReplay],p=resized($('analysis-risk-time-canvas'));if(!p||!r)return;
-        const {ctx,w,h}=p,data=getAnalysis(r).risk;if(!data.valid)return;
-        const items=data.instants;const first=items[0]?.t||0,last=items[items.length-1]?.t||0;
-        const box=plotBase(p,{l:29,r:11,t:10,b:21});
-        const state=riskTimePan.get(r)||{zoom:1,dx:0};
-        // Zoom the time domain horizontally, retaining the y-axis and risk-level bins.
-        const duration=Math.max(1,last-first),centre=(box.L+box.R)/2,zoom=clamp(state.zoom,1,64);
-        const X=t=>centre+(((t-first)/duration)*box.W-box.W/2)*zoom+state.dx;
-        const toT=x=>first+((x-centre-state.dx)/zoom+box.W/2)/box.W*duration;
-        for(let lv=0;lv<=4;lv++)textAt(ctx,String(lv),box.L-7,box.B-lv*box.H/4+3,'#94a3b8','right',9);
-        ctx.save();ctx.beginPath();ctx.rect(box.L,box.T,box.W,box.H);ctx.clip();
-        for(let i=0;i<items.length;i++){
-            const e=items[i],next=items[i+1]||e;
-            if(!e.valid)continue;
-            const x=X(e.t),x2=X(next.t);
-            if(x>box.R||x2<box.L)continue;
-            const width=Math.max(.7,x2-x+.2),yt=box.B-(e.level+1)*box.H/5;
-            ctx.fillStyle=SETTINGS.riskColors[e.level];ctx.fillRect(x,yt,width,box.B-yt);
-        }
-        const sel=items[Math.min(selectedRiskIndex,items.length-1)];if(sel){ctx.strokeStyle='#f8fafc';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(X(sel.t),box.T);ctx.lineTo(X(sel.t),box.B);ctx.stroke();}
-        ctx.restore();
-        textAt(ctx,tstr(clamp(toT(box.L),first,last)),box.L,h-5);
-        textAt(ctx,tstr(clamp(toT(box.R),first,last)),box.R,h-5,'#94a3b8','right');
-        $('analysis-risk-time-canvas')._scale={left:box.L,right:box.R,min:toT(box.L),max:toT(box.R)};
-    }
-    function renderRisk(){
-        if(selectedReplay===null)return;
-        const data=getAnalysis(replayList[selectedReplay]);const ri=data.risk;
-        if(!ri.valid){
-            $('analysis-risk-notice').className='analysis-msg warning';$('analysis-risk-notice').textContent=ri.warning;
-            for(const id of ['analysis-risk-kv','analysis-risk-quick-stats','analysis-risk-matrix',
-                'analysis-risk-counts','analysis-risk-moment','analysis-risk-moment-levels','analysis-risk-events'])$(id).textContent='—';
-            $('analysis-risk-cell-detail').hidden=true;return;
-        }
-        const labels=tr('measured targets from result log','결과 파일의 타선 기록');
-        const source=ri.source==='recorded'?labels:ri.source==='scenario'?tr('scenario-reconstructed targets (estimated)','시나리오 재구성 타선 (추정)'):tr('result + scenario fallback','결과 + 시나리오 보완');
-        $('analysis-risk-notice').className='analysis-msg'+(ri.warning?' warning':'');
-        $('analysis-risk-notice').textContent=tr('Target source: ','타선 자료: ')+source+(ri.warning?' · '+ri.warning:'');
-        const worse=ri.events.filter(e=>e.to>e.from).length,better=ri.events.filter(e=>e.to<e.from).length;
-        const positive=ri.episodes.filter(e=>e.level>0).length;
-        $('analysis-risk-kv').innerHTML=`<span title="${tr('Provisional score = 100 − 25 × time-weighted mean maximum severity; not a validated collision-avoidance performance grade.','잠정 환산점수 = 100 − 25 × 시간가중 평균 최대 위험도이며, 검증된 실제 충돌회피 성능 점수는 아닙니다.')}">${tr('Collision-avoidance score','충돌회피 점수')} <strong>${fmt(avoidanceScore(ri.mean),1)}/100</strong></span>
-            <span>${tr('Avg severity','평균 위험도')} <strong>${fmt(ri.mean,2)}/4</strong></span>
-            <span>${tr('Observed','관측시간')} <strong>${fmt(ri.seconds/60,1)} min</strong></span>
-            ${ri.counts.filter(c=>c.level>0).map(c=>`<span><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[c.level]}"></i>L${c.level}: <strong>${c.episodes}${tr(' episodes','구간')}</strong></span>`).join('')}`;
-        const metrics=[
-            [positive,tr('Risk episodes (L1–4)','위험 구간 (L1~4)')],
-            [worse,tr('Worsening transitions','위험도 악화 횟수')],
-            [better,tr('Improving transitions','위험도 완화 횟수')],
-            [ri.maxHigh,tr('Max simultaneous L3–4 ships','최대 동시 고위험 타선 (L3~4)')],
-            [fmt(ri.highSeconds/60,1)+tr(' min','분'),tr('Time ≥1 high-risk ship','고위험 타선 1척 이상 지속')],
-        ];
-        $('analysis-risk-quick-stats').innerHTML=metrics.map(([value,label])=>`<div class="analysis-score-tile"><strong>${value}</strong><span>${label}</span></div>`).join('');
-        $('analysis-risk-counts').innerHTML=`<table class="analysis-table"><thead><tr><th>${tr('Color','색상')}</th><th>${tr('Severity','위험도')}</th><th>${tr('Episodes','연속 구간')}</th><th>${tr('Duration','시간')}</th><th>${tr('Samples','표본')}</th><th>${tr('Ship×samples','선박·표본')}</th></tr></thead><tbody>${ri.counts.map(c=>`<tr><td><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[c.level]}"></i>${tr(SETTINGS.riskNamesEN[c.level],SETTINGS.riskNamesKO[c.level])}</td><td>${c.level}</td><td>${c.episodes}</td><td>${fmt(c.seconds/60,1)}min</td><td>${c.samples}</td><td>${ri.levelShipSamples[c.level]}</td></tr>`).join('')}</tbody></table><div class="analysis-matrix-foot">${tr('Episodes: runs of identical maximum severity; ship×samples: total target observations in this level, not unique vessels.','연속 구간: 최대 위험도가 같은 기간의 수. 선박·표본: 해당 위험도의 타선 관측 합계이며 서로 다른 선박 수가 아닙니다.')}</div>`;
-        $('analysis-risk-events').innerHTML=ri.events.length?ri.events.map(ev=>`<button class="analysis-risk-event" data-idx="${ev.index}"><span class="analysis-count-dot" style="background:${SETTINGS.riskColors[ev.to]}"></span>${tstr(ev.t)} · ${ev.from} → ${ev.to} · <strong>${ev.to>ev.from?tr('WORSENED','악화'):tr('IMPROVED','완화')}</strong> · ${esc(ev.ship)}</button>`).join(''):`<div class="analysis-msg">${tr('No changes in risk levels.','위험도 단계의 변화가 없습니다.')}</div>`;
-        $('analysis-risk-events').querySelectorAll('button[data-idx]').forEach(b=>b.addEventListener('click',()=>setRiskMoment(Number(b.dataset.idx))));
-        const slider=$('analysis-risk-time-slider');slider.max=Math.max(0,ri.instants.length-1);slider.value=clamp(selectedRiskIndex,0,Math.max(0,ri.instants.length-1));
-        updateRiskMomentText();
-        requestAnimationFrame(()=>{if(!canShow('risk'))return;drawRiskHistory();drawTrack($('analysis-risk-track-canvas'),replayList[selectedReplay]);});
-    }
-    function updateRiskMomentText(){
-        if(selectedReplay===null)return;const ri=getAnalysis(replayList[selectedReplay]).risk;
-        if(!ri.valid)return;
-        selectedRiskIndex=clamp(selectedRiskIndex,0,ri.instants.length-1);
-        const s=ri.instants[selectedRiskIndex];if(!s)return;
-        const high=(s.levelShipCounts[3]||0)+(s.levelShipCounts[4]||0);
-        $('analysis-risk-moment').textContent=tr(`At ${tstr(s.t)} · Peak risk L${s.level} (${SETTINGS.riskNamesEN[s.level]}) · worst target ${s.winner?.name||'—'} · DCPA ${fmt(s.winner?.cpa,2)} NM / TCPA ${fmt(s.winner?.tcpa,1)} min · tracked ${s.shipCount} ships · high-risk L3–4 ${high} ships`,`시각 ${tstr(s.t)} · 최대 위험도 L${s.level} (${SETTINGS.riskNamesKO[s.level]}) · 가장 위험한 타선 ${s.winner?.name||'—'} · DCPA ${fmt(s.winner?.cpa,2)} NM / TCPA ${fmt(s.winner?.tcpa,1)} min · 감시 ${s.shipCount}척 · 고위험 L3~4 ${high}척`);
-        $('analysis-risk-moment-levels').innerHTML=s.levelShipCounts.map((count,level)=>`<span class="analysis-moment-level"><i class="analysis-count-dot" style="background:${SETTINGS.riskColors[level]}"></i>L${level} <b>${count}</b>${tr(' ships','척')}</span>`).join('');
-        updateRiskMatrix(s);
-    }
-    function setRiskMoment(i){
-        selectedRiskIndex=i;$('analysis-risk-time-slider').value=i;
-        updateRiskMomentText();
-        requestAnimationFrame(()=>{if(canShow('risk')){drawRiskHistory();drawTrack($('analysis-risk-track-canvas'),replayList[selectedReplay]);}});
-    }
-    function makeTop(){
-        const holder=$('analysis-track-grid'),oldScroll=holder.scrollLeft;
-        holder.innerHTML='';
-        if(!activeList.length){holder.innerHTML=`<div class="analysis-nodata">${tr('Load result files in REPLAY VIEWER first.','먼저 REPLAY VIEWER에서 결과 파일을 불러오세요.')}</div>`;return;}
-        activeList.forEach((entry,i)=>{
-            const globalIdx=entry.index,analysis=getAnalysis(entry.r);
-            const div=document.createElement('div');div.className='analysis-track-card'+(globalIdx===selectedReplay?' selected':'');
-            div.dataset.replay=String(globalIdx);
-            const mainLabel=entry.meta.dateText||entry.r.name,steer=analysis.steering.mean,risk=avoidanceScore(analysis.risk.mean);
-            const gripLabel=tr('Drag to reorder this result','이 결과를 드래그하여 순서 변경');
-            div.innerHTML=`<div class="analysis-track-head" draggable="true" title="${gripLabel}" aria-label="${gripLabel}"><span class="analysis-drag-handle" aria-hidden="true">⠿</span><span class="analysis-track-label">#${i+1} · ${esc(mainLabel)}</span></div><canvas></canvas><span class="analysis-track-score">${tr('Steer','조종')} ${steer===null?'N/A':fmt(steer,0)} (${analysis.steering.turns.length}${tr(' turns','회')}) · ${tr('Avoidance','충돌회피')} ${risk===null?'N/A':fmt(risk,0)+'/100'} (${analysis.risk.episodes?.filter(e=>e.level>0).length||0}${tr(' episodes','구간')})</span>`;
-            holder.appendChild(div);const canvas=div.querySelector('canvas'),handle=div.querySelector('.analysis-track-head');
-            let down=null,suppressClick=false,wasDrag=false;
-            div.addEventListener('click',()=>{if(suppressClick||wasDrag){suppressClick=false;wasDrag=false;return;}selectReplay(globalIdx);});
-            handle.addEventListener('dragstart',e=>{
-                draggedTrack=globalIdx;wasDrag=true;
-                e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(globalIdx));
-                div.classList.add('dragging');
-            });
-            handle.addEventListener('dragend',()=>{draggedTrack=null;holder.querySelectorAll('.analysis-track-card').forEach(el=>el.classList.remove('dragging','drop-before','drop-after'));});
-            div.addEventListener('dragover',e=>{
-                if(draggedTrack===null||draggedTrack===globalIdx)return;
-                e.preventDefault();e.dataTransfer.dropEffect='move';
-                holder.querySelectorAll('.analysis-track-card').forEach(el=>el.classList.remove('drop-before','drop-after'));
-                const from=activeList.findIndex(a=>a.index===draggedTrack),to=activeList.findIndex(a=>a.index===globalIdx);
-                div.classList.add(from<to?'drop-after':'drop-before');
-            });
-            div.addEventListener('drop',e=>{
-                e.preventDefault();const from=draggedTrack;
-                if(from!==null&&from!==globalIdx)reorderTracks(from,globalIdx);
-                draggedTrack=null;
-            });
-            canvas.addEventListener('wheel',e=>{e.preventDefault();const st=upperPan.get(entry.r)||{zoom:1,dx:0,dy:0};st.zoom=clamp(st.zoom*(e.deltaY<0?1.14:1/1.14),.2,18);upperPan.set(entry.r,st);drawTrack(canvas,entry.r,true);},{passive:false});
-            canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
-            canvas.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>3){suppressClick=true;const st=upperPan.get(entry.r)||{zoom:1,dx:0,dy:0};st.dx+=dx;st.dy+=dy;upperPan.set(entry.r,st);down={x:e.clientX,y:e.clientY};drawTrack(canvas,entry.r,true);}});
-            canvas.addEventListener('pointerup',()=>{down=null;});canvas.addEventListener('pointercancel',()=>{down=null;});
-        });
-        requestAnimationFrame(()=>{
-            holder.scrollLeft=oldScroll;
-            holder.querySelectorAll('.analysis-track-card').forEach((el,i)=>drawTrack(el.querySelector('canvas'),activeList[i].r,true));
-        });
-    }
-    function reorderTracks(fromGlobal,toGlobal){
-        const from=activeList.findIndex(e=>e.index===fromGlobal),to=activeList.findIndex(e=>e.index===toGlobal);
-        if(from<0||to<0||from===to)return;
-        const changed=[...activeList],moved=changed.splice(from,1)[0];changed.splice(to,0,moved);
-        activeList=changed;groupOrders.set(groupKey,changed.map(e=>e.r));
-        makeTop();showSideResults();drawTrend();
-    }
-    function makeSidebar(groups){
-        const sel=$('analysis-group-select'),old=sel.value;
-        sel.innerHTML=groups.map(g=>`<option value="${esc(g.key)}">${esc(g.scenario)} / ${esc(g.sid)} / ${esc(g.person)} (${g.replays.length})</option>`).join('');
-        if(groups.length && groups.some(g=>g.key===groupKey))sel.value=groupKey;
-        else if(groups.length){groupKey=groups[0].key;sel.value=groupKey;}
-        else {groupKey='';sel.innerHTML=`<option>${tr('No results loaded','불러온 결과 없음')}</option>`;}
-        const g=groups.find(g=>g.key===groupKey);
-        activeList=g?.replays||[];
-        if(activeList.length&&!activeList.some(r=>r.index===selectedReplay))selectedReplay=activeList[0].index;
-        if(!activeList.length)selectedReplay=null;
-        $('analysis-group-header').textContent=g?`${g.scenario} · ${g.sid} ${g.person} · ${activeList.length} ${tr('runs','회')}`:tr('PRACTICE RESULTS','실습 결과 항적');
-    }
-    function showSideResults(){
-        if(selectedReplay===null){$('analysis-selected-summary').textContent=tr('No result selected.','선택한 실습 결과 없음.');$('analysis-group-table').textContent='—';return;}
-        const r=replayList[selectedReplay],a=getAnalysis(r),st=a.steering,ri=a.risk;
-        $('analysis-selected-summary').textContent=tr(`Selected: ${r.name}\nTurns: ${st.turns.length} | Steering: ${fmt(st.mean,1)}/100\nAvoidance: ${fmt(avoidanceScore(ri.mean),1)}/100 | Avg severity: ${fmt(ri.mean,2)}/4 | Target source: ${ri.source}`,`선택 결과: ${r.name}\n변침: ${st.turns.length}회 | 조종점수: ${fmt(st.mean,1)}/100\n충돌회피: ${fmt(avoidanceScore(ri.mean),1)}/100 | 평균 위험도: ${fmt(ri.mean,2)}/4 | 타선 출처: ${ri.source}`);
-        $('analysis-group-table').innerHTML=activeList.map((e,i)=>{
-            const s=getAnalysis(e.r);const selected=e.index===selectedReplay;
-            return `<div style="cursor:pointer;padding:5px;border-bottom:1px solid #2c3a50;color:${selected?'#fde047':'#cbd5e1'}" data-replay="${e.index}">${i+1}. ${esc(e.meta.dateText)} · Steer <b>${fmt(s.steering.mean,0)}</b> · ${tr('Avoid','회피')} <b>${fmt(avoidanceScore(s.risk.mean),0)}/100</b></div>`;
-        }).join('');
-        $('analysis-group-table').querySelectorAll('[data-replay]').forEach(el=>el.addEventListener('click',()=>selectReplay(Number(el.dataset.replay))));
-    }
-    function showHeaderSummaries(){
-        if(selectedReplay===null){$('analysis-steering-score').textContent='—';$('analysis-risk-score').textContent='—';$('analysis-steering-caption').textContent='—';$('analysis-risk-caption').textContent='—';return;}
-        const a=getAnalysis(replayList[selectedReplay]),st=a.steering,ri=a.risk;
-        $('analysis-steering-score').textContent=st.mean===null?'N/A':fmt(st.mean,1)+'/100';
-        $('analysis-steering-caption').textContent=tr(`${st.turns.length} turns · ${st.assessed||0} evaluated · ${fmt(st.steadySeconds/60,1)} min steady`,`${st.turns.length}회 변침 · ${st.assessed||0}회 평가 · 정침 ${fmt(st.steadySeconds/60,1)}분`);
-        $('analysis-risk-score').textContent=ri.mean===null?'N/A':fmt(avoidanceScore(ri.mean),1)+'/100';
-        $('analysis-risk-caption').textContent=ri.valid?tr(`${ri.episodes.filter(e=>e.level>0).length} risk episodes · ${ri.events.filter(e=>e.to>e.from).length} worsening / ${ri.events.filter(e=>e.to<e.from).length} easing`,`${ri.episodes.filter(e=>e.level>0).length}개 위험 구간 · 악화 ${ri.events.filter(e=>e.to>e.from).length}회 / 완화 ${ri.events.filter(e=>e.to<e.from).length}회`):tr('Target information not available','타선 자료 부족 · 평가 불가');
-    }
-    function selectReplay(globalIdx){
-        if(!replayList[globalIdx])return;
-        selectedReplay=globalIdx;selectedTurn=0;selectedRiskIndex=0;focusedRiskCell=null;
-        showHeaderSummaries();showSideResults();makeTop();drawTrend();
-        if(canShow('steering'))renderSteering();
-        if(canShow('risk'))renderRisk();
-    }
-    const canShow=(section)=>!activeSection||activeSection===section;
-    function expand(section){
-        activeSection=activeSection===section?'':section;
-        $('analysis-bottom').className=activeSection;
-        if(canShow('steering'))renderSteering();
-        if(canShow('risk'))renderRisk();
-        // The panes animate their heights: redraw their canvases after layout settles.
-        setTimeout(()=>{if(currentMode==='analysis')resize();},195);
-    }
-    function render(){
-        if(currentMode!=='analysis')return;
-        const groups=availableGroups();makeSidebar(groups);
-        showHeaderSummaries();showSideResults();makeTop();
-        requestAnimationFrame(drawTrend);
-        if(canShow('steering'))renderSteering();
-        if(canShow('risk'))renderRisk();
-    }
-    function resize(){
-        if(currentMode!=='analysis')return;
-        $('analysis-track-grid').querySelectorAll('.analysis-track-card').forEach((el,i)=>{if(activeList[i])drawTrack(el.querySelector('canvas'),activeList[i].r,true);});
-        drawTrend();
-        if(canShow('steering'))renderSteering();
-        if(canShow('risk'))renderRisk();
-    }
-    function scenarioChanged(){sceneVersion++;renderedCache=new WeakMap();if(currentMode==='analysis')render();}
-    $('analysis-group-select').addEventListener('change',e=>{groupKey=e.target.value;selectedReplay=null;selectedTurn=0;selectedRiskIndex=0;focusedRiskCell=null;render();});
-    $('analysis-steering-toggle').addEventListener('dblclick',()=>expand('steering'));
-    $('analysis-risk-toggle').addEventListener('dblclick',()=>expand('risk'));
-    $('analysis-risk-time-slider').addEventListener('input',e=>setRiskMoment(Number(e.target.value)));
-    $('analysis-heading-canvas').addEventListener('click',e=>{
-        if(selectedReplay===null)return;
-        const c=e.currentTarget,m=c._scale;if(!m)return;
-        const t=m.start+(e.offsetX-m.left)/(m.right-m.left)*(m.end-m.start);
-        const turns=getAnalysis(replayList[selectedReplay]).steering.turns;
-        const ix=turns.findIndex(s=>s.start<=t&&t<=s.end);
-        if(ix>=0)setTurn(ix);
-    });
-    function enableRiskChartPanZoom(canvasId,kind){
-        const canvas=$(canvasId),registry=kind==='track'?riskTrackPan:riskTimePan;
-        canvas.title=tr('Wheel: zoom · Drag: pan · Double-click: reset view','마우스 휠: 확대·축소 · 드래그: 패닝 · 더블클릭: 화면 초기화');
-        const redraw=()=>{
-            if(selectedReplay===null||currentMode!=='analysis'||!canShow('risk'))return;
-            if(kind==='track')drawTrack(canvas,replayList[selectedReplay],false);
-            else drawRiskHistory();
-        };
-        const limitTimePan=(st)=>{
-            if(kind!=='time')return;
-            const sc=canvas._scale;
-            if(!sc)return;
-            const plotWidth=Math.max(1,sc.right-sc.left);
-            st.dx=clamp(st.dx,-(st.zoom-1)*plotWidth/2,(st.zoom-1)*plotWidth/2);
-        };
-        canvas.addEventListener('wheel',e=>{
-            if(selectedReplay===null)return;
-            e.preventDefault();
-            const r=replayList[selectedReplay];
-            const st={...(registry.get(r)||{zoom:1,dx:0,dy:0})};
-            const zoom=clamp(st.zoom*(e.deltaY<0?1.18:1/1.18),kind==='time'?1:0.2,kind==='time'?64:25);
-            const ratio=zoom/st.zoom;
-            const rect=canvas.getBoundingClientRect();
-            const sc=canvas._scale;
-            const cx=kind==='time'&&sc?(sc.left+sc.right)/2:rect.width/2;
-            const cy=rect.height/2;
-            const px=e.clientX-rect.left,py=e.clientY-rect.top;
-            // Preserve the data point under the mouse while zooming.
-            st.dx=(px-cx)-(px-cx-st.dx)*ratio;
-            if(kind==='track')st.dy=(py-cy)-(py-cy-st.dy)*ratio;
-            st.zoom=zoom;
-            limitTimePan(st);
-            registry.set(r,st);redraw();
-        },{passive:false});
-        let drag=null;
-        canvas.addEventListener('pointerdown',e=>{
-            if(e.button!==0||selectedReplay===null)return;
-            canvas._analysisSuppressClick=false;
-            drag={id:e.pointerId,replay:replayList[selectedReplay],x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};
-            canvas.setPointerCapture(e.pointerId);
-        });
-        canvas.addEventListener('pointermove',e=>{
-            if(!drag||e.pointerId!==drag.id)return;
-            if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
-            drag.moved=true;
-            const st={...(registry.get(drag.replay)||{zoom:1,dx:0,dy:0})};
-            st.dx+=e.clientX-drag.lastX;
-            if(kind==='track')st.dy+=e.clientY-drag.lastY;
-            limitTimePan(st);
-            drag.lastX=e.clientX;drag.lastY=e.clientY;
-            registry.set(drag.replay,st);redraw();
-        });
-        const stop=e=>{
-            if(!drag||e.pointerId!==drag.id)return;
-            if(drag.moved)canvas._analysisSuppressClick=true;
-            drag=null;
-            if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
-        };
-        canvas.addEventListener('pointerup',stop);
-        canvas.addEventListener('pointercancel',stop);
-        canvas.addEventListener('dblclick',()=>{
-            if(selectedReplay===null)return;
-            registry.delete(replayList[selectedReplay]);redraw();
-        });
-    }
-    enableRiskChartPanZoom('analysis-risk-track-canvas','track');
-    enableRiskChartPanZoom('analysis-risk-time-canvas','time');
-    $('analysis-risk-time-canvas').addEventListener('click',e=>{
-        if(e.currentTarget._analysisSuppressClick){e.currentTarget._analysisSuppressClick=false;return;}
-        if(selectedReplay===null)return;const m=e.currentTarget._scale;if(!m)return;
-        const t=m.min+(e.offsetX-m.left)/(m.right-m.left)*(m.max-m.min);
-        const pts=getAnalysis(replayList[selectedReplay]).risk.instants;
-        if(!pts.length)return;
-        let lo=0,hi=pts.length-1;while(lo<hi){let mid=(lo+hi)>>1;if(pts[mid].t<t)lo=mid+1;else hi=mid;}setRiskMoment(lo);
-    });
-    $('analysis-risk-track-canvas').addEventListener('click',e=>{
-        if(e.currentTarget._analysisSuppressClick){e.currentTarget._analysisSuppressClick=false;return;}
-        if(selectedReplay===null)return;
-        const c=e.currentTarget,points=c._analysisPoints||[];
-        let best=null,d=Infinity;
-        for(const p of points){const ds=(p.x-e.offsetX)**2+(p.y-e.offsetY)**2;if(ds<d){best=p;d=ds;}}
-        if(best&&d<900)setRiskMoment(best.index);
-    });
-    return {render,resize,scenarioChanged,settings:SETTINGS};
+   }
+  }
+  persist();renderSettingsIfOpen();render();notify('백업 복원 완료');
+  if(kind!=='config'&&Array.isArray(data.sourceOS)&&data.sourceOS.length)await reanalyzeAll();
+ }catch(e){notify('복원 실패: '+e.message,true);console.warn(e);}
+}
+function renderSettingsIfOpen(){if(!$('grade-modal').hidden)renderSettings();}
+// XLSX writer: complete Office Open XML ZIP with stored (uncompressed) entries;
+// works offline, unlike CDN-dependent spreadsheet exports.
+function xml(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));}
+function excelColumn(i){let out='';for(let n=i+1;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out;}
+function worksheet(rows){
+ const nRows=rows.map((row,i)=>`<row r="${i+1}">${row.map((v,j)=>{
+  if(v===null||v===undefined||Number.isNaN(v))return '';
+  const coord=excelColumn(j)+(i+1);
+  return typeof v==='number'&&Number.isFinite(v)?`<c r="${coord}"><v>${v}</v></c>`:`<c r="${coord}" t="inlineStr"><is><t xml:space="preserve">${xml(String(v))}</t></is></c>`;
+ }).join('')}</row>`).join('');
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${nRows}</sheetData></worksheet>`;
+}
+const encode=new TextEncoder();
+const CRC_TABLE=(()=>{let t=[];for(let k=0;k<256;k++){let v=k;for(let j=0;j<8;j++)v=(v&1)?0xedb88320^(v>>>1):v>>>1;t[k]=v>>>0;}return t;})();
+function crc32(bytes){let crc=0xffffffff;for(const b of bytes)crc=CRC_TABLE[(crc^b)&255]^(crc>>>8);return (crc^0xffffffff)>>>0;}
+function zipStored(files){
+ let parts=[],central=[],offset=0;
+ const le16=(dv,n,v)=>dv.setUint16(n,v,true),le32=(dv,n,v)=>dv.setUint32(n,v>>>0,true);
+ for(const [name,text] of files){
+  const n=encode.encode(name),d=encode.encode(text),crc=crc32(d);
+  const h=new Uint8Array(30+n.length),v=new DataView(h.buffer);
+  le32(v,0,0x04034b50);le16(v,4,20);le16(v,6,0);le16(v,8,0);le32(v,14,crc);le32(v,18,d.length);le32(v,22,d.length);le16(v,26,n.length);h.set(n,30);
+  parts.push(h,d);
+  const c=new Uint8Array(46+n.length),w=new DataView(c.buffer);
+  le32(w,0,0x02014b50);le16(w,4,20);le16(w,6,20);le16(w,8,0);le16(w,10,0);le32(w,16,crc);le32(w,20,d.length);le32(w,24,d.length);le16(w,28,n.length);le32(w,42,offset);c.set(n,46);central.push(c);offset+=h.length+d.length;
+ }
+ const cd=central.reduce((sum,x)=>sum+x.length,0),end=new Uint8Array(22),v=new DataView(end.buffer);
+ le32(v,0,0x06054b50);le16(v,8,files.length);le16(v,10,files.length);le32(v,12,cd);le32(v,16,offset);
+ const output=new Uint8Array(offset+cd+end.length);let cursor=0;
+ for(const p of [...parts,...central,end]){output.set(p,cursor);cursor+=p.length;}
+ return new Blob([output],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsxBlob(sheets){
+ const types=['<?xml version="1.0" encoding="UTF-8"?>','<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+ '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>','<Default Extension="xml" ContentType="application/xml"/>',
+ '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>',
+ ...sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`),'</Types>'].join('');
+ const workbook=`<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map(([name],i)=>`<sheet name="${xml(name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`;
+ const rels=`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}</Relationships>`;
+ return zipStored([['[Content_Types].xml',types],['_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],['xl/workbook.xml',workbook],['xl/_rels/workbook.xml.rels',rels],...sheets.map(([_,rows],i)=>[`xl/worksheets/sheet${i+1}.xml`,worksheet(rows)])]);
+}
+function createGradeWorkbook(){
+ const keys=allScenarioKeys(),stud=students().sort(bySid),all=visibleStudents();
+ const rankBySid=new Map(all.map(s=>[s.sid,s.rank]));
+ const summary=[['학번','이름','반','전체 순위','중간고사 001','기말고사','종합점수',...keys.map(k=>`${k} 점수`),...keys.map(k=>`${k} 유효 시행횟수`)]];
+ for(const s of stud){
+  const c=courseForStudent(s.sid),classes=classesForStudent(s.sid).join(',');
+  summary.push([s.sid,s.name,classes,rankBySid.get(s.sid)||null,c.mid,c.final,c.total,...keys.map(k=>scenarioGrade(s.sid,k).score),...keys.map(k=>scenarioGrade(s.sid,k).real)]);
+ }
+ const byClass=[['반','학번','이름','중간 001','기말','종합','기말 시나리오','미응시']];
+ for(const c of ['A','B','C','D'])for(const s of stud.filter(s=>classesForStudent(s.sid).includes(c))){
+  const m=courseForStudent(s.sid,c);byClass.push([c,s.sid,s.name,m.mid,m.final,m.total,m.keys.join(','),m.missing.join(',')]);
+ }
+ const runs=[['학번','이름','시나리오','시행일자','원점수','평가 상태','제외 사유','훈련 인정 횟수','배율','반영 대표시행','자료 파일','본선 기록 수','분석 시간(초)','속도기준(kn)','관측 최대속도(kn)','최종WP 거리(NM)','연속공백 최대(초)','비고']];
+ const featSheet=[['학번','이름','시나리오','시행일자','특성번호','특성명','원시값','단위','특성점수(100점)','가중치','평가 선택','평가 상태']];
+ for(const r of records){
+  const g=scenarioGrade(r.sid,r.scenario),v=runScore(r);
+  runs.push([r.sid,r.student,r.scenario,r.stamp,v,runStatus(r),[...r.invalid,...(r.review||[])].join('; '),g.count,g.factor,g.representative?.id===r.id?'Y':'',r.file,r.osCount,r.duration,r.limit,r.maxSpeed,r.goalDist,r.longGap,r.warning?.join('; ')]);
+  for(const [i,f] of FEATURES.entries())featSheet.push([r.sid,r.student,r.scenario,r.stamp,i+1,f.name,r.raw?.[f.id],f.unit,featureScore(r,f.id),config.weights[f.id],cfgScenario(r.scenario).enabled.includes(f.id)?'Y':'N',runStatus(r)]);
+ }
+ const setting=[['구분','설정항목','값','추가'],...FEATURES.map(f=>['가중치',f.name,config.weights[f.id],`모드:${config.ranges[f.id].mode}, 100점:${config.ranges[f.id].good}, 0점:${config.ranges[f.id].bad}`]),
+  ...keys.map(k=>['시나리오',k,cfgScenario(k).safe,`적용특성: ${cfgScenario(k).enabled.join(',')}`]),
+  ...Object.entries(config.training).filter(([k])=>k!=='override').map(([k,v])=>['반복훈련',k,String(v),'']),
+  ...Object.entries(config.rules).map(([k,v])=>['검사규칙',k,String(v),'']),
+  ...Object.entries(config.exams).map(([k,v])=>['시험비중',k,String(v),''])];
+ return xlsxBlob([['종합성적',summary],['반별성적',byClass],['시행별점수',runs],['13개특성값',featSheet],['평가설정',setting]]);
+}
+function init(){
+ restore();
+ const bind=(id,ev,cb)=>$(id).addEventListener(ev,cb);
+ bind('grade-settings-open','click',()=>showSettings('features'));
+ bind('grade-settings-close','click',closeSettings);
+ $('grade-modal').addEventListener('click',e=>{if(e.target===$('grade-modal'))closeSettings();});
+ $('grade-modal').querySelectorAll('[data-grade-tab]').forEach(el=>el.addEventListener('click',()=>showSettings(el.dataset.gradeTab)));
+ ['grade-class-filter','grade-exam-filter','grade-sort'].forEach(id=>bind(id,'change',render));
+ bind('grade-search','input',render);
+ bind('grade-stop','click',()=>{cancel=true;notify('현재 파일 처리 후 중단 요청');});
+ bind('grade-load-scenarios','click',()=>$('grade-scenario-files').click());
+ bind('grade-scenario-files','change',async e=>{await importScenarios([...e.target.files]);e.target.value='';});
+ bind('grade-load-results','click',()=>$('grade-result-files').click());
+ bind('grade-load-folder','click',()=>$('grade-folder-files').click());
+ const readResults=async e=>{await importResults([...e.target.files]);e.target.value='';};
+ bind('grade-result-files','change',readResults);bind('grade-folder-files','change',readResults);
+ bind('grade-scenarios-drive-list','click',()=>loadDriveList(SCENARIO_SCRIPT_URL,'grade-scenario-drive-select','grade-scenario-drive-area','시나리오'));
+ bind('grade-scenarios-drive-load','click',()=>importDriveScenarios());
+ bind('grade-results-drive-list','click',()=>loadDriveList(REPLAY_SCRIPT_URL,'grade-result-drive-select','grade-result-drive-area','결과'));
+ bind('grade-results-drive-load','click',()=>importDriveResults());
+ bind('grade-results-drive-all','click',()=>importDriveResults(true));
+ bind('grade-export-xlsx','click',()=>{try{saveDownload('HTMS_학생실습_성적표.xlsx',createGradeWorkbook());}catch(e){alert('Excel 생성 오류: '+e.message);console.error(e);}});
+ bind('grade-backup-export','click',()=>saveDownload('HTMS_성적_백업.json',JSON.stringify({config,records,scenarios:[...scenarioMap]},null,2)));
+ bind('grade-backup-import','click',()=>$('grade-backup-input').click());
+ bind('grade-backup-input','change',async e=>{if(e.target.files[0])await readBackup(e.target.files[0],'data');e.target.value='';});
+ bind('grade-config-export','click',()=>saveDownload('HTMS_평가설정.json',JSON.stringify(config,null,2)));
+ bind('grade-config-import','click',()=>$('grade-config-input').click());
+ bind('grade-config-input','change',async e=>{if(e.target.files[0])await readBackup(e.target.files[0],'config');e.target.value='';});
+ renderAudit();
+}
+init();
+// Expose read-only-compatible QA hooks for local integration tests.
+window.HTMSGradeQA={FEATURES,parseIdentity,makeRoute,matchRoute,targetAt,readOwnship,analyzeRun,featureScore,runScore,
+ addScenario:registerScenario,addResult:async(filename,data)=>{const m=parseIdentity(filename);if(!m.valid)throw Error('file name');const s=scenarioMap.get(m.scenario);if(!s)throw Error('scenario not loaded');const v=await addRecord(m,data,s);persist();render();return v;},
+ state:()=>({records,scenarioMap,config}),workbook:createGradeWorkbook,runStatus,storeOS,loadOS,reanalyzeAll,
+ reset:()=>{records=[];resultsById.clear();expandedSid='';persist();render();}};
+return {render,resize,scenarioChanged};
 })();
+
 
     initSystem();
 </script>
