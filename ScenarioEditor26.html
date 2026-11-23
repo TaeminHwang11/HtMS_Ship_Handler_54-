@@ -274,6 +274,7 @@
 .grade-tabs button.active{background:#155e75;color:white;border-color:#0e7490;}
 .grade-settings-body{flex:1;min-height:0;overflow:auto;padding:14px 16px;}.grade-settings-body h4{font-size:13px;color:#c6e8f1;margin:10px 0 8px;}
 .grade-settings-table{width:100%;border-collapse:collapse;font-size:11px;}.grade-settings-table th,.grade-settings-table td{padding:7px 8px;border-bottom:1px solid #2c3d51;white-space:nowrap;text-align:left;}.grade-settings-table th{background:#192b40;position:sticky;top:0;z-index:1;}.grade-settings-table input[type='number']{width:88px;}.grade-settings-table select{width:110px;}
+.grade-roster-box{padding:8px 10px;border:1px solid #2a3f56;background:#0c1a2b;border-radius:5px;margin:8px 0;} .grade-roster-box strong{color:#d8ebf7;} .grade-roster-box small{display:block;color:#93a7bd;margin-top:4px;} .grade-roster-status{line-height:1.5;}
 .grade-settings-body input[type=checkbox]{accent-color:#0891b2;}.grade-settings-body .grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:9px;margin-bottom:12px;}.grade-settings-body .grade-field{display:flex;flex-direction:column;gap:5px;}
 .grade-settings-body .grade-field label{color:#afc3d9;}.grade-settings-body .grade-field input,.grade-settings-body .grade-field select{width:100%;}
 .grade-settings-body .grade-help{color:#93a7bd;font-size:11px;line-height:1.65;margin:10px 0;}.grade-settings-body .grade-feature-check{display:flex;align-items:center;gap:6px;}
@@ -295,7 +296,7 @@
     </div>
   </div>
   <div class="grade-filterbar">
-    <label>반 <select id="grade-class-filter"><option value="ALL">전체</option><option value="A">A반</option><option value="B">B반</option><option value="C">C반</option><option value="D">D반</option><option value="NONE">미배정</option></select></label>
+    <label>수업 <select id="grade-class-filter"><option value="ALL">전체 수업</option><option value="NONE">명단 미등록</option></select></label>
     <label>시험 <select id="grade-exam-filter"><option value="ALL">모든 시나리오</option><option value="MID">중간고사 (001)</option><option value="FINAL">기말고사</option></select></label>
     <label>검색 <input id="grade-search" placeholder="학번 / 이름" autocomplete="off"></label>
     <label>정렬 <select id="grade-sort"><option value="rank">종합점수 순</option><option value="sid">학번 순</option><option value="name">이름 순</option></select></label>
@@ -308,7 +309,7 @@
   <div id="grade-modal" class="grade-modal" hidden>
     <div class="grade-dialog" role="dialog" aria-modal="true" aria-label="평가기준·설정">
       <div class="grade-dialog-head"><strong>평가기준 및 일괄설정</strong><button id="grade-settings-close" class="grade-btn">닫기</button></div>
-      <div class="grade-tabs"><button data-grade-tab="features" class="active">평가특성·가중치</button><button data-grade-tab="scenarios">시나리오별 항목</button><button data-grade-tab="training">반복훈련·시행 선택</button><button data-grade-tab="rules">분석·시험 규칙</button><button data-grade-tab="classes">수강반 배정</button></div>
+      <div class="grade-tabs"><button data-grade-tab="features" class="active">평가특성·가중치</button><button data-grade-tab="scenarios">시나리오별 항목</button><button data-grade-tab="training">반복훈련·시행 선택</button><button data-grade-tab="rules">분석·시험 규칙</button><button data-grade-tab="classes">수강생 명단·수업</button></div>
       <div id="grade-settings-body" class="grade-settings-body"></div>
       <div class="grade-dialog-foot"><span>변경 즉시 모든 학생 성적에 재계산되어 반영됩니다.</span><button id="grade-config-export" class="grade-btn">설정 백업</button><button id="grade-config-import" class="grade-btn">설정 복원</button><input id="grade-config-input" type="file" accept=".json" hidden></div>
     </div>
@@ -508,12 +509,16 @@
 <!-- DATA ANALYSIS: independent loading and audit; editor/replay controls unchanged -->
 <div id="panel-analysis" class="panel grade-sidebar">
   <div class="grade-side-title">분석 자료 불러오기</div>
-  <div class="grade-side-label">① 시나리오 정의 JSON (타선·항로·육지)</div>
+  <div class="grade-side-label">① 수강생 목록 Excel (.xlsx · 복수 파일)</div>
+  <div class="grade-side-actions"><button id="grade-roster-import" class="grade-btn grade-primary grade-full">수강생 명단 불러오기</button></div>
+  <input hidden type="file" id="grade-roster-files" accept=".xlsx,.xlsm" multiple>
+  <div class="grade-side-status" id="grade-roster-status">명단 0개 · 학생 0명<br>파일명으로 수업을 자동 생성합니다.</div>
+  <div class="grade-side-label">② 시나리오 정의 JSON (타선·항로·육지)</div>
   <div class="grade-side-actions"><button class="grade-btn" id="grade-load-scenarios">로컬 시나리오</button><button class="grade-btn" id="grade-scenarios-drive-list">Drive 목록</button></div>
   <input hidden type="file" id="grade-scenario-files" accept=".json" multiple>
   <div class="grade-drive-area" id="grade-scenario-drive-area" hidden><select id="grade-scenario-drive-select" multiple size="4"></select><button class="grade-btn" id="grade-scenarios-drive-load">선택 시나리오 불러오기</button></div>
   <div id="grade-scenario-status" class="grade-side-status">시나리오 0개</div>
-  <div class="grade-side-label">② 학생 결과 JSON (본선 기록만 사용)</div>
+  <div class="grade-side-label">③ 학생 결과 JSON (본선 기록만 사용)</div>
   <div class="grade-side-actions"><button class="grade-btn grade-primary" id="grade-load-results">로컬 파일 선택</button><button class="grade-btn" id="grade-load-folder">폴더 선택</button></div>
   <div class="grade-side-actions"><button class="grade-btn" id="grade-results-drive-list">Drive 결과 목록</button></div>
   <input hidden type="file" id="grade-result-files" accept=".json" multiple>
@@ -3301,7 +3306,7 @@
 
 // =============================================================
 // =============================================================
-// HTMS STUDENT GRADING V5 — completely independent of replayList
+// HTMS STUDENT GRADING V7 — completely independent of replayList
 // Results: ownship-only. Targets, reference route and Land: scenario JSON.
 // No changes to editor or replay algorithms.
 // =============================================================
@@ -3334,16 +3339,152 @@ const FEATURES=[
 ];
 const FEAT=Object.fromEntries(FEATURES.map(f=>[f.id,f]));
 const createDefault=()=>({
- version:5,weights:Object.fromEntries(FEATURES.map(f=>[f.id,1])),
+ version:7,weights:Object.fromEntries(FEATURES.map(f=>[f.id,1])),
  ranges:Object.fromEntries(FEATURES.map(f=>[f.id,{mode:f.mode,good:f.good,bad:f.bad}])),
+ scenarioRanges:{}, // Per-scenario feature scoring settings. Old global ranges are the fallback.
+ 
  scenarios:Object.fromEntries(DEFAULT_SCENARIOS.map(s=>[s,{safe:s==='004'?0.1:0.3,enabled:FEATURES.filter(f=>!((f.id==='shallowSeconds'||f.id==='landSeconds')&&!['001L','004'].includes(s))).map(f=>f.id)}])),
  training:{min:0.9,max:1.1,fullAt:10,selected:'best',override:{}},
  rules:{speedMargin:10,maxGap:10,positionJumpRatio:1.5,positionJumpExtraKn:8,rudderEpsilon:0.05,tcpaSeconds:180,clearSeconds:10,goalRadiusNM:0.3,waypointToleranceNM:0.3,requireGoal:false},
  exams:{midWeight:50,finalWeight:50,requireMidAndFinal:true},
- classMaps:{},selectedRuns:{},studentNames:{}
+ classMaps:{},rosters:{},coursePolicies:{},selectedRuns:{},studentNames:{}
 });
+
+// XLSX roster reader: local browser ZIP central directory + OOXML. No network, no SheetJS dependency.
+const textDecoder=new TextDecoder('utf-8');
+function rosterCourseName(name){
+ let n=String(name||'').replace(/^.*[\\/]/,'').replace(/\.(xlsx|xlsm)$/i,'').replace(/^수강생[_\s-]*/,'').trim();
+ return n||'이름 없는 수업';
+}
+function courseDefaultMode(name){
+ if(/^항해계기학(?:[_\s-]|$)/.test(name))return 'alpha';
+ if(/선박조종시뮬레이션/.test(name))return 'number';
+ return 'all';
+}
+function courseNames(){return Object.keys(config.rosters||{}).sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));}
+function courseMode(name){return config.coursePolicies?.[name]?.mode||courseDefaultMode(name);}
+function rosterStudents(){
+ const map=new Map();
+ for(const course of courseNames())for(const student of config.rosters[course]?.students||[]){
+  const sid=String(student.sid||'').trim();if(!sid)continue;
+  if(!map.has(sid))map.set(sid,{sid,name:student.name||sid,fromRoster:true});
+ }
+ return map;
+}
+function parseZipEntries(buffer){
+ const b=new Uint8Array(buffer),v=new DataView(buffer);let eocd=-1;
+ for(let p=b.length-22;p>=Math.max(0,b.length-65557);p--)if(v.getUint32(p,true)===0x06054b50){eocd=p;break;}
+ if(eocd<0)throw Error('유효한 XLSX ZIP이 아닙니다.');
+ const size=v.getUint32(eocd+12,true),offset=v.getUint32(eocd+16,true);let pos=offset;
+ const files=new Map();const decodeBytes=u=>textDecoder.decode(u);
+ while(pos<offset+size){
+  if(v.getUint32(pos,true)!==0x02014b50)throw Error('XLSX ZIP 디렉터리 오류');
+  const method=v.getUint16(pos+10,true),compressed=v.getUint32(pos+20,true),nLen=v.getUint16(pos+28,true),exLen=v.getUint16(pos+30,true),commentLen=v.getUint16(pos+32,true),local=v.getUint32(pos+42,true);
+  const name=decodeBytes(b.subarray(pos+46,pos+46+nLen));
+  if(local+30>b.length||v.getUint32(local,true)!==0x04034b50)throw Error('ZIP 항목 헤더 오류');
+  const start=local+30+v.getUint16(local+26,true)+v.getUint16(local+28,true);
+  if(start+compressed>b.length)throw Error('ZIP 데이터 크기 오류');
+  files.set(name,{method,compressed:b.slice(start,start+compressed)});
+  pos+=46+nLen+exLen+commentLen;
+ }
+ return files;
+}
+async function zipText(files,name){
+ name=name.replace(/^\//,'');const f=files.get(name);if(!f)throw Error('XLSX 내부 항목 없음: '+name);
+ if(f.method===0)return textDecoder.decode(f.compressed);
+ if(f.method!==8)throw Error('미지원 XLSX 압축 방식 '+f.method);
+ if(typeof DecompressionStream!=='function')throw Error('이 브라우저는 XLSX 압축 해제를 지원하지 않습니다. 최신 Chrome/Edge를 사용하세요.');
+ const stream=new Blob([f.compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+ return textDecoder.decode(await new Response(stream).arrayBuffer());
+}
+function parseXml(s,name){
+ const doc=new DOMParser().parseFromString(s,'application/xml');
+ if(doc.querySelector('parsererror'))throw Error(name+' XML 파싱 오류');
+ return doc;
+}
+function cellText(c,strings){
+ const type=c.getAttribute('t');
+ if(type==='inlineStr')return [...c.getElementsByTagName('t')].map(x=>x.textContent||'').join('');
+ const v=c.getElementsByTagName('v')[0];
+ if(!v)return '';
+ const val=v.textContent||'';
+ return type==='s' ? strings[Number(val)]??'' : val;
+}
+async function parseRosterExcel(file){
+ if(!/\.(xlsx|xlsm)$/i.test(file.name))throw Error('XLSX 또는 XLSM 파일만 지원합니다: '+file.name);
+ const files=parseZipEntries(await file.arrayBuffer());
+ const workbook=parseXml(await zipText(files,'xl/workbook.xml'),'workbook');
+ const rels=parseXml(await zipText(files,'xl/_rels/workbook.xml.rels'),'relationships');
+ const sheets=[...workbook.getElementsByTagName('sheet')];if(!sheets.length)throw Error('워크시트가 없습니다.');
+ const id=sheets[0].getAttribute('r:id')||sheets[0].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+ const relationship=[...rels.getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===id);
+ if(!relationship)throw Error('첫 워크시트의 연결정보를 찾지 못했습니다.');
+ let path=relationship.getAttribute('Target')||'';
+ if(!path.startsWith('/'))path='xl/'+path;
+ path=path.replace(/^\//,'');
+ const ss=files.has('xl/sharedStrings.xml')?parseXml(await zipText(files,'xl/sharedStrings.xml'),'sharedStrings'):null;
+ const strings=ss?[...ss.getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent||'').join('')):[];
+ const sheet=parseXml(await zipText(files,path),'sheet');const rows=[];
+ for(const row of sheet.getElementsByTagName('row')){
+  const r=[];
+  for(const cell of row.getElementsByTagName('c')){
+   const ref=cell.getAttribute('r')||'',letters=(ref.match(/^[A-Z]+/i)||[''])[0].toUpperCase();
+   let col=0;for(const letter of letters)col=col*26+letter.charCodeAt(0)-64;
+   r[col?col-1:r.length]=cellText(cell,strings);
+  }
+  rows.push(r);
+ }
+ const headersAt=rows.findIndex(r=>r.some(x=>String(x||'').trim()==='학번')&&r.some(x=>String(x||'').trim()==='이름'));
+ if(headersAt<0)throw Error('학번과 이름을 포함하는 제목 행을 찾지 못했습니다: '+file.name);
+ const hdr=rows[headersAt].map(x=>String(x||'').trim());
+ const sidIdx=hdr.indexOf('학번'),nameIdx=hdr.indexOf('이름'),statusIdx=hdr.indexOf('수강 상태'),deptIdx=hdr.indexOf('학과'),yearIdx=hdr.indexOf('수강 학년');
+ const seen=new Set(),students=[];let skipped=0;
+ for(const r of rows.slice(headersAt+1)){
+  // Instructor roster exports may store numeric student IDs in scientific notation (e.g. 2.0251001E7).
+  const rawId=String(r[sidIdx]??'').trim().replace(/\s/g,'');
+  const sid=/^[+\-]?(?:\d+(?:\.\d*)?|\.\d+)[eE][+\-]?\d+$/.test(rawId)
+   ? String(Math.round(Number(rawId))) : rawId.replace(/\.0+$/,'');
+  const name=String(r[nameIdx]||'').trim();
+  if(!sid&&!name)continue;
+  if(!/^\d{6,16}$/.test(sid)||!name||seen.has(sid)){skipped++;continue;}
+  seen.add(sid);
+  students.push({sid,name,status:statusIdx>=0?String(r[statusIdx]||'').trim():'',department:deptIdx>=0?String(r[deptIdx]||'').trim():'',year:yearIdx>=0?String(r[yearIdx]||'').trim():''});
+ }
+ if(!students.length)throw Error('유효한 학생 데이터가 없습니다: '+file.name);
+ return {course:rosterCourseName(file.name),file:file.name,students,skipped};
+}
+async function importRosters(files){
+ if(!files.length)return;
+ let imported=0,skipped=0,errors=[];
+ for(const file of files){
+  try{
+   const r=await parseRosterExcel(file);const previous=config.rosters[r.course];
+   if(previous&&previous.file!==r.file){/* Same course ID: latest roster replaces old list. */}
+   config.rosters[r.course]={file:r.file,students:r.students,updated:new Date().toISOString()};
+   if(!config.coursePolicies[r.course])config.coursePolicies[r.course]={mode:courseDefaultMode(r.course),custom:[]};
+   imported++;skipped+=r.skipped;
+  }catch(e){errors.push(file.name+': '+e.message);console.warn('수강생 Excel 읽기 실패',file.name,e);}
+ }
+ persist();renderCourseFilter();renderSettingsIfOpen();render();
+ notify(`수강생 명단 ${imported}개 반영, ${courseNames().length}개 수업 / ${rosterStudents().size}명 등록${skipped?' · 중복/불완전 행 '+skipped+'개 건너뜀':''}${errors.length?' · 오류 '+errors.length+'개':''}`,!!errors.length);
+ if(errors.length)alert('수강생 명단 불러오기 오류\n'+errors.join('\n'));
+}
+function renderCourseFilter(){
+ const sel=$('grade-class-filter');if(!sel)return;
+ const prior=sel.value,opts=[['ALL','전체 수업'],...courseNames().map(x=>[x,x]),['NONE','명단 미등록']];
+ sel.replaceChildren(...opts.map(([value,title])=>{const o=document.createElement('option');o.value=value;o.textContent=title;return o;}));
+ sel.value=opts.some(([v])=>v===prior)?prior:'ALL';
+ const registered=rosterStudents();
+ const totalRegistrations=courseNames().reduce((sum,c)=>sum+(config.rosters[c]?.students?.length||0),0);
+ $('grade-roster-status').innerHTML=`<b>${courseNames().length}개 수업 · ${registered.size}명 · 수강등록 ${totalRegistrations}건</b><div style="margin-top:5px">${courseNames().map(c=>`${esc(c)}: ${config.rosters[c].students.length}명`).join('<br>')||'수강생 Excel 파일을 불러오세요.'}</div>`;
+}
+
 const STORAGE_KEY='htms_student_grading_v4'; // Keep v4 key to migrate saved classes, attempts and grades.
 let config=createDefault(),records=[],scenarioMap=new Map(),pending=[],busy=false,cancel=false,expandedSid='',currentTab='features',storageWarning=false,sourceStorageWarning=false;
+let settingsScenario='001';
+const populationCache=new Map();
+function resetPopulationCache(){populationCache.clear();}
+
 const sourceMemory=new Map();let sourceDbPromise=null;
 const resultsById=new Map();
 // Cache only OS states (not recorded target states) in IndexedDB for real re-analysis.
@@ -3415,16 +3556,17 @@ function restore(){
   const defaults=createDefault(),oldVersion=Number(s.config?.version)||4;
   config={...defaults,...s.config,
    training:{...defaults.training,...s.config?.training},rules:{...defaults.rules,...s.config?.rules},
-   exams:{...defaults.exams,...s.config?.exams},classMaps:s.config?.classMaps||{},
+   exams:{...defaults.exams,...s.config?.exams},classMaps:s.config?.classMaps||{},rosters:s.config?.rosters||{},coursePolicies:s.config?.coursePolicies||{},
    selectedRuns:s.config?.selectedRuns||{},studentNames:s.config?.studentNames||{},
    weights:{...defaults.weights,...s.config?.weights},ranges:{...defaults.ranges,...s.config?.ranges},
+   scenarioRanges:s.config?.scenarioRanges||{},
    scenarios:{...defaults.scenarios,...s.config?.scenarios}};
   if(oldVersion<5){
    config.rules.speedMargin=10;config.rules.maxGap=10;
    config.rules.goalRadiusNM=.3;config.rules.waypointToleranceNM=.3;
    config.rules.requireGoal=false;
   }
-  config.version=5;
+  config.version=7;
   records=(Array.isArray(s.records)?s.records:[]).filter(r=>r&&r.id&&r.sid&&r.scenario).map(migrateLegacyRun);
   resultsById.clear();records.forEach(r=>resultsById.set(r.id,r));
   scenarioMap=new Map((s.scenarios||[]).filter(x=>Array.isArray(x)&&x.length===2));
@@ -3672,18 +3814,35 @@ function naturalBounds(run,feat){
   default:return {good:feat.good,bad:feat.bad};
  }
 }
-function populationBounds(fid){
- const values=records.filter(r=>!r.invalid.length&&!r.review?.length).map(r=>r.raw?.[fid]).filter(valid);
- if(values.length<2)return null;
- const low=Math.min(...values),high=Math.max(...values);
- if(high-low<1e-10)return null;
- const f=FEAT[fid];return f.direction==='higher'?{bad:low,good:high}:{bad:high,good:low};
+// Distribution is strictly scoped to an individual scenario (001 != 001S != 001L, etc.).
+// Only evaluable runs participate; repeated valid attempts remain included, as in v6.
+function populationStats(fid,scenario){
+ const key=String(scenario||'')+'|'+fid;
+ if(populationCache.has(key))return populationCache.get(key);
+ let low=Infinity,high=-Infinity,count=0;
+ for(const r of records){
+  if(r.scenario!==scenario||r.invalid?.length||r.review?.length)continue;
+  const value=r.raw?.[fid];
+  if(!valid(value))continue;
+  low=Math.min(low,value);high=Math.max(high,value);count++;
+ }
+ const result=count?{low,high,count}:null;
+ populationCache.set(key,result);
+ return result;
+}
+function populationBounds(fid,scenario){
+ const s=populationStats(fid,scenario);
+ if(!s||s.count<2||s.high-s.low<1e-10)return null;
+ const f=FEAT[fid];return f.direction==='higher'?{bad:s.low,good:s.high}:{bad:s.high,good:s.low};
+}
+function scoreSetting(fid,scenario){
+ return config.scenarioRanges?.[scenario]?.[fid] || config.ranges[fid] || {};
 }
 function featureScore(run,fid){
  const raw=run.raw?.[fid];if(!valid(raw))return null;
  if(run.targetCount===0&&['collision','underSafe','deficit','minCPA','meanCPA','closeSeconds','riskSeconds','reentries'].includes(fid))return null;
- const setting=config.ranges[fid]||{},mode=setting.mode||FEAT[fid].mode;
- let bounds=mode==='natural'?naturalBounds(run,FEAT[fid]):mode==='observed'?populationBounds(fid):{good:num(setting.good),bad:num(setting.bad)};
+ const setting=scoreSetting(fid,run.scenario),mode=setting.mode||FEAT[fid].mode;
+ let bounds=mode==='natural'?naturalBounds(run,FEAT[fid]):mode==='observed'?populationBounds(fid,run.scenario):{good:num(setting.good),bad:num(setting.bad)};
  if(!bounds||!valid(bounds.good)||!valid(bounds.bad)||Math.abs(bounds.good-bounds.bad)<1e-12)return null;
  return clamp(100*(raw-bounds.bad)/(bounds.good-bounds.bad),0,100);
 }
@@ -3765,13 +3924,22 @@ function allScenarioKeys(){return [...new Set([...DEFAULT_SCENARIOS,...scenarioM
  const pa=a.match(/^(\d+)(.*)$/),pb=b.match(/^(\d+)(.*)$/);
  if(!pa||!pb)return a.localeCompare(b);return Number(pa[1])-Number(pb[1])||pa[2].localeCompare(pb[2]);
  });}
-function keyForClass(classLetter){return allScenarioKeys().filter(k=>classLetter==='D'?isFinalForD(k):isFinalForABC(k));}
-function classesForStudent(sid){return (config.classMaps[sid]||[]).filter(c=>['A','B','C','D'].includes(c));}
+function keyForClass(course){
+ const p=config.coursePolicies?.[course]||{},mode=p.mode||courseDefaultMode(course);
+ const keys=allScenarioKeys().filter(k=>k!=='001');
+ if(mode==='alpha')return keys.filter(isFinalForABC);
+ if(mode==='number')return keys.filter(isFinalForD);
+ if(mode==='custom')return keys.filter(k=>(p.custom||[]).includes(k));
+ return keys;
+}
+function classesForStudent(sid){
+ return courseNames().filter(c=>(config.rosters[c]?.students||[]).some(x=>x.sid===String(sid)));
+}
 function courseForStudent(sid,filter='ALL'){
  const mid=scenarioGrade(sid,'001').score;
  const classes=filter!=='ALL'&&filter!=='NONE'?[filter]:classesForStudent(sid);
  let keys=[];
- if(classes.length)keys=[...new Set(classes.flatMap(k=>keyForClass(k)))];
+ if(classes.length)keys=[...new Set(classes.flatMap(c=>keyForClass(c)))];
  else keys=allScenarioKeys().filter(k=>k!=='001');
  const grades=keys.map(k=>scenarioGrade(sid,k).score).filter(valid);
  const final=grades.length?grades.reduce((a,b)=>a+b,0)/grades.length:null;
@@ -3785,12 +3953,14 @@ function courseForStudent(sid,filter='ALL'){
  return {mid,final,total,missing,keys};
 }
 function students(){
- const map=new Map();
+ const map=rosterStudents();
  records.forEach(r=>{
-  if(!map.has(r.sid))map.set(r.sid,{sid:r.sid,name:r.student,runs:0,valid:0});
-  const item=map.get(r.sid);item.runs++;if(r.stamp>= (item.stamp||'')){item.stamp=r.stamp;item.name=r.student;}if(runScore(r)!==null)item.valid++;
+  if(!map.has(r.sid))map.set(r.sid,{sid:r.sid,name:r.student,runs:0,valid:0,fromRoster:false});
+  const item=map.get(r.sid);item.runs=(item.runs||0)+1;
+  if(!item.fromRoster&&r.stamp>=(item.stamp||'')){item.stamp=r.stamp;item.name=r.student;}
+  if(runScore(r)!==null)item.valid=(item.valid||0)+1;
  });
- for(const [sid,name] of Object.entries(config.studentNames||{}))if(map.has(sid))map.get(sid).name=name;
+ for(const [sid,name] of Object.entries(config.studentNames||{}))if(map.has(sid)&&name)map.get(sid).name=name;
  return [...map.values()];
 }
 function visibleStudents(){
@@ -3830,14 +4000,14 @@ function renderTable(){
  const stats=$('grade-stats'),validStudents=arr.filter(s=>valid(s.course.total)).length;
  stats.innerHTML=`<span>학생 <b>${students().length}</b>명</span><span>현재 보기 <b>${arr.length}</b>명</span><span>시행 <b>${records.length}</b>회</span><span>평가 유효 <b>${records.filter(r=>runScore(r)!==null).length}</b>회</span><span>종합점수 산출 <b>${validStudents}</b>명</span>`;
  const head=$('grade-main-head'),body=$('grade-main-body');
- head.innerHTML=`<tr><th>학번</th><th>이름</th><th>반</th><th>순위</th><th>중간(001)</th>${displayed.map(k=>`<th>${esc(k)}<span class="grade-attempt">점수 / 시행</span></th>`).join('')}<th>기말</th><th>종합</th></tr>`;
+ head.innerHTML=`<tr><th>학번</th><th>이름</th><th>수강 수업</th><th>순위</th><th>중간(001)</th>${displayed.map(k=>`<th>${esc(k)}<span class="grade-attempt">점수 / 시행</span></th>`).join('')}<th>기말</th><th>종합</th></tr>`;
  const fragment=document.createDocumentFragment();
- if(!arr.length){body.innerHTML=`<tr><td colspan="${displayed.length+7}" style="text-align:left;padding:22px;">불러온 성적이 없습니다. 좌측에서 시나리오 JSON을 먼저 불러온 뒤 학생 결과를 분석하세요.</td></tr>`;return;}
+ if(!arr.length){body.innerHTML=`<tr><td colspan="${displayed.length+7}" style="text-align:left;padding:22px;">불러온 학생이나 성적이 없습니다. 수강생 Excel 명단 또는 결과 JSON을 불러오세요.</td></tr>`;return;}
  for(const s of arr){
   const tr=document.createElement('tr');tr.dataset.sid=s.sid;
   if(expandedSid===s.sid)tr.className='grade-selected';
   const assigned=classesForStudent(s.sid),courses=s.course;
-  tr.innerHTML=`<td>${esc(s.sid)}</td><td>${esc(s.name)}</td><td>${assigned.length?assigned.join(', '):'<span class="grade-muted">미배정</span>'}</td><td>${s.rank||'—'}</td><td>${scoreHTML(courses.mid)}</td>${displayed.map(k=>`<td>${scenarioCell(s.sid,k)}</td>`).join('')}<td>${scoreHTML(courses.final)}${courses.missing.length?`<span class="grade-attempt">미응시 ${courses.missing.length}개</span>`:''}</td><td>${scoreHTML(courses.total)}</td>`;
+  tr.innerHTML=`<td>${esc(s.sid)}</td><td>${esc(s.name)}</td><td>${assigned.length?esc(assigned.join(', ')):'<span class="grade-muted">미등록</span>'}</td><td>${s.rank||'—'}</td><td>${scoreHTML(courses.mid)}</td>${displayed.map(k=>`<td>${scenarioCell(s.sid,k)}</td>`).join('')}<td>${scoreHTML(courses.final)}${courses.missing.length?`<span class="grade-attempt">미응시 ${courses.missing.length}개</span>`:''}</td><td>${scoreHTML(courses.total)}</td>`;
   tr.addEventListener('dblclick',()=>{expandedSid=s.sid;render();$('grade-student-detail').scrollTop=0;});
   fragment.appendChild(tr);
  }
@@ -3856,7 +4026,7 @@ function renderDetail(){
   holder.innerHTML='<div class="grade-muted">학생 행을 더블클릭하면 해당 학생의 모든 시나리오 시행, 평가항목, 원시값과 점수를 확인할 수 있습니다.</div>';return;
  }
  const s=students().find(s=>s.sid===expandedSid),classes=classesForStudent(s.sid),arr=records.filter(r=>r.sid===expandedSid).sort((a,b)=>a.scenario.localeCompare(b.scenario)||b.stamp.localeCompare(a.stamp));
- holder.innerHTML=`<div class="grade-mini-head"><h3>${esc(s.sid)} · ${esc(s.name)} — 총 ${arr.length}회</h3><div class="grade-muted">수강반 ${classes.length?classes.join(', '):'미배정'} · 반/가중치/점수환산은 상단 [평가기준·설정]에서 변경</div><button class="grade-btn" id="grade-close-detail">상세 접기</button></div>
+ holder.innerHTML=`<div class="grade-mini-head"><h3>${esc(s.sid)} · ${esc(s.name)} — 총 ${arr.length}회</h3><div class="grade-muted">수강 수업 ${classes.length?esc(classes.join(', ')):'명단 미등록'} · 반/가중치/점수환산은 상단 [평가기준·설정]에서 변경</div><button class="grade-btn" id="grade-close-detail">상세 접기</button></div>
  <div class="grade-run-grid">${arr.map(r=>{
   const rawScore=runScore(r),g=scenarioGrade(s.sid,r.scenario),checked=r.id===g.representative?.id,status=runStatus(r);
   const meta=`${r.date?.slice(0,4)||''}-${r.date?.slice(4,6)||''}-${r.date?.slice(6)||''} ${r.clock?.slice(0,2)||''}:${r.clock?.slice(2,4)||''}`;
@@ -3892,7 +4062,7 @@ function renderAudit(){
  ${storageWarning?'<span class="grade-error">현재 실행 환경에서는 성적 자동저장이 제한됩니다. [성적 데이터 백업]을 이용하세요.</span>':''}
  ${sourceStorageWarning?'<span class="grade-muted">원본 OS 캐시의 영구저장이 제한됩니다. 재분석 시 원본 파일 재선택이 필요할 수 있습니다.</span>':''}`;
 }
-function render(){if(currentMode!=='analysis')return;renderTable();renderDetail();renderAudit();}
+function render(){resetPopulationCache();if(currentMode!=='analysis')return;renderTable();renderDetail();renderAudit();}
 function resize(){if(currentMode==='analysis')render();}
 function scenarioChanged(){if(currentMode==='analysis')render();}
 function notify(text,error=false){$('grade-progress').textContent=text;$('grade-progress').style.color=error?'#fca5a5':'#9fb2c8';}
@@ -4010,24 +4180,38 @@ async function importDriveResults(all=false){
  busy=false;$('grade-stop').disabled=true;$('grade-progressbar').value=0;persist();render();
  notify(`Drive 결과 ${cancel?'중단':'완료'}: 유효 ${ok} · 제외 ${invalid} · 미시나리오 ${missing} · 중복 ${dups} · 오류 ${errors}`);
 }
-function settingRow(f){
- const c=config.ranges[f.id]||{},vals=records.filter(r=>!r.invalid.length).map(r=>r.raw?.[f.id]).filter(valid);
- return `<tr><td title="${esc(f.formula)}">${esc(f.name)}</td><td>${esc(f.unit)}</td>
-  <td><input type="number" min="0" max="100" step="0.25" data-setting="weight" data-feature="${f.id}" value="${esc(config.weights[f.id])}"></td>
-  <td><select data-setting="mode" data-feature="${f.id}"><option value="natural" ${c.mode==='natural'?'selected':''}>자연범위</option><option value="manual" ${c.mode==='manual'?'selected':''}>직접입력</option><option value="observed" ${c.mode==='observed'?'selected':''}>학생 분포</option></select></td>
-  <td><input type="number" step="any" data-setting="good" data-feature="${f.id}" value="${esc(c.good)}"></td>
-  <td><input type="number" step="any" data-setting="bad" data-feature="${f.id}" value="${esc(c.bad)}"></td>
-  <td>${vals.length?`${format(Math.min(...vals),3)} ~ ${format(Math.max(...vals),3)}`:'—'}</td>
-  <td><button class="grade-btn" data-fill-range="${f.id}" ${vals.length<2?'disabled':''}>분포 반영</button></td></tr>`;
+function selectedSettingsScenario(){
+ const keys=allScenarioKeys();
+ if(!keys.includes(settingsScenario))settingsScenario=keys[0]||'001';
+ return settingsScenario;
 }
-function settingsFeatures(){return `<p class="grade-help">각 평가특성의 원시값을 0~100점으로 환산합니다. 자연범위: 0척~전체 타선 수 또는 0초~총 소요시간. 직접입력: 100점/0점에 해당하는 원시값을 직접 입력. 학생 분포: 유효 시행의 최솟값·최댓값을 기준으로 자동 설정. 가중치 0이면 종합 계산에서 제외합니다. 관측값이 모두 같으면 분포 모드에서는 평가 불가입니다.</p>
- <table class="grade-settings-table"><thead><tr><th>평가특성 (마우스를 올리면 설명)</th><th>단위</th><th>가중치</th><th>환산</th><th>100점 원시값</th><th>0점 원시값</th><th>현재 자료의 최소~최대</th><th>기준 복사</th></tr></thead><tbody>${FEATURES.map(settingRow).join('')}</tbody></table>`;}
+function settingRow(f){
+ const key=selectedSettingsScenario(),c=scoreSetting(f.id,key),stats=populationStats(f.id,key),bounds=populationBounds(f.id,key);
+ const own=!!config.scenarioRanges?.[key]?.[f.id],mode=c.mode||f.mode;
+ const shownGood=mode==='observed'?(bounds?.good??''):mode==='natural'?'':c.good;
+ const shownBad=mode==='observed'?(bounds?.bad??''):mode==='natural'?'':c.bad;
+ const readOnly=mode!=='manual'?'disabled title="학생 분포/자연범위에서는 자동 계산됩니다. 직접입력 모드에서만 수정할 수 있습니다."':'';
+ return `<tr><td title="${esc(f.formula)}">${esc(f.name)}${own?'<div class="grade-muted">시나리오 개별 설정</div>':''}</td><td>${esc(f.unit)}</td>
+  <td><input type="number" min="0" max="100" step="0.25" data-setting="weight" data-feature="${f.id}" value="${esc(config.weights[f.id])}"></td>
+  <td><select data-setting="mode" data-feature="${f.id}"><option value="natural" ${mode==='natural'?'selected':''}>자연범위</option><option value="manual" ${mode==='manual'?'selected':''}>직접입력</option><option value="observed" ${mode==='observed'?'selected':''}>학생 분포</option></select></td>
+  <td><input type="number" step="any" data-setting="good" data-feature="${f.id}" value="${esc(shownGood)}" placeholder="—" ${readOnly}></td>
+  <td><input type="number" step="any" data-setting="bad" data-feature="${f.id}" value="${esc(shownBad)}" placeholder="—" ${readOnly}></td>
+  <td>${stats?`${format(stats.low,3)} ~ ${format(stats.high,3)} <span class="grade-muted">(${stats.count}회)</span>`:'—'}</td>
+  <td><button class="grade-btn" data-fill-range="${f.id}" ${!bounds?'disabled':''}>분포 반영</button>${own?` <button class="grade-btn" data-reset-range="${f.id}" title="이 시나리오의 개별 설정을 없애고 이전 공통 설정 사용">개별 기준 해제</button>`:''}</td></tr>`;
+}
+function settingsFeatures(){
+ const key=selectedSettingsScenario();
+ return `<p class="grade-help"><b>시나리오별 환산 기준:</b> 학생 분포는 <b>같은 시나리오</b>의 평가 유효 시행에서만 최솟값·최댓값을 계산합니다(반복 유효 시행 포함). 001/001S/001L/002/003/004를 서로 섞지 않습니다. <b>분포 반영</b>은 아래에서 선택한 시나리오의 현재 분포를 직접입력 기준으로 고정하며 다른 시나리오에는 영향을 주지 않습니다. 가중치는 모든 시나리오에 공통 적용됩니다.</p>
+ <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0"><label for="grade-settings-scenario" style="font-size:12px;font-weight:700;color:#c6e8f1">환산 기준을 확인·설정할 시나리오</label><select id="grade-settings-scenario" style="width:175px">${allScenarioKeys().map(k=>`<option value="${esc(k)}" ${key===k?'selected':''}>${esc(k)}</option>`).join('')}</select><span class="grade-muted">선택 시나리오: ${esc(key)} · 자연범위/학생 분포/직접입력 지정 가능</span></div>
+ <table class="grade-settings-table"><thead><tr><th>평가특성 (마우스를 올리면 설명)</th><th>단위</th><th>공통 가중치</th><th>${esc(key)} 환산방식</th><th>100점 원시값</th><th>0점 원시값</th><th>${esc(key)} 유효 시행 최소~최대</th><th>${esc(key)} 분포 고정</th></tr></thead><tbody>${FEATURES.map(settingRow).join('')}</tbody></table>
+ <p class="grade-help">선택한 시나리오에 개별 설정이 없으면 기존 공통 환산설정을 그대로 사용합니다. <b>학생 분포</b>는 파일 추가·삭제 시 자동 갱신되며, 최솟값과 최댓값이 동일하거나 유효 자료가 2회 미만이면 그 특성의 분포 점수는 계산하지 않습니다.</p>`;
+}
 function settingsScenarios(){
  const keys=allScenarioKeys();
  return `<p class="grade-help">시나리오별 안전거리와 평가할 특성을 선택합니다. 체크하지 않은 특성은 종합점수 분모에서도 제외됩니다. SHALLOW/LAND는 시나리오에 해당 다각형이 실제로 있을 때만 계산됩니다.</p>
  ${keys.map(k=>{
   const cfg=cfgScenario(k),scene=scenarioMap.get(k);const areas=(scene?.Land||[]).map(x=>x.type);
-  return `<div class="grade-run" style="margin:9px 0"><div class="grade-mini-head"><strong>${esc(k)} · ${k==='001'?'중간고사':isFinalForABC(k)?'기말(A·B·C)':isFinalForD(k)?'기말(D)':'기타'}</strong>
+  return `<div class="grade-run" style="margin:9px 0"><div class="grade-mini-head"><strong>${esc(k)} · ${k==='001'?'중간고사':isFinalForABC(k)?'001 알파벳 시나리오':isFinalForD(k)?'002 이후 번호 시나리오':'기타'}</strong>
   <label>안전거리 (NM) <input type="number" step="0.01" min="0.01" max="5" data-safe="${esc(k)}" value="${cfg.safe}" style="width:80px"></label>
   <div><button class="grade-btn" data-all="${esc(k)}">모두 선택</button> <button class="grade-btn" data-none="${esc(k)}">모두 해제</button></div></div>
   <div class="grade-metric-list" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">${FEATURES.map((f,i)=>{
@@ -4066,30 +4250,61 @@ function settingsRules(){const r=config.rules,e=config.exams;
   ['goalRadiusNM','최종 WP 도착 인식·검토 기준 (NM)',.05,3,.05],
   ['waypointToleranceNM','WP 잔여개수 갱신 도착반경 (NM)',.05,3,.05]
  ].map(([key,label,min,max,step])=>`<div class="grade-field"><label>${label}</label><input type="number" data-rule="${key}" min="${min}" max="${max}" step="${step}" value="${r[key]}"></div>`).join('')}</div>
- <h4>중간·기말 종합점수</h4><div class="grade-grid"><div class="grade-field"><label>중간고사 비중 (%) — 모든 반 001</label><input data-exam="midWeight" type="number" min="0" max="100" value="${e.midWeight}"></div><div class="grade-field"><label>기말고사 비중 (%) — A/B/C는 001계열, D는 002·003·004 계열</label><input data-exam="finalWeight" type="number" min="0" max="100" value="${e.finalWeight}"></div></div>
+ <h4>중간·기말 종합점수</h4><div class="grade-grid"><div class="grade-field"><label>중간고사 비중 (%) — 모든 수업 001</label><input data-exam="midWeight" type="number" min="0" max="100" value="${e.midWeight}"></div><div class="grade-field"><label>기말고사 비중 (%) — 수업별 설정에서 시나리오 지정</label><input data-exam="finalWeight" type="number" min="0" max="100" value="${e.finalWeight}"></div></div>
  <label class="grade-feature-check"><input type="checkbox" id="grade-require-both" ${e.requireMidAndFinal?'checked':''}> 중간/기말 점수가 모두 있는 학생만 종합 순위 산출</label>
  <h4>기존 기록 전체 재분석</h4><p class="grade-help">속력·위치도약·시간구간·WP 기준 및 시나리오 정의를 변경하면, 보관된 본선 OS 기록을 사용하여 13개 특성·제외사유를 다시 계산합니다. 구버전에서 읽은 파일은 원본 OS 기록이 저장되지 않았으므로 필요한 경우 동일 JSON을 다시 선택하면 갱신됩니다. <b>시간 공백만으로는 평가 제외하지 않습니다.</b></p>
  <div class="grade-side-actions"><button class="grade-btn grade-primary" id="grade-reanalyze-all" ${busy?'disabled':''}>보관된 결과 전체 재분석</button><button class="grade-btn" id="grade-backup-full" ${busy?'disabled':''}>OS 원본 포함 백업 (.gz)</button></div>
  <p class="grade-help">비현실적인 고속 이동도 기록된 SOG와 실제 위치 변화가 일치하면 위치 점프로 오인하지 않습니다. 단, 잔여 WP가 3개 이상인 구간에서 +10 kn 이상 증속하면 별도로 평가 제외합니다.</p>
  <div><button class="grade-btn" id="grade-clear-all">성적 데이터 전체 삭제 (확인 필요)</button></div>`;
 }
-function settingsClasses(){return `<p class="grade-help">학생은 A·B·C·D 여러 반을 동시에 수강할 수 있습니다. 중간고사는 모든 반에서 001을 사용하며, A·B·C는 001 뒤 알파벳이 붙는 시나리오, D는 001 이외 번호 시나리오를 기말고사로 평가합니다.</p>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="grade-btn" data-bulk-class="A">전체 학생에 A반 추가</button><button class="grade-btn" data-bulk-class="B">B반 추가</button><button class="grade-btn" data-bulk-class="C">C반 추가</button><button class="grade-btn" data-bulk-class="D">D반 추가</button><button class="grade-btn" id="grade-clear-classes">모든 반 배정 해제</button></div>
- <table class="grade-settings-table"><thead><tr><th>학번</th><th>이름</th><th>A반</th><th>B반</th><th>C반</th><th>D반</th></tr></thead><tbody>${students().sort(bySid).map(s=>`<tr><td>${esc(s.sid)}</td><td><input type="text" data-name="${esc(s.sid)}" value="${esc(s.name)}" style="width:135px"></td>${['A','B','C','D'].map(c=>`<td><input type="checkbox" data-class-sid="${esc(s.sid)}" data-class="${c}" ${classesForStudent(s.sid).includes(c)?'checked':''}></td>`).join('')}</tr>`).join('')}</tbody></table>`;}
+function settingsClasses(){
+ const names=courseNames();
+ const count=rosterStudents().size;
+ const info=`<p class="grade-help">Excel 파일 이름에서 <b>수강생_</b>을 제거한 이름으로 수업을 자동 등록합니다. 학생은 학번으로 연결되며 여러 수업의 중복 수강을 허용합니다. 기존 A/B/C/D 수동 배정은 사용하지 않습니다. 같은 수업 명단을 다시 읽으면 해당 수업의 명단을 갱신합니다.</p>
+ <div class="grade-roster-box"><strong>등록된 수업 ${names.length}개 · 고유 학생 ${count}명</strong><small>항해계기학_* → 기본 기말: 001S·001L 등 / 선박조종시뮬레이션 → 기본 기말: 002·003·004 등. 아래에서 수업별 변경 가능합니다.</small></div>
+ <div class="grade-side-actions"><button class="grade-btn grade-primary" id="grade-roster-import-settings">Excel 명단 추가·갱신</button></div>`;
+ if(!names.length)return info+'<p class="grade-help">아직 수강생 Excel이 등록되지 않았습니다. 왼쪽의 수강생 명단 불러오기를 이용하세요.</p>';
+ return info+names.map(c=>{
+  const r=config.rosters[c],mode=courseMode(c),p=config.coursePolicies[c]||{};
+  const modes=[['alpha','001 뒤 알파벳이 붙는 시나리오'],['number','001이 아닌 숫자 시나리오'],['all','모든 기말 시나리오'],['custom','선택한 시나리오만']];
+  return `<div class="grade-roster-box"><div class="grade-mini-head"><strong>${esc(c)} · ${r.students.length}명</strong><button class="grade-btn" type="button" data-remove-course="${esc(c)}">수업 삭제</button></div>
+  <small>명단 파일: ${esc(r.file)}</small>
+  <div class="grade-grid" style="margin-top:8px"><label class="grade-field">기말고사 평가 시나리오<select data-course-mode="${esc(c)}">${modes.map(([v,n])=>`<option value="${v}" ${mode===v?'selected':''}>${n}</option>`).join('')}</select></label></div>
+  ${mode==='custom'?`<div style="display:flex;flex-wrap:wrap;gap:12px">${allScenarioKeys().filter(k=>k!=='001').map(k=>`<label class="grade-feature-check"><input type="checkbox" data-course-scenario="${esc(c)}" data-course-key="${esc(k)}" ${(p.custom||[]).includes(k)?'checked':''}>${esc(k)}</label>`).join('')}</div>`:''}
+  </div>`;
+ }).join('')+`<p class="grade-help">수업에 포함된 학번만 해당 수업 필터에 표시됩니다. 명단에 없는 결과 기록은 '명단 미등록'에서 별도로 확인할 수 있습니다.</p>`;
+}
 function renderSettings(){
+ resetPopulationCache();
  const body=$('grade-settings-body');
  body.innerHTML=({features:settingsFeatures,scenarios:settingsScenarios,training:settingsTraining,rules:settingsRules,classes:settingsClasses})[currentTab]();
  $('grade-modal').querySelectorAll('[data-grade-tab]').forEach(b=>b.classList.toggle('active',b.dataset.gradeTab===currentTab));
+ const scenarioSelect=$('grade-settings-scenario');
+ if(scenarioSelect)scenarioSelect.addEventListener('change',()=>{settingsScenario=scenarioSelect.value;renderSettings();});
  body.querySelectorAll('[data-setting]').forEach(el=>el.addEventListener('change',()=>{
   const f=el.dataset.feature,type=el.dataset.setting;
   if(type==='weight')config.weights[f]=clamp(Number(el.value)||0,0,100);
-  else if(type==='mode')config.ranges[f].mode=el.value;
-  else if(type==='good'||type==='bad')config.ranges[f][type]=Number(el.value);
-  persist();render();
+  else{
+   const key=selectedSettingsScenario();
+   if(!config.scenarioRanges)config.scenarioRanges={};
+   if(!config.scenarioRanges[key])config.scenarioRanges[key]={};
+   const base=scoreSetting(f,key);
+   const setting=config.scenarioRanges[key][f]={mode:base.mode||FEAT[f].mode,good:num(base.good),bad:num(base.bad)};
+   if(type==='mode')setting.mode=el.value;
+   else if(type==='good'||type==='bad')setting[type]=Number(el.value);
+  }
+  persist();renderSettings();render();
  }));
  body.querySelectorAll('[data-fill-range]').forEach(el=>el.addEventListener('click',()=>{
-  const id=el.dataset.fillRange,b=populationBounds(id);if(!b)return;
-  config.ranges[id]={mode:'manual',...b};persist();renderSettings();render();
+  const id=el.dataset.fillRange,key=selectedSettingsScenario(),b=populationBounds(id,key);if(!b)return;
+  if(!config.scenarioRanges)config.scenarioRanges={};
+  if(!config.scenarioRanges[key])config.scenarioRanges[key]={};
+  config.scenarioRanges[key][id]={mode:'manual',...b};persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-reset-range]').forEach(el=>el.addEventListener('click',()=>{
+  const key=selectedSettingsScenario();
+  if(config.scenarioRanges?.[key])delete config.scenarioRanges[key][el.dataset.resetRange];
+  persist();renderSettings();render();
  }));
  body.querySelectorAll('[data-safe]').forEach(el=>el.addEventListener('change',()=>{
   cfgScenario(el.dataset.safe).safe=clamp(Number(el.value)||0.3,0.01,5);persist();render();void reanalyzeAll(new Set([el.dataset.safe]));
@@ -4126,21 +4341,27 @@ function renderSettings(){
   config.exams[el.dataset.exam]=Number(el.value);persist();render();
  }));
  const requireBoth=$('grade-require-both');if(requireBoth)requireBoth.addEventListener('change',()=>{config.exams.requireMidAndFinal=requireBoth.checked;persist();render();});
- body.querySelectorAll('[data-class-sid]').forEach(el=>el.addEventListener('change',()=>{
-  const sid=el.dataset.classSid,c=el.dataset.class,v=new Set(classesForStudent(sid));
-  if(el.checked)v.add(c);else v.delete(c);config.classMaps[sid]=[...v].sort();persist();render();
+ const rosterMore=$('grade-roster-import-settings');if(rosterMore)rosterMore.addEventListener('click',()=>$('grade-roster-files').click());
+ body.querySelectorAll('[data-course-mode]').forEach(el=>el.addEventListener('change',()=>{
+  const c=el.dataset.courseMode;
+  if(!config.coursePolicies[c])config.coursePolicies[c]={mode:courseDefaultMode(c),custom:[]};
+  config.coursePolicies[c].mode=el.value;persist();renderSettings();render();
+ }));
+ body.querySelectorAll('[data-course-scenario]').forEach(el=>el.addEventListener('change',()=>{
+  const c=el.dataset.courseScenario,k=el.dataset.courseKey;
+  if(!config.coursePolicies[c])config.coursePolicies[c]={mode:'custom',custom:[]};
+  const set=new Set(config.coursePolicies[c].custom||[]);
+  if(el.checked)set.add(k);else set.delete(k);
+  config.coursePolicies[c].custom=[...set];persist();render();
+ }));
+ body.querySelectorAll('[data-remove-course]').forEach(el=>el.addEventListener('click',()=>{
+  const c=el.dataset.removeCourse;
+  if(!confirm(`수업 ${c}의 수강생 명단을 삭제할까요? 학생의 기존 실습 결과는 삭제되지 않습니다.`))return;
+  delete config.rosters[c];delete config.coursePolicies[c];persist();renderCourseFilter();renderSettings();render();
  }));
  body.querySelectorAll('[data-name]').forEach(el=>el.addEventListener('change',()=>{
   config.studentNames[el.dataset.name]=el.value.trim();persist();render();
  }));
- body.querySelectorAll('[data-bulk-class]').forEach(el=>el.addEventListener('click',()=>{
-  for(const s of students())config.classMaps[s.sid]=[...new Set([...classesForStudent(s.sid),el.dataset.bulkClass])].sort();
-  persist();renderSettings();render();
- }));
- const noClasses=$('grade-clear-classes');if(noClasses)noClasses.addEventListener('click',()=>{
-  if(!confirm('모든 학생의 A/B/C/D 수강반 배정을 해제할까요?'))return;
-  config.classMaps={};persist();renderSettings();render();
- });
  const clearAll=$('grade-clear-all');if(clearAll)clearAll.addEventListener('click',()=>{
   if(!confirm('이 브라우저에 저장된 모든 학생 시행·성적 데이터를 삭제합니다. 먼저 백업했나요?'))return;
   if(!confirm('정말 모든 성적 데이터를 삭제하시겠습니까?'))return;
@@ -4182,16 +4403,16 @@ async function readBackup(file,kind){
   if(kind==='config'){
    if(!data?.features&&!data?.training&&!data?.weights)throw new Error('평가 설정 파일이 아닙니다.');
    const defaults=createDefault();config={...defaults,...data,weights:{...defaults.weights,...data.weights},
-    ranges:{...defaults.ranges,...data.ranges},scenarios:{...defaults.scenarios,...data.scenarios},
+    ranges:{...defaults.ranges,...data.ranges},scenarioRanges:data.scenarioRanges||{},scenarios:{...defaults.scenarios,...data.scenarios},
     training:{...defaults.training,...data.training},rules:{...defaults.rules,...data.rules},exams:{...defaults.exams,...data.exams}};
    if(Number(data.version||4)<5){config.rules.speedMargin=10;config.rules.requireGoal=false;config.rules.goalRadiusNM=.3;}
-   config.version=5;
+   config.version=7;
   }else{
    if(!Array.isArray(data?.records)||!data?.config)throw new Error('성적 데이터 백업이 아닙니다.');
    if(!confirm(`기존 시행 ${records.length}회를 백업의 ${data.records.length}회로 대체하시겠습니까?`))return;
    config={...createDefault(),...data.config};
    if(Number(data.config.version||4)<5){config.rules={...config.rules,speedMargin:10,requireGoal:false,goalRadiusNM:.3};}
-   config.version=5;records=data.records.filter(r=>r.sid&&r.scenario&&r.id).map(migrateLegacyRun);
+   config.version=7;records=data.records.filter(r=>r.sid&&r.scenario&&r.id).map(migrateLegacyRun);
    scenarioMap=new Map((data.scenarios||[]).filter(x=>Array.isArray(x)&&x.length===2));
    resultsById.clear();records.forEach(r=>resultsById.set(r.id,r));
    if(Array.isArray(data.sourceOS)&&data.sourceOS.length){
@@ -4202,7 +4423,7 @@ async function readBackup(file,kind){
     }
    }
   }
-  persist();renderSettingsIfOpen();render();notify('백업 복원 완료');
+  persist();renderCourseFilter();renderSettingsIfOpen();render();notify('백업 복원 완료');
   if(kind!=='config'&&Array.isArray(data.sourceOS)&&data.sourceOS.length)await reanalyzeAll();
  }catch(e){notify('복원 실패: '+e.message,true);console.warn(e);}
 }
@@ -4251,14 +4472,14 @@ function xlsxBlob(sheets){
 function createGradeWorkbook(){
  const keys=allScenarioKeys(),stud=students().sort(bySid),all=visibleStudents();
  const rankBySid=new Map(all.map(s=>[s.sid,s.rank]));
- const summary=[['학번','이름','반','전체 순위','중간고사 001','기말고사','종합점수',...keys.map(k=>`${k} 점수`),...keys.map(k=>`${k} 유효 시행횟수`)]];
+ const summary=[['학번','이름','수강 수업','전체 순위','중간고사 001','기말고사','종합점수',...keys.map(k=>`${k} 점수`),...keys.map(k=>`${k} 유효 시행횟수`)]];
  for(const s of stud){
   const c=courseForStudent(s.sid),classes=classesForStudent(s.sid).join(',');
   summary.push([s.sid,s.name,classes,rankBySid.get(s.sid)||null,c.mid,c.final,c.total,...keys.map(k=>scenarioGrade(s.sid,k).score),...keys.map(k=>scenarioGrade(s.sid,k).real)]);
  }
- const byClass=[['반','학번','이름','중간 001','기말','종합','기말 시나리오','미응시']];
- for(const c of ['A','B','C','D'])for(const s of stud.filter(s=>classesForStudent(s.sid).includes(c))){
-  const m=courseForStudent(s.sid,c);byClass.push([c,s.sid,s.name,m.mid,m.final,m.total,m.keys.join(','),m.missing.join(',')]);
+ const byClass=[['수업명','학번','이름','수강 상태','중간 001','기말','종합','기말 시나리오','미응시']];
+ for(const c of courseNames())for(const s of stud.filter(s=>classesForStudent(s.sid).includes(c))){
+  const m=courseForStudent(s.sid,c),student=(config.rosters[c]?.students||[]).find(x=>x.sid===s.sid);byClass.push([c,s.sid,s.name,student?.status||'',m.mid,m.final,m.total,m.keys.join(','),m.missing.join(',')]);
  }
  const runs=[['학번','이름','시나리오','시행일자','원점수','평가 상태','제외 사유','훈련 인정 횟수','배율','반영 대표시행','자료 파일','본선 기록 수','분석 시간(초)','속도기준(kn)','관측 최대속도(kn)','최종WP 거리(NM)','연속공백 최대(초)','비고']];
  const featSheet=[['학번','이름','시나리오','시행일자','특성번호','특성명','원시값','단위','특성점수(100점)','가중치','평가 선택','평가 상태']];
@@ -4267,16 +4488,26 @@ function createGradeWorkbook(){
   runs.push([r.sid,r.student,r.scenario,r.stamp,v,runStatus(r),[...r.invalid,...(r.review||[])].join('; '),g.count,g.factor,g.representative?.id===r.id?'Y':'',r.file,r.osCount,r.duration,r.limit,r.maxSpeed,r.goalDist,r.longGap,r.warning?.join('; ')]);
   for(const [i,f] of FEATURES.entries())featSheet.push([r.sid,r.student,r.scenario,r.stamp,i+1,f.name,r.raw?.[f.id],f.unit,featureScore(r,f.id),config.weights[f.id],cfgScenario(r.scenario).enabled.includes(f.id)?'Y':'N',runStatus(r)]);
  }
- const setting=[['구분','설정항목','값','추가'],...FEATURES.map(f=>['가중치',f.name,config.weights[f.id],`모드:${config.ranges[f.id].mode}, 100점:${config.ranges[f.id].good}, 0점:${config.ranges[f.id].bad}`]),
+ const setting=[['구분','설정항목','값','추가'],...FEATURES.map(f=>['공통 가중치·기본환산',f.name,config.weights[f.id],`기본모드:${config.ranges[f.id].mode}, 기본100점:${config.ranges[f.id].good}, 기본0점:${config.ranges[f.id].bad}`]),
+  ...keys.flatMap(k=>FEATURES.map(f=>{
+   const c=scoreSetting(f.id,k),mode=c.mode||f.mode,stat=populationStats(f.id,k);
+   const bounds=mode==='observed'?populationBounds(f.id,k):mode==='manual'?{good:num(c.good),bad:num(c.bad)}:null;
+   const range=bounds?`100점:${bounds.good}, 0점:${bounds.bad}`:'자연범위(시행마다 상이) 또는 분포 산출 불가';
+   return ['시나리오별 환산',`${k} / ${f.name}`,mode,`${range}; 유효 분포 ${stat?.count||0}회; ${config.scenarioRanges?.[k]?.[f.id]?'시나리오 개별설정':'기본설정 적용'}`];
+  })),
   ...keys.map(k=>['시나리오',k,cfgScenario(k).safe,`적용특성: ${cfgScenario(k).enabled.join(',')}`]),
   ...Object.entries(config.training).filter(([k])=>k!=='override').map(([k,v])=>['반복훈련',k,String(v),'']),
   ...Object.entries(config.rules).map(([k,v])=>['검사규칙',k,String(v),'']),
   ...Object.entries(config.exams).map(([k,v])=>['시험비중',k,String(v),''])];
- return xlsxBlob([['종합성적',summary],['반별성적',byClass],['시행별점수',runs],['13개특성값',featSheet],['평가설정',setting]]);
+ const enroll=[['수업명','원본 Excel 파일','학번','이름','학과','수강 학년','수강 상태','결과 시행횟수']];
+ for(const c of courseNames())for(const st of config.rosters[c].students)enroll.push([c,config.rosters[c].file,st.sid,st.name,st.department,st.year,st.status,records.filter(r=>r.sid===st.sid).length]);
+ return xlsxBlob([['종합성적',summary],['수업별성적',byClass],['수강생명단',enroll],['시행별점수',runs],['13개특성값',featSheet],['평가설정',setting]]);
 }
 function init(){
- restore();
+ restore();renderCourseFilter();
  const bind=(id,ev,cb)=>$(id).addEventListener(ev,cb);
+ bind('grade-roster-import','click',()=>$('grade-roster-files').click());
+ bind('grade-roster-files','change',async e=>{await importRosters([...e.target.files]);e.target.value='';});
  bind('grade-settings-open','click',()=>showSettings('features'));
  bind('grade-settings-close','click',closeSettings);
  $('grade-modal').addEventListener('click',e=>{if(e.target===$('grade-modal'))closeSettings();});
