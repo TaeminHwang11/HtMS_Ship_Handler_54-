@@ -1066,12 +1066,6 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 
         function buildExperimentSnapshot(data, reason = 'live_tick') {
             const osRaw = data && Array.isArray(data.os_data) ? data.os_data : [];
-            const trafficRaw = data && Array.isArray(data.traffic_data) ? data.traffic_data : [];
-            const isTargetInfoActive = id => Array.from(selectedTargetIds).some(selectedId => String(selectedId) === String(id));
-            const recordedTrafficRaw = trafficRaw.map(t => {
-                const targetId = t['MMSI'] || t['Name'] || null;
-                return { ...t, info_active: targetId !== null && isTargetInfoActive(targetId) };
-            });
             const simTime = osRaw.length && osRaw[0]['Time(sec)'] !== undefined ? Number(osRaw[0]['Time(sec)']) : null;
             return {
                 wall_time: nowIsoLocal(),
@@ -1082,9 +1076,12 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                 scenario_file: currentScenarioFileName(data),
                 ...currentExperimentContext(),
                 ownship_raw: osRaw,
-                traffic_raw: recordedTrafficRaw,
-                normalized_ships: simEntities.map(s => ({
-                    id: s.id, name: s.name, isMASS: !!s.isMASS, info_active: !s.isMASS && isTargetInfoActive(s.id),
+                // Keep the snapshot schema, but omit target navigation histories.
+                // Only selected IDs are retained for target-info usage analysis.
+                traffic_raw: [],
+                active_target_info_ids: Array.from(selectedTargetIds),
+                normalized_ships: simEntities.filter(s => s.isMASS).map(s => ({
+                    id: s.id, name: s.name, isMASS: !!s.isMASS, info_active: false,
                     x: Number(s.x), z: Number(s.z),
                     hdg_deg: Number(s.hdg), cog_deg: Number(s.cog), sog_kn: Number(s.sog),
                     rot_deg_per_min: Number(s.rot),
@@ -5829,16 +5826,6 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                 hdg: onlineOs.hdg.toFixed(1), sog: onlineOs.sog.toFixed(1), cog: onlineOs.cog.toFixed(1),
                 rot: onlineOs.rot.toFixed(2), rud_cmd: onlineOs.targetRudder.toFixed(1), rud_act: onlineOs.actualRudder.toFixed(1)
             });
-            onlineTargets.forEach(t => {
-                const tLat = onlineOs.lat + ((t.y - onlineOs.y) / 60);
-                const tLon = onlineOs.lon + ((t.x - onlineOs.x) / (60 * Math.cos(onlineOs.lat * Math.PI / 180)));
-                onlineLogData.push({
-                    time: String(timeText), name: t.id || t.name, lat: tLat.toFixed(6), lon: tLon.toFixed(6),
-                    x: (t.x * 400).toFixed(2), y: (-t.y * 400).toFixed(2),
-                    hdg: t.hdg.toFixed(1), sog: t.spd.toFixed(1), cog: t.hdg.toFixed(1),
-                    rot: (t.rot || 0).toFixed(2), rud_cmd: '0.0', rud_act: '0.0'
-                });
-            });
         }
 
         function updateOnlinePhysics(simDtHours, realDt) {
@@ -6108,7 +6095,7 @@ const $=id=>document.getElementById(id), wrap=$('main-wrapper'), map=$('top-view
 const pack=JSON.parse($('ec-chart-pack').textContent);$('ec-chart-pack').remove();
 const previewBuild=document.documentElement.dataset.ecPreview==='1';
 const mk=(tag,id,html,where)=>{const e=document.createElement(tag);e.id=id;e.innerHTML=html;where.append(e);return e};
-const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support Functions</em></div>',wrap);
+const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support functions</em></div>',wrap);
 const hud=$('os-fixed-hud');top.append(hud);const status=mk('div','ec-status-top','<span class="ec-kicker" title="Operational Design Domain / Operational Envelope">ODD</span>',top);status.append($('odd-oe-light'),$('online-pause-btn'));
 const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-section">GYRO <span>HDG</span></div><svg class="ec-gauge" viewBox="0 0 120 110"><circle cx="60" cy="55" r="47" fill="#252b2d" stroke="#83908e"/><g id="ec-gyro-dial">${Array.from({length:36},(_,i)=>`<line x1="60" y1="8" x2="60" y2="${i%3===0?17:12}" stroke="#a9b5b4" transform="rotate(${i*10} 60 55)"/>`).join('')}<g fill="#bfcac7" font-size="11" text-anchor="middle"><text x="60" y="25">N</text><text x="90" y="59">E</text><text x="60" y="91">S</text><text x="30" y="59">W</text></g></g><path d="M60 5L55 19H65Z" fill="#f1d287"/><path d="M60 34L53 67H67Z" stroke="#edce83" fill="none" stroke-width="1.8"/><circle cx="60" cy="55" r="3" fill="#edce83"/></svg><div class="ec-reading" id="ec-hdg">---</div><div class="ec-unit">TRUE HEADING</div></div>
 <div class="ec-instrument"><div class="ec-section">RATE OF TURN</div><div class="ec-reading" id="ec-rot">---</div><div class="ec-unit">° / MIN</div></div>
