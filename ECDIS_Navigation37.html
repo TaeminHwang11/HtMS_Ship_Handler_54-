@@ -603,6 +603,17 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 .ec-touch-steer-key:active{background:#527e61;transform:translateY(-50%) scale(.95)}
 #ec-steer-port{left:20px}#ec-steer-stbd{right:20px}
 </style>
+<style id="ecdis46-touch-controls">
+/* ECDIS46: touch input and the new fullscreen control only. */
+#main-2d-canvas{touch-action:none;-webkit-touch-callout:none}
+.placeholder-btn.has-inline-setting{touch-action:none;-webkit-touch-callout:none}
+.placeholder-btn.ec-touch-adjusting{outline:2px solid #f0e3b1!important;outline-offset:-3px!important}
+#ec-fullscreen{flex:0 0 34px;width:34px;height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0;box-sizing:border-box;touch-action:manipulation}
+#ec-fullscreen svg{width:17px;height:17px;flex-shrink:0;pointer-events:none}
+#ec-fullscreen .ec-fs-exit{display:none}
+#ec-fullscreen[aria-pressed="true"] .ec-fs-enter{display:none}
+#ec-fullscreen[aria-pressed="true"] .ec-fs-exit{display:block}
+</style>
 </head>
 <body>
 
@@ -6474,7 +6485,7 @@ function layoutText(){scheduled=false;
  q('.ec-reading,.ec-kicker:not(#ec-status-top .ec-kicker),.ec-unit:not(#ec-depth + .ec-unit),.ec-select,.ec-num,.panel-title,.tgt-title,.support-card-title,.support-card-primary,#ec-safe-actual,#ec-cell-list').forEach(e=>cached(e,()=>{let w=innerWidth(e);if(e.matches('.tgt-title'))w=innerWidth(e.parentElement)-(e.parentElement.querySelector('button')?.offsetWidth||0)-3;if(e.matches('.ec-select'))w-=20;if(e.matches('.ec-num'))w-=12;fitOne(e,w);},e.tagName==='SELECT'?e.value:''));
  q('.ec-grid .ec-btn,#ec-pick,#online-start-btn').forEach(e=>cached(e,()=>{restore(e);const m=metric(e,content(e)),w=innerWidth(e)-1;if(!m.text||w<1)return;let lo=1,hi=m.size;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(lineCount(m,mid,w)<=2)lo=mid;else hi=mid}if(lo<m.size-.05)apply(e,lo)}));
  q('.placeholder-btn').forEach(e=>cached(e,()=>fitButton(e),e.clientHeight+'|'+e.classList.contains('active-btn')));
- const foot=document.getElementById('ec-foot');if(foot)cached(foot,()=>{const spans=q(':scope > span',foot);spans.forEach(restore);const ms=spans.map(x=>metric(x,content(x)));const w=innerWidth(foot)-number(getComputedStyle(foot).columnGap)*(ms.length-1)-4;let lo=0,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(ms.reduce((s,m)=>s+width(m,m.size*mid),0)<=w)lo=mid;else hi=mid}if(lo<.999)ms.forEach(m=>apply(m.e,m.size*lo));});
+ const foot=document.getElementById('ec-foot');if(foot)cached(foot,()=>{const spans=q(':scope > span',foot);spans.forEach(restore);const ms=spans.map(x=>metric(x,content(x)));const full=document.getElementById('ec-fullscreen');const w=innerWidth(foot)-number(getComputedStyle(foot).columnGap)*(ms.length-1)-4-(full?full.offsetWidth+number(getComputedStyle(foot).columnGap):0);let lo=0,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(ms.reduce((s,m)=>s+width(m,m.size*mid),0)<=w)lo=mid;else hi=mid}if(lo<.999)ms.forEach(m=>apply(m.e,m.size*lo));});
  const mapHead=document.getElementById('ec-map-head');if(mapHead)cached(mapHead,()=>{const chips=q('.ec-map-chip',mapHead);chips.forEach(restore);const ms=chips.map(x=>metric(x,content(x)));const available=innerWidth(mapHead)-chips.length*16-(chips.length-1)*5-4;let r=Math.min(1,available/Math.max(1,ms.reduce((s,m)=>s+width(m),0)));ms.forEach(m=>{if(r<.999)apply(m.e,m.size*r)});const st=document.getElementById('ec-map-status');if(st)fitOne(st,Math.min(innerWidth(mapHead)*.5-16,innerWidth(mapHead)-chips.filter(x=>x!==st).reduce((sum,x)=>sum+x.offsetWidth+5,0)-16));});
  q('.ec-chart-note,#steering-model-status,#cursor-brg-dist').forEach(e=>cached(e,()=>{const w=document.getElementById('top-view-area').clientWidth;fitOne(e,e.matches('.ec-chart-note')?w*.5-16:e.id==='steering-model-status'?Math.min(308,w-32):w-32)}));
  const login=document.getElementById('online-login-overlay');if(login&&login.getClientRects().length){q('h1, .online-form-row label, .online-form-row select, .online-form-row input',login).forEach(e=>cached(e,()=>fitOne(e,e.matches('h1')?login.clientWidth-30:innerWidth(e)-(e.tagName==='SELECT'?20:0))));}
@@ -6484,6 +6495,163 @@ function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(layoutTe
 const observer=new MutationObserver(schedule);for(const id of ['main-wrapper','online-login-overlay','online-finish-overlay']){const el=document.getElementById(id);if(el)observer.observe(el,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','class','style']})}
 // Mutations of our own font-size values may request one more frame; cached text/width prevents a feedback loop.
 window.addEventListener('resize',schedule);document.addEventListener('change',schedule,true);document.addEventListener('input',schedule,true);if(document.fonts?.ready)document.fonts.ready.then(schedule);schedule();
+})();
+</script>
+<script id="ecdis46-touch-controls-script">
+/* ECDIS46: reuse the original chart zoom, support settings, and event-recording functions. */
+(()=>{
+    'use strict';
+    const chartAPI=window.HTMS_ECDIS;
+    // Canvas gestures are isolated from steering keys, support buttons and other overlays.
+    // Cancel compatibility mouse events and issue exactly one existing click for a clean tap.
+    let gesture=null, pending=null, renderFrame=0;
+    const localTouches=event=>{
+        const r=canvas.getBoundingClientRect();
+        return Array.from(event.targetTouches).map(t=>({id:t.identifier,x:t.clientX-r.left,y:t.clientY-r.top})).sort((a,b)=>a.id-b.id);
+    };
+    const measure=points=>{
+        const a=points[0],b=points[1];
+        if(!a)return null;
+        return b?{ids:`${a.id},${b.id}`,x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(b.x-a.x,b.y-a.y)}:{ids:String(a.id),x:a.x,y:a.y,d:0};
+    };
+    function applyGesture(){
+        if(renderFrame){cancelAnimationFrame(renderFrame);renderFrame=0;}
+        if(!gesture||!pending)return;
+        const next=pending,prev=gesture.reference;pending=null;
+        if(!prev||next.ids!==prev.ids){gesture.reference=next;return;}
+        const dx=next.x-prev.x,dy=next.y-prev.y;
+        if(!gesture.dragged){
+            if(Math.hypot(dx,dy)<4)return;
+            gesture.dragged=true;vObj.hasDragged=true;
+        }
+        gesture.reference=next;
+        vObj.panOffsetX+=dx;vObj.panOffsetY+=dy;
+        if(prev.d>0&&next.d>0){
+            // After translating the midpoint, zoom about the new midpoint. The chart
+            // coordinate under the two fingers stays anchored even while they move together.
+            window.ecZoomFactor(next.d/prev.d,next.x,next.y);
+        }else chartAPI.refresh();
+    }
+    function queueGesture(points){
+        pending=measure(points);
+        if(pending&&!renderFrame)renderFrame=requestAnimationFrame(applyGesture);
+    }
+    canvas.addEventListener('touchstart',event=>{
+        if(event.cancelable)event.preventDefault();
+        const points=localTouches(event),m=measure(points);if(!m)return;
+        if(!gesture){
+            vObj.isDragging=false;vObj.hasDragged=false;
+            gesture={reference:m,dragged:points.length>1,multiple:points.length>1,start:performance.now()};
+        }else{
+            applyGesture();gesture.reference=m;gesture.multiple=true;gesture.dragged=true;
+        }
+        if(gesture.multiple)vObj.hasDragged=true;
+    },{passive:false});
+    canvas.addEventListener('touchmove',event=>{
+        if(event.cancelable)event.preventDefault();if(!gesture)return;
+        const points=localTouches(event);if(!points.length)return;
+        const m=measure(points);
+        if(points.length>1){gesture.multiple=true;gesture.dragged=true;vObj.hasDragged=true;}
+        if(m.ids!==gesture.reference.ids){applyGesture();gesture.reference=m;return;}
+        queueGesture(points);
+    },{passive:false});
+    canvas.addEventListener('touchend',event=>{
+        if(event.cancelable)event.preventDefault();if(!gesture)return;
+        // Flush the latest movement before changing the number of fingers.
+        applyGesture();
+        const remaining=localTouches(event);
+        if(remaining.length){gesture.reference=measure(remaining);gesture.multiple=true;gesture.dragged=true;vObj.hasDragged=true;return;}
+        const t=event.changedTouches[0],r=canvas.getBoundingClientRect();
+        const moved=t&&Math.hypot(t.clientX-r.left-gesture.reference.x,t.clientY-r.top-gesture.reference.y)>=4;
+        const tap=t&&!gesture.dragged&&!gesture.multiple&&!moved&&performance.now()-gesture.start<700;
+        gesture=null;pending=null;vObj.isDragging=false;vObj.hasDragged=!tap;
+        if(tap){
+            // Existing target selection and ENC object picking are both click listeners.
+            canvas.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window,clientX:t.clientX,clientY:t.clientY,button:0,detail:1}));
+        }
+    },{passive:false});
+    function cancelChartGesture(){
+        if(renderFrame)cancelAnimationFrame(renderFrame);
+        renderFrame=0;pending=null;gesture=null;vObj.isDragging=false;vObj.hasDragged=true;
+    }
+    canvas.addEventListener('touchcancel',cancelChartGesture,{passive:true});
+    canvas.addEventListener('contextmenu',e=>{if(gesture)e.preventDefault();});
+    // One-finger hold and horizontal drag on wheel-adjustable support buttons.
+    // A tap retains the existing toggle. A hold/drag never toggles the feature on release.
+    const HOLD_MS=300, STEP_PX=18;
+    let activeAdjustment=null;
+    const controls=Array.from(document.querySelectorAll('button[data-support-group].has-inline-setting'));
+    function adjustmentFor(button){
+        const key=`${button.dataset.supportGroup}:${button.dataset.supportFeature}`;
+        if(key==='sa:future-position')return {key,step:dir=>button.dispatchEvent(new WheelEvent('wheel',{deltaY:-dir*120,bubbles:true,cancelable:true}))};
+        if(Object.prototype.hasOwnProperty.call(supportUserSettings.cpaByFeature,key))return {key,step:dir=>adjustCpaFromWheel(new WheelEvent('wheel',{deltaY:dir*120,cancelable:true}),key,'button-touch')};
+        if(key==='act:rudder-balance')return {key,step:dir=>adjustActionHeadingFromWheel(new WheelEvent('wheel',{deltaY:dir*120,cancelable:true}),'button-touch:act:rudder-balance')};
+        return null;
+    }
+    function endAdjustment(){
+        const a=activeAdjustment;if(!a)return;
+        clearTimeout(a.timer);a.button.classList.remove('ec-touch-adjusting');activeAdjustment=null;
+    }
+    for(const button of controls){
+        const setting=adjustmentFor(button);if(!setting)continue;
+        button.addEventListener('touchstart',e=>{
+            if(e.cancelable)e.preventDefault();e.stopPropagation();
+            if(activeAdjustment){activeAdjustment.cancelled=true;return;}
+            if(e.touches.length!==1)return;
+            const t=e.changedTouches[0];if(!t)return;
+            const a={button,id:t.identifier,startX:t.clientX,startY:t.clientY,lastX:t.clientX,held:false,moved:false,cancelled:false,start:performance.now()};
+            activeAdjustment=a;
+            a.timer=setTimeout(()=>{if(activeAdjustment!==a||a.cancelled)return;a.held=true;if(activeSupportFeatures.has(setting.key))button.classList.add('ec-touch-adjusting');},HOLD_MS);
+        },{passive:false});
+        button.addEventListener('touchmove',e=>{
+            if(e.cancelable)e.preventDefault();e.stopPropagation();
+            const a=activeAdjustment;if(!a||a.button!==button||a.cancelled)return;
+            if(e.touches.length!==1){a.cancelled=true;return;}
+            const t=Array.from(e.changedTouches).find(t=>t.identifier===a.id);if(!t)return;
+            if(Math.hypot(t.clientX-a.startX,t.clientY-a.startY)>8)a.moved=true;
+            if(!a.held&&performance.now()-a.start>=HOLD_MS){a.held=true;if(activeSupportFeatures.has(setting.key))button.classList.add('ec-touch-adjusting');}
+            if(!a.held||!activeSupportFeatures.has(setting.key))return;
+            // Each 18 CSS pixels changes one original wheel increment. Keep fractional travel
+            // so repeated short moves work, and allow reversing direction without a jump.
+            const steps=Math.trunc((t.clientX-a.lastX)/STEP_PX);
+            if(!steps)return;
+            a.lastX+=steps*STEP_PX;
+            for(let i=0;i<Math.abs(steps);i++)setting.step(Math.sign(steps));
+        },{passive:false});
+        button.addEventListener('touchend',e=>{
+            if(e.cancelable)e.preventDefault();e.stopPropagation();
+            const a=activeAdjustment;if(!a||a.button!==button)return;
+            const t=Array.from(e.changedTouches).find(t=>t.identifier===a.id);if(!t)return;
+            const tap=!a.cancelled&&!a.held&&!a.moved&&performance.now()-a.start<HOLD_MS&&Math.hypot(t.clientX-a.startX,t.clientY-a.startY)<=8;
+            endAdjustment();if(tap)button.click();
+        },{passive:false});
+        button.addEventListener('touchcancel',e=>{if(activeAdjustment?.button===button)endAdjustment();e.stopPropagation();},{passive:true});
+        button.addEventListener('contextmenu',e=>{if(activeAdjustment?.button===button)e.preventDefault();});
+    }
+    window.addEventListener('blur',()=>{if(gesture)cancelChartGesture();endAdjustment();});
+    // Footer fullscreen toggle. The login's original auto-fullscreen behaviour is unchanged.
+    const full=document.createElement('button');full.type='button';full.id='ec-fullscreen';full.className='ec-btn';
+    full.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="ec-fs-enter" d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6"/><path class="ec-fs-exit" d="M3 9h6V3M21 9h-6V3M15 21v-6h6M9 21v-6H3"/></svg>';
+    document.getElementById('ec-foot').append(full);
+    const isFull=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+    const updateFull=()=>{const on=isFull();full.setAttribute('aria-pressed',String(on));full.title=on?'EXIT FULL SCREEN':'FULL SCREEN';full.setAttribute('aria-label',full.title);};
+    updateFull();
+    document.addEventListener('fullscreenchange',updateFull);document.addEventListener('webkitfullscreenchange',updateFull);
+    full.addEventListener('keydown',e=>{if(['Space','ArrowLeft','ArrowRight'].includes(e.code))e.stopPropagation();});
+    full.addEventListener('click',async e=>{
+        e.stopPropagation();full.blur();
+        try{
+            if(isFull()){
+                const exit=document.exitFullscreen||document.webkitExitFullscreen;
+                if(!exit)throw Error('Fullscreen exit unavailable');await exit.call(document);
+            }else{
+                const root=document.documentElement,enter=root.requestFullscreen||root.webkitRequestFullscreen;
+                if(!enter){alert('이 브라우저에서는 전체화면 전환을 지원하지 않습니다. 모바일에서는 홈 화면에 추가하여 실행해 보세요.');return;}
+                await enter.call(root);
+            }
+        }catch(err){console.warn('[ECDIS] fullscreen:',err);alert('전체화면으로 전환할 수 없습니다. 브라우저의 전체화면 설정을 확인해 주세요.');}
+        updateFull();
+    });
 })();
 </script>
 </body>
