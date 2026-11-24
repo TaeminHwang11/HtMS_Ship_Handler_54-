@@ -4104,15 +4104,11 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             const rad = rel * DEG2RAD;
             const dx = Math.sin(rad);
             const dy = -Math.cos(rad);
-            const distances = [];
-            if (dx > 1e-9) distances.push((canvas.width - vObj.panX) / dx);
-            else if (dx < -1e-9) distances.push((0 - vObj.panX) / dx);
-            if (dy > 1e-9) distances.push((canvas.height - vObj.panY) / dy);
-            else if (dy < -1e-9) distances.push((0 - vObj.panY) / dy);
-            const positive = distances.filter(v => Number.isFinite(v) && v > 0);
-            if (!positive.length) return;
-
-            const length = Math.max(160, Math.min(...positive) * 0.88);
+            // Extend past the farthest canvas corner so the endpoint is always clipped.
+            const length = Math.hypot(
+                Math.max(Math.abs(vObj.panX), Math.abs(canvas.width - vObj.panX)),
+                Math.max(Math.abs(vObj.panY), Math.abs(canvas.height - vObj.panY))
+            ) + 32;
             const x2 = vObj.panX + dx * length;
             const y2 = vObj.panY + dy * length;
             drawGlowLine(ctx, vObj.panX, vObj.panY, x2, y2, '#000000', 2.0, [12,6]);
@@ -6043,7 +6039,7 @@ const $=id=>document.getElementById(id), wrap=$('main-wrapper'), map=$('top-view
 const pack=JSON.parse($('ec-chart-pack').textContent);$('ec-chart-pack').remove();
 const previewBuild=document.documentElement.dataset.ecPreview==='1';
 const mk=(tag,id,html,where)=>{const e=document.createElement(tag);e.id=id;e.innerHTML=html;where.append(e);return e};
-const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>ECDIS EDITION</em></div>',wrap);
+const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support functions</em></div>',wrap);
 const hud=$('os-fixed-hud');top.append(hud);const status=mk('div','ec-status-top','<span class="ec-kicker" title="Operational Design Domain / Operational Envelope">ODD</span>',top);status.append($('odd-oe-light'),$('online-pause-btn'));
 const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-section">GYRO <span>HDG</span></div><svg class="ec-gauge" viewBox="0 0 120 110"><circle cx="60" cy="55" r="47" fill="#252b2d" stroke="#83908e"/><g id="ec-gyro-dial">${Array.from({length:36},(_,i)=>`<line x1="60" y1="8" x2="60" y2="${i%3===0?17:12}" stroke="#a9b5b4" transform="rotate(${i*10} 60 55)"/>`).join('')}<g fill="#bfcac7" font-size="11" text-anchor="middle"><text x="60" y="25">N</text><text x="90" y="59">E</text><text x="60" y="91">S</text><text x="30" y="59">W</text></g></g><path d="M60 5L55 19H65Z" fill="#f1d287"/><path d="M60 34L53 67H67Z" stroke="#edce83" fill="none" stroke-width="1.8"/><circle cx="60" cy="55" r="3" fill="#edce83"/></svg><div class="ec-reading" id="ec-hdg">---</div><div class="ec-unit">TRUE HEADING</div></div>
 <div class="ec-instrument"><div class="ec-section">RATE OF TURN</div><div class="ec-reading" id="ec-rot">---</div><div class="ec-unit">° / MIN</div></div>
