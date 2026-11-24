@@ -592,6 +592,17 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 #ec-left,#ec-right{overflow-x:hidden}
 @media(max-width:900px){#os-fixed-hud .os-hud-item b,#os-fixed-hud .os-hud-item:nth-last-child(-n+2) b{font-size:18px}#ec-foot{font-size:13.5px}#ec-left .ec-row{font-size:13.5px}#ec-left .ec-row b{font-size:15px}}
 </style>
+<style id="ecdis45-touch-steering">
+/* Only the new touch steering controls; all original interface styles remain unchanged. */
+#ec-touch-steer{display:block;width:100%;min-height:44px;font-size:clamp(10px,1.1vw,16.5px);white-space:nowrap;touch-action:manipulation;line-height:1.2}
+#ec-touch-steer>span{display:block}
+#ec-touch-steer-state{font-size:.85em;opacity:.85;margin-top:2px}
+.ec-touch-steer-key{position:absolute;top:50%;transform:translateY(-50%);width:60px;height:60px;box-sizing:border-box;border-radius:50%;border:2px solid #83d9ad;background:rgba(42,70,57,.90);color:#effff5;font:700 28px Arial,sans-serif;align-items:center;justify-content:center;z-index:50;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;padding:0}
+.ec-touch-steer-key[hidden]{display:none!important}
+.ec-touch-steer-key:not([hidden]){display:flex}
+.ec-touch-steer-key:active{background:#527e61;transform:translateY(-50%) scale(.95)}
+#ec-steer-port{left:20px}#ec-steer-stbd{right:20px}
+</style>
 </head>
 <body>
 
@@ -6142,7 +6153,8 @@ const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-secti
 <div class="ec-instrument"><div class="ec-section">RATE OF TURN</div><div class="ec-reading" id="ec-rot">---</div><div class="ec-unit">° / MIN</div></div>
 <div class="ec-instrument"><div class="ec-section">RUDDER <span>ACT</span></div><div class="ec-reading" id="ec-rudder">---</div><div class="ec-rudder-track"><i id="ec-rudder-ind"></i></div><div class="ec-rudder-labels"><span>P 35</span><span>0</span><span>S 35</span></div><div class="ec-row"><span>ORDER</span><b id="ec-rud-order">---</b></div></div>
 <div class="ec-instrument"><div class="ec-section">WIND <span>TRUE</span></div><svg class="ec-gauge" viewBox="0 0 100 80" style="max-height:76px"><circle cx="50" cy="40" r="32" fill="#252b2d" stroke="#8d9997"/><path d="M50 7V13M50 67V73M17 40H23M77 40H83" stroke="#aab5b1"/><path id="ec-wind-needle" d="M50 14L46 25H54L50 14M50 23V58" fill="#a4ccac" stroke="#a4ccac" stroke-width="2"/><path d="M50 7L46 12H54Z" fill="#f0d38a"/></svg><div class="ec-reading" style="font-size:18px" id="ec-wind">---</div><div class="ec-unit" id="ec-wind-dir">SCENARIO WIND</div></div>
-<div class="ec-instrument"><div class="ec-section">CHART DEPTH</div><div class="ec-reading" style="font-size:19px" id="ec-depth">—</div><div class="ec-unit">ENC RANGE · NOT ECHO SOUNDER</div></div>`,wrap);
+<div class="ec-instrument"><div class="ec-section">CHART DEPTH</div><div class="ec-reading" style="font-size:19px" id="ec-depth">—</div><div class="ec-unit">ENC RANGE · NOT ECHO SOUNDER</div></div>
+<button type="button" class="ec-btn" id="ec-touch-steer" aria-pressed="false" title="Toggle touch steering: P (−5°) / S (+5°)"><span>TOUCH STEER</span><span id="ec-touch-steer-state">OFF</span></button>`,wrap);
 const right=mk('aside','ec-right',`<div class="ec-group"><div class="ec-section">CHART CONTROL</div><div class="ec-grid"><button class="ec-btn active" id="ec-hup">HEAD UP</button><button class="ec-btn" id="ec-nup">NORTH UP</button><button class="ec-btn" id="ec-zoom-in">＋</button><button class="ec-btn" id="ec-zoom-out">－</button><button class="ec-btn wide" id="ec-center">CENTER OS</button><button class="ec-btn" id="ec-mokpo">MOKPO</button><button class="ec-btn" id="ec-world">WORLD</button></div></div>
 <div class="ec-group"><div class="ec-section">POSITION <span>WGS 84</span></div><div class="ec-row"><span>LAT</span><b id="ec-lat">---</b></div><div class="ec-row"><span>LON</span><b id="ec-lon">---</b></div><div class="ec-row"><span>SCALE</span><b id="ec-scale">---</b></div><div class="ec-row"><span>CELLS</span><b id="ec-cells">0 / 11</b></div><div class="ec-note" id="ec-cell-list">ENC LOADING</div></div>
 <div class="ec-group"><div class="ec-section">DISPLAY</div><select class="ec-select" id="ec-mode" aria-label="Chart display mode"><option value="base">BASE</option><option value="standard" selected>STANDARD</option><option value="all">ALL DETAIL</option></select><select class="ec-select" id="ec-palette" aria-label="Palette"><option value="day">DAY</option><option value="dusk">DUSK</option><option value="night">NIGHT</option></select><label class="ec-check"><input type="checkbox" id="ec-sound" checked> Soundings</label><label class="ec-check"><input type="checkbox" id="ec-grid"> Lat / Lon grid</label><label class="ec-check"><input type="checkbox" id="ec-cov"> ENC coverage</label></div>
@@ -6155,6 +6167,35 @@ const chart=document.createElement('canvas');chart.id='ec-chart';map.prepend(cha
 mk('div','ec-map-head','<span id="ec-map-mode" class="ec-map-chip">HEAD UP · RM</span><span id="ec-map-scale" class="ec-map-chip">1 : —</span><span id="ec-map-status" class="ec-map-chip">LOADING ENC</span>',map);
 mk('div','ec-compass','<svg viewBox="0 0 64 64"><circle class="ec-compass-bg" cx="32" cy="32" r="29"/><g id="ec-north-needle"><path class="ec-compass-ink" d="M32 11L27 33L32 29L37 33Z"/><path class="ec-compass-ink" d="M32 32V52" stroke-width="1.3"/><text x="32" y="9" text-anchor="middle" fill="#314644" font-size="9" font-weight="bold">N</text></g><circle cx="32" cy="32" r="2" fill="#314644"/></svg>',map);
 mk('div','ec-chart-note','TRAINING CHART · DEPTH IN METRES',map).className='ec-chart-note';
+// ECDIS45: optional radar-style touch helm input. No change to the existing keyboard or physics.
+let ecTouchSteerEnabled=false;
+const ecTouchSteerToggle=$('ec-touch-steer');
+const ecTouchSteerPort=mk('button','ec-steer-port','P',map);
+const ecTouchSteerStbd=mk('button','ec-steer-stbd','S',map);
+for(const [button,step,label,key] of [
+    [ecTouchSteerPort,-5,'Port rudder: −5°','ArrowLeft'],
+    [ecTouchSteerStbd,5,'Starboard rudder: +5°','ArrowRight']
+]){
+    button.type='button';button.className='ec-touch-steer-key';button.hidden=true;
+    button.setAttribute('aria-label',label);button.title=label;
+    // A native click handles mouse and touch once per tap, without synthetic-event duplication.
+    button.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation();button.blur();
+        if(!ecTouchSteerEnabled||!onlineRunning||onlineFinished||onlinePaused)return;
+        onlineOs.targetRudder=Math.round(clampValue(onlineOs.targetRudder+step,-35,35)/5)*5;
+        recordExperimentEvent('rudder_key',{key,target_rudder_deg:onlineOs.targetRudder,source:'touch-steer'});
+    });
+}
+ecTouchSteerToggle.addEventListener('click',e=>{
+    e.preventDefault();e.stopPropagation();
+    ecTouchSteerEnabled=!ecTouchSteerEnabled;
+    ecTouchSteerToggle.classList.toggle('active',ecTouchSteerEnabled);
+    ecTouchSteerToggle.setAttribute('aria-pressed',String(ecTouchSteerEnabled));
+    $('ec-touch-steer-state').textContent=ecTouchSteerEnabled?'ON':'OFF';
+    ecTouchSteerPort.hidden=ecTouchSteerStbd.hidden=!ecTouchSteerEnabled;
+    ecTouchSteerToggle.blur();
+});
+
 const palettes={day:{outside:'#e8eeea',water:'#eff5f1',unknown:'#e5e9e3',deep:'#f3f7f3',mid:'#d9e9e8',shallow:'#b5dce7',very:'#86c8dc',dry:'#a1bf9c',land:'#e3d5a3',landLine:'#686753',line:'#3e5554',contour:'#7397a1',safe:'#394f55',mag:'#a12c80',text:'#435754',danger:'#b82e37',route:'#a12c80',target:'#3b4145',own:'#263c39',vector:'#3c645e',red:'#b32e39',yellow:'#977727',green:'#216c46'},dusk:{outside:'#566562',water:'#677775',unknown:'#53625e',deep:'#788985',mid:'#607d80',shallow:'#4d7787',very:'#386478',dry:'#617961',land:'#8c8465',landLine:'#393a32',line:'#253e3b',contour:'#99b1b5',safe:'#d8d5bb',mag:'#d69bbf',text:'#e5e6d5',danger:'#f18e88',route:'#f3b0e0',target:'#c2c8ca',own:'#f4f0da',vector:'#dce6dc',red:'#ef9087',yellow:'#f2d27b',green:'#99dfb0'},night:{outside:'#202d30',water:'#203234',unknown:'#283436',deep:'#2b3b3b',mid:'#284449',shallow:'#234653',very:'#193747',dry:'#34493b',land:'#494333',landLine:'#786e55',line:'#879b99',contour:'#4f747e',safe:'#a8ad98',mag:'#b66b9f',text:'#9faca1',danger:'#e77b73',route:'#d18dbb',target:'#b5bfc2',own:'#cbd4c0',vector:'#9fbab1',red:'#e27570',yellow:'#d9bf73',green:'#7cb795'}};
 const E={palette:'day',mode:'standard',sound:true,grid:false,cov:false,safetyDepth:10,safetyContour:10,north:false,pick:false,preview:false,lastKey:'',rev:0,world:null,worldPending:false,visible:[],pose:null,initialLat:34.7838,initialLon:126.356,depthKey:'',depthValue:'—',contourText:'—',error:false};
 const pal=()=>palettes[E.palette], text=(id,v)=>{const e=$(id);if(e&&e.textContent!==String(v))e.textContent=String(v)}, finite=n=>Number.isFinite(Number(n)), num=(n,d=0)=>finite(n)?Number(n):d, clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
