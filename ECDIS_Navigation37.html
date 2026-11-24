@@ -4473,7 +4473,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 
             if (group === 'act') {
                 const targetHeading = getDecisionTargetHeading();
-                if (!Number.isFinite(targetHeading)) return p('HDG 설정 필요','상단 중앙 DESIRED HDG에서 마우스 휠','조종계산 대기','caution');
+                if (!Number.isFinite(targetHeading)) return p('Set target HDG','상단 중앙 DESIRED HDG에서 마우스 휠','조종계산 대기','caution');
                 if (!model || !model.assessment) return p('계산 중',`목표 HDG ${targetHeading.toFixed(0)}°`,'조종모델 대기','caution');
 
                 const directionalSuggestion = (current, desired, tolerance) => {
