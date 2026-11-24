@@ -689,7 +689,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             <div class="split-side-panel">
                 <div class="panel-title support-group-toggle" data-support-group-title="act" title="클릭: 행동·조종 2개 기능 전체 ON / OFF" style="color: var(--accent-green);">ACTION & CONTROL</div>
                 <div class="control-btn-grid act-control-grid">
-                    <button class="placeholder-btn act-btn has-inline-setting" data-support-group="act" data-support-feature="rudder-balance" title="PID Rudder 제안 · 버튼 위 휠로 목표 HDG 조정"><span class="support-btn-main">러더 제안</span><span class="support-btn-setting" data-setting-role="target-hdg">목표 HDG : ---°</span></button>
+                    <button class="placeholder-btn act-btn has-inline-setting" data-support-group="act" data-support-feature="rudder-balance" title="PID Rudder 제안 · 버튼 위 휠로 목표 HDG 조정"><span class="support-btn-main">Rudder Suggestion</span><span class="support-btn-setting" data-setting-role="target-hdg">목표 HDG : ---°</span></button>
 
                 </div>
             </div>
@@ -805,7 +805,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             'dm:minimum-alteration': { label: '추천항로', description: '1분 Time Ring의 위험 HDG 벽을 피해 현재 목표 웨이포인트로 향하는 가능한 ARC 경로를 표시' },
             'dm:port-starboard': { label: 'PORT / STBD 비교', description: '양쪽 동일 변침 시 예상 CPA를 비교' },
             'dm:speed-option': { label: '속력 대안', description: '침로 유지 시 안전한 속력 대안을 표시' },
-            'act:rudder-balance': { label: '러더 제안', description: '현재 Rudder와 PID 목표 Rudder를 비교해 우현·좌현·유지 방향을 표시' },
+            'act:rudder-balance': { label: 'Rudder Suggestion', description: '현재 Rudder와 PID 목표 Rudder를 비교해 우현·좌현·유지 방향을 표시' },
             'act:rot-balance': { label: 'ROT 제안', description: 'PID 목표 Rudder와 레이더 시뮬레이터 선박동역학으로 현재 ROT의 변화 방향을 표시' }
         });
 
@@ -4481,7 +4481,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                     const d = Number(desired) || 0;
                     const delta = d - c;
                     if (Math.abs(delta) <= tolerance) return '유지';
-                    return delta > 0 ? '우현으로' : '좌현으로';
+                    return delta > 0 ? 'To STBD' : 'To PORT';
                 };
                 if (feature === 'rudder-balance') {
                     const r = Number(model.current) || 0;
