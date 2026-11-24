@@ -796,6 +796,8 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
         // recompute v_desired toward a fixed goal, rather than redefining the goal from
         // the already-altered course at every frame.
         let arcNavigationReference = null;
+        // Recommendation only: null follows the simulator's next waypoint.
+        let recommendedWaypointOverride = null;
 
         function resetArcNavigationReference() {
             arcNavigationReference = null;
@@ -851,10 +853,10 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             const osId = String(os.id ?? 'OS');
             const planned = getScenarioRouteRelativePoints(os);
 
-            // Online experiment: ARC always aims at the waypoint that the simulator is
-            // currently navigating to.  Do not infer another leg from nearest geometry.
+            // AUTO keeps the simulator's next waypoint; a manual selection changes ARC only.
             if (planned.length >= 2) {
-                const rawTargetIndex = Number(onlineCurrentWaypointIndex);
+                const rawTargetIndex = Number(activeSupportFeatures.has('dm:minimum-alteration') && Number.isInteger(recommendedWaypointOverride)
+                    ? recommendedWaypointOverride : onlineCurrentWaypointIndex);
                 const targetIndex = clampValue(Number.isFinite(rawTargetIndex) ? Math.round(rawTargetIndex) : 1, 1, planned.length - 1);
                 const from = planned[Math.max(0, targetIndex - 1)];
                 const to = planned[targetIndex];
@@ -2976,6 +2978,19 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
         let recommendedArcWorkerCurrent = null;
         let recommendedArcLastSolution = null;
 
+        function resetRecommendedWaypointPlan() {
+            if (recommendedArcWorker) recommendedArcWorker.terminate();
+            if (recommendedArcWorkerUrl) URL.revokeObjectURL(recommendedArcWorkerUrl);
+            recommendedArcWorker = null;
+            recommendedArcWorkerUrl = null;
+            recommendedArcWorkerBusy = false;
+            recommendedArcWorkerCurrent = null;
+            recommendedArcWorkerQueued = null;
+            recommendedArcLastSolution = null;
+            SupportModels.collisionAvoidance._arcCacheMap?.clear();
+            resetArcNavigationReference();
+        }
+
         function createRecommendedArcWorker() {
             if (recommendedArcWorker) return recommendedArcWorker;
             if (typeof Worker !== 'function' || typeof Blob !== 'function' || typeof URL === 'undefined') return null;
@@ -3242,7 +3257,9 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                             queueRecommendedArcWork(job);
                         }
                     }
-                    return recommendedArcLastSolution;
+                    // Never show a previous waypoint's route while the new one is calculating.
+                    return recommendedArcLastSolution && recommendedArcLastSolution.targetWaypointIndex === ref?.targetWaypointIndex
+                        ? recommendedArcLastSolution : null;
                 },
                 buildAvoidanceRoute(os, targets, solutionOrCandidate) {
                     if (!os || !solutionOrCandidate) return [];
@@ -3905,6 +3922,17 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
         function renderApproachRanking(ctx) {
             getVisibleApproachRankingList().slice(0, 5).forEach((item, index) => {
                 const p = shipCanvasPoint(item.ship);
+                // Keep the badge beside the visible hull, including small fishing boats.
+                const dims = displayedShipDimensions(item.ship);
+                const halfLength = dims.lengthUnit * vObj.viewScale / 2;
+                const symbol = 2 * halfLength < 5;
+                const l = symbol ? 3.5 : halfLength;
+                const w = symbol ? 2.3 : dims.beamUnit * vObj.viewScale / 2;
+                const angle = displayRelativeHeading(item.ship.hdg) * DEG2RAD;
+                const hullHalfWidth = Math.abs(Math.sin(angle)) * l + Math.abs(Math.cos(angle)) * w;
+                const offset = hullHalfWidth + 14;
+                const badgeX = p.x + (p.x + offset + 11 > canvas.width ? -offset : offset);
+                const badgeY = p.y - 5;
                 const danger = supportRiskClass(item.motion.cpaNM, item.motion.tcpaMin) === 'danger';
                 const color = danger ? '#fb7185' : '#cbd5e1';
                 ctx.save();
@@ -3912,12 +3940,12 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 1.2;
                 ctx.beginPath();
-                ctx.arc(p.x - 16, p.y - 16, 10, 0, Math.PI * 2);
+                ctx.arc(badgeX, badgeY, 10, 0, Math.PI * 2);
                 ctx.fill(); ctx.stroke();
                 ctx.fillStyle = color;
                 ctx.font = '700 11px Segoe UI';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(String(index + 1), p.x - 16, p.y - 16);
+                ctx.fillText(String(index + 1), badgeX, badgeY);
                 ctx.restore();
             });
         }
@@ -4024,13 +4052,53 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             if (!candidate) return;
             const route = SupportModels.collisionAvoidance.buildAvoidanceRoute(os, targets, candidate);
             if (!Array.isArray(route) || route.length < 2) return;
-            drawWaypointLegRoute(ctx, route, '#facc15', {
+            // Visual corridor only: 0.05 NM on each side, total width 0.1 NM.
+            // drawWaypointLegRoute already uses round joins and round end caps.
+            const corridorWidth = 40 * vObj.viewScale;
+            drawWaypointLegRoute(ctx, route, 'rgba(88,180,112,0.32)', {
                 dash: [],
-                lineWidth: 2.6,
+                lineWidth: corridorWidth,
                 alpha: 1,
                 showLabels: false,
                 showWaypoints: false
             });
+            // Dashed centerline: follow the same ARC polyline above the translucent corridor.
+            drawWaypointLegRoute(ctx, route, '#38774b', {
+                dash: [6, 4],
+                lineWidth: 1.5,
+                alpha: 1,
+                showLabels: false,
+                showWaypoints: false
+            });
+            // Mark actual route bends and the destination, not collinear time-ring points.
+            // Keep the full original ARC polyline and its calculated headings untouched.
+            const points = [];
+            for (const pt of route) {
+                if (!points.length || Math.hypot(pt.east - points.at(-1).east, pt.north - points.at(-1).north) > 1e-6) points.push(pt);
+            }
+            if (points.length < 2) return;
+            ctx.save();
+            ctx.strokeStyle = '#38774b';
+            ctx.fillStyle = '#d5efdc';
+            ctx.lineWidth = 1.25;
+            ctx.setLineDash([]);
+            const radius = Math.max(1.5, Math.min(4, corridorWidth * 0.25));
+            for (let i = 1; i < points.length; i++) {
+                const pt = points[i];
+                if (i < points.length - 1) {
+                    const a = points[i-1], b = points[i+1];
+                    const e1 = pt.east-a.east, n1 = pt.north-a.north;
+                    const e2 = b.east-pt.east, n2 = b.north-pt.north;
+                    const turn = Math.atan2(e1*n2-n1*e2, e1*e2+n1*n2);
+                    if (Math.abs(turn) < 1e-5) continue;
+                }
+                const p = relativeMetersToCanvas(pt.east, pt.north);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+            ctx.restore();
         }
 
         function renderPortStarboard(ctx) {
@@ -4150,12 +4218,8 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 
             if (activeSupportFeatures.has('sa:future-position')) renderFuturePositions(ctx);
             if (activeSupportFeatures.has('sa:threat-highlight')) renderThreatHighlight(ctx);
-            if (activeSupportFeatures.has('sa:approach-ranking')) renderApproachRanking(ctx);
 
             if (activeSupportFeatures.has('dm:safe-heading-band')) renderDangerHeadingArcs(ctx);
-            // Multi-CPA comparison routes are deliberately drawn first so the selected
-            // minimum-alteration ARC solution remains visually dominant when both are ON.
-            if (activeSupportFeatures.has('dm:minimum-alteration')) renderAvoidanceRoute(ctx);
 
             updateSupportCards();
         }
@@ -5185,6 +5249,8 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             ctx.moveTo(vObj.panX, 0); ctx.lineTo(vObj.panX, canvas.height);
             ctx.stroke();
 
+            // The wide translucent route stays behind all existing navigation overlays.
+            if (activeSupportFeatures.has('dm:minimum-alteration')) renderAvoidanceRoute(ctx);
             drawDistanceRings(ctx);
             renderScenarioPlannedRoute(ctx);
             renderSupportOverlay(ctx);
@@ -5219,6 +5285,8 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             });
 
             drawBottomScale(ctx);
+            // Rank badges are the final canvas layer, beside their target vessels.
+            if (activeSupportFeatures.has('sa:approach-ranking')) renderApproachRanking(ctx);
         }
 
         // ==========================================
@@ -5590,6 +5658,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
             onlineTargets = [];
             onlineRouteWorld = [];
             onlineCurrentWaypointIndex = 1;
+            recommendedWaypointOverride = null;
             onlineSimTimeSeconds = 0;
             onlineLastLogTimeSec = 0;
             onlineLogData = [];
@@ -6039,7 +6108,7 @@ const $=id=>document.getElementById(id), wrap=$('main-wrapper'), map=$('top-view
 const pack=JSON.parse($('ec-chart-pack').textContent);$('ec-chart-pack').remove();
 const previewBuild=document.documentElement.dataset.ecPreview==='1';
 const mk=(tag,id,html,where)=>{const e=document.createElement(tag);e.id=id;e.innerHTML=html;where.append(e);return e};
-const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support functions</em></div>',wrap);
+const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support Functions</em></div>',wrap);
 const hud=$('os-fixed-hud');top.append(hud);const status=mk('div','ec-status-top','<span class="ec-kicker" title="Operational Design Domain / Operational Envelope">ODD</span>',top);status.append($('odd-oe-light'),$('online-pause-btn'));
 const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-section">GYRO <span>HDG</span></div><svg class="ec-gauge" viewBox="0 0 120 110"><circle cx="60" cy="55" r="47" fill="#252b2d" stroke="#83908e"/><g id="ec-gyro-dial">${Array.from({length:36},(_,i)=>`<line x1="60" y1="8" x2="60" y2="${i%3===0?17:12}" stroke="#a9b5b4" transform="rotate(${i*10} 60 55)"/>`).join('')}<g fill="#bfcac7" font-size="11" text-anchor="middle"><text x="60" y="25">N</text><text x="90" y="59">E</text><text x="60" y="91">S</text><text x="30" y="59">W</text></g></g><path d="M60 5L55 19H65Z" fill="#f1d287"/><path d="M60 34L53 67H67Z" stroke="#edce83" fill="none" stroke-width="1.8"/><circle cx="60" cy="55" r="3" fill="#edce83"/></svg><div class="ec-reading" id="ec-hdg">---</div><div class="ec-unit">TRUE HEADING</div></div>
 <div class="ec-instrument"><div class="ec-section">RATE OF TURN</div><div class="ec-reading" id="ec-rot">---</div><div class="ec-unit">° / MIN</div></div>
@@ -6051,7 +6120,8 @@ const right=mk('aside','ec-right',`<div class="ec-group"><div class="ec-section"
 <div class="ec-group"><div class="ec-section">DISPLAY</div><select class="ec-select" id="ec-mode" aria-label="Chart display mode"><option value="base">BASE</option><option value="standard" selected>STANDARD</option><option value="all">ALL DETAIL</option></select><select class="ec-select" id="ec-palette" aria-label="Palette"><option value="day">DAY</option><option value="dusk">DUSK</option><option value="night">NIGHT</option></select><label class="ec-check"><input type="checkbox" id="ec-sound" checked> Soundings</label><label class="ec-check"><input type="checkbox" id="ec-grid"> Lat / Lon grid</label><label class="ec-check"><input type="checkbox" id="ec-cov"> ENC coverage</label></div>
 <div class="ec-group"><div class="ec-section">SAFETY</div><div class="ec-row"><span>Depth (m)</span><input class="ec-num" id="ec-sd" type="number" value="10" min="0" max="100" step="1"></div><div class="ec-row"><span>Contour (m)</span><input class="ec-num" id="ec-sc" type="number" value="10" min="0" max="100" step="1"></div><div class="ec-note" id="ec-safe-actual">Actual contour: —</div><div class="ec-note">Display settings only</div></div>
 <div class="ec-group"><div class="ec-section">TARGET INFO</div><div id="ec-target-name" class="ec-kicker">NO TARGET SELECTED</div><div class="ec-row"><span>DCPA</span><b id="ec-t-cpa">—</b></div><div class="ec-row"><span>TCPA</span><b id="ec-t-tcpa">—</b></div><div class="ec-row"><span>COG</span><b id="ec-t-cog">—</b></div><div class="ec-row"><span>SOG</span><b id="ec-t-sog">—</b></div><div class="ec-note">Click a vessel to open its original information window.</div></div>
-<div class="ec-group"><div class="ec-section">CHART OBJECT</div><button id="ec-pick" class="ec-btn" style="width:100%">PICK REPORT</button><div id="ec-report" class="ec-note" style="margin-top:6px">Select an ENC object on the chart.</div></div>`,wrap);
+<div class="ec-group"><div class="ec-section">CHART OBJECT</div><button id="ec-pick" class="ec-btn" style="width:100%">PICK REPORT</button><div id="ec-report" class="ec-note" style="margin-top:6px">Select an ENC object on the chart.</div></div>
+<div class="ec-group" id="ec-route-waypoint-group" hidden><div class="ec-section">ROUTE WAYPOINT</div><select class="ec-select" id="ec-route-waypoint" aria-label="Recommended route target waypoint"><option value="auto">AUTO · NEXT WP</option></select></div>`,wrap);
 const foot=mk('footer','ec-foot',`<span><b id="ec-foot-mode">HEAD UP · RM</b> &nbsp; | &nbsp; WGS 84</span><span id="ec-foot-position">CURSOR —</span><span id="ec-foot-zoom">—</span><span>TRAINING USE ONLY · NOT FOR NAVIGATION</span>`,wrap);
 const chart=document.createElement('canvas');chart.id='ec-chart';map.prepend(chart);const cx=chart.getContext('2d',{alpha:false});
 mk('div','ec-map-head','<span id="ec-map-mode" class="ec-map-chip">HEAD UP · RM</span><span id="ec-map-scale" class="ec-map-chip">1 : —</span><span id="ec-map-status" class="ec-map-chip">LOADING ENC</span>',map);
@@ -6156,7 +6226,42 @@ const pending=wanted.some(c=>c.pending),failed=wanted.some(c=>c.error);const sta
 const dk=[!!vObj.massEntity,t.lon.toFixed(5),t.lat.toFixed(5),E.rev,cells.map(c=>c.id).join()].join('|');if(dk!==E.depthKey){E.depthKey=dk;E.depthValue=vObj.massEntity?depthAt(t.lon,t.lat):'—';}text('ec-depth',E.depthValue);
 }
 function fmtLL(v,lat){let d=Math.floor(Math.abs(v)),m=(Math.abs(v)-d)*60;return `${String(d).padStart(lat?2:3,'0')}° ${m.toFixed(3).padStart(6,'0')}′ ${lat?v<0?'S':'N':v<0?'W':'E'}`}
-function hudUpdate(){const o=vObj.massEntity,t=E.pose||pose(),env=typeof onlineEnv!=='undefined'?onlineEnv:null;text('ec-lat',o?fmtLL(t.lat,true):'—');text('ec-lon',o?fmtLL(t.lon,false):'—');if(o){text('ec-hdg',String(Math.round((num(o.hdg)+360)%360)%360).padStart(3,'0')+'°');text('ec-rot',num(o.rot).toFixed(1));const r=num(o.rudder);text('ec-rudder',`${r<-.05?'P ':r>.05?'S ':''}${Math.abs(r).toFixed(1)}°`);text('ec-rud-order',`${num(o.rudderCmd,r).toFixed(1)}°`);$('ec-rudder-ind').style.left=clamp(50+r/35*50,0,100)+'%';$('ec-gyro-dial').setAttribute('transform',`rotate(${-num(o.hdg)} 60 55)`);if(env){text('ec-wind',num(env.windSpd).toFixed(1)+' kn');text('ec-wind-dir',String(Math.round(num(env.windDir))).padStart(3,'0')+'° TRUE');$('ec-wind-needle').setAttribute('transform',`rotate(${num(env.windDir)-num(o.hdg)} 50 40)`);}}$('ec-north-needle').setAttribute('transform',`rotate(${-t.h*180/Math.PI} 32 32)`);const mode=E.north?'NORTH UP · RM':'HEAD UP · RM';text('ec-map-mode',mode);text('ec-foot-mode',mode);$('ec-nup').classList.toggle('active',E.north);$('ec-hup').classList.toggle('active',!E.north);const ids=Array.from(selectedTargetIds||[]),target=ids.length?simEntities.find(s=>String(s.id)===String(ids.at(-1))):null;if(target&&o){const a=calculateTargetEncounter(o,target);text('ec-target-name',target.name||target.id);text('ec-t-cpa',Number.isFinite(a.cpaNM)?a.cpaNM.toFixed(2)+' NM':'—');text('ec-t-tcpa',Number.isFinite(a.tcpaMin)?a.tcpaMin.toFixed(1)+' min':'—');text('ec-t-cog',String(Math.round(num(target.cog))%360).padStart(3,'0')+'°');text('ec-t-sog',num(target.sog).toFixed(1)+' kn')}else{ text('ec-target-name','NO TARGET SELECTED');for(const k of ['cpa','tcpa','cog','sog'])text('ec-t-'+k,'—')}}
+// The new selector is visible only when Recommended Route is active.
+const routeWaypointGroup=$('ec-route-waypoint-group'),routeWaypointSelect=$('ec-route-waypoint');
+let routeWaypointOptionsKey='';
+function updateRouteWaypointSelector(){
+    const enabled=activeSupportFeatures.has('dm:minimum-alteration');
+    routeWaypointGroup.hidden=!enabled;
+    if(!enabled)return;
+    const wps=scenarioRouteData?.local_waypoints||[];
+    const next=clampValue(onlineCurrentWaypointIndex,1,Math.max(1,wps.length-1));
+    const key=JSON.stringify([next,wps.map(w=>w.name)]);
+    if(key!==routeWaypointOptionsKey){
+        const options=[new Option('AUTO · NEXT WP'+(wps[next]?' ('+wps[next].name+')':''),'auto')];
+        for(let i=1;i<wps.length;i++)options.push(new Option('WP '+i+(String(wps[i].name).replace(/\s+/g,'').toUpperCase()==='WP'+i?'':' · '+wps[i].name),String(i)));
+        routeWaypointSelect.replaceChildren(...options);
+        routeWaypointOptionsKey=key;
+    }
+    routeWaypointSelect.disabled=wps.length<2;
+    const value=Number.isInteger(recommendedWaypointOverride)&&recommendedWaypointOverride>0&&recommendedWaypointOverride<wps.length?String(recommendedWaypointOverride):'auto';
+    if(routeWaypointSelect.value!==value)routeWaypointSelect.value=value;
+}
+routeWaypointSelect.addEventListener('change',()=>{
+    if(!activeSupportFeatures.has('dm:minimum-alteration'))return;
+    const wps=scenarioRouteData?.local_waypoints||[];
+    const value=routeWaypointSelect.value==='auto'?null:Number(routeWaypointSelect.value);
+    if(value!==null&&(!Number.isInteger(value)||value<1||value>=wps.length))return;
+    if(value===recommendedWaypointOverride)return;
+    recommendedWaypointOverride=value;
+    resetRecommendedWaypointPlan();
+    const ref=getArcNavigationReference(vObj.massEntity);
+    recordExperimentEvent('recommended_waypoint_change',{
+        feature_key:'dm:minimum-alteration',waypoint_mode:value===null?'auto':'manual',
+        target_waypoint_index:ref?.targetWaypointIndex??null,target_waypoint_name:ref?.targetWaypointName??null
+    });
+    refresh();
+});
+function hudUpdate(){updateRouteWaypointSelector();const o=vObj.massEntity,t=E.pose||pose(),env=typeof onlineEnv!=='undefined'?onlineEnv:null;text('ec-lat',o?fmtLL(t.lat,true):'—');text('ec-lon',o?fmtLL(t.lon,false):'—');if(o){text('ec-hdg',String(Math.round((num(o.hdg)+360)%360)%360).padStart(3,'0')+'°');text('ec-rot',num(o.rot).toFixed(1));const r=num(o.rudder);text('ec-rudder',`${r<-.05?'P ':r>.05?'S ':''}${Math.abs(r).toFixed(1)}°`);text('ec-rud-order',`${num(o.rudderCmd,r).toFixed(1)}°`);$('ec-rudder-ind').style.left=clamp(50+r/35*50,0,100)+'%';$('ec-gyro-dial').setAttribute('transform',`rotate(${-num(o.hdg)} 60 55)`);if(env){text('ec-wind',num(env.windSpd).toFixed(1)+' kn');text('ec-wind-dir',String(Math.round(num(env.windDir))).padStart(3,'0')+'° TRUE');$('ec-wind-needle').setAttribute('transform',`rotate(${num(env.windDir)-num(o.hdg)} 50 40)`);}}$('ec-north-needle').setAttribute('transform',`rotate(${-t.h*180/Math.PI} 32 32)`);const mode=E.north?'NORTH UP · RM':'HEAD UP · RM';text('ec-map-mode',mode);text('ec-foot-mode',mode);$('ec-nup').classList.toggle('active',E.north);$('ec-hup').classList.toggle('active',!E.north);const ids=Array.from(selectedTargetIds||[]),target=ids.length?simEntities.find(s=>String(s.id)===String(ids.at(-1))):null;if(target&&o){const a=calculateTargetEncounter(o,target);text('ec-target-name',target.name||target.id);text('ec-t-cpa',Number.isFinite(a.cpaNM)?a.cpaNM.toFixed(2)+' NM':'—');text('ec-t-tcpa',Number.isFinite(a.tcpaMin)?a.tcpaMin.toFixed(1)+' min':'—');text('ec-t-cog',String(Math.round(num(target.cog))%360).padStart(3,'0')+'°');text('ec-t-sog',num(target.sog).toFixed(1)+' kn')}else{ text('ec-target-name','NO TARGET SELECTED');for(const k of ['cpa','tcpa','cog','sog'])text('ec-t-'+k,'—')}}
 // Original render loop remains responsible for navigation, recording, and target panels.
 // Rename only visible button captions; data-support identifiers and all listeners remain original.
 const captions={'future-position':'Predicted Position','threat-highlight':'Risk Ship Highlight','approach-ranking':'Encounter Priority','safe-heading-band':'Collision Risk Bearing Wall','minimum-alteration':'Recommended Route','rudder-balance':'Steering Guidance'};
@@ -6169,7 +6274,47 @@ const distances=[.1,.2,.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000]
 chooseScaleBarNM=function(){const k=400*vObj.viewScale;return distances.find(n=>n*k>=72)||distances.at(-1)};
 drawBottomScale=function(ctx){const n=chooseScaleBarNM(),w=n*400*vObj.viewScale,x=14,y=canvas.height-18;ctx.save();ctx.strokeStyle=pal().line;ctx.fillStyle=pal().text;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y-5);ctx.lineTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y-5);ctx.stroke();ctx.font='bold 11px Arial';ctx.textAlign='left';ctx.fillText(n+' NM',x,y-7);ctx.restore()};
 drawDistanceRings=function(ctx){const t=pose();if(t.k<1||t.x<-t.w||t.x>2*t.w||t.y<-t.ht||t.y>2*t.ht)return;const step=t.k>=45?1:distances.find(n=>n*t.k>=48)||10000;const max=Math.max(Math.hypot(t.x,t.y),Math.hypot(t.w-t.x,t.y),Math.hypot(t.x,t.ht-t.y),Math.hypot(t.w-t.x,t.ht-t.y));ctx.save();ctx.strokeStyle=E.palette==='day'?'#536f6c55':'#bbc9b84d';ctx.fillStyle=pal().text;ctx.font='10px Arial';ctx.lineWidth=.8;for(let n=step;n*t.k<=max+1;n+=step){const r=n*t.k;ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(t.x,t.y,r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);if(t.y-r>45&&t.y-r<t.ht-24)ctx.fillText(n+' NM',t.x+5,t.y-r-4)}ctx.restore()};
-renderScenarioPlannedRoute=function(ctx){if(!vObj.massEntity)return;const pts=getScenarioRouteRelativePoints(vObj.massEntity);if(pts.length<2)return;ctx.save();ctx.strokeStyle=pal().route;ctx.lineWidth=2;ctx.setLineDash([]);ctx.beginPath();pts.forEach((q,i)=>{const p=relativeMetersToCanvas(q.east,q.north);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.stroke();for(let i=0;i<pts.length;i++){const p=relativeMetersToCanvas(pts[i].east,pts[i].north);const active=typeof onlineCurrentWaypointIndex!=='undefined'&&i===onlineCurrentWaypointIndex;const r=active?5:3;ctx.lineWidth=active?1.8:1;ctx.strokeRect(p.x-r,p.y-r,2*r,2*r);if(active&&vObj.viewScale>.12){ctx.fillStyle=pal().route;ctx.font='bold 10px Arial';ctx.fillText('WP '+i,p.x+8,p.y-8)}}ctx.restore()};
+// Planned route display only. Port/starboard are relative to each directed route leg, not the screen.
+function plannedRouteOffsetPoints(points, side, offsetMeters=185.2){
+    const pts=[];
+    for(const q of points){if(!pts.length||Math.hypot(q.east-pts.at(-1).east,q.north-pts.at(-1).north)>1e-6)pts.push(q);}
+    if(pts.length<2)return [];
+    const normals=[];
+    for(let i=1;i<pts.length;i++){
+        const e=pts[i].east-pts[i-1].east,n=pts[i].north-pts[i-1].north,len=Math.hypot(e,n);
+        normals.push({east:side*n/len,north:-side*e/len});
+    }
+    const shifted=(p,n)=>({east:p.east+offsetMeters*n.east,north:p.north+offsetMeters*n.north});
+    const result=[shifted(pts[0],normals[0])];
+    for(let i=1;i<pts.length-1;i++){
+        const a=normals[i-1],b=normals[i],dot=a.east*b.east+a.north*b.north;
+        const denom=1+dot;
+        // Join parallel leg offsets at their intersection; bevel extreme reversals to avoid spikes.
+        if(denom>2/9){result.push(shifted(pts[i],{east:(a.east+b.east)/denom,north:(a.north+b.north)/denom}));}
+        else{result.push(shifted(pts[i],a),shifted(pts[i],b));}
+    }
+    result.push(shifted(pts.at(-1),normals.at(-1)));
+    return result;
+}
+renderScenarioPlannedRoute=function(ctx){
+    if(!vObj.massEntity)return;
+    const pts=getScenarioRouteRelativePoints(vObj.massEntity);
+    if(pts.length<2)return;
+    ctx.save();
+    const strokeRoute=(points,color,width,dash)=>{
+        if(points.length<2)return;
+        ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();
+        points.forEach((q,i)=>{const p=relativeMetersToCanvas(q.east,q.north);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});
+        ctx.stroke();
+    };
+    strokeRoute(plannedRouteOffsetPoints(pts,-1),'#c92f38',1.5,[]);
+    strokeRoute(plannedRouteOffsetPoints(pts,1),'#21834a',1.5,[]);
+    strokeRoute(pts,'#000000',2,[6,5]);
+    // Retain the original waypoint symbols, labels, and automatic active-waypoint indication.
+    ctx.setLineDash([]);ctx.strokeStyle=pal().route;
+    for(let i=0;i<pts.length;i++){const p=relativeMetersToCanvas(pts[i].east,pts[i].north);const active=typeof onlineCurrentWaypointIndex!=='undefined'&&i===onlineCurrentWaypointIndex;const r=active?5:3;ctx.lineWidth=active?1.8:1;ctx.strokeRect(p.x-r,p.y-r,2*r,2*r);if(active&&vObj.viewScale>.12){ctx.fillStyle=pal().route;ctx.font='bold 10px Arial';ctx.fillText('WP '+i,p.x+8,p.y-8)}}
+    ctx.restore();
+};
 const originalHull=drawShipHullLocal;
 drawShipHullLocal=function(ctx,px,py,scale,x,z,heading,color,isOwn,label,ship=null){
     const X=px+x*scale,Y=py+z*scale;
