@@ -551,13 +551,54 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 #bottom-view-wrapper>.split-side-panel:nth-child(3) .control-btn-grid{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
 
 </style>
+<style id="ecdis44-typography">
+/* ECDIS44: 150% interface typography only. The ENC canvas and chart symbols are unchanged. */
+#ec-brand strong{font-size:clamp(22.5px,2.25vw,34.5px)}
+#ec-brand small{font-size:15px}#ec-brand em{font-size:13.5px}
+#os-fixed-hud .os-hud-item{font-size:clamp(13.5px,1.5vw,18px)}
+#os-fixed-hud .os-hud-item b{font-size:clamp(18px,2.55vw,36px)}
+#os-fixed-hud .os-hud-item:nth-last-child(-n+2) b{font-size:clamp(16.5px,1.8vw,25.5px)}
+#online-pause-btn,#online-pause-btn.visible{font-size:16.5px!important}
+.ec-section,.ec-group .ec-section{font-size:15px}
+.ec-reading{font-size:clamp(24px,3vw,40.5px)}
+#ec-wind{font-size:27px!important}#ec-depth{font-size:28.5px!important}
+.ec-unit,.ec-rudder-labels{font-size:13.5px}
+.ec-btn,.ec-select,.ec-num{font-size:16.5px}
+.ec-row,.ec-row b{font-size:16.5px}
+.ec-group .ec-row,.ec-group .ec-row b,.ec-group .ec-btn,.ec-group .ec-select,.ec-group .ec-check,#ec-world,#ec-mokpo{font-size:15px}
+.ec-check{font-size:16.5px}.ec-note{font-size:15px}.ec-group .ec-note{font-size:13.5px}.ec-kicker{font-size:15px}
+#ec-foot{font-size:15px}
+.panel-title{font-size:clamp(15px,1.65vw,19.5px)!important}
+.placeholder-btn{font-size:clamp(15px,1.725vw,22.5px)!important}
+.control-btn-grid .support-btn-main{font-size:clamp(15px,1.56vw,24px);white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important}
+.support-btn-setting{font-size:clamp(13.5px,1.35vw,18px)!important;white-space:nowrap!important;overflow-wrap:normal!important}
+.support-card-title{font-size:clamp(24px,1.65vw,31.5px)}
+.support-card-primary{font-size:clamp(33px,2.775vw,52.5px)}
+.support-card-kicker{font-size:13.5px!important}.support-card-secondary{font-size:21px}.support-card-status{font-size:18px}
+.tgt-title{font-size:27px}.tgt-row{font-size:22.5px}.tgt-close-btn{font-size:24px}
+#steering-model-status{font-size:18px}#cursor-brg-dist{font-size:19.5px}
+.ec-map-chip{font-size:15px}.ec-chart-note{font-size:13.5px}
+#online-login-overlay h1{font-size:57px!important}
+#online-login-overlay>div:not(.online-menu-box){font-size:21px}
+.online-form-row label{font-size:19.5px}.online-form-row input,.online-form-row select{font-size:22.5px}.online-start-btn{font-size:24px}
+.online-finish-title{font-size:45px}.online-finish-desc{font-size:24px}
+/* Single-line readouts; existing paragraphs may wrap naturally. */
+#ec-brand>*,.os-hud-item,.os-hud-item b,.ec-reading,.ec-section,.ec-row,.ec-row b,.ec-check,.ec-kicker,.ec-rudder-labels,.ec-map-chip,.ec-chart-note,.tgt-row,.tgt-title,.support-card-title,.support-card-primary{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.ec-group .ec-row b{overflow-wrap:normal}.ec-unit:not(#ec-depth + .ec-unit){white-space:nowrap}.ec-row>b{min-width:0}.ec-section>span{min-width:0}
+.ec-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.ec-btn{white-space:normal;overflow-wrap:normal;word-break:normal}
+#ec-status-top .ec-btn{white-space:nowrap}
+#ec-foot>span{min-width:0;white-space:nowrap}
+#ec-left,#ec-right{overflow-x:hidden}
+@media(max-width:900px){#os-fixed-hud .os-hud-item b,#os-fixed-hud .os-hud-item:nth-last-child(-n+2) b{font-size:18px}#ec-foot{font-size:13.5px}#ec-left .ec-row{font-size:13.5px}#ec-left .ec-row b{font-size:15px}}
+</style>
 </head>
 <body>
 
 
     <div id="online-login-overlay">
         <h1 style="font-size:38px; margin:0 0 8px; letter-spacing:1px;">[HTMS] ECDIS Navigation</h1>
-        <div style="color:#06b6d4; letter-spacing:4px; font-size:14px; margin-bottom:30px;">ONLINE SIMULATION</div>
+        <div style="color:#06b6d4; letter-spacing:4px; font-size:21px; margin-bottom:30px;">ONLINE SIMULATION</div>
         <div class="online-menu-box">
             <div class="online-form-row">
                 <label>학번 (Student ID)</label>
@@ -2018,7 +2059,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
 
         function drawSupportTag(ctx, text, x, y, color) {
             ctx.save();
-            ctx.font = '600 11px Segoe UI';
+            ctx.font = '600 16.5px Segoe UI';
             const width = ctx.measureText(text).width + 12;
             const height = 18;
             const pos = chooseNonOverlappingLabel(x, y, width, height);
@@ -3940,7 +3981,7 @@ html,body{background:#292e31;font-family:Arial,'Malgun Gothic',sans-serif;color:
                 ctx.arc(badgeX, badgeY, 10, 0, Math.PI * 2);
                 ctx.fill(); ctx.stroke();
                 ctx.fillStyle = color;
-                ctx.font = '700 11px Segoe UI';
+                ctx.font = '700 16.5px Segoe UI';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(String(index + 1), badgeX, badgeY);
                 ctx.restore();
@@ -6097,7 +6138,7 @@ const previewBuild=document.documentElement.dataset.ecPreview==='1';
 const mk=(tag,id,html,where)=>{const e=document.createElement(tag);e.id=id;e.innerHTML=html;where.append(e);return e};
 const top=mk('header','ec-top','<div id="ec-brand"><strong>HTMS</strong><small>ECDIS Navigation</small><em>Including Support functions</em></div>',wrap);
 const hud=$('os-fixed-hud');top.append(hud);const status=mk('div','ec-status-top','<span class="ec-kicker" title="Operational Design Domain / Operational Envelope">ODD</span>',top);status.append($('odd-oe-light'),$('online-pause-btn'));
-const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-section">GYRO <span>HDG</span></div><svg class="ec-gauge" viewBox="0 0 120 110"><circle cx="60" cy="55" r="47" fill="#252b2d" stroke="#83908e"/><g id="ec-gyro-dial">${Array.from({length:36},(_,i)=>`<line x1="60" y1="8" x2="60" y2="${i%3===0?17:12}" stroke="#a9b5b4" transform="rotate(${i*10} 60 55)"/>`).join('')}<g fill="#bfcac7" font-size="11" text-anchor="middle"><text x="60" y="25">N</text><text x="90" y="59">E</text><text x="60" y="91">S</text><text x="30" y="59">W</text></g></g><path d="M60 5L55 19H65Z" fill="#f1d287"/><path d="M60 34L53 67H67Z" stroke="#edce83" fill="none" stroke-width="1.8"/><circle cx="60" cy="55" r="3" fill="#edce83"/></svg><div class="ec-reading" id="ec-hdg">---</div><div class="ec-unit">TRUE HEADING</div></div>
+const left=mk('aside','ec-left',`<div class="ec-instrument"><div class="ec-section">GYRO <span>HDG</span></div><svg class="ec-gauge" viewBox="0 0 120 110"><circle cx="60" cy="55" r="47" fill="#252b2d" stroke="#83908e"/><g id="ec-gyro-dial">${Array.from({length:36},(_,i)=>`<line x1="60" y1="8" x2="60" y2="${i%3===0?17:12}" stroke="#a9b5b4" transform="rotate(${i*10} 60 55)"/>`).join('')}<g fill="#bfcac7" font-size="16.5" text-anchor="middle"><text x="60" y="25">N</text><text x="90" y="59">E</text><text x="60" y="91">S</text><text x="30" y="59">W</text></g></g><path d="M60 5L55 19H65Z" fill="#f1d287"/><path d="M60 34L53 67H67Z" stroke="#edce83" fill="none" stroke-width="1.8"/><circle cx="60" cy="55" r="3" fill="#edce83"/></svg><div class="ec-reading" id="ec-hdg">---</div><div class="ec-unit">TRUE HEADING</div></div>
 <div class="ec-instrument"><div class="ec-section">RATE OF TURN</div><div class="ec-reading" id="ec-rot">---</div><div class="ec-unit">° / MIN</div></div>
 <div class="ec-instrument"><div class="ec-section">RUDDER <span>ACT</span></div><div class="ec-reading" id="ec-rudder">---</div><div class="ec-rudder-track"><i id="ec-rudder-ind"></i></div><div class="ec-rudder-labels"><span>P 35</span><span>0</span><span>S 35</span></div><div class="ec-row"><span>ORDER</span><b id="ec-rud-order">---</b></div></div>
 <div class="ec-instrument"><div class="ec-section">WIND <span>TRUE</span></div><svg class="ec-gauge" viewBox="0 0 100 80" style="max-height:76px"><circle cx="50" cy="40" r="32" fill="#252b2d" stroke="#8d9997"/><path d="M50 7V13M50 67V73M17 40H23M77 40H83" stroke="#aab5b1"/><path id="ec-wind-needle" d="M50 14L46 25H54L50 14M50 23V58" fill="#a4ccac" stroke="#a4ccac" stroke-width="2"/><path d="M50 7L46 12H54Z" fill="#f0d38a"/></svg><div class="ec-reading" style="font-size:18px" id="ec-wind">---</div><div class="ec-unit" id="ec-wind-dir">SCENARIO WIND</div></div>
@@ -6324,7 +6365,7 @@ drawShipHullLocal=function(ctx,px,py,scale,x,z,heading,color,isOwn,label,ship=nu
     ctx.closePath();ctx.fill();ctx.stroke();
     if(isOwn){ctx.beginPath();ctx.moveTo(0,-l);ctx.lineTo(0,-l-Math.max(16,scale*26));ctx.stroke();ctx.beginPath();ctx.arc(0,0,Math.min(2.5,Math.max(.6,w*.6)),0,2*Math.PI);ctx.fillStyle=col;ctx.fill()}
     ctx.restore();
-    if(label&&(scale>.035||isOwn)&&!ghost){ctx.save();ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillStyle=col;ctx.strokeStyle=p.deep;ctx.lineWidth=3;const y=Y+Math.max(16,l+10);ctx.strokeText(label,X,y);ctx.fillText(label,X,y);ctx.restore()}
+    if(label&&(scale>.035||isOwn)&&!ghost){ctx.save();ctx.font='bold 16.5px Arial';ctx.textAlign='center';ctx.fillStyle=col;ctx.strokeStyle=p.deep;ctx.lineWidth=3;const y=Y+Math.max(21.5,l+15.5);ctx.strokeText(label,X,y);ctx.fillText(label,X,y);ctx.restore()}
 };
 const originalWaypointDraw=drawWaypointLegRoute;drawWaypointLegRoute=function(ctx,route,color,options){
     if(String(color).toLowerCase()!=='#facc15')return originalWaypointDraw(ctx,route,color,options);
@@ -6355,11 +6396,54 @@ canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),q
 window.addEventListener('mousemove',()=>{if(!isSimulationRunning&&vObj.isDragging)refresh()});
 // Chart-only browsing does not create a student record or transmit any result.
 const login=$('online-login-overlay');const previewButton=document.createElement('button');previewButton.className='ec-btn';previewButton.style.cssText='margin-top:10px;min-width:180px;padding:9px';previewButton.textContent=previewBuild?'OPEN LOCAL DEMO':'CHART PREVIEW (NO RECORD)';login.append(previewButton);previewButton.onclick=()=>{login.style.display='none';E.preview=true;if(previewBuild&&typeof window.ecStartDemo==='function'){window.ecStartDemo()}else{centerOn(E.initialLon,E.initialLat,Math.min(canvas.width/3.4,canvas.height/2.5),true);const ret=document.createElement('button');ret.className='ec-btn';ret.textContent='LOGIN';status.prepend(ret);ret.onclick=()=>{login.style.display='';ret.remove()}}};
-if(previewBuild){$('online-start-btn').disabled=true;const a=document.createElement('div');a.style.cssText='font-size:13px;color:#efd38d;margin-top:8px';a.textContent='DESIGN PREVIEW · LOCAL DEMO ONLY · NO STUDENT DATA UPLOAD';login.append(a);$('ec-brand').querySelector('em').textContent='DESIGN PREVIEW';}
+if(previewBuild){$('online-start-btn').disabled=true;const a=document.createElement('div');a.style.cssText='font-size:19.5px;color:#efd38d;margin-top:8px';a.textContent='DESIGN PREVIEW · LOCAL DEMO ONLY · NO STUDENT DATA UPLOAD';login.append(a);$('ec-brand').querySelector('em').textContent='DESIGN PREVIEW';}
 // Exposed strictly for display tests and diagnostics.
 window.HTMS_ECDIS={state:E,pose,project,unproject,refresh,pack,centerOn};worldLoad();requestAnimationFrame(()=>{resizeCanvas();if(!isSimulationRunning)centerOn(E.initialLon,E.initialLat,Math.min(canvas.width/3.4,canvas.height/2.5),false)});
 })();
 
+</script>
+<script id="ecdis44-text-fit">
+/* Only fit displayed text into its existing space. No simulation state or controls are changed. */
+(()=>{
+'use strict';
+const q=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const ctx=document.createElement('canvas').getContext('2d');
+const fitted=new WeakMap();
+let scheduled=false;
+const number=s=>parseFloat(s)||0;
+const innerWidth=e=>Math.max(0,e.clientWidth-number(getComputedStyle(e).paddingLeft)-number(getComputedStyle(e).paddingRight));
+const direct=e=>Array.from(e.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).filter(Boolean).join(' ');
+const content=e=>e.tagName==='SELECT'?(e.selectedOptions[0]?.text||''):e.tagName==='INPUT'?(e.value||e.placeholder||''):e.textContent.trim();
+function restore(e){const old=fitted.get(e);if(old){if(old.value)e.style.setProperty('font-size',old.value,old.priority);else e.style.removeProperty('font-size');fitted.delete(e)}}
+function apply(e,size){if(!fitted.has(e))fitted.set(e,{value:e.style.getPropertyValue('font-size'),priority:e.style.getPropertyPriority('font-size')});e.style.setProperty('font-size',Math.max(1,size).toFixed(2)+'px','important')}
+function metric(e,text){const s=getComputedStyle(e),size=number(s.fontSize);return {e,text,size,weight:s.fontWeight,style:s.fontStyle,family:s.fontFamily,spacing:number(s.letterSpacing),line:s.lineHeight==='normal'?1.18:number(s.lineHeight)/Math.max(1,size)}}
+function width(m,size=m.size,text=m.text){ctx.font=`${m.style} ${m.weight} ${size}px ${m.family}`;return ctx.measureText(text).width+Math.max(0,[...text].length-1)*m.spacing;}
+function fitOne(e,available,text=content(e),maxHeight=Infinity){if(!e.getClientRects().length||available<=0||!text)return;restore(e);const m=metric(e,text);let size=Math.min(m.size,maxHeight/Math.max(.1,m.line));if(width(m,size)>available-2.5){let lo=1,hi=size;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(width(m,mid)<=available-2.5)lo=mid;else hi=mid}size=lo}if(size<m.size-.05)apply(e,size)}
+function fitRow(e){if(!e.getClientRects().length)return;const children=Array.from(e.children),parts=[e,...children.filter(c=>!c.matches('input,button,select,svg'))];parts.forEach(restore);const ms=parts.map(p=>metric(p,p===e?direct(e):content(p))).filter(m=>m.text);const reserved=children.filter(c=>c.matches('input,button,select,svg')).reduce((s,c)=>s+c.getBoundingClientRect().width+number(getComputedStyle(c).marginLeft)+number(getComputedStyle(c).marginRight),0);const available=innerWidth(e)-reserved-Math.max(2,number(getComputedStyle(e).columnGap))*Math.max(0,ms.length+children.length-parts.length);if(available<=1||!ms.length)return;let ratio=1;if(ms.reduce((s,m)=>s+width(m),0)>available-1){let lo=0,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(ms.reduce((s,m)=>s+width(m,Math.max(1,m.size*mid)),0)<=available-1)lo=mid;else hi=mid}ratio=lo}if(ratio<.999)ms.forEach(m=>apply(m.e,m.size*ratio));}
+function fitStack(e,els){if(!e.getClientRects().length)return;const list=els.filter(x=>x.getClientRects().length);list.forEach(restore);const w=innerWidth(e);for(const x of list)fitOne(x,Math.min(w,innerWidth(x)||w));const cs=getComputedStyle(e),h=e.clientHeight-number(cs.paddingTop)-number(cs.paddingBottom);const used=list.reduce((s,x)=>s+x.getBoundingClientRect().height+number(getComputedStyle(x).marginTop)+number(getComputedStyle(x).marginBottom),0);if(used>h&&h>0){const r=h/used;list.forEach(x=>apply(x,number(getComputedStyle(x).fontSize)*r*.98))}}
+function lineCount(m,s,w){let lines=1,current='';for(const word of m.text.split(/\s+/)){if(width(m,s,word)>w)return Infinity;const t=current?current+' '+word:word;if(width(m,s,t)>w&&current){lines++;current=word}else current=t}return lines}
+function fitButton(e){if(!e.getClientRects().length)return;const main=e.querySelector('.support-btn-main');if(!main)return;const setting=e.querySelector('.support-btn-setting');restore(main);if(setting)restore(setting);const w=innerWidth(e)-1,h=e.clientHeight-number(getComputedStyle(e).paddingTop)-number(getComputedStyle(e).paddingBottom);if(w<1||h<1)return;const m=metric(main,content(main));const visible=setting&&getComputedStyle(setting).display!=='none';if(visible)fitOne(setting,w);let extra=visible?setting.getBoundingClientRect().height+number(getComputedStyle(setting).marginTop):0;let lo=1,hi=m.size;for(let i=0;i<13;i++){const mid=(lo+hi)/2,n=lineCount(m,mid,w);if(n<=2&&n*mid*m.line+extra<=h-.6)lo=mid;else hi=mid}if(lo<m.size-.05)apply(main,lo);}
+const cache=new WeakMap();
+function cached(e,fn,extra=''){if(!e.getClientRects().length)return;const k=[window.innerWidth,window.innerHeight,e.clientWidth,extra,content(e)].join('|');if(cache.get(e)===k)return;cache.set(e,k);fn();}
+function layoutText(){scheduled=false;
+ const brand=document.getElementById('ec-brand');if(brand)cached(brand,()=>fitStack(brand,q('strong,small,em',brand)),brand.clientHeight);
+ q('#os-fixed-hud .os-hud-item').forEach(e=>cached(e,()=>{const b=e.querySelector('b');restore(e);fitOne(e,innerWidth(e),direct(e));if(b){restore(b);fitOne(b,innerWidth(e),content(b),Math.max(1,e.clientHeight-number(getComputedStyle(e).paddingTop)-number(getComputedStyle(e).paddingBottom)-number(getComputedStyle(e).rowGap)-number(getComputedStyle(e).fontSize)*1.18));}},e.clientHeight));
+ const status=document.getElementById('ec-status-top');if(status)cached(status,()=>{const a=status.querySelector('.ec-kicker'),b=status.querySelector('#online-pause-btn');if(a&&b&&b.getClientRects().length){const s=getComputedStyle(status),w=innerWidth(status)-17-2*number(s.columnGap)-18;restore(a);restore(b);const ma=metric(a,content(a)),mb=metric(b,content(b));const ratio=Math.min(1,w/(width(ma)+width(mb)+1));if(ratio<1){apply(a,ma.size*ratio);apply(b,mb.size*ratio)}}else if(a)fitOne(a,innerWidth(status)-24)},status.clientHeight+'|'+!!status.querySelector('#online-pause-btn')?.getClientRects().length);
+ q('.ec-section,.ec-row,.ec-check,.ec-rudder-labels,.tgt-row').forEach(e=>cached(e,()=>fitRow(e)));
+ q('.ec-reading,.ec-kicker:not(#ec-status-top .ec-kicker),.ec-unit:not(#ec-depth + .ec-unit),.ec-select,.ec-num,.panel-title,.tgt-title,.support-card-title,.support-card-primary,#ec-safe-actual,#ec-cell-list').forEach(e=>cached(e,()=>{let w=innerWidth(e);if(e.matches('.tgt-title'))w=innerWidth(e.parentElement)-(e.parentElement.querySelector('button')?.offsetWidth||0)-3;if(e.matches('.ec-select'))w-=20;if(e.matches('.ec-num'))w-=12;fitOne(e,w);},e.tagName==='SELECT'?e.value:''));
+ q('.ec-grid .ec-btn,#ec-pick,#online-start-btn').forEach(e=>cached(e,()=>{restore(e);const m=metric(e,content(e)),w=innerWidth(e)-1;if(!m.text||w<1)return;let lo=1,hi=m.size;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(lineCount(m,mid,w)<=2)lo=mid;else hi=mid}if(lo<m.size-.05)apply(e,lo)}));
+ q('.placeholder-btn').forEach(e=>cached(e,()=>fitButton(e),e.clientHeight+'|'+e.classList.contains('active-btn')));
+ const foot=document.getElementById('ec-foot');if(foot)cached(foot,()=>{const spans=q(':scope > span',foot);spans.forEach(restore);const ms=spans.map(x=>metric(x,content(x)));const w=innerWidth(foot)-number(getComputedStyle(foot).columnGap)*(ms.length-1)-4;let lo=0,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(ms.reduce((s,m)=>s+width(m,m.size*mid),0)<=w)lo=mid;else hi=mid}if(lo<.999)ms.forEach(m=>apply(m.e,m.size*lo));});
+ const mapHead=document.getElementById('ec-map-head');if(mapHead)cached(mapHead,()=>{const chips=q('.ec-map-chip',mapHead);chips.forEach(restore);const ms=chips.map(x=>metric(x,content(x)));const available=innerWidth(mapHead)-chips.length*16-(chips.length-1)*5-4;let r=Math.min(1,available/Math.max(1,ms.reduce((s,m)=>s+width(m),0)));ms.forEach(m=>{if(r<.999)apply(m.e,m.size*r)});const st=document.getElementById('ec-map-status');if(st)fitOne(st,Math.min(innerWidth(mapHead)*.5-16,innerWidth(mapHead)-chips.filter(x=>x!==st).reduce((sum,x)=>sum+x.offsetWidth+5,0)-16));});
+ q('.ec-chart-note,#steering-model-status,#cursor-brg-dist').forEach(e=>cached(e,()=>{const w=document.getElementById('top-view-area').clientWidth;fitOne(e,e.matches('.ec-chart-note')?w*.5-16:e.id==='steering-model-status'?Math.min(308,w-32):w-32)}));
+ const login=document.getElementById('online-login-overlay');if(login&&login.getClientRects().length){q('h1, .online-form-row label, .online-form-row select, .online-form-row input',login).forEach(e=>cached(e,()=>fitOne(e,e.matches('h1')?login.clientWidth-30:innerWidth(e)-(e.tagName==='SELECT'?20:0))));}
+ q('#online-finish-overlay>div').forEach(e=>cached(e,()=>fitOne(e,document.documentElement.clientWidth-30)));
+}
+function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(layoutText)}}
+const observer=new MutationObserver(schedule);for(const id of ['main-wrapper','online-login-overlay','online-finish-overlay']){const el=document.getElementById(id);if(el)observer.observe(el,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','class','style']})}
+// Mutations of our own font-size values may request one more frame; cached text/width prevents a feedback loop.
+window.addEventListener('resize',schedule);document.addEventListener('change',schedule,true);document.addEventListener('input',schedule,true);if(document.fonts?.ready)document.fonts.ready.then(schedule);schedule();
+})();
 </script>
 </body>
 </html>
