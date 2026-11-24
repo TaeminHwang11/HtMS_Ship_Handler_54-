@@ -289,7 +289,7 @@
 <!-- Independent student evaluation workspace: no reliance on replayList -->
 <div id="analysis-workspace" class="grade-workspace">
   <div class="grade-head">
-    <div><strong>학생별 실습 성적표</strong><small>학번으로 학생 통합 · 시나리오별 유효 상위 10회 평균 · 시행 전체 보존 · 100점 평가</small></div>
+    <div><strong>학생별 실습 성적표</strong><small>학번으로 학생 통합 · 시나리오별 시행 보존 · 100점 평가</small></div>
     <div class="grade-head-actions">
       <button id="grade-settings-open" class="grade-btn">평가기준·설정</button>
       <button id="grade-export-xlsx" class="grade-btn grade-primary">Excel 내보내기</button>
@@ -2540,6 +2540,12 @@
                         waypoints: (t.waypoints || []).map(w => ({x: Number(w.x) || 0, z: Number(w.z) || 0}))
                     };
                 });
+                // Replay-only identity metadata; editor state and JSON format stay unchanged.
+                newMass.targets.forEach((target,index)=>{
+                    const raw=parsed.targets[index];
+                    const id=raw && (raw.mmsi || raw.MMSI || raw.id);
+                    if(id) replayScenarioTargetIds.set(target,String(id));
+                });
                 newMass.land = normalizeLandData(parsed.Land);
                 newMass.trainingInfo = parsed.trainingInfo && typeof parsed.trainingInfo === 'object'
                     ? JSON.parse(JSON.stringify(parsed.trainingInfo)) : null;
@@ -2990,6 +2996,144 @@
     // ==========================================
     // REPLAY LOGIC (Multi-Screen Support)
     // ==========================================
+    // === Replay-only scenario traffic fallback for ownship-only result files ===
+    // Do not add synthetic rows to the recorded frames or to the grading data.
+    const replayScenarioTargetIds = new WeakMap();
+    let replayScenarioTrafficTrack = null;
+    function replayIsOwnShip(ship){
+        const name=String(ship.name||'');
+        return name==='OS' || name.startsWith('MASS');
+    }
+    function replayScenarioStem(name){
+        return String(name||'').trim().replace(/\.json$/i,'').replace(/\s*\(\d+\)$/,'').replace(/\.json$/i,'');
+    }
+    function replayResultScenarioName(data,fileName){
+        const match=replayScenarioStem(fileName).match(/^(.*)_[A-Z]_\d{8}_\d{6}_[^_]+_.+$/i);
+        return replayScenarioStem(data?.supportData?.scenario_file || (match && match[1]) || data?.supportData?.scenario_name || '');
+    }
+    function replayScenarioNameMatches(openName,resultName){
+        if(!openName || !resultName || openName.toLowerCase()===resultName.toLowerCase())return true;
+        // Permit a descriptive suffix such as _ECDIS or a downloaded copy of the same scenario.
+        const key=n=>String(n).match(/^HTMS_Scenario_(\d+[A-Z]*)(?:_|$)/i)?.[1]?.toUpperCase();
+        const a=key(openName),b=key(resultName);
+        return !!a && a===b;
+    }
+    function replayScenarioSeeds(mass){
+        return (mass.targets||[]).map((target,index)=>{
+            const x=Number(target.x)/400,y=-Number(target.z)/400;
+            if(!Number.isFinite(x)||!Number.isFinite(y))return null;
+            return {name:replayScenarioTargetIds.get(target)||`TGT_${index+1}`,
+                x,y,hdg:((Number(target.hdg)||0)%360+360)%360,spd:Number(target.spd)||0,
+                waypoints:(target.waypoints||[]).map(wp=>({x:Number(wp.x)/400,y:-Number(wp.z)/400}))
+                    .filter(wp=>Number.isFinite(wp.x)&&Number.isFinite(wp.y)),
+                waypointIndex:0,routeStartX:x,routeStartY:y,rot:0};
+        }).filter(Boolean);
+    }
+    function replayScenarioStep(targets,dt){
+        // Same target motion as ECDIS_Navigation44: 0.3 NM WP radius,
+        // passed-WP test, 12 deg/min turn limit, and straight travel after the last WP.
+        const simDtHours=dt/3600;
+        targets.forEach(t=>{
+            const route=t.waypoints||[];
+            let targetWp=t.waypointIndex<route.length?route[t.waypointIndex]:null;
+            if(targetWp){
+                const legStart=t.waypointIndex===0?{x:t.routeStartX,y:t.routeStartY}:route[t.waypointIndex-1];
+                const distToWp=Math.hypot(targetWp.x-t.x,targetWp.y-t.y);
+                const legDx=targetWp.x-legStart.x,legDy=targetWp.y-legStart.y;
+                const passedWp=legDx*legDx+legDy*legDy>1e-9 &&
+                    (t.x-targetWp.x)*legDx+(t.y-targetWp.y)*legDy>=0;
+                if(distToWp<0.3||passedWp){
+                    t.waypointIndex++;
+                    targetWp=t.waypointIndex<route.length?route[t.waypointIndex]:null;
+                }
+            }
+            const previousHdg=t.hdg;
+            if(targetWp){
+                const desiredHdg=(Math.atan2(targetWp.x-t.x,targetWp.y-t.y)*180/Math.PI+360)%360;
+                const error=((desiredHdg-t.hdg+540)%360)-180;
+                const maxTurnDeg=12.0*dt/60;
+                const turnDeg=Math.max(-maxTurnDeg,Math.min(maxTurnDeg,error));
+                t.hdg=(t.hdg+turnDeg+360)%360;
+            }
+            t.rot=(((t.hdg-previousHdg+540)%360)-180)*60/Math.max(1e-9,dt);
+            const r=t.hdg*Math.PI/180;
+            t.x+=t.spd*simDtHours*Math.sin(r);
+            t.y+=t.spd*simDtHours*Math.cos(r);
+        });
+    }
+    function replayScenarioAdvance(targets,seconds){
+        // Deterministic <=0.1 s integration makes seeks independent of playback speed/order.
+        const steps=Math.floor(seconds/0.1+1e-9);
+        for(let i=0;i<steps;i++)replayScenarioStep(targets,0.1);
+        const rest=seconds-steps*0.1;
+        if(rest>1e-9)replayScenarioStep(targets,rest);
+    }
+    function prepareReplayScenarioTraffic(){
+        const mass=massList[0],openName=replayScenarioStem(document.getElementById('scenarioNameInput').value);
+        const missing=replayList.filter(r=>r.needsScenarioTraffic);
+        let eligible=0;
+        for(const replay of replayList){
+            replay.scenarioTraffic=null;
+            replay.scenarioTrafficWarning='';
+        }
+        if(!missing.length){replayScenarioTrafficTrack=null;return;}
+        if(simMode!=='HTMS'||!mass||(!openName&&!mass.targets?.length)){
+            for(const replay of missing)replay.scenarioTrafficWarning='타선 재구성에 사용할 원본 시나리오를 편집 창에서 먼저 불러오세요.';
+            replayScenarioTrafficTrack=null;return;
+        }
+        const seeds=replayScenarioSeeds(mass);
+        const key=JSON.stringify([mass.originLat,mass.originLon,seeds]);
+        if(!replayScenarioTrafficTrack||replayScenarioTrafficTrack.key!==key){
+            replayScenarioTrafficTrack={key,originLat:mass.originLat,originLon:mass.originLon,
+                checkpoints:[seeds],samples:new Map()};
+        }
+        for(const replay of missing){
+            if(!replayScenarioNameMatches(openName,replay.resultScenarioName)){
+                replay.scenarioTrafficWarning=`결과 시나리오(${replay.resultScenarioName})와 불러온 시나리오(${openName})가 다릅니다.`;
+                continue;
+            }
+            replay.scenarioTraffic=replayScenarioTrafficTrack;
+            eligible++;
+        }
+        if(!eligible)replayScenarioTrafficTrack=null;
+    }
+    function replayScenarioTrafficAt(track,time){
+        if(!track||!Number.isFinite(time)||time<0)return [];
+        // One state checkpoint per simulated second, shared by all matching panes.
+        // A short LRU of sampled times also shares fractional-second positions.
+        const samples=track.samples;
+        if(samples.has(time)){
+            const result=samples.get(time);samples.delete(time);samples.set(time,result);return result;
+        }
+        const whole=Math.floor(time),checkpoints=track.checkpoints;
+        while(checkpoints.length<=whole){
+            const next=checkpoints[checkpoints.length-1].map(t=>({...t}));
+            replayScenarioAdvance(next,1);
+            checkpoints.push(next);
+        }
+        let states=checkpoints[whole];
+        if(time-whole>1e-9){states=states.map(t=>({...t}));replayScenarioAdvance(states,time-whole);}
+        const ships=states.map(t=>({name:t.name,x:t.x*400,z:-t.y*400,hdg:t.hdg,cog:t.hdg,sog:t.spd,rot:t.rot,rudCmd:0,rudAct:0}));
+        samples.set(time,ships);
+        if(samples.size>256)samples.delete(samples.keys().next().value);
+        return ships;
+    }
+    function replayShipsForFrame(replay,frame){
+        if(!replay.scenarioTraffic)return frame.ships;
+        let targets=replayScenarioTrafficAt(replay.scenarioTraffic,frame.time);
+        // Original legacy lat/lon-only replay uses globalOrigin and 111111 m/degree.
+        // Transform only synthetic targets into that existing coordinate frame.
+        const ref=replay.chartReference;
+        if(ref&&ref.degreeUnits===111111*400/1852){
+            const track=replay.scenarioTraffic;
+            const cos=Math.cos(track.originLat*Math.PI/180),refCos=Math.cos(ref.lat*Math.PI/180);
+            targets=targets.map(t=>({...t,
+                x:(track.originLon+t.x/(24000*cos)-ref.lon)*ref.degreeUnits*refCos,
+                z:-(track.originLat-t.z/24000-ref.lat)*ref.degreeUnits}));
+        }
+        return frame.ships.concat(targets);
+    }
+
     function createReplayData(jsonStr, fileName) {
         try {
             const data = JSON.parse(jsonStr);
@@ -3045,6 +3189,10 @@
             return {
                 name: fileName,
                 frames: parsedFrames,
+                // Fall back only if the entire file contains ownship records and no recorded targets.
+                needsScenarioTraffic: parsedFrames.some(f=>f.ships.some(replayIsOwnShip)) &&
+                    !parsedFrames.some(f=>f.ships.some(s=>!replayIsOwnShip(s))),
+                resultScenarioName: replayResultScenarioName(data,fileName),
                 chartReference: replayChartFrameReference(data,logArray),
                 panX: null, panY: null, viewScale: 1 / 3.0,
                 dragObj: null
@@ -3086,6 +3234,7 @@
 
     function renderReplayGrid() {
         if (currentMode !== 'replay') return;
+        prepareReplayScenarioTraffic();
         gridContainer.innerHTML = '';
         
         let cols = 1, rows = 1;
@@ -3161,6 +3310,8 @@
                 <div class="vp-label" style="font-size: ${labelFontSize}; padding: ${labelPadding};">&#x200E;[${replay.name}]&#x200E;</div>
                 <canvas class="vp-canvas" id="replay-canvas-${i}"></canvas>
             `;
+            if(replay.scenarioTrafficWarning)vp.title=replay.scenarioTrafficWarning;
+            else if(replay.scenarioTraffic)vp.title='본선 실측 기록 + 시나리오 기반 타선 재구성 (0.1초 적분)';
             gridContainer.appendChild(vp);
 
             requestAnimationFrame(() => {
@@ -3253,6 +3404,10 @@
         document.getElementById('timeDisplay').textContent = `시간: ${currentReplayTime.toFixed(1)} s`;
         
         renderReplayGrid();
+        const warnings=replayList.filter(r=>r.scenarioTrafficWarning);
+        if(warnings.length){
+            alert(`타선 기록이 없는 ${warnings.length}개 결과의 원본 시나리오를 확인하세요.\n${warnings[0].scenarioTrafficWarning}\n본선 기록은 그대로 재생합니다.`);
+        }
     }
 
     document.getElementById('loadLocalJsonBtn').addEventListener('click', () => {
@@ -3545,7 +3700,7 @@
             const frame = replay.frames[localIdx];
             if (!frame) return;
 
-            frame.ships.forEach(ship => {
+            replayShipsForFrame(replay,frame).forEach(ship => {
                 const cx = replay.panX + (ship.x * replay.viewScale);
                 const cy = replay.panY + (ship.z * replay.viewScale);
                 const isOS = ship.name === 'OS' || ship.name.startsWith('MASS');
@@ -4230,30 +4385,21 @@ function practiceFactor(n){
  const t=config.training,stop=Math.max(2,Math.floor(num(t.fullAt)||10));
  return n<=0?0:num(t.min)+(num(t.max)-num(t.min))*clamp((n-1)/(stop-1),0,1);
 }
-// Scenario grade = mean of up to 10 highest valid RUN SCORES, then the existing practice factor.
-// All attempts remain stored and counted; manual/representative choice affects viewing only.
 function scenarioGrade(sid,key){
- const scored=runsOf(sid,key).map(run=>({run,value:runScore(run)}))
-   .filter(item=>item.value!==null&&valid(item.value));
+ const list=runsOf(sid,key).filter(r=>runScore(r)!==null);
  const {count,real}=practiceCount(sid,key);
- if(!scored.length)return {score:null,base:null,count:0,real:0,factor:0,representative:null,averagedRuns:[],averagedCount:0};
- const ranked=scored.sort((a,b)=>b.value-a.value||b.run.stamp.localeCompare(a.run.stamp)||String(a.run.id).localeCompare(String(b.run.id)));
- const top=ranked.slice(0,10);
- const base=top.reduce((sum,item)=>sum+item.value,0)/top.length;
- const averagedRuns=top.map(item=>item.run);
- // Keep the original representative-run selection as a DISPLAY preference only.
- // The top-10 mean is mandatory for grades, regardless of the selection mode.
+ if(!list.length)return {score:null,base:null,count:0,real:0,factor:0,representative:null};
  const mode=config.training.selected;
  const selected=config.selectedRuns[`${sid}|${key}`];
- let chosen=ranked[0].run;
- if(mode==='manual'&&selected){
-  const found=scored.find(item=>item.run.id===selected);
-  if(found)chosen=found.run;
- }else if(mode==='latest'||mode==='average'){
-  chosen=scored.reduce((last,item)=>!last||item.run.stamp>last.stamp?item.run:last,null);
- }
+ let chosen=null,base;
+ if(mode==='average'){base=list.reduce((v,r)=>v+runScore(r),0)/list.length;chosen=list.at(-1);}
+ else if(mode==='manual'&&selected&&list.some(r=>r.id===selected)){
+  chosen=list.find(r=>r.id===selected);base=runScore(chosen);
+ }else if(mode==='latest'){
+  chosen=[...list].sort((a,b)=>a.stamp.localeCompare(b.stamp)).at(-1);base=runScore(chosen);
+ }else{chosen=[...list].sort((a,b)=>runScore(b)-runScore(a)||b.stamp.localeCompare(a.stamp))[0];base=runScore(chosen);}
  const factor=practiceFactor(count);
- return {score:clamp(base*factor,0,100),base,count,real,factor,representative:chosen,averagedRuns,averagedCount:top.length};
+ return {score:clamp(base*factor,0,100),base,count,real,factor,representative:chosen};
 }
 const isFinalForABC=k=>/^001[A-Z]+$/.test(k);
 const isFinalForD=k=>/^\d+$/.test(k)&&k!=='001';
@@ -4329,8 +4475,7 @@ function scenarioCell(sid,key){
   const label=review?'재분석 필요':excluded&&!none?'평가 제외':'점수 미산출';
   return `<span class="${label==='평가 제외'?'grade-excluded':'grade-neutral'}">${label}</span><span class="grade-attempt">${list.length}회 중 유효 0회${review?` · 재분석 ${review}`:''}</span>`;
  }
- const averageLabel=g.averagedCount>=10?'상위 10회 평균':`${g.averagedCount}회 평균`;
- return `${scoreHTML(g.score)}<span class="grade-attempt">총 ${list.length}회${excluded?` · 유효 ${g.real}회 · 제외 ${excluded}`:''} · ${averageLabel}</span>`;
+ return `${scoreHTML(g.score)}<span class="grade-attempt">${g.real}회${excluded?` · 제외 ${excluded}`:''}</span>`;
 }
 function renderTable(){
  const allKeys=allScenarioKeys(),filter=$('grade-exam-filter').value;
@@ -4368,14 +4513,13 @@ function renderDetail(){
  holder.innerHTML=`<div class="grade-mini-head"><h3>${esc(s.sid)} · ${esc(s.name)} — 총 ${arr.length}회</h3><div class="grade-muted">수강 수업 ${classes.length?esc(classes.join(', ')):'명단 미등록'} · 반/가중치/점수환산은 상단 [평가기준·설정]에서 변경</div><button class="grade-btn" id="grade-close-detail">상세 접기</button></div>
  <div class="grade-run-grid">${arr.map(r=>{
   const rawScore=runScore(r),g=scenarioGrade(s.sid,r.scenario),checked=r.id===g.representative?.id,status=runStatus(r);
-  const averageRank=g.averagedRuns.findIndex(item=>item.id===r.id)+1;
   const meta=`${r.date?.slice(0,4)||''}-${r.date?.slice(4,6)||''}-${r.date?.slice(6)||''} ${r.clock?.slice(0,2)||''}:${r.clock?.slice(2,4)||''}`;
   return `<details class="grade-run" ${r.id===g.representative?.id?'open':''}>
-  <summary><strong>${esc(r.scenario)}</strong> · ${esc(meta)} · <b>${rawScore===null?esc(status):format(rawScore,1)+'점'}</b>${averageRank?` · <span class="grade-good">평균 반영 ${averageRank}/${g.averagedCount}</span>`:''}${checked&&rawScore!==null?' · <span class="grade-muted">참고 대표 시행</span>':''}
+  <summary><strong>${esc(r.scenario)}</strong> · ${esc(meta)} · <b>${rawScore===null?esc(status):format(rawScore,1)+'점'}</b>${checked&&rawScore!==null?' · <span class="grade-good">대표 시행</span>':''}
    ${r.invalid.length?`<span class="grade-error"> · ${esc(r.invalid.join(' / '))}</span>`:''}${r.review?.length?`<span class="grade-neutral"> · ${esc(r.review.join(' / '))}</span>`:''}
   </summary><div class="grade-note" style="margin-top:8px">기록시간 ${formatTime(r.duration)} · 관측시간 ${formatTime(r.observedSeconds)} · 최대 기록간격 ${format(r.longGap,1)}초 · 안전거리 ${format(r.safe,2)} NM · 타선 ${r.targetCount}척 · 최종 WP 거리 ${format(r.goalDist,2)} NM · 시나리오 ${esc(r.sourceScenario||'')}</div>
   ${r.warning?.length?`<div class="grade-note">${r.warning.map(esc).join(' · ')}</div>`:''}
-  ${rawScore!==null?`<label class="grade-feature-check" style="margin:9px 0;display:inline-flex;gap:6px;align-items:center;"><input type="radio" name="grade-selected-${esc(r.scenario)}" data-selected-run="${esc(r.id)}" ${checked?'checked':''}> 참고 대표 시행으로 표시 (상위 10회 평균점수에는 영향 없음)</label>`:''}
+  ${rawScore!==null?`<label class="grade-feature-check" style="margin:9px 0;display:inline-flex;gap:6px;align-items:center;"><input type="radio" name="grade-selected-${esc(r.scenario)}" data-selected-run="${esc(r.id)}" ${checked?'checked':''}> 이 시행을 대표점수로 지정 (선택방식은 [설정 → 수동]에서 적용)</label>`:''}
   <div class="grade-metric-list">${gradeMetricDetail(r)}</div><div style="text-align:right;margin-top:8px"><button class="grade-btn" data-delete-run="${esc(r.id)}" type="button">이 시행 삭제</button></div></details>`;
  }).join('')}</div>`;
  $('grade-close-detail').addEventListener('click',()=>{expandedSid='';renderDetail();});
@@ -4562,11 +4706,11 @@ function settingsScenarios(){
  <div class="grade-help">안전거리 또는 분석 규칙을 바꾼 뒤 이미 분석된 결과의 원시 특성값까지 변경하려면 동일 파일을 재분석해야 합니다. 점수환산·가중치·체크·반복배율 변경은 즉시 기존 기록에도 적용됩니다.</div>`;
 }
 function settingsTraining(){
- let html=`<p class="grade-help"><b>시나리오별 점수 산식:</b> 유효 시행이 10회 미만이면 모든 시행점수의 평균, 10회 이상이면 점수가 높은 상위 10회 시행점수의 평균을 계산합니다. <b>모든 수행 기록과 총 시행횟수는 보존</b>하며, 평가 제외·미산출 시행은 평균에 넣지 않습니다. 평균점수에 기존 반복훈련 배율(기본 1회 0.90 ~ 10회 이상 1.10)을 적용하고 최종점수는 100점을 넘지 않습니다. 임의로 100회 이상 수행해도 기본적으로 최대배율만 적용합니다. 아래 인정 횟수 수동 지정은 <b>반복훈련 배율에만</b> 영향을 줍니다.</p>
+ let html=`<p class="grade-help">동일 학생·시나리오의 유효 시행만 반복횟수에 포함합니다. 1회차 기본 배율 0.90, 10회차 이상 1.10이며 총점은 100점을 넘지 않습니다. 임의로 100회 이상 수행해도 기본적으로 최대배율만 적용합니다. 필요한 경우 아래 학생·시나리오별 인정 횟수를 수동 지정할 수 있습니다.</p>
  <div class="grade-grid"><div class="grade-field"><label>1회차 배율</label><input data-train="min" type="number" min="0" max="2" step="0.01" value="${config.training.min}"></div>
  <div class="grade-field"><label>최대 배율</label><input data-train="max" type="number" min="0" max="2" step="0.01" value="${config.training.max}"></div>
  <div class="grade-field"><label>최대 배율에 도달하는 유효 시행횟수</label><input data-train="fullAt" type="number" min="2" max="10000" step="1" value="${config.training.fullAt}"></div>
- <div class="grade-field"><label>참고 대표 시행 표시 (점수와 무관)</label><select data-train="selected"><option value="best" ${config.training.selected==='best'?'selected':''}>최고점 시행 표시</option><option value="latest" ${config.training.selected==='latest'?'selected':''}>가장 최근 시행 표시</option><option value="average" ${config.training.selected==='average'?'selected':''}>이전 평균모드 호환 (최근 시행 표시)</option><option value="manual" ${config.training.selected==='manual'?'selected':''}>학생 상세에서 수동 표시</option></select></div></div>
+ <div class="grade-field"><label>시나리오별 대표 시행 선택</label><select data-train="selected"><option value="best" ${config.training.selected==='best'?'selected':''}>최고점</option><option value="latest" ${config.training.selected==='latest'?'selected':''}>가장 최근</option><option value="average" ${config.training.selected==='average'?'selected':''}>모든 유효점수 평균</option><option value="manual" ${config.training.selected==='manual'?'selected':''}>학생 상세에서 수동 선택</option></select></div></div>
  <h4>학생별 반복훈련 인정 횟수 — 빈 칸은 유효 횟수 전체 적용</h4>
  <div class="grade-help">원본의 시행횟수와 인정 횟수는 별도로 보존합니다. 실제 유효 횟수보다 큰 값을 입력할 수 없습니다.</div>
  <table class="grade-settings-table"><thead><tr><th>학번</th><th>이름</th><th>시나리오</th><th>유효 시행</th><th>인정 횟수</th></tr></thead><tbody>`;
@@ -4812,21 +4956,20 @@ function xlsxBlob(sheets){
 function createGradeWorkbook(){
  const keys=allScenarioKeys(),stud=students().sort(bySid),all=visibleStudents();
  const rankBySid=new Map(all.map(s=>[s.sid,s.rank]));
- const summary=[['학번','이름','수강 수업','전체 순위','중간고사 001','기말고사','종합점수',...keys.map(k=>`${k} 점수`),...keys.map(k=>`${k} 유효 시행횟수`),...keys.map(k=>`${k} 총 시행횟수`),...keys.map(k=>`${k} 평균 반영횟수`)]];
+ const summary=[['학번','이름','수강 수업','전체 순위','중간고사 001','기말고사','종합점수',...keys.map(k=>`${k} 점수`),...keys.map(k=>`${k} 유효 시행횟수`)]];
  for(const s of stud){
   const c=courseForStudent(s.sid),classes=classesForStudent(s.sid).join(',');
-  summary.push([s.sid,s.name,classes,rankBySid.get(s.sid)||null,c.mid,c.final,c.total,...keys.map(k=>scenarioGrade(s.sid,k).score),...keys.map(k=>scenarioGrade(s.sid,k).real),...keys.map(k=>runsOf(s.sid,k).length),...keys.map(k=>scenarioGrade(s.sid,k).averagedCount)]);
+  summary.push([s.sid,s.name,classes,rankBySid.get(s.sid)||null,c.mid,c.final,c.total,...keys.map(k=>scenarioGrade(s.sid,k).score),...keys.map(k=>scenarioGrade(s.sid,k).real)]);
  }
  const byClass=[['수업명','학번','이름','수강 상태','중간 001','기말','종합','기말 시나리오','미응시']];
  for(const c of courseNames())for(const s of stud.filter(s=>classesForStudent(s.sid).includes(c))){
   const m=courseForStudent(s.sid,c),student=(config.rosters[c]?.students||[]).find(x=>x.sid===s.sid);byClass.push([c,s.sid,s.name,student?.status||'',m.mid,m.final,m.total,m.keys.join(','),m.missing.join(',')]);
  }
- const runs=[['학번','이름','시나리오','시행일자','원점수','평가 상태','제외 사유','훈련 인정 횟수','배율','참고 대표시행','자료 파일','본선 기록 수','분석 시간(초)','속도기준(kn)','관측 최대속도(kn)','최종WP 거리(NM)','연속공백 최대(초)','비고','상위10 평균 반영','상위10 평균 순위','시나리오 가산 전 평균']];
+ const runs=[['학번','이름','시나리오','시행일자','원점수','평가 상태','제외 사유','훈련 인정 횟수','배율','반영 대표시행','자료 파일','본선 기록 수','분석 시간(초)','속도기준(kn)','관측 최대속도(kn)','최종WP 거리(NM)','연속공백 최대(초)','비고']];
  const featSheet=[['학번','이름','시나리오','시행일자','특성번호','특성명','원시값','단위','특성점수(100점)','가중치','평가 선택','평가 상태']];
  for(const r of records){
   const g=scenarioGrade(r.sid,r.scenario),v=runScore(r);
-  const averageRank=g.averagedRuns.findIndex(item=>item.id===r.id)+1;
-  runs.push([r.sid,r.student,r.scenario,r.stamp,v,runStatus(r),[...r.invalid,...(r.review||[])].join('; '),g.count,g.factor,g.representative?.id===r.id?'Y':'',r.file,r.osCount,r.duration,r.limit,r.maxSpeed,r.goalDist,r.longGap,r.warning?.join('; '),averageRank?'Y':'N',averageRank||null,g.base]);
+  runs.push([r.sid,r.student,r.scenario,r.stamp,v,runStatus(r),[...r.invalid,...(r.review||[])].join('; '),g.count,g.factor,g.representative?.id===r.id?'Y':'',r.file,r.osCount,r.duration,r.limit,r.maxSpeed,r.goalDist,r.longGap,r.warning?.join('; ')]);
   for(const [i,f] of FEATURES.entries())featSheet.push([r.sid,r.student,r.scenario,r.stamp,i+1,f.name,r.raw?.[f.id],f.unit,featureScore(r,f.id),config.weights[f.id],cfgScenario(r.scenario).enabled.includes(f.id)?'Y':'N',runStatus(r)]);
  }
  const setting=[['구분','설정항목','값','추가'],...FEATURES.map(f=>['공통 가중치·기본환산',f.name,config.weights[f.id],`기본모드:${config.ranges[f.id].mode}, 기본100점:${config.ranges[f.id].good}, 기본0점:${config.ranges[f.id].bad}`]),
