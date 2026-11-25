@@ -187,6 +187,9 @@
             cursor: pointer; text-align: center; line-height: 1.1; transition: background 0.2s; flex-shrink: 0;
         }
         .icon-btn:hover, .icon-btn.active { background: var(--accent-blue); color: #fff; }
+        /* Preserve the original layout while the instructor-only ARC controls are locked. */
+        [data-arc-locked] { visibility: hidden; pointer-events: none; }
+        #btn-ebl1 { -webkit-touch-callout: none; }
         .icon-btn.alert { background: #444222; color: #ffff55; border-color: #ffff55; }
         
         .knob-container { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9px; flex-shrink: 0; padding-top: 10px;}
@@ -397,7 +400,7 @@
                     </div>
                 </div>
                 
-                <div class="row-group">
+                <div class="row-group" data-arc-locked inert>
                     <div class="custom-select-wrapper" style="width: 80px;">
                         <div class="custom-select-box green" onclick="toggleCustomDropdown('arc_int', event)">
                             <span id="arc_int-text">ARC: 6s ▼</span>
@@ -411,7 +414,7 @@
                     <div class="badge green" id="btn-arc-mode" style="cursor:pointer;" onclick="toggleArcMode()">Selected</div>
                 </div>
 
-                <div class="row-group" style="margin-top:2px;">
+                <div class="row-group" style="margin-top:2px;" data-arc-locked inert>
                     <div class="custom-select-wrapper" style="width: 85px;">
                         <div class="custom-select-box green" onclick="toggleCustomDropdown('w_turn', event)">
                             <span id="w_turn-text">W_Turn: 2.0 ▼</span>
@@ -606,8 +609,8 @@
                 </div>
                 <div class="control-row">
                     <div style="display:flex; align-items:center; gap:4px;">
-                        <span class="badge" id="btn-ebl1" style="border-radius:10px; padding:2px 6px;" onclick="toggleEBL()">EBL 1</span>
-                        <span style="color:#ff3333; font-size:9px; font-weight:bold;">ARC</span>
+                        <span class="badge" id="btn-ebl1" style="border-radius:10px; padding:2px 6px;">EBL 1</span>
+                        <span style="color:#ff3333; font-size:9px; font-weight:bold;" data-arc-locked inert>ARC</span>
                     </div>
                     <span id="val-ebl1" style="font-family:monospace; color:var(--text-main); font-size:12px;">088.9 ° T</span>
                     <span class="btn" id="btn-ebl1-offset" onclick="toggleOffset('ebl1')">OFFSET</span>
@@ -644,7 +647,7 @@
         <div class="icon-btn" id="btn-offcent" onclick="toggleOffCenter()">Off<br>cent</div>
         <div class="icon-btn active" id="btn-rings" style="font-size:16px;" onclick="toggleRings()">◎</div>
         <div class="icon-btn" id="btn-tgt">TGT</div>
-        <div class="icon-btn" id="btn-arc" onclick="toggleArc()" title="Upgraded ARC: full CPA wall + exact wall crossing + PORT/STBD route-rejoin planning">ARC</div>
+        <div class="icon-btn" id="btn-arc" data-arc-locked inert onclick="toggleArc()" title="Upgraded ARC: full CPA wall + exact wall crossing + PORT/STBD route-rejoin planning">ARC</div>
         <div class="icon-btn" id="btn-theme" style="font-size:14px;" onclick="toggleTheme()">◑</div>
         
         <div class="knob-container">
@@ -796,6 +799,7 @@
     let pulseLength = 'SP'; 
     let manualRR = 'auto'; 
     
+    let arcUnlocked = false;
     let arcActive = false;
     let arcIntervalMs = 6000; 
     let arcTargetMode = 'Selected'; 
@@ -958,7 +962,7 @@
         return diff;
     }
 
-    function triggerArcUpdate() { arcUpdatePending = true; }
+    function triggerArcUpdate() { if (arcUnlocked) arcUpdatePending = true; }
 
     window.toggleThreatMode = function() {
         threatMode = !threatMode;
@@ -1362,14 +1366,15 @@
     window.changeRR = function(val) { manualRR = val; triggerArcUpdate(); }
     window.changeCpaLimit = function(val) { cpaLimitVal = parseFloat(val); triggerArcUpdate(); }
     window.changeTcpaLimit = function(val) { tcpaLimitVal = parseFloat(val); triggerArcUpdate(); }
-    window.changeArcInterval = function(val) { arcIntervalMs = parseInt(val) * 1000; triggerArcUpdate(); }
-    window.changeWTurn = function(val) { wTurnVal = parseFloat(val); triggerArcUpdate(); }
-    window.changeWGoal = function(val) { wGoalVal = parseFloat(val); triggerArcUpdate(); }
+    window.changeArcInterval = function(val) { if (!arcUnlocked) return; arcIntervalMs = parseInt(val) * 1000; triggerArcUpdate(); }
+    window.changeWTurn = function(val) { if (!arcUnlocked) return; wTurnVal = parseFloat(val); triggerArcUpdate(); }
+    window.changeWGoal = function(val) { if (!arcUnlocked) return; wGoalVal = parseFloat(val); triggerArcUpdate(); }
     window.changePulseLength = function(val) { pulseLength = val; }
     window.updateVectorTime = function(val) { vectorTimeMins = parseFloat(val); }
     window.updateTrailTime = function(val) { trailTimeMins = parseFloat(val); }
 
     function toggleArc() {
+        if (!arcUnlocked) return;
         arcActive = !arcActive;
         document.getElementById('btn-arc').classList.toggle('active', arcActive);
         
@@ -1394,6 +1399,7 @@
     }
 
     function toggleArcMode() {
+        if (!arcUnlocked) return;
         arcTargetMode = (arcTargetMode === 'Selected') ? 'All target' : 'Selected';
         document.getElementById('btn-arc-mode').innerText = arcTargetMode;
         triggerArcUpdate();
@@ -1552,6 +1558,62 @@
         document.getElementById('btn-ebl1').classList.toggle('active', ebl1Active); 
         triggerArcUpdate(); 
     }
+    // Hidden instructor control: hold EBL 1 continuously for 10 real seconds.
+    // Ordinary clicks keep the original EBL behavior; a successful hold is not a click.
+    (() => {
+        const btn = document.getElementById('btn-ebl1');
+        const HOLD_MS = 10000;
+        let holdTimer = null;
+        let heldPointer = null;
+        let suppressClick = false;
+
+        function cancelHold() {
+            if (holdTimer !== null) clearTimeout(holdTimer);
+            holdTimer = null;
+            heldPointer = null;
+        }
+
+        btn.addEventListener('pointerdown', e => {
+            if (!e.isTrusted || !e.isPrimary || e.button !== 0 || heldPointer !== null) return;
+            suppressClick = false;
+            if (arcUnlocked) return;
+            heldPointer = e.pointerId;
+            holdTimer = setTimeout(() => {
+                if (heldPointer === null || document.hidden) { cancelHold(); return; }
+                holdTimer = null;
+                heldPointer = null;
+                suppressClick = true;
+                arcUnlocked = true;
+                document.querySelectorAll('[data-arc-locked]').forEach(el => {
+                    el.removeAttribute('data-arc-locked');
+                    el.removeAttribute('inert');
+                });
+                lastArcCalcTime = 0;
+                if (!arcActive) toggleArc();
+            }, HOLD_MS);
+        });
+
+        // Touch pointers can have implicit capture, so also check the actual bounds.
+        window.addEventListener('pointermove', e => {
+            if (e.pointerId !== heldPointer) return;
+            const r = btn.getBoundingClientRect();
+            if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom ||
+                (e.pointerType === 'mouse' && (e.buttons & 1) === 0)) cancelHold();
+        }, true);
+        const endHold = e => { if (e.pointerId === heldPointer) cancelHold(); };
+        window.addEventListener('pointerup', endHold, true);
+        window.addEventListener('pointercancel', endHold, true);
+        btn.addEventListener('pointerleave', endHold);
+        btn.addEventListener('lostpointercapture', endHold);
+        window.addEventListener('blur', cancelHold);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) cancelHold(); });
+        btn.addEventListener('contextmenu', e => e.preventDefault());
+        btn.addEventListener('click', () => {
+            if (suppressClick) { suppressClick = false; return; }
+            toggleEBL();
+        });
+    })();
+
     function toggleVRM() { 
         vrm1Active = !vrm1Active; 
         document.getElementById('btn-vrm1').classList.toggle('active', vrm1Active); 
@@ -2124,6 +2186,7 @@
         self.onmessage=e=>{const m=e.data||{};if(m.type!=='plan')return;try{self.postMessage({type:'result',id:m.id,port:plan(m.input,'PORT'),stbd:plan(m.input,'STBD')});}catch(err){self.postMessage({type:'error',id:m.id,error:String(err&&err.stack||err)});}};
     }
     function createArcPlannerWorker() {
+        if (!arcUnlocked) return null;
         if (arcPlannerWorker) return arcPlannerWorker;
         if (typeof Worker !== 'function' || typeof Blob !== 'function') return null;
         try {
@@ -2150,6 +2213,7 @@
         } catch (e) { console.error('[ARC UPGRADE] worker creation failed:',e); return null; }
     }
     function dispatchArcPlanner(job) {
+        if (!arcUnlocked) return;
         const w=createArcPlannerWorker();
         if(!w){ cachedArcBestPoints=[]; cachedArcBestPath=[]; return; }
         if(arcPlannerBusy){ arcPlannerQueuedJob=job; return; }
@@ -2158,7 +2222,7 @@
     }
 
     function runARC(displayRadius, osPx, osPy, displayUpBrg, maxDistNM) {
-        if (!arcActive) return;
+        if (!arcUnlocked || !arcActive) return;
         let all = targets.concat(aisTargets);
         all = all.filter(t => Number.isFinite(t.x) && Number.isFinite(t.y) && Number.isFinite(t.spd) && Number.isFinite(t.hdg));
         if (arcTargetMode === 'Selected') all = all.filter(t => selectedTargets.includes(t.id));
@@ -2340,7 +2404,7 @@
         let needsNormalUpdate = (currentTime - lastArcCalcTime > arcIntervalMs || lastArcCalcTime === 0);
         let needsForcedUpdate = arcUpdatePending && (framesSinceLastArc >= 30);
 
-        if (arcActive && (needsNormalUpdate || needsForcedUpdate)) {
+        if (arcUnlocked && arcActive && (needsNormalUpdate || needsForcedUpdate)) {
             lastArcCalcTime = currentTime; framesSinceLastArc = 0; arcUpdatePending = false;
             runARC(displayRadius, osPx, osPy, displayUpBrg, maxDistNM);
         }
@@ -2426,7 +2490,7 @@
         renderLandEchoes(displayRadius,osPx,osPy,displayUpBrg,maxDistNM);
         let allEntities = targets.concat(aisTargets); 
 
-        if (arcActive && cachedArcRingData.length > 0) {
+        if (arcUnlocked && arcActive && cachedArcRingData.length > 0) {
             ctx.save(); ctx.fillStyle = 'rgba(126, 47, 142, 0.35)';
             for (let i = 0; i < cachedArcNumRings; i++) {
                 const rd = cachedArcRingData[i]; if (!rd) continue;
